@@ -1,0 +1,6 @@
+- make everything threadsave
+        Implement threadsafe iterators for SGQueue
+- implement packet confirmation
+- BufferEncrypter
+- use simgears logstream
+

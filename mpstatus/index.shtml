@@ -1,0 +1,27 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+ <HEAD>
+  <META HTTP-EQUIV="Pragma" CONTENT="no-cache">
+  <META HTTP-EQUIV="Cache-Control" content="no-cache">
+  <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">
+  <TITLE>Flightgear mpserver01 - Portsmouth, England</TITLE>
+ </HEAD>
+<BODY BGCOLOR="#EEEEEE">
+
+<H2 ALIGN="CENTER">Flightgear mpserver01 - Berlin, Germany</H2>
+
+<center>
+
+<p>
+<hr width=20%>
+
+<!--#exec cgi="config.pl" -->
+
+<hr width=30%>
+
+<p>
+<small>(Thanks to Nick Warne for this page and scripts)</small>
+
+</center>
+ </BODY>
+</HTML>

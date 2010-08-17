@@ -1,0 +1,5 @@
+fg_server.cpp	this is the actual server
+fg_config.cpp	simple configfile parser
+logobject.cpp	logging functions
+netSocket.cxx	taken from plib, networking functions
+tiny_xdr.cxx	tiny xdr implementation for flightgear

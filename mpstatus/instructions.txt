@@ -1,0 +1,33 @@
+Place the perl scripts (rm .txt extension first!) in your cgi-bin;
+they probably will need to be adjusted to suit, as a lot of the IP 
+addresses etc. are hardcoded.  The code is pretty simple to follow though.
+
+They need to use a local configured FG server with all the correct relays, so you
+need to ensure all this is working.  I guess you could query a remote server,
+but that isn't nice and network traffic would be a problem, I guess.
+
+You will need 'netcat' and 'tac' (same as 'cat' but 'cats' backwards) 
+installed, along with standard Perl.
+
+To embed in HTML to produce the page, use:
+
+<!--#exec cgi="cgi-bin/fg_run.pl" -->
+
+<!--#exec cgi="cgi-bin/fg_status.pl" -->
+
+etc.
+
+IMPORTANT!!  Call the scripts something that nobody can guess to stop
+idiots trying to run the script directly.
+
+So, FG_RuNiTT.pl
+
+and in the HTML:
+
+<!--#exec cgi="cgi-bin/FG_RuNiTT.pl" --> 
+
+etc.  ~ same for fg_status.pl
+
+Any questions/issues, I will be glad to try to help.
+
+nick@ukfsn.org

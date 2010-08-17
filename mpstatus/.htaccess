@@ -1,0 +1,6 @@
+Options +ExecCGI +Includes
+AddHandler cgi-script .cgi
+AddType text/html .shtml
+AddHandler server-parsed .shtml
+DirectoryIndex index.shtml
+
