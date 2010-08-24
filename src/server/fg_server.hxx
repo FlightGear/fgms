@@ -219,7 +219,7 @@ private:
   //  private methods
   //  
   //////////////////////////////////////////////////
-  bool  AddClient     ( netAddress& Sender, char* Msg, bool IsLocal );
+  void  AddClient     ( netAddress& Sender, char* Msg, bool IsLocal );
   void  AddBadClient  ( netAddress& Sender, string &ErrorMsg,
                         bool IsLocal );
   bool  IsBlackListed ( netAddress& SenderAddress );

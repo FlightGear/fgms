@@ -457,7 +457,7 @@ FG_SERVER::AddBadClient
 //      insert a new client into internal list
 //
 //////////////////////////////////////////////////////////////////////
-bool
+void
 FG_SERVER::AddClient ( netAddress& Sender, char* Msg, bool IsLocal )
 {
   time_t          Timestamp;
@@ -475,6 +475,8 @@ FG_SERVER::AddClient ( netAddress& Sender, char* Msg, bool IsLocal )
   MsgId               = XDR_decode<uint32_t> (MsgHdr->MsgId);
   MsgLen              = XDR_decode<uint32_t> (MsgHdr->MsgLen);
   MsgMagic            = XDR_decode<uint32_t> (MsgHdr->Magic);
+  if (MsgId != POS_DATA_ID)
+    return;
   NewPlayer.Callsign  = MsgHdr->Callsign;
   NewPlayer.Passwd    = "test"; //MsgHdr->Passwd;
   NewPlayer.ModelName = "* unknown *";
@@ -491,22 +493,15 @@ FG_SERVER::AddClient ( netAddress& Sender, char* Msg, bool IsLocal )
   NewPlayer.PktsSentTo       = 0;
   NewPlayer.PktsForwarded    = 0;
   NewPlayer.LastRelayedToInactive = 0;
-  if (MsgId == CHAT_MSG_ID)
-  { // don't add to local list
-    return (false);
-  }
-  if (MsgId == POS_DATA_ID) 
-  {
-    NewPlayer.LastPos.Set (
+  NewPlayer.LastPos.Set (
       XDR_decode64<double> (PosMsg->position[X]),
       XDR_decode64<double> (PosMsg->position[Y]),
       XDR_decode64<double> (PosMsg->position[Z]));
-    NewPlayer.LastOrientation.Set (
+  NewPlayer.LastOrientation.Set (
       XDR_decode<float> (PosMsg->orientation[X]),
       XDR_decode<float> (PosMsg->orientation[Y]),
       XDR_decode<float> (PosMsg->orientation[Z]));
-    NewPlayer.ModelName = PosMsg->Model;
-  }
+  NewPlayer.ModelName = PosMsg->Model;
   m_MaxClientID++;
   NewPlayer.ClientID = m_MaxClientID;
   m_PlayerList.push_back (NewPlayer);
@@ -553,7 +548,6 @@ FG_SERVER::AddClient ( netAddress& Sender, char* Msg, bool IsLocal )
     << " (" << NewPlayer.ModelName << ")");
   SG_LOG (SG_SYSTEMS, SG_INFO, "current clients: "
     << m_NumCurrentClients << " max: " << m_NumMaxClients);
-  return (true);
 } // FG_SERVER::AddClient()
 //////////////////////////////////////////////////////////////////////
 
@@ -1030,8 +1024,7 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
     //      FIXME: check for all message types
     //
     //////////////////////////////////////////////////
-    if ((MsgId == POS_DATA_ID)
-    &&  (Distance (SenderPosition, CurrentPlayer->LastPos) > m_PlayerIsOutOfReach)
+    if ((Distance (SenderPosition, CurrentPlayer->LastPos) > m_PlayerIsOutOfReach)
     &&  (CurrentPlayer->Callsign.compare (0, 3, "obs", 3) != 0))
     {
       CurrentPlayer++;
@@ -1052,8 +1045,12 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
   }
   if (false == PlayerInList)
   {
-    if (AddClient (SenderAddress, Msg, PacketFromLocalClient) == false)
-        return;
+    if (MsgId != POS_DATA_ID)
+    {
+      // ignore clients until we have a valid position
+      return;
+    }
+    AddClient (SenderAddress, Msg, PacketFromLocalClient);
     CurrentPlayer = m_PlayerList.end();
     CurrentPlayer--;
     SendingPlayer = CurrentPlayer;
