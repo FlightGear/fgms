@@ -61,21 +61,20 @@ int
 FG_TRACKER::InitTracker ()
 {
   int i;
-  
+
   for ( i=0 ; i<max_children ; i++)
-  if ( (fork())==0)
   {
-    trackerSocket = tcp_connect(trackerServer, trackerPort);
-    
-    if (trackerSocket < 0) return (2);
-    
-    sleep (5);
-    write(trackerSocket,"REPLY",sizeof("REPLY"));
-    sleep (2);
-      
-    TrackerLoop ();
-  
-    exit (0);
+      if ( (fork())==0)
+      {
+        trackerSocket = tcp_connect(trackerServer, trackerPort);
+        if (trackerSocket < 0)
+            return (2);
+        sleep (5);
+        write(trackerSocket,"REPLY",sizeof("REPLY"));
+        sleep (2);
+        TrackerLoop ();
+        exit (0);
+      }
   }
   return (0);
 } // InitTracker (int port, string server, int id, int pid)
@@ -96,7 +95,7 @@ FG_TRACKER::TrackerLoop ()
 
   sent = true;
   strcpy ( res, "" );
-  
+
   for ( ; ; )
   {
     length = 0;
@@ -107,13 +106,11 @@ FG_TRACKER::TrackerLoop ()
       buf.mtext[length] = '\0';
       sent = false;
     }
-    
     if ( length > 0 )
     {
       // send message via tcp
       write (trackerSocket,buf.mtext,strlen(buf.mtext));
       sleep (1);
-      
       // receive answer from server
       if ( read (trackerSocket,res,MAXLINE) <= 0 )
       {
@@ -129,9 +126,8 @@ FG_TRACKER::TrackerLoop ()
         {
           sent = true;
           strcpy ( res, "" );
-        } 
-      }     
-      
+        }
+      }
     }
     else
     {
@@ -140,7 +136,6 @@ FG_TRACKER::TrackerLoop ()
       return (2);
     }
   }
-
   return (0);
 } // TrackerLoop ()
 //////////////////////////////////////////////////////////////////////
@@ -155,13 +150,11 @@ FG_TRACKER::Reconnect ()
 {
   printf ("Reconnecting...\n");
   trackerSocket = tcp_connect(trackerServer, trackerPort);
-    
-  if (trackerSocket < 0) return (2);
-    
+  if (trackerSocket < 0)
+    return (2);
   sleep (5);
   write(trackerSocket,"REPLY",sizeof("REPLY"));
   sleep (2);
-
   return (0);
 } // Reconnect ()
 //////////////////////////////////////////////////////////////////////
@@ -187,21 +180,17 @@ FG_TRACKER::Disconnect ()
 int
 FG_TRACKER::tcp_connect(char *server_address,int server_port)
 {
-        struct sockaddr_in serveraddr;
-  int sockfd;
+    struct sockaddr_in serveraddr;
+    int sockfd;
 
-        sockfd=socket(AF_INET, SOCK_STREAM, 0);
-
-        bzero(&serveraddr,sizeof(serveraddr));
-
-        serveraddr.sin_family = AF_INET;
-        serveraddr.sin_port = htons(server_port);
-
-        inet_pton(AF_INET, server_address, &serveraddr.sin_addr);
-
-        if (connect(sockfd, (SA *) &serveraddr, sizeof(serveraddr))<0 )
-    return -1;
-  else
-    return (sockfd);
+    sockfd=socket(AF_INET, SOCK_STREAM, 0);
+    bzero(&serveraddr,sizeof(serveraddr));
+    serveraddr.sin_family = AF_INET;
+    serveraddr.sin_port = htons(server_port);
+    inet_pton(AF_INET, server_address, &serveraddr.sin_addr);
+    if (connect(sockfd, (SA *) &serveraddr, sizeof(serveraddr))<0 )
+        return -1;
+    else
+        return (sockfd);
 }  // tcp_connect ()
 //////////////////////////////////////////////////////////////////////

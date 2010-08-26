@@ -146,6 +146,7 @@ FG_SERVER::Init ()
       return (ERROR_CREATE_SOCKET);
     }
     m_DataSocket->setBlocking (false);
+    m_DataSocket->setSockOpt (SO_REUSEADDR, true);
     if (m_DataSocket->bind ("", m_ListenPort) != 0)
     {
       SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
@@ -170,6 +171,7 @@ FG_SERVER::Init ()
       return (ERROR_CREATE_SOCKET);
     }
     m_TelnetSocket->setBlocking (false);
+    m_TelnetSocket->setSockOpt (SO_REUSEADDR, true);
     if (m_TelnetSocket->bind ("", m_TelnetPort) != 0)
     {
       SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
@@ -259,6 +261,7 @@ FG_SERVER::PrepareInit ()
 {
   SG_LOG (SG_SYSTEMS, SG_ALERT, "# caught SIGHUP, doing reinit!");
   m_RelayList.clear ();
+  m_BlackList.clear ();
   m_CrossfeedList.clear ();
 } // FG_SERVER::PrepareInit ()
 //////////////////////////////////////////////////////////////////////
@@ -1305,18 +1308,6 @@ FG_SERVER::SetLoglevel ( int Loglevel )
 
 //////////////////////////////////////////////////////////////////////
 //
-//      set if we are running as a Hubserver
-//
-//////////////////////////////////////////////////////////////////////
-void
-FG_SERVER::SetHub ( bool IamHUB )
-{
-  m_IamHUB = IamHUB;
-} // FG_SERVER::SetLoglevel ( int iLoglevel )
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-//
 //      set the logfile
 //
 //////////////////////////////////////////////////////////////////////
@@ -1332,6 +1323,18 @@ FG_SERVER::SetLogfile ( const std::string &LogfileName )
   sglog().enable_with_date (true);
   sglog().set_output (m_LogFile);
 } // FG_SERVER::SetLogfile ( const std::string &LogfileName )
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+//
+//      set if we are running as a Hubserver
+//
+//////////////////////////////////////////////////////////////////////
+void
+FG_SERVER::SetHub ( bool IamHUB )
+{
+  m_IamHUB = IamHUB;
+} // FG_SERVER::SetLoglevel ( int iLoglevel )
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -1386,6 +1389,7 @@ FG_SERVER::Done ()
     // msgctl(m_ipcid,IPC_RMID,NULL);
   }
   m_RelayList.clear ();
+  m_BlackList.clear ();
   m_Listening = false;
 } // FG_SERVER::Done()
 //////////////////////////////////////////////////////////////////////

@@ -71,27 +71,17 @@ PrintHelp ()
 //      read a config file and set internal variables accordingly
 //
 //////////////////////////////////////////////////////////////////////
-int
-ProcessConfig ( const string& ConfigName, bool ReInit=false )
+bool
+ProcessConfig ( const string& ConfigName )
 {
   FG_CONFIG   Config;
   string      Val;
   int         E;
-  static bool AlreadyWasHere = false;
 
-  if (ReInit == true)
-  {
-    AlreadyWasHere = false;
-  }
-  if (AlreadyWasHere == true)
-  {
-    return (0);
-  }
   if (Config.Read (ConfigName))
   {
-    return (1);
+    return (false);
   }
-  AlreadyWasHere = true;
   SG_ALERT (SG_SYSTEMS, SG_ALERT, "processing " << ConfigName);
   Val = Config.Get ("server.name");
   if (Val != "")
@@ -309,7 +299,7 @@ ProcessConfig ( const string& ConfigName, bool ReInit=false )
     }
   }
   //////////////////////////////////////////////////
-  return (0);
+  return (true);
 } // ProcessConfig ( const string& ConfigName )
 //////////////////////////////////////////////////////////////////////
 
@@ -343,7 +333,7 @@ ParseParams ( int argcount, char* argvars[] )
         }
         break;
       case 'c':
-        if (ProcessConfig (optarg) != 0)
+        if (ProcessConfig (optarg) == false)
         {
           cerr << "could not read '"
                << optarg << "' for input!" 
@@ -418,14 +408,16 @@ ReadConfigs ( bool ReInit = false )
 
   Path = SYSCONFDIR;
   Path += "/fgms.conf";
-  ProcessConfig (Path, ReInit);
+  if (ProcessConfig (Path) == true)
+    return;
   Path = getenv ("HOME");
   if (Path != "")
   {
     Path += "/fgms.conf";
-    ProcessConfig (Path, ReInit);
+    if (ProcessConfig (Path))
+        return;
   }
-  ProcessConfig ("fgms.conf", ReInit);
+  ProcessConfig ("fgms.conf");
 } // ReadConfigs ()
 //////////////////////////////////////////////////////////////////////
 

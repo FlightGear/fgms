@@ -219,6 +219,26 @@ void netSocket::setBlocking ( bool blocking )
 }
 
 
+void netSocket::setSockOpt ( int SocketOption, bool Set )
+{
+  assert ( handle != -1 ) ;
+  int result;
+  if ( Set == true ) {
+      int one = 1;
+#ifdef UL_WIN32
+      result = ::setsockopt( handle, SOL_SOCKET, SocketOption, (char*)&one, sizeof(one) );
+#else
+      result = ::setsockopt( handle, SOL_SOCKET, SocketOption, &one, sizeof(one) );
+#endif
+  } else {
+      result = ::setsockopt( handle, SOL_SOCKET, SocketOption, NULL, 0 );
+  }
+  if ( result < 0 ) {
+      perror("set sockopt:");
+  }
+  assert ( result != -1 );
+}
+
 void netSocket::setBroadcast ( bool broadcast )
 {
   assert ( handle != -1 ) ;
