@@ -31,8 +31,6 @@ using namespace std;
 #define IPCKEY    0xf9f5
 #define IPCPERMS    0600
 
-struct msgbuffer { long mtype; char mtext[1024];};
-
 //////////////////////////////////////////////////////////////////////
 //
 //  the tracker class
@@ -54,12 +52,19 @@ public:
   //  public methods
   //
   //////////////////////////////////////////////////
-  int InitTracker ();
-  int   tcp_connect (char *server_address, int server_port);
-  int TrackerLoop ();
-  string  GetTrackerServer () { return trackerServer; };
-  int GetTrackerPort () { return trackerPort; };
-  void  Disconnect ();
+  int       InitTracker ();
+  int       TcpConnect (char *server_address, int server_port);
+  int       TrackerLoop ();
+  string    GetTrackerServer () { return m_TrackerServer; };
+  int       GetTrackerPort () { return m_TrackerPort; };
+  void      Disconnect ();
+
+  class  m_MsgBuffer
+  {
+    public:
+    long mtype; 
+    char mtext[1024];
+  };
 
 private:
   //////////////////////////////////////////////////
@@ -74,10 +79,10 @@ private:
   //  private variables
   //  
   //////////////////////////////////////////////////
-  int ipcid;
-  int trackerPort;
-  char  trackerServer[128];
-  int   trackerSocket;
-  int max_children;
+  int   ipcid;
+  int   m_TrackerPort;
+  char  m_TrackerServer[128];
+  int   m_TrackerSocket;
+  int   m_MaxChildren;
 };
 #endif

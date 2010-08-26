@@ -1411,7 +1411,7 @@ FG_SERVER::UpdateTracker
   string          Aircraft;
   string          Message;
   tm              *tm;
-  struct msgbuffer buf;
+  FG_TRACKER::m_MsgBuffer buf;
 
   if (! m_IsTracked || strcmp(Callsign.c_str(),"mpdummy") == 0)
   {

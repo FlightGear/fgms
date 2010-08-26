@@ -39,9 +39,9 @@ extern  cDaemon Myself;
 FG_TRACKER::FG_TRACKER (int port, string server, int id)
 {
   ipcid         = id;
-  trackerPort   = port;
-  max_children  = 2; // good for 32 users/server
-  strcpy (trackerServer, server.c_str());
+  m_TrackerPort = port;
+  m_MaxChildren = 2; // good for 32 users/server
+  strcpy (m_TrackerServer, server.c_str());
 } // FG_TRACKER()
 //////////////////////////////////////////////////////////////////////
 
@@ -67,16 +67,16 @@ FG_TRACKER::InitTracker ()
   int i;
   pid_t ChildsPID;
 
-  for ( i=0 ; i<max_children ; i++)
+  for ( i=0 ; i<m_MaxChildren ; i++)
   {
       ChildsPID = fork ();
       if (ChildsPID == 0)
       {
-        trackerSocket = tcp_connect(trackerServer, trackerPort);
-        if (trackerSocket < 0)
+        m_TrackerSocket = TcpConnect (m_TrackerServer, m_TrackerPort);
+        if (m_TrackerSocket < 0)
             return (2);
         sleep (5);
-        write(trackerSocket,"REPLY",sizeof("REPLY"));
+        write(m_TrackerSocket,"REPLY",sizeof("REPLY"));
         sleep (2);
         TrackerLoop ();
         exit (0);
@@ -95,7 +95,7 @@ FG_TRACKER::InitTracker ()
 int
 FG_TRACKER::TrackerLoop ()
 {
-  struct  msgbuffer buf;
+  m_MsgBuffer buf;
   bool  sent;
   int   length;
   char  res[MAXLINE];
@@ -109,22 +109,24 @@ FG_TRACKER::TrackerLoop ()
     // get message from queue
     if (sent)
     {
-      length = msgrcv(ipcid,&buf,MAXLINE,0,MSG_NOERROR);
+      length = msgrcv (ipcid, &buf, MAXLINE, 0, MSG_NOERROR);
       buf.mtext[length] = '\0';
       sent = false;
     }
     if ( length > 0 )
     {
       // send message via tcp
-      write (trackerSocket,buf.mtext,strlen(buf.mtext));
+      if (write (m_TrackerSocket,buf.mtext,strlen(buf.mtext)) < 0)
+      {
+        SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: can't write to server...\n");
+        Reconnect ();
+      }
       sleep (1);
       // receive answer from server
-      if ( read (trackerSocket,res,MAXLINE) <= 0 )
+      if ( read (m_TrackerSocket,res,MAXLINE) <= 0 )
       {
-        while ( Reconnect () != 0)
-        {
-          sleep (2);
-        }
+        SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: can't read from server...\n");
+        Reconnect ();
         sent = false;
       }
       else
@@ -155,12 +157,19 @@ FG_TRACKER::TrackerLoop ()
 int
 FG_TRACKER::Reconnect ()
 {
-  printf ("Reconnecting...\n");
-  trackerSocket = tcp_connect(trackerServer, trackerPort);
-  if (trackerSocket < 0)
-    return (2);
+  bool connected = false;
+
+  while (connected == false)
+  {
+    SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::Reconnect: Reconnecting...\n");
+    m_TrackerSocket = TcpConnect (m_TrackerServer, m_TrackerPort);
+    if (m_TrackerSocket >= 0)
+      connected = true;
+    else
+      sleep (2);
+  }
   sleep (5);
-  write(trackerSocket,"REPLY",sizeof("REPLY"));
+  write(m_TrackerSocket,"REPLY",sizeof("REPLY"));
   sleep (2);
   return (0);
 } // Reconnect ()
@@ -174,8 +183,8 @@ FG_TRACKER::Reconnect ()
 void
 FG_TRACKER::Disconnect ()
 {
-  if ( trackerSocket > 0 )
-    close (trackerSocket);
+  if ( m_TrackerSocket > 0 )
+    close (m_TrackerSocket);
 } // Disconnect ()
 //////////////////////////////////////////////////////////////////////
 
@@ -185,7 +194,7 @@ FG_TRACKER::Disconnect ()
 //
 //////////////////////////////////////////////////////////////////////
 int
-FG_TRACKER::tcp_connect(char *server_address,int server_port)
+FG_TRACKER::TcpConnect (char *server_address,int server_port)
 {
     struct sockaddr_in serveraddr;
     int sockfd;
@@ -199,5 +208,5 @@ FG_TRACKER::tcp_connect(char *server_address,int server_port)
         return -1;
     else
         return (sockfd);
-}  // tcp_connect ()
+}  // TcpConnect  ()
 //////////////////////////////////////////////////////////////////////
