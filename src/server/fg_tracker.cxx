@@ -159,6 +159,8 @@ FG_TRACKER::Reconnect ()
 {
   bool connected = false;
 
+  if ( m_TrackerSocket > 0 )
+    close (m_TrackerSocket);
   while (connected == false)
   {
     SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::Reconnect: Reconnecting...\n");
