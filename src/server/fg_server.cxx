@@ -235,16 +235,8 @@ FG_SERVER::Init ()
   }
   SG_ALERT (SG_SYSTEMS, SG_ALERT,
     "# I have " << m_BlackList.size() << " blacklisted IPs");
-#if 0
-  mT_BlackListIt CurrentBlack = m_BlackList.begin();
-  while (CurrentBlack != m_BlackList.end())
-  {
-    char* buf = inet_ntoa ( (in_addr) CurrentBlack->first ) ;
-    SG_ALERT (SG_SYSTEMS, SG_ALERT, "# blacklisted: "
-      << buf);
-    CurrentBlack++;
-  }
-#endif
+  SG_ALERT (SG_SYSTEMS, SG_ALERT,
+    "# My PID is " << getpid());
   m_Listening = true;
   return (SUCCESS);
 } // FG_SERVER::Init()
@@ -259,10 +251,12 @@ FG_SERVER::Init ()
 void
 FG_SERVER::PrepareInit ()
 {
-  SG_LOG (SG_SYSTEMS, SG_ALERT, "# caught SIGHUP, doing reinit!");
+  SG_ALERT (SG_SYSTEMS, SG_ALERT, "# caught SIGHUP, doing reinit!");
   m_RelayList.clear ();
   m_BlackList.clear ();
   m_CrossfeedList.clear ();
+  SG_ALERT (SG_SYSTEMS, SG_ALERT, "# PID " << getpid() << " killing all children!");
+  Myself.KillAllChildren ();
 } // FG_SERVER::PrepareInit ()
 //////////////////////////////////////////////////////////////////////
 
@@ -1361,6 +1355,8 @@ FG_SERVER::Done ()
   if (m_IsParent)
   {
     SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Done() - exiting");
+    SG_ALERT (SG_SYSTEMS, SG_ALERT, "# PID " << getpid() << " killing all children!");
+    Myself.KillAllChildren ();
   }
   if (m_LogFile)
   {

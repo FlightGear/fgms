@@ -43,9 +43,9 @@ public:
   ~cDaemon ();
   static void SigHandler ( int SigType );
   static int  Daemonize (); // make us a daemon
-  static void KillAll (); // kill our children and ourself
+  static void KillAllChildren (); // kill our children and ourself
   static void AddChild ( pid_t ChildsPid );
-  static int  NumChilds ();
+  static int  NumChildren ();
   static int  GetPid() { return PidOfDaemon; };
 };
 #endif

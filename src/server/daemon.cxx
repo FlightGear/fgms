@@ -1,4 +1,4 @@
-//                                                                              
+//
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -142,8 +142,8 @@ void cDaemon::SigHandler ( int SigType )
     break;
   default:cout << "killed by signal " << SigType << "!" << endl;
   }
-  cDaemon::KillAll ();
   signal (SigType,SigHandler);
+  exit (0);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -181,7 +181,7 @@ int cDaemon::Daemonize () // make us a daemon
 //////////////////////////////////////////////////////////////////////
 //
 //////////////////////////////////////////////////////////////////////
-void cDaemon::KillAll ()  // kill our children and ourself
+void cDaemon::KillAllChildren ()  // kill our children and ourself
 {
   list <pid_t>::iterator aChild;
 
@@ -192,7 +192,8 @@ void cDaemon::KillAll ()  // kill our children and ourself
       kill ((*aChild), SIGKILL);
     aChild++;
   }
-  exit (0);
+  Children.clear ();
+//  exit (0);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -206,7 +207,7 @@ void cDaemon::AddChild ( pid_t ChildsPid )
   Children.push_back (ChildsPid);
 }
 
-int cDaemon::NumChilds ()
+int cDaemon::NumChildren ()
 {
   return (Children.size ());
 }
@@ -225,7 +226,7 @@ cDaemon::cDaemon()
 
 cDaemon::~cDaemon ()
 {
-  KillAll ();
+  // KillAllChildren ();
 }
 
 // vim: ts=2:sw=2:sts=0

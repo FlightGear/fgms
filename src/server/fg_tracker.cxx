@@ -24,8 +24,12 @@
 #include "common.h"
 #include "fg_tracker.hxx"
 #include "typcnvt.hxx"
+#include <simgear/debug/logstream.hxx>
+#include "daemon.hxx"
 
 #define MAXLINE 4096
+
+extern  cDaemon Myself;
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -61,10 +65,12 @@ int
 FG_TRACKER::InitTracker ()
 {
   int i;
+  pid_t ChildsPID;
 
   for ( i=0 ; i<max_children ; i++)
   {
-      if ( (fork())==0)
+      ChildsPID = fork ();
+      if (ChildsPID == 0)
       {
         trackerSocket = tcp_connect(trackerServer, trackerPort);
         if (trackerSocket < 0)
@@ -75,6 +81,7 @@ FG_TRACKER::InitTracker ()
         TrackerLoop ();
         exit (0);
       }
+      Myself.AddChild (ChildsPID);
   }
   return (0);
 } // InitTracker (int port, string server, int id, int pid)

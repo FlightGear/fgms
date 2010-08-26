@@ -35,6 +35,7 @@ using namespace std;
 FG_SERVER       Servant;
 extern  bool    RunAsDaemon;
 extern  cDaemon Myself;
+string          ConfigFileName; // from commandline
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -333,6 +334,8 @@ ParseParams ( int argcount, char* argvars[] )
         }
         break;
       case 'c':
+        ConfigFileName = optarg;
+        break;
         if (ProcessConfig (optarg) == false)
         {
           cerr << "could not read '"
@@ -408,6 +411,8 @@ ReadConfigs ( bool ReInit = false )
 
   Path = SYSCONFDIR;
   Path += "/fgms.conf";
+  if (ProcessConfig (ConfigFileName) == true)
+    return;
   if (ProcessConfig (Path) == true)
     return;
   Path = getenv ("HOME");
@@ -455,7 +460,7 @@ SigCHLDHandler (int s)
 //////////////////////////////////////////////////////////////////////
 //
 //      MAIN routine
-//      
+//
 //////////////////////////////////////////////////////////////////////
 int
 main ( int argc, char* argv[] )
