@@ -542,8 +542,8 @@ FG_SERVER::AddClient ( netAddress& Sender, char* Msg, bool IsLocal )
   SG_LOG (SG_SYSTEMS, SG_INFO, Message
     << NewPlayer.Callsign << " "
     << Sender.getHost() << ":" << Sender.getPort()
-    << " (" << NewPlayer.ModelName << ")");
-  SG_LOG (SG_SYSTEMS, SG_INFO, "current clients: "
+    << " (" << NewPlayer.ModelName << ")"
+    << " current clients: "
     << m_NumCurrentClients << " max: " << m_NumMaxClients);
 } // FG_SERVER::AddClient()
 //////////////////////////////////////////////////////////////////////
@@ -643,15 +643,15 @@ FG_SERVER::DropClient ( mT_PlayerListIt& CurrentPlayer )
       CurrentPlayer->Timestamp,
       DISCONNECT);
   }
+  m_NumCurrentClients--;
   SG_LOG (SG_SYSTEMS, SG_INFO, "FG_SERVER::DropClient() - "
     << "TTL exeeded, dropping pilot "
     << CurrentPlayer->Callsign
     << "  after " << time(0)-CurrentPlayer->JoinTime << " seconds."
     << "  Usage #packets in: " << CurrentPlayer->PktsReceivedFrom
     << " forwarded: " << CurrentPlayer->PktsForwarded
-    << " out: " << CurrentPlayer->PktsSentTo);
-  m_NumCurrentClients--;
-  SG_LOG (SG_SYSTEMS, SG_INFO, "current clients: "
+    << " out: " << CurrentPlayer->PktsSentTo
+    << " current clients: "
     << m_NumCurrentClients << " max: " << m_NumMaxClients);
   if (m_NumCurrentClients > 0)
   {
@@ -941,7 +941,7 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
   }
   //////////////////////////////////////////
   //
-  //      send the packet back to all clients.
+  //      send the packet to all clients.
   //      since we are walking through the list,
   //      we look for the sending client, too. if it
   //      is not already there, add it to the list
@@ -1018,7 +1018,6 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
     //
     //      do not send packet to clients which
     //      are out of reach.
-    //      FIXME: check for all message types
     //
     //////////////////////////////////////////////////
     if ((Distance (SenderPosition, CurrentPlayer->LastPos) > m_PlayerIsOutOfReach)
@@ -1058,7 +1057,7 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
   //        send packet to all Relays,
   //        change Magic to RELAY_MAGIC, so the
   //        receiving Relay will not resend
-  //        packets back for this client.
+  //        packets to other relays for this client.
   //        do not send to oberserver, if origin is
   //        a Relay
   //
@@ -1077,15 +1076,14 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
   {
     SendingPlayer->LastRelayedToInactive = Timestamp;
   }
-  if (true == PacketFromLocalClient)
+  if ((true == PacketFromLocalClient) || (true == m_IamHUB))
   {
     MsgHdr->Magic = XDR_encode<uint32_t> (RELAY_MAGIC);
     CurrentRelay = m_RelayList.begin();
     while (CurrentRelay != m_RelayList.end())
     {
       if ( (CurrentRelay->Active && IsInRange(*CurrentRelay, *SendingPlayer))
-      || (true == UpdateInactive)
-      || (true == m_IamHUB))
+      || (true == UpdateInactive))
       {
         if (CurrentRelay->Address.getIP() != SenderAddress.getIP())
         {
