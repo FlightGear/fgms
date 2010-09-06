@@ -658,6 +658,8 @@ FG_SERVER::AddBlacklist ( const string& FourDottedIP )
 void
 FG_SERVER::DropClient ( mT_PlayerListIt& CurrentPlayer )
 {
+  string Origin;
+
   if (CurrentPlayer->IsLocal) 
   {
     UpdateTracker (CurrentPlayer->Callsign,
@@ -666,15 +668,23 @@ FG_SERVER::DropClient ( mT_PlayerListIt& CurrentPlayer )
       CurrentPlayer->Timestamp,
       DISCONNECT);
   }
+  mT_RelayMapIt Relay = m_RelayMap.find(CurrentPlayer->Address.getIP());
+  if (Relay != m_RelayMap.end())
+  {
+    Origin = Relay->second;
+  }
+  else
+  {
+    Origin = "LOCAL";
+  }
   m_NumCurrentClients--;
-  SG_LOG (SG_SYSTEMS, SG_INFO, "FG_SERVER::DropClient() - "
-    << "TTL exeeded, dropping pilot "
-    << CurrentPlayer->Callsign
+  SG_LOG (SG_SYSTEMS, SG_INFO, "TTL exeeded, dropping pilot "
+    << CurrentPlayer->Callsign << "@" << Origin
     << "  after " << time(0)-CurrentPlayer->JoinTime << " seconds."
     << "  Usage #packets in: " << CurrentPlayer->PktsReceivedFrom
     << " forwarded: " << CurrentPlayer->PktsForwarded
     << " out: " << CurrentPlayer->PktsSentTo
-    << " current clients: "
+    << ". Current clients: "
     << m_NumCurrentClients << " max: " << m_NumMaxClients);
   if (m_NumCurrentClients > 0)
   {
@@ -704,7 +714,7 @@ FG_SERVER::CleanUp ()
   CurrentPlayer = m_PlayerList.begin();
   while (CurrentPlayer != m_PlayerList.end())
   {
-    if ((Timestamp-CurrentPlayer->Timestamp) > PLAYER_TTL)
+    if ((Timestamp-CurrentPlayer->Timestamp) > m_PlayerExpires)
     {
       DropClient (CurrentPlayer);
       continue;
@@ -1043,7 +1053,7 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
     //        Drop CurrentPlayer if last sign of
     //        life is older then TTL
     //////////////////////////////////////////////////
-    if ((Timestamp - CurrentPlayer->Timestamp) > PLAYER_TTL)
+    if ((Timestamp - CurrentPlayer->Timestamp) > m_PlayerExpires)
     {
       DropClient (CurrentPlayer);
       continue;
@@ -1247,7 +1257,7 @@ FG_SERVER::Loop ()
       LastCleanUp = CurrentTime;
     } // TelnetSocket
     // Do periodic CleanUp.
-    if ((CurrentTime-LastCleanUp > PLAYER_TTL)
+    if ((CurrentTime-LastCleanUp > m_PlayerExpires)
     || (CurrentTime-LastCleanUp > RELAY_TTL))
     {
       CleanUp ();

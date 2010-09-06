@@ -77,7 +77,6 @@ public:
     ERROR_COULDNT_LISTEN    = 5,
     // other constants
     MAX_PACKET_SIZE         = 1024,
-    PLAYER_TTL              = 10,
     RELAY_TTL               = 10,
     UPDATE_INACTIVE_PERIOD  = 1,
     MAX_TELNETS             = 5,
