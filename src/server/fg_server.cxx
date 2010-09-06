@@ -473,6 +473,7 @@ FG_SERVER::AddClient ( netAddress& Sender, char* Msg, bool IsLocal )
   uint32_t        MsgId;
   uint32_t        MsgMagic;
   string          Message;
+  string          Origin;
   T_MsgHdr*       MsgHdr;
   T_PositionMsg*  PosMsg;
   mT_Player       NewPlayer;
@@ -540,6 +541,7 @@ FG_SERVER::AddClient ( netAddress& Sender, char* Msg, bool IsLocal )
   CreateChatMessage (0, Message);
   Message  = NewPlayer.ModelName;
   CreateChatMessage (0, Message);
+  Origin  = Sender.getHost();
   if (IsLocal)
   {
     Message = "New LOCAL Client: ";
@@ -547,10 +549,15 @@ FG_SERVER::AddClient ( netAddress& Sender, char* Msg, bool IsLocal )
   else
   {
     Message = "New REMOTE Client: ";
+    mT_RelayMapIt Relay = m_RelayMap.find(NewPlayer.Address.getIP());
+    if (Relay != m_RelayMap.end())
+    {
+      Origin = Relay->second;
+    }
   }
   SG_LOG (SG_SYSTEMS, SG_INFO, Message
     << NewPlayer.Callsign << " "
-    << Sender.getHost() << ":" << Sender.getPort()
+    << Origin << ":" << Sender.getPort()
     << " (" << NewPlayer.ModelName << ")"
     << " current clients: "
     << m_NumCurrentClients << " max: " << m_NumMaxClients);
@@ -576,7 +583,13 @@ FG_SERVER::AddRelay ( const string & Server, int Port )
     NewRelay.Timestamp = time(0);
     NewRelay.Active = false;
     m_RelayList.push_back (NewRelay);
-    m_RelayMap[NewRelay.Address.getIP()] = NewRelay.Name;
+    string S; unsigned I;
+    I = NewRelay.Name.find (".");
+    if (I != string::npos)
+        S = NewRelay.Name.substr (0, I);
+    else
+        S = NewRelay.Name;
+    m_RelayMap[NewRelay.Address.getIP()] = S;
   }
 } // FG_SERVER::AddRelay()
 //////////////////////////////////////////////////////////////////////
