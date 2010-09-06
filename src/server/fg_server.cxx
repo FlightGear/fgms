@@ -75,12 +75,14 @@ FG_SERVER::FG_SERVER ()
   m_IsParent            = false;
   m_MaxClientID         = 0;
   m_ServerName          = "* Server *";
+  m_BindAddress         = "";
   int16_t *ver          = (int16_t*) & PROTO_VER;
   m_ProtoMinorVersion   = ver[HIGH];
   m_ProtoMajorVersion   = ver[LOW];
   m_LogFileName         = "fg_server.log";
   //wp                  = fopen("wp.txt", "w");
   m_BlackList           = map<uint32_t, bool>::map();
+  m_RelayMap            = map<uint32_t, string>::map();
 } // FG_SERVER::FG_SERVER()
 //////////////////////////////////////////////////////////////////////
 
@@ -147,7 +149,7 @@ FG_SERVER::Init ()
     }
     m_DataSocket->setBlocking (false);
     m_DataSocket->setSockOpt (SO_REUSEADDR, true);
-    if (m_DataSocket->bind ("", m_ListenPort) != 0)
+    if (m_DataSocket->bind (m_BindAddress.c_str(), m_ListenPort) != 0)
     {
       SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
         << "failed to bind to port " << m_ListenPort);
@@ -193,6 +195,7 @@ FG_SERVER::Init ()
   SG_ALERT (SG_SYSTEMS, SG_ALERT, "# using protocol version v"
     << m_ProtoMajorVersion << "." << m_ProtoMinorVersion
     << " (LazyRelay enabled)");
+  SG_ALERT (SG_SYSTEMS, SG_ALERT,"# listening on " << m_BindAddress);
   SG_ALERT (SG_SYSTEMS, SG_ALERT,"# listening to port " << m_ListenPort);
   SG_ALERT (SG_SYSTEMS, SG_ALERT,"# telnet port " << m_TelnetPort);
   SG_ALERT (SG_SYSTEMS, SG_ALERT,"# using logfile " << m_LogFileName);
@@ -254,8 +257,8 @@ FG_SERVER::PrepareInit ()
   SG_ALERT (SG_SYSTEMS, SG_ALERT, "# caught SIGHUP, doing reinit!");
   m_RelayList.clear ();
   m_BlackList.clear ();
+  m_RelayMap.clear ();
   m_CrossfeedList.clear ();
-  SG_ALERT (SG_SYSTEMS, SG_ALERT, "# PID " << getpid() << " killing all children!");
   Myself.KillAllChildren ();
 } // FG_SERVER::PrepareInit ()
 //////////////////////////////////////////////////////////////////////
@@ -358,7 +361,15 @@ FG_SERVER::HandleTelnet ( netSocket* Telnet )
     }
     else
     {
-      Message += CurrentPlayer->Origin + ": ";
+      mT_RelayMapIt Relay = m_RelayMap.find(CurrentPlayer->Address.getIP());
+      if (Relay != m_RelayMap.end())
+      {
+        Message += Relay->second + ": ";
+      }
+      else
+      {
+        Message += CurrentPlayer->Origin + ": ";
+      }
     }
     if (CurrentPlayer->Error != "")
     {
@@ -472,8 +483,6 @@ FG_SERVER::AddClient ( netAddress& Sender, char* Msg, bool IsLocal )
   MsgId               = XDR_decode<uint32_t> (MsgHdr->MsgId);
   MsgLen              = XDR_decode<uint32_t> (MsgHdr->MsgLen);
   MsgMagic            = XDR_decode<uint32_t> (MsgHdr->Magic);
-  if (MsgId != POS_DATA_ID)
-    return;
   NewPlayer.Callsign  = MsgHdr->Callsign;
   NewPlayer.Passwd    = "test"; //MsgHdr->Passwd;
   NewPlayer.ModelName = "* unknown *";
@@ -567,6 +576,7 @@ FG_SERVER::AddRelay ( const string & Server, int Port )
     NewRelay.Timestamp = time(0);
     NewRelay.Active = false;
     m_RelayList.push_back (NewRelay);
+    m_RelayMap[NewRelay.Address.getIP()] = NewRelay.Name;
   }
 } // FG_SERVER::AddRelay()
 //////////////////////////////////////////////////////////////////////
@@ -908,6 +918,28 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
   Timestamp = time(0);
   MsgMagic  = XDR_decode<uint32_t> (MsgHdr->Magic);
   MsgId     = XDR_decode<uint32_t> (MsgHdr->MsgId);
+  //////////////////////////////////////////////////
+  //
+  //  First of all, send packet to all
+  //  crossfeed servers.
+  //
+  //////////////////////////////////////////////////
+  MsgHdr->Magic = XDR_encode<uint32_t> (RELAY_MAGIC);
+  mT_RelayListIt CurrentCrossfeed = m_CrossfeedList.begin();
+  while (CurrentCrossfeed != m_CrossfeedList.end())
+  {
+    if (CurrentCrossfeed->Address.getIP() != SenderAddress.getIP())
+    {
+      m_DataSocket->sendto(Msg, Bytes, 0, &CurrentCrossfeed->Address);
+    }
+    CurrentCrossfeed++;
+  }
+  MsgHdr->Magic = XDR_encode<uint32_t> (MsgMagic);  // restore the magic value
+  //////////////////////////////////////////////////
+  //
+  //  Now do the local processing
+  //
+  //////////////////////////////////////////////////
   PacketFromLocalClient = true;  // assume client to be local
   if (true == IsBlackListed (SenderAddress))
   {
@@ -1113,21 +1145,6 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
       }
       CurrentRelay++;
     }
-  }
-  //////////////////////////////////////////////////
-  //
-  //  Send the packet to the crossfed servers.
-  //
-  //////////////////////////////////////////////////
-  MsgHdr->Magic = XDR_encode<uint32_t> (RELAY_MAGIC);
-  mT_RelayListIt CurrentCrossfeed = m_CrossfeedList.begin();
-  while (CurrentCrossfeed != m_CrossfeedList.end())
-  {
-    if (CurrentCrossfeed->Address.getIP() != SenderAddress.getIP())
-    {
-      m_DataSocket->sendto(Msg, Bytes, 0, &CurrentCrossfeed->Address);
-    }
-    CurrentCrossfeed++;
   }
   SendingPlayer->PktsForwarded += PktsForwarded;
 } // FG_SERVER::HandlePacket ( char* sMsg[MAX_PACKET_SIZE] )
@@ -1341,6 +1358,17 @@ FG_SERVER::SetServerName ( const std::string &ServerName )
 } // FG_SERVER::SetLogfile ( const std::string &LogfileName )
 //////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+//
+//      set the address this server listens on
+//
+//////////////////////////////////////////////////////////////////////
+void
+FG_SERVER::SetBindAddress ( const std::string &BindAddress )
+{
+  m_BindAddress = BindAddress;
+} // FG_SERVER::SetLogfile ( const std::string &LogfileName )
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -1353,7 +1381,6 @@ FG_SERVER::Done ()
   if (m_IsParent)
   {
     SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Done() - exiting");
-    SG_ALERT (SG_SYSTEMS, SG_ALERT, "# PID " << getpid() << " killing all children!");
     Myself.KillAllChildren ();
   }
   if (m_LogFile)

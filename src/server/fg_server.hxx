@@ -109,6 +109,7 @@ public:
   void  SetLoglevel ( int Loglevel );
   void  SetLogfile ( const std::string &LogfileName );
   void  SetServerName ( const std::string &ServerName );
+  void  SetBindAddress ( const std::string &BindAddress );
   void  AddRelay ( const string & Server, int Port );
   void  AddCrossfeed ( const string & Server, int Port );
   int   AddTracker ( const string & Server, int Port, bool IsTracked );
@@ -180,8 +181,10 @@ private:
   typedef mT_RelayList::iterator            mT_RelayListIt;
   typedef std::list<mT_ChatMsg>             mT_MessageList;
   typedef std::list<mT_ChatMsg>::iterator   mT_MessageIt;
-  typedef std::map<uint32_t,bool>            mT_BlackList;
-  typedef std::map<uint32_t,bool>::iterator  mT_BlackListIt;
+  typedef std::map<uint32_t,bool>           mT_BlackList;
+  typedef std::map<uint32_t,bool>::iterator mT_BlackListIt;
+  typedef std::map<uint32_t,string>         mT_IP2RelayNames;
+  typedef std::map<uint32_t,string>::iterator mT_RelayMapIt;
   bool              m_Initialized;
   bool              m_ReinitData;
   bool              m_ReinitTelnet;
@@ -194,6 +197,7 @@ private:
   sgDebugPriority   m_Loglevel;
   ofstream          m_LogFile;
   string            m_LogFileName;
+  string            m_BindAddress;
   int               m_NumCurrentClients;
   int               m_NumMaxClients;
   int16_t           m_ProtoMinorVersion;
@@ -207,6 +211,7 @@ private:
   netSocket*        m_TelnetSocket;
   mT_PlayerList     m_PlayerList;
   mT_RelayList      m_RelayList;
+  mT_IP2RelayNames  m_RelayMap;
   mT_RelayList      m_CrossfeedList;
   mT_MessageList    m_MessageList;
   int               m_ipcid;

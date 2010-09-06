@@ -89,6 +89,11 @@ ProcessConfig ( const string& ConfigName )
   {
     Servant.SetServerName (Val);
   }
+  Val = Config.Get ("server.address");
+  if (Val != "")
+  {
+    Servant.SetBindAddress (Val);
+  }
   Val = Config.Get ("server.port");
   if (Val != "")
   {
