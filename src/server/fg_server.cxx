@@ -174,7 +174,7 @@ FG_SERVER::Init ()
     }
     m_TelnetSocket->setBlocking (false);
     m_TelnetSocket->setSockOpt (SO_REUSEADDR, true);
-    if (m_TelnetSocket->bind ("", m_TelnetPort) != 0)
+    if (m_TelnetSocket->bind (m_BindAddress.c_str(), m_TelnetPort) != 0)
     {
       SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
         << "failed to bind to port " << m_TelnetPort);
@@ -789,11 +789,42 @@ FG_SERVER::IsBlackListed ( netAddress &SenderAddress )
     ErrorMsg  = SenderAddress.getHost();
     ErrorMsg += " banned!";
     //AddBadClient (SenderAddress, ErrorMsg, true);
-    SG_LOG (SG_SYSTEMS, SG_ALERT, "BLACKLISTED: " << ErrorMsg);
+    //SG_LOG (SG_SYSTEMS, SG_ALERT, "BLACKLISTED: " << ErrorMsg);
     return (true);
   }
   return (false);
 } // FG_SERVER::IsBlackListed ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+//
+//      check if the sender is a known relay
+//
+//////////////////////////////////////////////////////////////////////
+bool
+FG_SERVER::IsKnownRelay ( netAddress &SenderAddress )
+{
+  bool            Found = false;
+  string          ErrorMsg;
+  mT_RelayListIt  CurrentRelay = m_RelayList.begin();
+  while (CurrentRelay != m_RelayList.end())
+  {
+    if (CurrentRelay->Address == SenderAddress)
+    {
+      Found = true;
+    }
+    CurrentRelay++;
+  }
+  if (! Found)
+  {
+    ErrorMsg  = SenderAddress.getHost();
+    ErrorMsg += " is not a valid relay!";
+    //AddBadClient (SenderAddress, ErrorMsg, true);
+    AddBlacklist (SenderAddress.getHost());
+    SG_LOG (SG_SYSTEMS, SG_ALERT, "UNKNOWN RELAY: " << ErrorMsg);
+  }
+  return (Found);
+} // FG_SERVER::IsKnownRelay ()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -974,6 +1005,8 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
   }
   if (MsgMagic == RELAY_MAGIC) // not a local client
   {
+    if (false == IsKnownRelay (SenderAddress))
+      return;
     PacketFromLocalClient = false;
     MsgHdr->Magic = XDR_encode<uint32_t> (MSG_MAGIC);
   }
@@ -1236,7 +1269,7 @@ FG_SERVER::Loop ()
       SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Loop() - Bytes <= 0!");
       continue;
     }
-    if (ListenSockets[0] != 0)
+    if (ListenSockets[0] > 0)
     { // something on the wire (clients)
       Bytes = m_DataSocket->recvfrom(Msg,MAX_PACKET_SIZE, 0, &SenderAddress);
       if (Bytes <= 0) 

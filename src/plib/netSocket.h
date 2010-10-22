@@ -70,6 +70,7 @@ public:
   static const char* getLocalHost () ;
 
   bool getBroadcast () const ;
+  bool operator == (const netAddress& Value) const;
 };
 
 

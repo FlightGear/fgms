@@ -227,6 +227,7 @@ private:
   void  AddBadClient  ( netAddress& Sender, string &ErrorMsg,
                         bool IsLocal );
   bool  IsBlackListed ( netAddress& SenderAddress );
+  bool  IsKnownRelay ( netAddress& SenderAddress );
   bool  PacketIsValid ( int Bytes, T_MsgHdr *MsgHdr,
                         netAddress &SenderAddress );
   void  HandleTelnet  ( netSocket* Telnet );

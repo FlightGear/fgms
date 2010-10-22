@@ -165,6 +165,13 @@ bool netAddress::getBroadcast () const
   return sin_addr == INADDR_BROADCAST;
 }
 
+bool netAddress::operator == (const netAddress& Value) const
+{
+  if ((this->sin_family == Value.sin_family)
+  &&  (this->sin_addr == Value.sin_addr))
+    return (true);
+  return (false);
+}
 
 netSocket::netSocket ()
 {
