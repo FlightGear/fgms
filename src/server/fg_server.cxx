@@ -208,6 +208,8 @@ FG_SERVER::Init ()
     SG_ALERT (SG_SYSTEMS, SG_ALERT, "# tracked to "
       << m_Tracker->GetTrackerServer ()
       << ":" << m_Tracker->GetTrackerPort ());
+    m_Tracker->InitTracker();
+    #if 0
     if (m_Tracker->InitTracker() == ERROR_CREATE_SOCKET)
     {
       /* This is in the child */
@@ -218,6 +220,7 @@ FG_SERVER::Init ()
       //msgctl (m_ipcid, IPC_RMID, NULL);
       exit (ERROR_CREATE_SOCKET);
     }
+    #endif
   }
   SG_ALERT (SG_SYSTEMS, SG_ALERT,
     "# I have " << m_RelayList.size() << " relays");

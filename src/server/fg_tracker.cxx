@@ -72,6 +72,8 @@ FG_TRACKER::InitTracker ()
       ChildsPID = fork ();
       if (ChildsPID == 0)
       {
+        Connect ();
+        /*
         m_TrackerSocket = TcpConnect (m_TrackerServer, m_TrackerPort);
         if (m_TrackerSocket < 0)
             return (2);
@@ -80,6 +82,7 @@ FG_TRACKER::InitTracker ()
         sleep (2);
         TrackerLoop ();
         exit (0);
+        */
       }
       Myself.AddChild (ChildsPID);
   }
@@ -118,15 +121,15 @@ FG_TRACKER::TrackerLoop ()
       // send message via tcp
       if (write (m_TrackerSocket,buf.mtext,strlen(buf.mtext)) < 0)
       {
-        SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: can't write to server...\n");
-        Reconnect ();
+        SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: can't write to server...");
+        Connect ();
       }
       sleep (1);
       // receive answer from server
       if ( read (m_TrackerSocket,res,MAXLINE) <= 0 )
       {
-        SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: can't read from server...\n");
-        Reconnect ();
+        SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: can't read from server...");
+        Connect ();
         sent = false;
       }
       else
@@ -155,7 +158,7 @@ FG_TRACKER::TrackerLoop ()
 //
 //////////////////////////////////////////////////////////////////////
 int
-FG_TRACKER::Reconnect ()
+FG_TRACKER::Connect ()
 {
   bool connected = false;
 
@@ -163,18 +166,23 @@ FG_TRACKER::Reconnect ()
     close (m_TrackerSocket);
   while (connected == false)
   {
-    SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::Reconnect: Reconnecting...\n");
     m_TrackerSocket = TcpConnect (m_TrackerServer, m_TrackerPort);
     if (m_TrackerSocket >= 0)
+    {
+      SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::Connect: success");
       connected = true;
+    }
     else
-      sleep (2);
+    {
+      SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::Connect: failed");
+      sleep (600);  // sleep 10 minutes and try again
+    }
   }
   sleep (5);
   write(m_TrackerSocket,"REPLY",sizeof("REPLY"));
   sleep (2);
   return (0);
-} // Reconnect ()
+} // Connect ()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
