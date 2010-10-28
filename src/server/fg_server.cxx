@@ -241,8 +241,6 @@ FG_SERVER::Init ()
   }
   SG_ALERT (SG_SYSTEMS, SG_ALERT,
     "# I have " << m_BlackList.size() << " blacklisted IPs");
-  SG_ALERT (SG_SYSTEMS, SG_ALERT,
-    "# My PID is " << getpid());
   m_Listening = true;
   return (SUCCESS);
 } // FG_SERVER::Init()
@@ -1441,36 +1439,34 @@ FG_SERVER::Done ()
   {
     SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Done() - exiting");
     Myself.KillAllChildren ();
-  }
-  if (m_LogFile)
-  {
     m_LogFile.close();
+    if (m_Listening == false)
+    {
+      return;
+    }
+
+    if (m_ReinitTelnet && m_TelnetSocket)
+    {
+      m_TelnetSocket->close();
+      delete m_TelnetSocket;
+      m_TelnetSocket = 0;
+    }
+    if (m_ReinitData && m_DataSocket)
+    {
+      m_DataSocket->close();
+      delete m_DataSocket;
+      m_DataSocket = 0;
+    }
+    if (m_IsTracked)
+    {
+      delete m_Tracker;
+      // Remove msg queue
+      // msgctl(m_ipcid,IPC_RMID,NULL);
+    }
+    m_RelayList.clear ();
+    m_BlackList.clear ();
+    m_Listening = false;
   }
-  if (m_Listening == false)
-  {
-    return;
-  }
-  if (m_ReinitTelnet && m_TelnetSocket)
-  {
-    m_TelnetSocket->close();
-    delete m_TelnetSocket;
-    m_TelnetSocket = 0;
-  }
-  if (m_ReinitData && m_DataSocket)
-  {
-    m_DataSocket->close();
-    delete m_DataSocket;
-    m_DataSocket = 0;
-  }
-  if (m_IsTracked)
-  {
-    delete m_Tracker;
-    // Remove msg queue
-    // msgctl(m_ipcid,IPC_RMID,NULL);
-  }
-  m_RelayList.clear ();
-  m_BlackList.clear ();
-  m_Listening = false;
 } // FG_SERVER::Done()
 //////////////////////////////////////////////////////////////////////
 
