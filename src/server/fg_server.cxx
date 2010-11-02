@@ -166,27 +166,31 @@ FG_SERVER::Init ()
       delete m_TelnetSocket;
       m_TelnetSocket = 0;
     }
-    m_TelnetSocket = new netSocket;
-    if (m_TelnetSocket->open (true) == 0)   // TCP-Socket
+    m_TelnetSocket = 0;
+    if (m_TelnetPort != 0)
     {
-      SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
-        << "failed to create telnet socket");
-      return (ERROR_CREATE_SOCKET);
-    }
-    m_TelnetSocket->setBlocking (false);
-    m_TelnetSocket->setSockOpt (SO_REUSEADDR, true);
-    if (m_TelnetSocket->bind (m_BindAddress.c_str(), m_TelnetPort) != 0)
-    {
-      SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
-        << "failed to bind to port " << m_TelnetPort);
-      SG_ALERT (SG_SYSTEMS, SG_ALERT, "already in use?");
-      return (ERROR_COULDNT_BIND);
-    }
-    if (m_TelnetSocket->listen (MAX_TELNETS) != 0)
-    {
-      SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
-        << "failed to listen to telnet port");
-      return (ERROR_COULDNT_LISTEN);
+        m_TelnetSocket = new netSocket;
+        if (m_TelnetSocket->open (true) == 0)   // TCP-Socket
+        {
+          SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
+            << "failed to create telnet socket");
+          return (ERROR_CREATE_SOCKET);
+        }
+        m_TelnetSocket->setBlocking (false);
+        m_TelnetSocket->setSockOpt (SO_REUSEADDR, true);
+        if (m_TelnetSocket->bind (m_BindAddress.c_str(), m_TelnetPort) != 0)
+        {
+          SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
+            << "failed to bind to port " << m_TelnetPort);
+          SG_ALERT (SG_SYSTEMS, SG_ALERT, "already in use?");
+          return (ERROR_COULDNT_BIND);
+        }
+        if (m_TelnetSocket->listen (MAX_TELNETS) != 0)
+        {
+          SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
+            << "failed to listen to telnet port");
+          return (ERROR_COULDNT_LISTEN);
+        }
     }
     m_ReinitTelnet = false;
   }
@@ -231,6 +235,7 @@ FG_SERVER::Init ()
   SG_ALERT (SG_SYSTEMS, SG_ALERT,
     "# I have " << m_BlackList.size() << " blacklisted IPs");
   m_Listening = true;
+  m_MaxTracker = 3;
   return (SUCCESS);
 } // FG_SERVER::Init()
 //////////////////////////////////////////////////////////////////////
