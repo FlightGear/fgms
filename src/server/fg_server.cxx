@@ -83,6 +83,7 @@ FG_SERVER::FG_SERVER ()
   //wp                  = fopen("wp.txt", "w");
   m_BlackList           = map<uint32_t, bool>::map();
   m_RelayMap            = map<uint32_t, string>::map();
+  m_MaxTracker          = 0;
 } // FG_SERVER::FG_SERVER()
 //////////////////////////////////////////////////////////////////////
 
@@ -208,19 +209,7 @@ FG_SERVER::Init ()
     SG_ALERT (SG_SYSTEMS, SG_ALERT, "# tracked to "
       << m_Tracker->GetTrackerServer ()
       << ":" << m_Tracker->GetTrackerPort ());
-    m_Tracker->InitTracker();
-    #if 0
-    if (m_Tracker->InitTracker() == ERROR_CREATE_SOCKET)
-    {
-      /* This is in the child */
-      SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::InitTracker() - "
-        << "failed to create TCP socket");
-      m_IsTracked = false;
-      // Remove msg queue
-      //msgctl (m_ipcid, IPC_RMID, NULL);
-      exit (ERROR_CREATE_SOCKET);
-    }
-    #endif
+    m_Tracker->InitTracker(m_MaxTracker);
   }
   SG_ALERT (SG_SYSTEMS, SG_ALERT,
     "# I have " << m_RelayList.size() << " relays");
@@ -637,6 +626,20 @@ FG_SERVER::AddTracker ( const string & Server, int Port, bool IsTracked )
   return (SUCCESS);
 } // FG_SERVER::AddTracker()
 //////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+//
+//      set the maximum number of children for the tracker
+//
+//////////////////////////////////////////////////////////////////////
+void
+FG_SERVER::MaxTracker ( const int MaxTracker )
+{
+  m_MaxTracker = MaxTracker;
+} // FG_SERVER::AddTracker()
+//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -1561,8 +1564,11 @@ FG_SERVER::UpdateTracker
   CurrentPlayer = m_PlayerList.begin();
   while (CurrentPlayer != m_PlayerList.end())
   {
+    #if 0
     if ((CurrentPlayer->IsLocal)
     ||   (true == m_IamHUB))
+    #endif
+    if (CurrentPlayer->IsLocal)
     {
       sgCartToGeod (CurrentPlayer->LastPos, PlayerPosGeod);
       Message =  "POSITION ";

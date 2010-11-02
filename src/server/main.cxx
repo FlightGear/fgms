@@ -184,6 +184,15 @@ ProcessConfig ( const string& ConfigName )
       exit (1);
     }
     Servant.AddTracker (Server, Port, tracked);
+    Val = Config.Get ("server.tracking_maxchilds");
+    Port = StrToNum<int> (Val.c_str (), E); // misuse of Port
+    if (E)
+    {
+      SG_ALERT (SG_SYSTEMS, SG_ALERT,
+        "invalid value for tracking_maxchilds: '" << Val << "'");
+      exit (1);
+    }
+    Servant.MaxTracker (Port);
   }
   Val = Config.Get ("server.is_hub");
   if (Val != "")
@@ -498,6 +507,7 @@ main ( int argc, char* argv[] )
   }
   if (RunAsDaemon)
   {
+    SG_ALERT (SG_SYSTEMS, SG_ALERT, "Main server started!");
     Myself.Daemonize ();
   }
   I = Servant.Loop();

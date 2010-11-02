@@ -40,7 +40,6 @@ FG_TRACKER::FG_TRACKER (int port, string server, int id)
 {
   ipcid         = id;
   m_TrackerPort = port;
-  m_MaxChildren = 2; // good for 32 users/server
   strcpy (m_TrackerServer, server.c_str());
 } // FG_TRACKER()
 //////////////////////////////////////////////////////////////////////
@@ -62,29 +61,25 @@ FG_TRACKER::~FG_TRACKER ()
 //
 //////////////////////////////////////////////////////////////////////
 int
-FG_TRACKER::InitTracker ()
+FG_TRACKER::InitTracker ( const int MaxChildren )
 {
   int i;
   pid_t ChildsPID;
 
-  for ( i=0 ; i<m_MaxChildren ; i++)
+  for ( i=0 ; i<MaxChildren ; i++)
   {
       ChildsPID = fork ();
       if (ChildsPID == 0)
       {
         Connect ();
-        /*
-        m_TrackerSocket = TcpConnect (m_TrackerServer, m_TrackerPort);
-        if (m_TrackerSocket < 0)
-            return (2);
-        sleep (5);
-        write(m_TrackerSocket,"REPLY",sizeof("REPLY"));
-        sleep (2);
         TrackerLoop ();
         exit (0);
-        */
       }
-      Myself.AddChild (ChildsPID);
+      if (ChildsPID > 0)
+      {
+          Myself.AddChild (ChildsPID);
+          SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER PID:" << ChildsPID);
+      }
   }
   return (0);
 } // InitTracker (int port, string server, int id, int pid)

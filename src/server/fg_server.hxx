@@ -112,6 +112,7 @@ public:
   void  AddRelay ( const string & Server, int Port );
   void  AddCrossfeed ( const string & Server, int Port );
   int   AddTracker ( const string & Server, int Port, bool IsTracked );
+  void  MaxTracker ( const int MaxTracker );
   void  AddBlacklist  ( const string& FourDottedIP );
   void  CloseTracker ();
 
@@ -191,6 +192,7 @@ private:
   int               m_ListenPort;
   int               m_TelnetPort;
   int               m_TrackingPort;
+  int               m_MaxTracker;
   int               m_PlayerExpires;
   int               m_PlayerIsOutOfReach;
   sgDebugPriority   m_Loglevel;

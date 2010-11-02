@@ -52,7 +52,7 @@ public:
   //  public methods
   //
   //////////////////////////////////////////////////
-  int       InitTracker ();
+  int       InitTracker ( const int MaxChildren );
   int       TcpConnect (char *server_address, int server_port);
   int       TrackerLoop ();
   string    GetTrackerServer () { return m_TrackerServer; };
@@ -83,6 +83,5 @@ private:
   int   m_TrackerPort;
   char  m_TrackerServer[128];
   int   m_TrackerSocket;
-  int   m_MaxChildren;
 };
 #endif
