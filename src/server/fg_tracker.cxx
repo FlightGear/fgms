@@ -140,7 +140,8 @@ FG_TRACKER::TrackerLoop ()
     {
       // an error with the queue has occured
       // avoid an infinite loop
-      return (2);
+      // return (2);
+      sent = true;
     }
   }
   return (0);
