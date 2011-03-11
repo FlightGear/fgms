@@ -644,8 +644,6 @@ FG_SERVER::MaxTracker ( const int MaxTracker )
 } // FG_SERVER::AddTracker()
 //////////////////////////////////////////////////////////////////////
 
-
-
 //////////////////////////////////////////////////////////////////////
 //
 //      Add an IP to the blacklist
@@ -1087,8 +1085,8 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
     }
     else if (CurrentPlayer->Callsign == MsgHdr->Callsign)
     {
-      // Same callsign, but different IP. 
-      // Quietly ignore this packet. 
+      // Same callsign, but different IP.
+      // Quietly ignore this packet.
       return;
     } 
     //////////////////////////////////////////////////
@@ -1098,6 +1096,7 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
     if ((Timestamp - CurrentPlayer->Timestamp) > m_PlayerExpires)
     {
       DropClient (CurrentPlayer);
+      CurrentPlayer++;
       continue;
     }
     //////////////////////////////////////////////////
@@ -1164,7 +1163,7 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
     // The sending player was not found in the player list.
     // FIXME: This happens although it seems like it should be impossible.
     SG_LOG (SG_SYSTEMS, SG_ALERT,
-      "fgms: Sending player not found in m_PlayerList in HandlePacket()!");
+      "fgms: Sending player (" << MsgHdr->Callsign << ") not found in m_PlayerList in HandlePacket()!");
     return;
   }
   bool UpdateInactive = Timestamp -
