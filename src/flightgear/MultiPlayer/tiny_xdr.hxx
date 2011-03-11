@@ -1,13 +1,13 @@
 //////////////////////////////////////////////////////////////////////
 //
-//	Tiny XDR implementation for flightgear
-//	written by Oliver Schroeder
-//	released to the puiblic domain
+//      Tiny XDR implementation for flightgear
+//      written by Oliver Schroeder
+//      released to the puiblic domain
 //
-//	This implementation is not complete, but implements
-//	everything we need.
+//      This implementation is not complete, but implements
+//      everything we need.
 //
-//	For further reading on XDR read RFC 1832.
+//      For further reading on XDR read RFC 1832.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -15,7 +15,7 @@
 #define TINY_XDR_HEADER
 
 #ifdef HAVE_CONFIG_H
-#	include <config.h>
+#       include <config.h>
 #endif
 #include <simgear/misc/stdint.hxx>
 #include <simgear/debug/logstream.hxx>
@@ -40,13 +40,13 @@ typedef uint64_t    xdr_data2_t;     /* 8 Bytes */
 template<typename TYPE>
 xdr_data_t XDR_encode ( TYPE Val )
 {
-	union
-	{
-		xdr_data_t	encoded;
-		TYPE		raw;
-	} tmp;
+        union
+        {
+                xdr_data_t      encoded;
+                TYPE            raw;
+        } tmp;
 
-	tmp.raw = Val;
+        tmp.raw = Val;
         tmp.encoded = SWAP32(tmp.encoded);
         if (sizeof (TYPE) < 4)
         {
@@ -58,7 +58,7 @@ xdr_data_t XDR_encode ( TYPE Val )
                 SG_LOG (SG_IO, SG_DEBUG, "XDR_encode ("
                   << (int32_t) Val << ") -> " << tmp.encoded);
         }
-	return (tmp.encoded);
+        return (tmp.encoded);
 }
 
 /**
@@ -67,13 +67,13 @@ xdr_data_t XDR_encode ( TYPE Val )
 template<typename TYPE>
 TYPE XDR_decode ( xdr_data_t Val )
 {
-	union
-	{
-		xdr_data_t	encoded;
-		TYPE		raw;
-	} tmp;
+        union
+        {
+                xdr_data_t      encoded;
+                TYPE            raw;
+        } tmp;
 
-	tmp.encoded = SWAP32(Val);
+        tmp.encoded = SWAP32(Val);
         if (sizeof (TYPE) < 4)
         {
                 SG_LOG (SG_IO, SG_DEBUG, "XDR_decode (" << (int32_t) Val
@@ -84,7 +84,7 @@ TYPE XDR_decode ( xdr_data_t Val )
                 SG_LOG (SG_IO, SG_DEBUG, "XDR_decode (" << (int32_t) Val
                   << ") -> " << tmp.raw);
         }
-	return (tmp.raw);
+        return (tmp.raw);
 }
 
 /**
@@ -93,17 +93,17 @@ TYPE XDR_decode ( xdr_data_t Val )
 template<typename TYPE>
 xdr_data2_t XDR_encode64 ( TYPE Val )
 {
-	union
-	{
-		xdr_data2_t	encoded;
-		TYPE		raw;
-	} tmp;
+        union
+        {
+                xdr_data2_t     encoded;
+                TYPE            raw;
+        } tmp;
 
-	tmp.raw = Val;
+        tmp.raw = Val;
         tmp.encoded = SWAP64(tmp.encoded);
         SG_LOG (SG_IO, SG_DEBUG, "XDR_encode64 (" << (int32_t) Val << ") -> "
           << tmp.encoded);
-	return (tmp.encoded);
+        return (tmp.encoded);
 }
 
 /**
@@ -112,16 +112,16 @@ xdr_data2_t XDR_encode64 ( TYPE Val )
 template<typename TYPE>
 TYPE XDR_decode64 ( xdr_data2_t Val )
 {
-	union
-	{
-		xdr_data2_t	encoded;
-		TYPE		raw;
-	} tmp;
+        union
+        {
+                xdr_data2_t     encoded;
+                TYPE            raw;
+        } tmp;
 
-	tmp.encoded = SWAP64 (Val);
+        tmp.encoded = SWAP64 (Val);
         SG_LOG (SG_IO, SG_DEBUG, "XDR_decode64 (" << (int32_t) Val << ") -> "
           << tmp.raw);
-	return (tmp.raw);
+        return (tmp.raw);
 }
 
 

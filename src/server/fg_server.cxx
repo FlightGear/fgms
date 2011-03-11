@@ -60,6 +60,13 @@ cDaemon Myself;
 //////////////////////////////////////////////////////////////////////
 FG_SERVER::FG_SERVER ()
 {
+  typedef union
+  {
+    uint32_t    complete;
+    uint16_t    High;
+    uint16_t    Low;
+  } converter;
+  converter*    tmp;
   m_Initialized         = true; // Init() will do it
   m_ReinitData          = true; // init the data port
   m_ReinitTelnet        = true; // init the telnet port
@@ -76,9 +83,14 @@ FG_SERVER::FG_SERVER ()
   m_MaxClientID         = 0;
   m_ServerName          = "* Server *";
   m_BindAddress         = "";
+  tmp                   = (converter*) (& PROTO_VER);
+  m_ProtoMinorVersion   = tmp->High;
+  m_ProtoMajorVersion   = tmp->Low;
+  /*
   int16_t *ver          = (int16_t*) & PROTO_VER;
   m_ProtoMinorVersion   = ver[HIGH];
   m_ProtoMajorVersion   = ver[LOW];
+  */
   m_LogFileName         = "fg_server.log";
   //wp                  = fopen("wp.txt", "w");
   m_BlackList           = map<uint32_t, bool>::map();
@@ -965,7 +977,7 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
   uint32_t        MsgId;
   uint32_t        MsgMagic;
   time_t          Timestamp;
-  bool            PlayerInList;
+  bool            PlayerInList = false;
   bool            PacketFromLocalClient;
   Point3D         SenderPosition;
   Point3D         SenderOrientation;
