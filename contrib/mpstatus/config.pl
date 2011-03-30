@@ -6,9 +6,11 @@ use Socket;
 my $request = new CGI;
 my @names = $request->param;
 my $server = $request->param("server");
+my $server_abrev = "";
 if ($server eq "")
 {
     $server = "mpserver01.flightgear.org";
+    $server_abrev = "mpserver01";
 }
 
 # RELEASED UNDER GPLv3
@@ -53,58 +55,72 @@ sub nslookup ($)
 my $fgms_path = "/home/oliver/fgms";
 my $fgms_conf = "$fgms_path/fgms.conf";
 my $fgms_log  = "$fgms_path/fgms.log";
+my @server_short;
 my @server_names;
 my @server_ports;
 my @server_locations;
 
+push (@server_short, "mpserver01");
 push (@server_names, "mpserver01.flightgear.org");
 push (@server_ports, "5001");
 push (@server_locations, "Frankfurt/Germany");
 
+push (@server_short, "mpserver02");
 push (@server_names, "mpserver02.flightgear.org");
 push (@server_ports, "5001");
 push (@server_locations, "Kansas/USA");
 
+push (@server_short, "mpserver03");
 push (@server_names, "mpserver03.flightgear.org");
 push (@server_ports, "5001");
 push (@server_locations, "Germany");
 
+push (@server_short, "mpserver04");
 push (@server_names, "mpserver04.flightgear.org");
 push (@server_ports, "5001");
 push (@server_locations, "United Kingdom");
 
+push (@server_short, "mpserver05");
 push (@server_names, "mpserver05.flightgear.org");
 push (@server_ports, "5001");
 push (@server_locations, "Chicago/USA");
 
+push (@server_short, "mpserver06");
 push (@server_names, "mpserver06.flightgear.org");
 push (@server_ports, "5001");
 push (@server_locations, "Sweden");
 
+push (@server_short, "mpserver07");
 push (@server_names, "mpserver07.flightgear.org");
 push (@server_ports, "5001");
 push (@server_locations, "Wisconsin, USA");
 
+push (@server_short, "mpserver08");
 push (@server_names, "mpserver08.flightgear.org");
 push (@server_ports, "5001");
 push (@server_locations, "Germany");
 
+push (@server_short, "mpserver09");
 push (@server_names, "mpserver09.flightgear.org");
 push (@server_ports, "5001");
 push (@server_locations, "Germany");
 
+push (@server_short, "mpserver10");
 push (@server_names, "mpserver10.flightgear.org");
 push (@server_ports, "5001");
 push (@server_locations, "Montpellier, France");
 
+push (@server_short, "mpserver11");
 push (@server_names, "mpserver11.flightgear.org");
 push (@server_ports, "5001");
 push (@server_locations, "Vilnius, Lithuania");
 
+push (@server_short, "mpserver12");
 push (@server_names, "mpserver12.flightgear.org");
 push (@server_ports, "5001");
 push (@server_locations, "Amsterdam, Netherlands");
 
+push (@server_short, "mpserver13");
 push (@server_names, "mpserver13.flightgear.org");
 push (@server_ports, "5001");
 push (@server_locations, "Grenoble, France");
@@ -159,6 +175,10 @@ print "</font><br><p>\n";
 print "<table>\n";
 for ($i=0; $i < @server_names; $i++)
 {
+    if ($server_names[$i] eq $server)
+    {
+        $server_abrev = $server_short[$i];
+    }
     if ($server_status[$i] < 0)
     {
         $users  = $server_users[$i];
@@ -240,7 +260,7 @@ foreach $getpilotsb(@getpilotsa)
     {
         if ($getpilotsb =~ m/$server_ip[$i]/)
         {
-            $mpserver = $server_names[$i];
+            $mpserver = $server_short[$i];
         }
     }
     if ($mpserver eq "unknown")
@@ -253,7 +273,7 @@ foreach $getpilotsb(@getpilotsa)
             }
             else
             {
-                $mpserver = $server;
+                $mpserver = $server_abrev;
             }
         }
         else

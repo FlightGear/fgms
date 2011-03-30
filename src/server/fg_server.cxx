@@ -93,8 +93,8 @@ FG_SERVER::FG_SERVER ()
   */
   m_LogFileName         = "fg_server.log";
   //wp                  = fopen("wp.txt", "w");
-  m_BlackList           = map<uint32_t, bool>::map();
-  m_RelayMap            = map<uint32_t, string>::map();
+  m_BlackList           = map<uint32_t, bool>();
+  m_RelayMap            = map<uint32_t, string>();
   m_MaxTracker          = 0;
 } // FG_SERVER::FG_SERVER()
 //////////////////////////////////////////////////////////////////////
@@ -966,6 +966,46 @@ FG_SERVER::DeleteMessageQueue ()
 
 //////////////////////////////////////////////////////////////////////
 //
+//      look if we know the sending client
+//      return:
+//       0: Sender is unknown
+//       1: Sender is known
+//       2: Sender is known, but has a different IP
+//
+//////////////////////////////////////////////////////////////////////
+int
+FG_SERVER::SenderIsKnown
+(
+    const string& SenderCallsign,
+    const netAddress &SenderAddress,
+    const bool PacketFromLocalClient
+)
+{
+  mT_PlayerListIt CurrentPlayer;
+  for (CurrentPlayer = m_PlayerList.begin();
+       CurrentPlayer != m_PlayerList.end();
+       CurrentPlayer++)
+  {
+    if ((CurrentPlayer->Callsign == SenderCallsign)
+    &&  (CurrentPlayer->Address.getIP() == SenderAddress.getIP()))
+    {
+      // Sender is known
+      return (1);
+    }
+    else if (CurrentPlayer->Callsign == SenderCallsign)
+    {
+      // Same callsign, but different IP.
+      // Quietly ignore this packet.
+      return (2);
+    }
+  }
+  // Sender is unkown
+  return (0);
+} // FG_SERVER::SenderIsKnown ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+//
 //      handle client connections
 //
 //////////////////////////////////////////////////////////////////////
@@ -977,8 +1017,8 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
   uint32_t        MsgId;
   uint32_t        MsgMagic;
   time_t          Timestamp;
-  bool            PlayerInList = false;
   bool            PacketFromLocalClient;
+  int             ClientInList;
   Point3D         SenderPosition;
   Point3D         SenderOrientation;
   Point3D         PlayerPosGeod;
@@ -1046,6 +1086,26 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
       XDR_decode<float> (PosMsg->orientation[Y]),
       XDR_decode<float> (PosMsg->orientation[Z]));
   }
+  //////////////////////////////////////////////////
+  //
+  //    Add Client to list if its not known
+  //
+  //////////////////////////////////////////////////
+  ClientInList = SenderIsKnown (
+    MsgHdr->Callsign, SenderAddress, PacketFromLocalClient);
+  if (ClientInList == 0)
+  { // unknown, add to the list
+    if (MsgId != POS_DATA_ID)
+    {
+      // ignore clients until we have a valid position
+      return;
+    }
+    AddClient (SenderAddress, Msg, PacketFromLocalClient);
+  }
+  else if (ClientInList == 2)
+  { // known, but different IP => ignore
+    return;
+  }
   //////////////////////////////////////////
   //
   //      send the packet to all clients.
@@ -1078,7 +1138,6 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
     if ((CurrentPlayer->Callsign == MsgHdr->Callsign)
     && (CurrentPlayer->Address.getIP() == SenderAddress.getIP()))
     {
-      PlayerInList = true;
       CurrentPlayer->Timestamp = Timestamp;
       if (MsgId == POS_DATA_ID)
       {
@@ -1095,12 +1154,6 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
       CurrentPlayer++;
       continue; // don't send packet back to sender
     }
-    else if (CurrentPlayer->Callsign == MsgHdr->Callsign)
-    {
-      // Same callsign, but different IP.
-      // Quietly ignore this packet.
-      return;
-    } 
     //////////////////////////////////////////////////
     //        Drop CurrentPlayer if last sign of
     //        life is older then TTL
@@ -1147,18 +1200,6 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
     }
     CurrentPlayer++;
   }
-  if (false == PlayerInList)
-  {
-    if (MsgId != POS_DATA_ID)
-    {
-      // ignore clients until we have a valid position
-      return;
-    }
-    AddClient (SenderAddress, Msg, PacketFromLocalClient);
-    CurrentPlayer = m_PlayerList.end();
-    CurrentPlayer--;
-    SendingPlayer = CurrentPlayer;
-  }
   DeleteMessageQueue ();
   //////////////////////////////////////////////////
   //
@@ -1170,14 +1211,6 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
   //        a Relay
   //
   //////////////////////////////////////////////////
-  if (SendingPlayer == m_PlayerList.end())
-  {
-    // The sending player was not found in the player list.
-    // FIXME: This happens although it seems like it should be impossible.
-    SG_LOG (SG_SYSTEMS, SG_ALERT,
-      "fgms: Sending player (" << MsgHdr->Callsign << ") not found in m_PlayerList in HandlePacket()!");
-    return;
-  }
   bool UpdateInactive = Timestamp -
     SendingPlayer->LastRelayedToInactive > UPDATE_INACTIVE_PERIOD;
   if (true == UpdateInactive)
@@ -1202,7 +1235,7 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
       CurrentRelay++;
     }
   }
-  else 
+  else
   {
     // Renew timestamp of sending relay.
     mT_RelayListIt CurrentRelay = m_RelayList.begin();

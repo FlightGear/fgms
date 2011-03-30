@@ -242,6 +242,8 @@ private:
   void  CreateChatMessage ( int ID, string Msg );
   void  SendChatMessages ( mT_PlayerListIt& CurrentPlayer );
   void  DeleteMessageQueue ();
+  int   SenderIsKnown ( const string& SenderCallsign,
+    const netAddress &SenderAddress, const bool PacketFromLocalClient );
   bool  IsInRange ( mT_Relay& Relay,  mT_Player& SendingPlayer );
 }; // FG_SERVER
 
