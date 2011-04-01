@@ -47,7 +47,7 @@ dnl #####
 dnl ##################################################
 CURRENT="0"
 REVISION="10"
-AGE="7"
+AGE="8"
 AC_SUBST(CURRENT)
 AC_SUBST(REVISION)
 AC_SUBST(AGE)
@@ -198,7 +198,7 @@ if test "x$WITH_DEBUG" = "xyes"; then
         CXXFLAGS="$CXXFLAGS -g -DENABLE_DEBUG"
 fi
 if test "x$WITH_OPTIMIZATION" != "xno"; then
-	CXXFLAGS="$CXXFLAGS -O$WITH_OPTIMIZATION"
+	CXXFLAGS="$CXXFLAGS -O$WITH_OPTIMIZATION -fno-strict-aliasing"
 fi
 case "$host" in
 mips-sgi-irix*)
