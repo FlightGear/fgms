@@ -56,3 +56,9 @@ src/plib/*.o
 src/plib/*.a
 src/plib/.deps
 
+msvc/lib
+msvc/fgms.ncb
+msvc/bin
+msvc/Debug
+msvc/Release
+
