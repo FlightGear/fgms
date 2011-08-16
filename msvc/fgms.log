@@ -1,0 +1,125 @@
+13.08.2011 19:36:10 # This is devel_test
+13.08.2011 19:36:10 # FlightGear Multiplayer Server v0.9.12-WIN32 started
+13.08.2011 19:36:10 # using protocol version v1.1 (LazyRelay enabled)
+13.08.2011 19:36:10 # listening on 127.0.0.1
+13.08.2011 19:36:10 # listening to port 5000
+13.08.2011 19:36:10 # telnet port 5001
+13.08.2011 19:36:10 # using logfile fgms.log
+13.08.2011 19:36:10 # I have 0 relays
+13.08.2011 19:36:10 # I have 0 crossfeeds
+13.08.2011 19:36:10 # I have 2 blacklisted IPs
+13.08.2011 19:36:10 Entering infinite loop. Select timeout 10 secs.
+13.08.2011 19:36:10 ESC key to EXIT (after select timeout).
+13.08.2011 19:36:22 New LOCAL Client: TESTMSG 127.0.0.1:1934 (Aircraft/c172p/Models/c172p.xml) current clients: 1 max: 1
+13.08.2011 19:37:05 TTL exeeded, dropping pilot TESTMSG@LOCAL  after 43 seconds.  Usage #packets in: 5 forwarded: 0 out: 0. Current clients: 0 max: 1
+13.08.2011 19:52:15 FG_SERVER::Done() - exiting
+13.08.2011 19:52:19 # This is devel_test
+13.08.2011 19:52:19 # FlightGear Multiplayer Server v0.9.12-WIN32 started
+13.08.2011 19:52:19 # using protocol version v1.1 (LazyRelay enabled)
+13.08.2011 19:52:19 # listening on 127.0.0.1
+13.08.2011 19:52:19 # listening to port 5000
+13.08.2011 19:52:19 # telnet port 5001
+13.08.2011 19:52:19 # using logfile fgms.log
+13.08.2011 19:52:19 # I have 0 relays
+13.08.2011 19:52:19 # I have 0 crossfeeds
+13.08.2011 19:52:19 # I have 2 blacklisted IPs
+13.08.2011 19:52:19 Entering infinite loop. Select timeout 10 secs.
+13.08.2011 19:52:19 ESC key to EXIT (after select timeout).
+13.08.2011 19:55:24 TelnetSend: - Sent 2 messages, handle 1916, on thread
+13.08.2011 20:19:24 FG_SERVER::Done() - exiting
+14.08.2011 12:23:45 # This is devel_test
+14.08.2011 12:23:45 # FlightGear Multiplayer Server v0.9.12-WIN32 started
+14.08.2011 12:23:45 # using protocol version v1.1 (LazyRelay enabled)
+14.08.2011 12:23:45 # listening on 127.0.0.1
+14.08.2011 12:23:45 # listening to port 5000
+14.08.2011 12:23:45 # telnet port 5001
+14.08.2011 12:23:45 # using logfile fgms.log
+14.08.2011 12:23:45 # I have 0 relays
+14.08.2011 12:23:45 # I have 0 crossfeeds
+14.08.2011 12:23:45 # I have 2 blacklisted IPs
+14.08.2011 12:23:45 Entering infinite loop. Select timeout 10 secs.
+14.08.2011 12:23:45 ESC key to EXIT (after select timeout).
+14.08.2011 12:24:15 FG_SERVER::Done() - exiting
+14.08.2011 12:24:32 # This is devel_test
+14.08.2011 12:24:32 # FlightGear Multiplayer Server v0.9.12-WIN32 started
+14.08.2011 12:24:32 # using protocol version v1.1 (LazyRelay enabled)
+14.08.2011 12:24:32 # listening on 127.0.0.1
+14.08.2011 12:24:32 # listening to port 5000
+14.08.2011 12:24:32 # telnet port 5001
+14.08.2011 12:24:32 # using logfile fgms.log
+14.08.2011 12:24:32 # I have 0 relays
+14.08.2011 12:24:32 # I have 0 crossfeeds
+14.08.2011 12:24:32 # I have 2 blacklisted IPs
+14.08.2011 12:24:32 Entering infinite loop. Select timeout 10 secs.
+14.08.2011 12:24:32 ESC key to EXIT (after select timeout).
+14.08.2011 12:25:12 # caught SIGHUP, doing reinit!
+14.08.2011 12:25:12 processing fgms.conf
+14.08.2011 12:25:12 Adding to blacklist: 123.123.123.123
+14.08.2011 12:25:12 Adding to blacklist: 12.12.12.12
+14.08.2011 12:25:12 # This is devel_test
+14.08.2011 12:25:12 # FlightGear Multiplayer Server v0.9.12-WIN32 started
+14.08.2011 12:25:12 # using protocol version v1.1 (LazyRelay enabled)
+14.08.2011 12:25:12 # listening on 127.0.0.1
+14.08.2011 12:25:12 # listening to port 5000
+14.08.2011 12:25:12 # telnet port 5001
+14.08.2011 12:25:12 # using logfile fgms.log
+14.08.2011 12:25:12 # I have 0 relays
+14.08.2011 12:25:12 # I have 0 crossfeeds
+14.08.2011 12:25:12 # I have 2 blacklisted IPs
+14.08.2011 12:40:32 FG_SERVER::Done() - exiting
+14.08.2011 12:40:58 # This is devel_test
+14.08.2011 12:40:58 # FlightGear Multiplayer Server v0.9.12-WIN32 started
+14.08.2011 12:40:58 # using protocol version v1.1 (LazyRelay enabled)
+14.08.2011 12:40:58 # listening on 127.0.0.1
+14.08.2011 12:40:58 # listening to port 5000
+14.08.2011 12:40:58 # telnet port 5001
+14.08.2011 12:40:58 # using logfile fgms.log
+14.08.2011 12:40:58 # I have 0 relays
+14.08.2011 12:40:58 # I have 0 crossfeeds
+14.08.2011 12:40:58 # I have 2 blacklisted IPs
+14.08.2011 12:40:58 Entering infinite loop. Select timeout 10 secs.
+14.08.2011 12:40:58 ESC key to EXIT (after select timeout).
+14.08.2011 12:41:18 # caught SIGHUP, doing reinit!
+14.08.2011 12:41:18 processing fgms.conf
+14.08.2011 12:41:18 Adding to blacklist: 123.123.123.123
+14.08.2011 12:41:18 Adding to blacklist: 12.12.12.12
+14.08.2011 12:41:18 # This is devel_test
+14.08.2011 12:41:18 # FlightGear Multiplayer Server v0.9.12-WIN32 started
+14.08.2011 12:41:18 # using protocol version v1.1 (LazyRelay enabled)
+14.08.2011 12:41:18 # listening on 127.0.0.1
+14.08.2011 12:41:18 # listening to port 5000
+14.08.2011 12:41:18 # telnet port 5001
+14.08.2011 12:41:18 # using logfile fgms.log
+14.08.2011 12:41:18 # I have 0 relays
+14.08.2011 12:41:18 # I have 0 crossfeeds
+14.08.2011 12:41:18 # I have 2 blacklisted IPs
+14.08.2011 12:42:28 # caught SIGHUP, doing reinit!
+14.08.2011 12:42:28 processing fgms.conf
+14.08.2011 12:42:28 Adding to blacklist: 123.123.123.123
+14.08.2011 12:42:28 Adding to blacklist: 12.12.12.12
+14.08.2011 12:42:28 # This is devel_test
+14.08.2011 12:42:28 # FlightGear Multiplayer Server v0.9.12-WIN32 started
+14.08.2011 12:42:28 # using protocol version v1.1 (LazyRelay enabled)
+14.08.2011 12:42:28 # listening on 192.168.1.174
+14.08.2011 12:42:28 # listening to port 5000
+14.08.2011 12:42:28 # telnet port 5001
+14.08.2011 12:42:28 # using logfile fgms.log
+14.08.2011 12:42:28 # I have 0 relays
+14.08.2011 12:42:28 # I have 0 crossfeeds
+14.08.2011 12:42:28 # I have 2 blacklisted IPs
+14.08.2011 12:43:07 TelnetSend: - Sent 2 messages, handle 1872, on thread
+14.08.2011 12:44:07 # caught SIGHUP, doing reinit!
+14.08.2011 12:44:07 processing fgms.conf
+14.08.2011 12:44:07 Adding to blacklist: 123.123.123.123
+14.08.2011 12:44:07 Adding to blacklist: 12.12.12.12
+14.08.2011 12:44:07 # This is devel_test
+14.08.2011 12:44:07 # FlightGear Multiplayer Server v0.9.12-WIN32 started
+14.08.2011 12:44:07 # using protocol version v1.1 (LazyRelay enabled)
+14.08.2011 12:44:07 # listening on 127.0.0.1
+14.08.2011 12:44:07 # listening to port 5000
+14.08.2011 12:44:07 # telnet port 5001
+14.08.2011 12:44:07 # using logfile fgms.log
+14.08.2011 12:44:07 # I have 0 relays
+14.08.2011 12:44:07 # I have 0 crossfeeds
+14.08.2011 12:44:07 # I have 2 blacklisted IPs
+14.08.2011 12:44:47 FG_SERVER::Done() - exiting

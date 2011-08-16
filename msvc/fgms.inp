@@ -1,0 +1,32 @@
+# 20110324 - fgms - stable fgms-0-x - input file
+
+..\configure.ac
+
+
+-o ..\temp
+
+-R T
+
+# local includes
+-I ..\src
+
+-D UL_WIN32
+-D UL_MSVC
+
+# can be remove when fork(), and IPC msgctl(), msgget(), msgsnd() and msgrcv() emulated
+-D NO_TRACKER_PORT
+
+-D _USE_MATH_DEFINES
+-D _CRT_SECURE_NO_DEPRECATE
+-D _CRT_SECURE_NO_WARNINGS
+-D HAVE_CONFIG_H
+-D NOMINMAX
+-D FREEGLUT_STATIC
+-D FREEGLUT_LIB_PRAGMAS
+-D OPENALSDK
+# 20110105 - from the new CMakeLists.txt
+-D _SCL_SECURE_NO_WARNINGS
+-D __CRT_NONSTDC_NO_WARNINGS
+
+# eof
+
