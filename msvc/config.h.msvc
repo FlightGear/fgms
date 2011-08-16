@@ -1,0 +1,23 @@
+// config.h
+// 20110812 - updated with latest source - updfgms-stable.bat
+// 20110324 - hand crafted for MSVC
+#ifndef _FGMS_CONFIG_H_
+#define _FGMS_CONFIG_H_
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <time.h>
+
+#ifndef VERSION
+#define VERSION "0.10.9-WIN32"
+#endif
+
+#define sleep(a) Sleep(a * 1000)
+#define strncasecmp strncmp
+#define unlink _unlink
+
+#endif // #ifndef _FGMS_CONFIG_H_
+// eof - config.h
+
