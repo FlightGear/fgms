@@ -1,0 +1,26 @@
+file: README.msvc
+
+This is a port of fgms-0-x to MS Windows.
+
+Two set of MSVC build files are included, 
+fgms.dsw and fgms.sln (for MSVC8)...
+
+To build the server, load fgms.sln into MSVC,
+and allow it to convert the files to its own 
+format if a later MSVC version.
+
+The final fgms.exe server should be in the 'bin' 
+folder.
+
+As with the unix version, it is necessary to 
+copy and modify a configuration file. This must 
+at least contain the servers 'name'.
+
+Enjoy.
+
+Geoff.
+mailto: reports (at) geoffair (dot) info
+source: http://gitorious.org/~geoffmcl/fgms/geoffmcls-fgms-0-x
+site: http://geoffair.org/fg/fgms.htm
+2011/08/16
+
