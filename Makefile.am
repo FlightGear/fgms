@@ -35,5 +35,6 @@ clean-dist: clean clean-make clean-libs clean-deps clean-autoconf
 EXTRA_DIST =		\
 	contrib/mpstatus	\
 	contrib/tools		\
-	contrib/fgtracker
+	contrib/fgtracker       \
+	msvc
 
