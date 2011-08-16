@@ -37,10 +37,27 @@ using namespace std;
 
 FG_SERVER       Servant;
 extern  bool    RunAsDaemon;
-#ifndef _MSC_VER
+#ifdef _MSC_VER
+#define M_IS_DIR _S_IFDIR
+#else // !_MSC_VER
+#define M_IS_DIR S_IFDIR
 extern  cDaemon Myself;
 #endif
 string          ConfigFileName; // from commandline
+static bool     bHadConfig = false; // must have a config file, with server name
+
+static int
+is_file_or_directory( char * path )
+{
+    struct stat buf;
+    if (stat(path,&buf) == 0) {
+        if (buf.st_mode & M_IS_DIR)
+            return 2;
+        else
+            return 1;
+    }
+    return 0;
+}
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -129,6 +146,7 @@ ProcessConfig ( const string& ConfigName )
   if (Val != "")
   {
     Servant.SetServerName (Val);
+    bHadConfig = true; // got a serve name - minimum 
   }
   Val = Config.Get ("server.address");
   if (Val != "")
@@ -392,10 +410,9 @@ ParseParams ( int argcount, char* argvars[] )
         }
         break;
       case 'c':
-        ConfigFileName = optarg;
-        break;
-        if (ProcessConfig (optarg) == false)
-        {
+        if (is_file_or_directory(optarg) == 1) {
+            ConfigFileName = optarg; // to be read later
+        } else {
           cerr << "could not read '"
                << optarg << "' for input!" 
                << endl;
@@ -563,7 +580,8 @@ main ( int argc, char* argv[] )
   }
 #endif
   ParseParams (argc, argv);
-  if (!ReadConfigs ()) {
+  ReadConfigs ();
+  if ( !bHadConfig ) {
     printf("No configuration file 'fgms.conf' found!\n");
     exit(1);
   }
