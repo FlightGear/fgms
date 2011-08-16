@@ -21,7 +21,7 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#if not defined FG_GEOMETRY_H
+#if !defined FG_GEOMETRY_H
 #define FG_GEOMETRY_H
 
 #include <simgear/math/SGMath.hxx>

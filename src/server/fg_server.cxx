@@ -22,18 +22,23 @@
 //      (c) 2007-2010 Anders Gidenstam ( LazyRelay )
 //
 //////////////////////////////////////////////////////////////////////
-
+#include "config.h"
 
 #include <sys/types.h>
+#ifndef _MSC_VER
 #include <endian.h>
+#endif
 #include <unistd.h>
 #include <time.h>
 #include <string.h>
 #include <string>
+#ifndef _MSC_VER
 #include <sys/ipc.h>
 #include <sys/msg.h>
 
 #include <netinet/in.h>
+#endif
+
 /* From netSocket.cxx */
 #ifndef INADDR_NONE
   #define INADDR_NONE ((unsigned long)-1)
@@ -50,8 +55,13 @@
 #   define HIGH 1
 #endif
 
-bool    RunAsDaemon = true;
+bool    RunAsDaemon = false;
+#ifdef _MSC_VER
+#include <conio.h> // for _kbhit(), _getch
+typedef int pid_t;
+#else
 cDaemon Myself;
+#endif
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -96,6 +106,16 @@ FG_SERVER::FG_SERVER ()
   m_BlackList           = map<uint32_t, bool>();
   m_RelayMap            = map<uint32_t, string>();
   m_MaxTracker          = 0;
+  // clear stats
+  m_PacketsReceived     = 0;
+  m_TelnetReceived      = 0;
+  m_BlackRejected       = 0;  // in black list
+  m_PacketsInvalid      = 0; // invalid packet
+  m_UnknownRelay        = 0; // unknown relay
+  m_PositionData        = 0;   // position data packet
+  m_ClientIgnored       = 0;  // no valid position data
+  m_ClientIgnored2      = 0; // known, but different IP
+
 } // FG_SERVER::FG_SERVER()
 //////////////////////////////////////////////////////////////////////
 
@@ -266,9 +286,208 @@ FG_SERVER::PrepareInit ()
   m_BlackList.clear ();
   m_RelayMap.clear ();
   m_CrossfeedList.clear ();
+#ifndef _MSC_VER
   Myself.KillAllChildren ();
+#endif
 } // FG_SERVER::PrepareInit ()
 //////////////////////////////////////////////////////////////////////
+
+
+#ifdef _MSC_VER
+#include <vector>
+
+typedef std::vector<string> STG_LIST;
+typedef STG_LIST::iterator STG_LIST_I;
+
+static STG_LIST msg_list;
+static netSocket* pNewTelnet = 0;
+
+DWORD WINAPI TelnetSend( LPVOID vp )
+{
+    string Message;
+    int res = 0;
+    STG_LIST_I i = msg_list.begin();
+    int count = 0;
+    for ( ; i != msg_list.end(); i++ )
+    {
+        Message = *i;
+        res = pNewTelnet->send (Message.c_str(), Message.size(), 0);
+        if ( res == SOCKET_ERROR ) {
+            res = WSAGetLastError();
+            switch (res)
+            {
+            case WSANOTINITIALISED:
+                Message = "Not initialised";
+                break;
+            case WSAENETDOWN:
+                Message = "subsystem has failed.";
+                break;
+            case WSAEACCES:
+                Message = "broadcast, but flag not set.";
+                break;
+            case WSAEINTR:
+                Message = "call was canceled through WSACancelBlockingCall.";
+                break;
+            case WSAEINPROGRESS:
+                Message = "still processing a callback function.";
+                break;
+            case WSAEFAULT:
+                Message = "buf not completely in user address space.";
+                break;
+            case WSAENETRESET:
+                Message = "connection broken.";
+                break;
+            case WSAENOBUFS:
+                Message = "No buffer space is available.";
+                break;
+            case WSAENOTCONN:
+                Message = "is not connected.";
+                break;
+            case WSAENOTSOCK:
+                Message = "descriptor is not a socket.";
+                break;
+            case WSAEOPNOTSUPP:
+                Message = "Not supprted.";
+                break;
+            case WSAESHUTDOWN:
+                Message = "shut down.";
+                break;
+            case WSAEWOULDBLOCK:
+                Message = "would block.";
+                break;
+            case WSAEMSGSIZE:
+                Message = "message size.";
+                break;
+            case WSAEHOSTUNREACH:
+                Message = "host cannot be reached from this host at this time.";
+                break;
+            case WSAEINVAL:
+                Message = "bound with bind, or an unknown flag.";
+                break;
+            case WSAECONNABORTED:
+                Message = "circuit was terminated.";
+                break;
+            case WSAECONNRESET:
+                Message = "circuit was reset by the remote side.";
+                break;
+            case WSAETIMEDOUT:
+                Message = "connection has been dropped.";
+                break;
+            default:
+                Message = "Uncased error";
+                break;
+            }
+            SG_LOG (SG_SYSTEMS, SG_ALERT,
+                "TelnetSend: - " << Message << ", handle " << pNewTelnet->getHandle() );
+            break;
+        }
+        count++;
+    }
+    if ( res != SOCKET_ERROR ) {
+        SG_LOG (SG_SYSTEMS, SG_ALERT,
+            "TelnetSend: - Sent " << count << " messages, handle " << pNewTelnet->getHandle() <<
+            ( vp ? ", direct" : ", on thread" ));
+    }
+    pNewTelnet->close ();
+    delete pNewTelnet;
+    pNewTelnet = 0;
+    return 0xdead;
+}
+
+void FG_SERVER::TelnetReply(netSocket* NewTelnet)
+{
+    DWORD                   dwd;
+    string                  Message;
+    mT_PlayerListIt         CurrentPlayer;
+    Point3D                 PlayerPosGeod;  // Geodetic Coordinates
+
+    msg_list.clear(); // clear the list
+    //////////////////////////////////////////////////
+    //
+    //      create the output message
+    //      header
+    //
+    //////////////////////////////////////////////////
+    Message  = "# This is " + m_ServerName;
+    Message += "\n";
+    Message += "# FlightGear Multiplayer Server v" + string(VERSION);
+    Message += " using protocol version v";
+    Message += NumToStr (m_ProtoMajorVersion, 0);
+    Message += "." + NumToStr (m_ProtoMinorVersion, 0);
+    Message += "\n";
+    msg_list.push_back(Message); // 1
+    // NewTelnet->send (Message.c_str(), Message.size(), 0);
+    Message  = "# "+ NumToStr (m_PlayerList.size(), 0);
+    Message += " pilots(s) online\n";
+    msg_list.push_back(Message); // 2
+    //NewTelnet->send (Message.c_str(), Message.size(), 0);
+    //////////////////////////////////////////////////
+    //
+    //      create list of players
+    //
+    //////////////////////////////////////////////////
+    for (CurrentPlayer = m_PlayerList.begin();
+             CurrentPlayer != m_PlayerList.end();
+             CurrentPlayer++)
+    {
+            sgCartToGeod (CurrentPlayer->LastPos, PlayerPosGeod);
+            Message = CurrentPlayer->Callsign + "@";
+            if (CurrentPlayer->IsLocal)
+            {
+                    Message += "LOCAL: ";
+            }
+            else
+            {
+                    Message += CurrentPlayer->Origin + ": ";
+            }
+            if (CurrentPlayer->Error != "")
+            {
+                    Message += CurrentPlayer->Error + " ";
+            }
+            Message += NumToStr (CurrentPlayer->LastPos[X], 6)+" ";
+            Message += NumToStr (CurrentPlayer->LastPos[Y], 6)+" ";
+            Message += NumToStr (CurrentPlayer->LastPos[Z], 6)+" ";
+            Message += NumToStr (PlayerPosGeod[Lat], 6)+" ";
+            Message += NumToStr (PlayerPosGeod[Lon], 6)+" ";
+            Message += NumToStr (PlayerPosGeod[Alt], 6)+" ";
+            Message += NumToStr (CurrentPlayer->LastOrientation[X], 6)+" ";
+            Message += NumToStr (CurrentPlayer->LastOrientation[Y], 6)+" ";
+            Message += NumToStr (CurrentPlayer->LastOrientation[Z], 6)+" ";
+            Message += CurrentPlayer->ModelName;
+            Message += "\n";
+            msg_list.push_back(Message); // 3++
+            //NewTelnet->send (Message.c_str(), Message.size(), 0);
+    }
+    HANDLE hand = CreateThread(
+            0,  // __in_opt   LPSECURITY_ATTRIBUTES lpThreadAttributes,
+            0,  // __in       SIZE_T dwStackSize,
+            &TelnetSend, // __in       LPTHREAD_START_ROUTINE lpStartAddress,
+            0, // __in_opt   LPVOID lpParameter,
+            0,  // __in       DWORD dwCreationFlags,
+            &dwd );    // __out_opt  LPDWORD lpThreadId
+    if (hand) {
+        CloseHandle (hand);
+    } else {
+        TelnetSend( (LPVOID)1 );
+    }
+}
+
+#if 0   // failed attempt
+    // UGH! Could NOT get this right
+    //LPTHREAD_START_ROUTINE start = (LPTHREAD_START_ROUTINE)&FG_SERVER::TelnetReply;
+    //LPTHREAD_START_ROUTINE start = dynamic_cast<LPTHREAD_START_ROUTINE>(&FG_SERVER::TelnetReply);
+    void * start = (void *)&FG_SERVER::TelnetReply;
+    HANDLE hand = CreateThread(
+        0,  // __in_opt   LPSECURITY_ATTRIBUTES lpThreadAttributes,
+        0,  // __in       SIZE_T dwStackSize,
+        start, // __in       LPTHREAD_START_ROUTINE lpStartAddress,
+        &NewTelnet, // __in_opt   LPVOID lpParameter,
+        0,  // __in       DWORD dwCreationFlags,
+        (LPDWORD)&pid );    // __out_opt  LPDWORD lpThreadId
+#endif // 0 - failed attempt
+
+#endif // _MSC_VER
+
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -280,8 +499,10 @@ FG_SERVER::PrepareInit ()
 void
 FG_SERVER::HandleTelnet ( netSocket* Telnet )
 {
+#ifndef _MSC_VER
   pid_t           Pid;
   netSocket       NewTelnet;
+#endif
   int             Fd;
   string          Message;
   Point3D         PlayerPosGeod;  // Geodetic Coordinates
@@ -299,6 +520,11 @@ FG_SERVER::HandleTelnet ( netSocket* Telnet )
     }
     return;
   }
+#ifdef _MSC_VER
+  pNewTelnet = new netSocket;
+  pNewTelnet->setHandle( Fd );
+  TelnetReply( pNewTelnet );
+#else
   NewTelnet.setHandle (Fd);
   //////////////////////////////////////////////////
   //
@@ -397,6 +623,8 @@ FG_SERVER::HandleTelnet ( netSocket* Telnet )
   }
   NewTelnet.close ();
   exit (0);
+#endif // _MSC_VER
+
 } // FG_SERVER::HandleTelnet ( netAddress& Sender )
 //////////////////////////////////////////////////////////////////////
 
@@ -633,6 +861,7 @@ int
 FG_SERVER::AddTracker ( const string & Server, int Port, bool IsTracked )
 {
   m_IsTracked     = IsTracked;
+#ifndef NO_TRACKER_PORT
   if ( m_Tracker )
   {
     msgctl(m_ipcid,IPC_RMID,NULL);
@@ -640,6 +869,7 @@ FG_SERVER::AddTracker ( const string & Server, int Port, bool IsTracked )
   }
   m_ipcid         = msgget(IPCKEY,IPCPERMS|IPC_CREAT);
   m_Tracker = new FG_TRACKER(Port,Server,m_ipcid);
+#endif // NO_TRACKER_PORT
   return (SUCCESS);
 } // FG_SERVER::AddTracker()
 //////////////////////////////////////////////////////////////////////
@@ -653,7 +883,7 @@ void
 FG_SERVER::MaxTracker ( const int MaxTracker )
 {
   m_MaxTracker = MaxTracker;
-} // FG_SERVER::AddTracker()
+} // FG_SERVER::MaxTracker()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -1056,16 +1286,20 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
   PacketFromLocalClient = true;  // assume client to be local
   if (true == IsBlackListed (SenderAddress))
   {
+    m_BlackRejected++;
     return;
   }
   if (false == PacketIsValid (Bytes, MsgHdr, SenderAddress))
   {
+    m_PacketsInvalid++;
     return;
   }
   if (MsgMagic == RELAY_MAGIC) // not a local client
   {
-    if (false == IsKnownRelay (SenderAddress))
-      return;
+      if (false == IsKnownRelay (SenderAddress)) {
+          m_UnknownRelay++;
+          return;
+      }
     PacketFromLocalClient = false;
     MsgHdr->Magic = XDR_encode<uint32_t> (MSG_MAGIC);
   }
@@ -1076,6 +1310,7 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
   //////////////////////////////////////////////////
   if (MsgId == POS_DATA_ID)
   {
+    m_PositionData++;
     PosMsg = (T_PositionMsg *) (Msg + sizeof(T_MsgHdr));
     SenderPosition.Set (
       XDR_decode64<double> (PosMsg->position[X]),
@@ -1098,12 +1333,14 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
     if (MsgId != POS_DATA_ID)
     {
       // ignore clients until we have a valid position
+      m_ClientIgnored++;
       return;
     }
     AddClient (SenderAddress, Msg, PacketFromLocalClient);
   }
   else if (ClientInList == 2)
   { // known, but different IP => ignore
+    m_ClientIgnored2++; // known, but different IP
     return;
   }
   //////////////////////////////////////////
@@ -1259,6 +1496,87 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
 } // FG_SERVER::HandlePacket ( char* sMsg[MAX_PACKET_SIZE] )
 //////////////////////////////////////////////////////////////////////
 
+extern void SigHUPHandler ( int SigType );
+
+static char * exit_file = (char *)"fgms_exit";
+static char * reset_file = (char *)"fgms_reset";
+static char * stat_file = (char *)"fgms_stat";
+
+int
+FG_SERVER::check_keyboard()
+{
+    struct stat buf;
+    if (stat(exit_file,&buf) == 0) {
+        printf("Got EXIT file %s...\n",exit_file);
+        unlink(exit_file);
+        if (stat(exit_file,&buf) == 0) {
+            printf("ERROR: Unable to delete EXIT file %s...\n",exit_file);
+            exit(1);
+        }
+        return 1;
+    } else if ( stat(reset_file,&buf) == 0) {
+        printf("Got RESET file %s...\n",reset_file);
+        unlink(reset_file);
+        if (stat(reset_file,&buf) == 0) {
+            printf("ERROR: Unable to delete RESET file %s...\n",reset_file);
+            exit(1);
+        }
+        m_Initialized         = true; // Init() will do it
+        m_ReinitData          = true; // init the data port
+        m_ReinitTelnet        = true; // init the telnet port
+        m_Listening           = false;
+        SigHUPHandler ( 0 );
+    } else if ( stat(stat_file,&buf) == 0) {
+        printf("Got STAT file %s...\n",stat_file);
+        unlink(stat_file);
+        if (stat(stat_file,&buf) == 0) {
+            printf("ERROR: Unable to delete STAT file %s...\n",stat_file);
+            exit(1);
+        }
+        printf("Pilots %ld Packets=%d, BL=%d INV=%d UR=%d PD=%d IG1=%d IG2=%d Telnet: %d\n",
+            m_PlayerList.size(),    // active pilots
+            m_PacketsReceived,
+            m_BlackRejected,        // in black list
+            m_PacketsInvalid,       // invalid packet
+            m_UnknownRelay,         // unknown relay
+            m_PositionData,         // position data packet
+            m_ClientIgnored,        // no valid position data
+            m_ClientIgnored2,       // known, but different IP
+            m_TelnetReceived );     // telnet queries
+    }
+#ifdef _MSC_VER
+    if (_kbhit()) {
+        int ch = _getch ();
+        if ( ch == 0x1b ) {
+            printf("Got ESC key to exit...\n");
+            return 1;
+        } else if ( ch == 'R' ) {
+            printf("Got 'R' - Reset key...\n");
+            m_Initialized         = true; // Init() will do it
+            m_ReinitData          = true; // init the data port
+            m_ReinitTelnet        = true; // init the telnet port
+            m_Listening           = false;
+            SigHUPHandler ( 0 );
+        } else if ( ch == 'S' ) {
+            printf("Show stats\n");
+            printf("Pilots %ld Packets=%d, BL=%d INV=%d UR=%d PD=%d IG1=%d IG2=%d Telnet: %d\n",
+                m_PlayerList.size(),    // active pilots
+                m_PacketsReceived,
+                m_BlackRejected,        // in black list
+                m_PacketsInvalid,       // invalid packet
+                m_UnknownRelay,         // unknown relay
+                m_PositionData,         // position data packet
+                m_ClientIgnored,        // no valid position data
+                m_ClientIgnored2,       // known, but different IP
+                m_TelnetReceived );     // telnet queries
+        } else {
+            printf("Got UNKNOWN keyboard! %#X - Only ESC, to exit.\n", ch);
+        }
+    }
+#endif
+    return 0;
+}
+
 //////////////////////////////////////////////////////////////////////
 //
 //      main loop of the server
@@ -1283,6 +1601,11 @@ FG_SERVER::Loop ()
       << "not listening on any socket!");
     return (ERROR_NOT_LISTENING);
   }
+
+  SG_ALERT (SG_SYSTEMS, SG_ALERT,  "Entering infinite loop. Select timeout " << m_PlayerExpires << " secs.");
+#ifdef _MSC_VER
+  SG_ALERT (SG_SYSTEMS, SG_ALERT,  "ESC key to EXIT (after select timeout)." );
+#endif
   //////////////////////////////////////////////////
   //
   //      infinite listening loop
@@ -1305,6 +1628,8 @@ FG_SERVER::Loop ()
         // regularly (tracker)
         UpdateTracker (string(""),string(""), string(""),tick0,UPDATE);
       }
+      if (check_keyboard())
+          break;
     } // position (tracker)
     errno = 0;
     ListenSockets[0] = m_DataSocket;
@@ -1317,7 +1642,7 @@ FG_SERVER::Loop ()
       LastCleanUp = CurrentTime;
       continue;
     }
-    if (! Bytes)
+    if ( Bytes <= 0 )
     {
       SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Loop() - Bytes <= 0!");
       continue;
@@ -1334,10 +1659,12 @@ FG_SERVER::Loop ()
         // FIXME: reason to quit?
         continue;
       }
+      m_PacketsReceived++;
       HandlePacket ((char*)&Msg,Bytes,SenderAddress);
     } // DataSocket
     else if (ListenSockets[1] != 0)
     { // something on the wire (telnet)
+      m_TelnetReceived++;
       HandleTelnet (m_TelnetSocket);
       CleanUp ();
       LastCleanUp = CurrentTime;
@@ -1350,6 +1677,7 @@ FG_SERVER::Loop ()
       LastCleanUp = CurrentTime;
     }
   }
+  return (0);
 } // FG_SERVER::Loop()
 //////////////////////////////////////////////////////////////////////
 
@@ -1490,7 +1818,9 @@ FG_SERVER::Done ()
   if (m_IsParent)
   {
     SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Done() - exiting");
+#ifndef _MSC_VER
     Myself.KillAllChildren ();
+#endif
     m_LogFile.close();
     if (m_Listening == false)
     {
@@ -1590,7 +1920,9 @@ FG_SERVER::UpdateTracker
     // queue the message
     sprintf (buf.mtext, "%s", Message.c_str());
     buf.mtype = 1;
+#ifndef NO_TRACKER_PORT
     msgsnd (m_ipcid, &buf, strlen(buf.mtext), IPC_NOWAIT);
+#endif // NO_TRACKER_PORT
     return (0);
   }
   else if (type == DISCONNECT)
@@ -1606,7 +1938,9 @@ FG_SERVER::UpdateTracker
     // queue the message
     sprintf (buf.mtext, "%s", Message.c_str());
     buf.mtype = 1;
+#ifndef NO_TRACKER_PORT
     msgsnd (m_ipcid, &buf, strlen(buf.mtext), IPC_NOWAIT);
+#endif // NO_TRACKER_PORT
     return (0);
   }
   // we only arrive here if type!=CONNECT and !=DISCONNECT
@@ -1632,7 +1966,9 @@ FG_SERVER::UpdateTracker
       // queue the message
       sprintf(buf.mtext,"%s",Message.c_str());
       buf.mtype=1;
+#ifndef NO_TRACKER_PORT
       msgsnd(m_ipcid,&buf,strlen(buf.mtext),IPC_NOWAIT);
+#endif // NO_TRACKER_PORT
     }
     Message.erase(0);
     CurrentPlayer++;

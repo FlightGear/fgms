@@ -22,10 +22,8 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#if not defined FG_SERVER_HXX
+#if !defined FG_SERVER_HXX
 #define FG_SERVER_HXX
-
-using namespace std;
 
 #include <iostream>
 #include <fstream>
@@ -51,6 +49,8 @@ using namespace std;
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #endif
+
+using namespace std;
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -115,6 +115,10 @@ public:
   void  MaxTracker ( const int MaxTracker );
   void  AddBlacklist  ( const string& FourDottedIP );
   void  CloseTracker ();
+#ifdef _MSC_VER
+  void  TelnetReply(netSocket* NewTelnet);
+#endif
+  int   check_keyboard();
 
 private:
 
@@ -220,6 +224,19 @@ private:
   FG_TRACKER*       m_Tracker;
   mT_BlackList      m_BlackList;
   bool              m_IamHUB;
+  //////////////////////////////////////////////////
+  //
+  //  statistics
+  //
+  //////////////////////////////////////////////////
+  int               m_PacketsReceived; // rw data packet received
+  int               m_BlackRejected;  // in black list
+  int               m_PacketsInvalid; // invalid packet
+  int               m_UnknownRelay; // unknown relay
+  int               m_PositionData;   // position data packet
+  int               m_ClientIgnored;  // no valid position data
+  int               m_ClientIgnored2; // known, but different IP
+  int               m_TelnetReceived;
   //////////////////////////////////////////////////
   //
   //  private methods

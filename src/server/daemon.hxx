@@ -25,13 +25,14 @@
 #ifndef CDAEMON_HDR
 #define CDAEMON_HDR
 
-using namespace std;
-
+#ifndef _MSC_VER
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/signal.h>
 #include <list>
 #include <fcntl.h>
+
+using namespace std;
 
 class cDaemon
 {
@@ -48,6 +49,10 @@ public:
   static int  NumChildren ();
   static int  GetPid() { return PidOfDaemon; };
 };
+
+#endif // #ifndef _MSC_VER
+
+
 #endif
 
 // vim: ts=2:sw=2:sts=0

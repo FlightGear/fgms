@@ -2,10 +2,11 @@
 #define __common_h
 
 #ifdef HAVE_CONFIG_H
-#       include <config.h>
+#include "config.h"
 #endif
-#include "error.h"
 
+#ifndef _MSC_VER
+#include "error.h"
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -28,6 +29,7 @@
 #include <unistd.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#endif // !_MSC_VER
 
 
 #ifdef HAVE_SYS_SELECT_H

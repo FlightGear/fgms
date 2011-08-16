@@ -22,7 +22,9 @@
 //////////////////////////////////////////////////////////////////////
 
 #include <math.h>
+#ifndef _MSC_VER
 #include <strings.h>
+#endif // _MSC_VER
 #include <assert.h>
 #include "fg_geometry.hxx"
 
@@ -342,7 +344,7 @@ Distance ( const Point3D & P1, const Point3D & P2 )
   Point3D P;
 
   P = P1 - P2;
-  return (P.length() / SG_NM_TO_METER);
+  return (float)(P.length() / SG_NM_TO_METER);
 } // Distance ( const Point3D & P1, const Point3D & P2 )
 //////////////////////////////////////////////////////////////////////
 

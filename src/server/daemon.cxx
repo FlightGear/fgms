@@ -22,7 +22,7 @@
 // to become a daemon
 //
 //////////////////////////////////////////////////////////////////////
-
+#ifndef _MSC_VER
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -231,5 +231,6 @@ cDaemon::~cDaemon ()
 {
   // KillAllChildren ();
 }
+#endif // !_MSC_VER
 
 // vim: ts=2:sw=2:sts=0

@@ -21,20 +21,25 @@
 // main program
 //
 //////////////////////////////////////////////////////////////////////
-
-using namespace std;
+#include "config.h"
 
 #include <cstdlib>
+#ifndef _MSC_VER
 #include <sys/wait.h>
+#endif
 #include <signal.h>
 #include "fg_server.hxx"
 #include "fg_config.hxx"
 #include "daemon.hxx"
 #include "typcnvt.hxx"
 
+using namespace std;
+
 FG_SERVER       Servant;
 extern  bool    RunAsDaemon;
+#ifndef _MSC_VER
 extern  cDaemon Myself;
+#endif
 string          ConfigFileName; // from commandline
 
 //////////////////////////////////////////////////////////////////////
@@ -66,6 +71,42 @@ PrintHelp ()
   exit (0);
 } // PrintHelp ()
 //////////////////////////////////////////////////////////////////////
+#ifdef _MSC_VER
+// kludge for getopt() for WIN32
+static char * optarg;
+static int curr_arg = 0;
+int getopt ( int argcount, char* argvars[], char * args )
+{
+    size_t len = strlen(args);
+    size_t i;
+    int c = 0;
+    if (curr_arg == 0) {
+        curr_arg = 1;
+    }
+    if (curr_arg < argcount) {
+        char * arg = argvars[curr_arg];
+        if (*arg == '-') {
+            arg++;
+            c = *arg; // get first char
+            for (i = 0; i < len; i++) {
+                if (c == args[i]) { // found 
+                    if ( args[i+1] == ':' ) {
+                        // fill in following
+                        curr_arg++;
+                        optarg = argvars[curr_arg];
+                    }
+                    break;
+                }
+            }
+            curr_arg++;
+            return c;
+        } else {
+            return '-';
+        }
+    }
+    return -1;
+}
+#endif // _MSC_VER
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -421,25 +462,37 @@ ParseParams ( int argcount, char* argvars[] )
 //      read config files
 //
 //////////////////////////////////////////////////////////////////////
-void
+int
 ReadConfigs ( bool ReInit = false )
 {
   string Path;
-
+#ifndef _MSC_VER
   Path = SYSCONFDIR;
   Path += "/fgms.conf";
   if (ProcessConfig (ConfigFileName) == true)
-    return;
+    return 1;
   if (ProcessConfig (Path) == true)
-    return;
+    return 1;
   Path = getenv ("HOME");
+#else
+    char *cp = getenv("HOME");
+    if (cp)
+        Path = cp;
+    else {
+        cp = getenv("USERPROFILE");
+        if (cp)
+            Path = cp;
+    }
+#endif
   if (Path != "")
   {
     Path += "/fgms.conf";
     if (ProcessConfig (Path))
-        return;
+        return 1;
   }
-  ProcessConfig ("fgms.conf");
+  if (ProcessConfig ("fgms.conf"))
+      return 1;
+  return 0;
 } // ReadConfigs ()
 //////////////////////////////////////////////////////////////////////
 
@@ -451,16 +504,23 @@ ReadConfigs ( bool ReInit = false )
 void SigHUPHandler ( int SigType )
 {
   Servant.PrepareInit();
-  ReadConfigs (true);
+  if ( !ReadConfigs (true) )
+  {
+    SG_ALERT (SG_SYSTEMS, SG_ALERT, "received HUP signal, but read config file failed!");
+    exit (1);
+  }
   if (Servant.Init () != 0)
   {
     SG_ALERT (SG_SYSTEMS, SG_ALERT, "received HUP signal, but reinit failed!");
     exit (1);
   }
+#ifndef _MSC_VER
   signal (SigType, SigHUPHandler);
+#endif
 } // SigHUPHandler ()
 //////////////////////////////////////////////////////////////////////
 
+#ifndef _MSC_VER
 //////////////////////////////////////////////////////////////////////
 //
 //  add the pid of the child to the main exit pon receiving SIGCHLD
@@ -473,6 +533,7 @@ SigCHLDHandler (int s)
     /* intentionally empty */ ;
 } // SigCHLDHandler ()
 //////////////////////////////////////////////////////////////////////
+#endif // !_MSC_VER
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -483,11 +544,13 @@ int
 main ( int argc, char* argv[] )
 {
   int     I;
+#ifndef _MSC_VER
   struct  sigaction sig_child;
-
+#endif
 #if defined ENABLE_DEBUG
 //  logbuf::set_log_classes(SG_GENERAL);
 #endif
+#ifndef _MSC_VER
   // SIGHUP
   signal (SIGHUP, SigHUPHandler);
   // SIGCHLD
@@ -498,8 +561,12 @@ main ( int argc, char* argv[] )
   {
     exit(1);
   }
+#endif
   ParseParams (argc, argv);
-  ReadConfigs ();
+  if (!ReadConfigs ()) {
+    printf("No configuration file 'fgms.conf' found!\n");
+    exit(1);
+  }
   sglog().setLogLevels( SG_ALL, SG_INFO );
   sglog().enable_with_date (true);
   I = Servant.Init ();
@@ -508,11 +575,13 @@ main ( int argc, char* argv[] )
     Servant.CloseTracker();
     return (I);
   }
+#ifndef _MSC_VER
   if (RunAsDaemon)
   {
     SG_ALERT (SG_SYSTEMS, SG_ALERT, "Main server started!");
     Myself.Daemonize ();
   }
+#endif
   I = Servant.Loop();
   if (I != 0)
   {

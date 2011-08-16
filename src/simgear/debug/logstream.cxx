@@ -19,7 +19,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 // $Id: logstream.cxx,v 1.2 2010/02/15 08:04:17 oliver Exp $
-
+#include "config.h"
 #include "logstream.hxx"
 #include "stdio.h"
 
@@ -98,7 +98,9 @@ logstream::datestr ( void )
 
     if (userdatestr)
     {
-            return (*userdatestr)()+" ";
+        string msg = (*userdatestr)();
+        msg += " ";
+            return msg;
     }
     date = time(0);
     tmr = localtime(&date);
