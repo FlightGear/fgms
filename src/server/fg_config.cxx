@@ -304,7 +304,7 @@ FG_CONFIG::ParseLine
   size_t          nVarValueStart, nVarValueEnd;
   mT_VarValue     NewVar;
 
-  if (ConfigLine.size() == 0)
+  if (ConfigLine.size() < 2) // ignore dos/windows 0x0d only
   {
     return (0);
   }
