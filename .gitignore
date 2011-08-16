@@ -61,4 +61,6 @@ msvc/fgms.ncb
 msvc/bin
 msvc/Debug
 msvc/Release
+fgms.log
+
 
