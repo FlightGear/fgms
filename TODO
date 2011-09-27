@@ -1,6 +1,5 @@
-- make everything threadsave
-        Implement threadsafe iterators for SGQueue
-- implement packet confirmation
-- BufferEncrypter
-- use simgears logstream
-
+- implement server to server communication
+  special messages for server internal purposes
+- rate limit clients
+  clients sents X pakets per second, but we only forward Y pakets per
+  second

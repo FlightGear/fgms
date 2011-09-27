@@ -199,7 +199,7 @@ string NumToStr ( T n_Number, int n_Precision = 2, int n_Base = 10 )
         else
         {
             n = n_Factor;
-            n_WorkNumber = std::abs(n_WorkNumber);
+            n_WorkNumber = std::llabs(n_WorkNumber);
             while (n_WorkNumber >= 0 && n > 1)
             {
                 str_Return = Numbers[n_WorkNumber % n_Base] + str_Return;
