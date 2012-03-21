@@ -14,7 +14,9 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
 //
 
-// #define FGMS_USE_THREADS
+#ifndef _MSC_VER
+#define FGMS_USE_THREADS
+#endif
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -103,7 +105,6 @@ FG_SERVER::FG_SERVER
 	m_PositionData        = 0;	// position data packet
 #ifdef FGMS_USE_THREADS
 	pthread_mutex_init( &m_PlayerMutex, 0 );
-	pthread_mutex_init( &m_TelnetMutex, 0 );
 #endif
 } // FG_SERVER::FG_SERVER()
 //////////////////////////////////////////////////////////////////////
@@ -225,7 +226,7 @@ FG_SERVER::Init ()
 	SG_ALERT (SG_SYSTEMS, SG_ALERT,"# listening to port " << m_ListenPort);
 	SG_ALERT (SG_SYSTEMS, SG_ALERT,"# telnet port " << m_TelnetPort);
 	SG_ALERT (SG_SYSTEMS, SG_ALERT,"# using logfile " << m_LogFileName);
-	if (true == m_IamHUB)
+	if (m_IamHUB)
 	{
 		SG_ALERT (SG_SYSTEMS, SG_ALERT, "# I am a HUB Server");
 	}
@@ -461,6 +462,7 @@ void FG_SERVER::TelnetReply(netSocket* NewTelnet)
 static void*
 telnet_helper(void *context)
 {
+	pthread_detach (pthread_self());
 	FG_SERVER *tmp_server = reinterpret_cast<FG_SERVER *>(context);
 	return (tmp_server->HandleTelnet());
 }
@@ -483,13 +485,7 @@ FG_SERVER::HandleTelnet ()
 	mT_PlayerListIt CurrentPlayer;
 
 	errno = 0;
-#ifdef FGMS_USE_THREADS
-	pthread_mutex_lock (& m_TelnetMutex);
-#endif
 	Fd = m_TelnetSocket->accept (&TelnetAddress);
-#ifdef FGMS_USE_THREADS
-	pthread_mutex_unlock (& m_TelnetMutex);
-#endif
 	if (Fd < 0)
 	{
 		if (errno != EAGAIN)
@@ -498,17 +494,18 @@ FG_SERVER::HandleTelnet ()
 		}
 		return 0;
 	}
+
 #ifdef _MSC_VER
 	pNewTelnet = new netSocket;
 	pNewTelnet->setHandle( Fd );
 	TelnetReply( pNewTelnet );
 	return 0;
 #endif // _MSC_VER
+
 	netSocket       NewTelnet;
 	NewTelnet.setHandle (Fd);
-#ifdef FGMS_USE_THREADS
-	pthread_detach (pthread_self());
-#else
+
+#ifndef FGMS_USE_THREADS
 	//////////////////////////////////////////////////
 	//
 	//      fork a new process,
@@ -550,6 +547,7 @@ FG_SERVER::HandleTelnet ()
 		Message += "\n";
 	}
 #ifdef FGMS_USE_THREADS
+	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - mutex lock");
 	pthread_mutex_lock (& m_PlayerMutex);
 #endif
 	NewTelnet.send (Message.c_str(),Message.size(),0);
@@ -611,6 +609,7 @@ FG_SERVER::HandleTelnet ()
 	NewTelnet.close ();
 #ifdef FGMS_USE_THREADS
 	pthread_mutex_unlock (& m_PlayerMutex);
+	// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - mutex unlock");
 	return (0);
 #else
 	exit (0);
@@ -650,7 +649,6 @@ FG_SERVER::AddBadClient
 	NewPlayer.HasErrors     = true;
 	NewPlayer.Error         = ErrorMsg;
 	NewPlayer.ClientID      = m_MaxClientID;
-	NewPlayer.LastRelayedToInactive = 0;
 	NewPlayer.PktsReceivedFrom      = 0;
 	NewPlayer.PktsSentTo            = 0;
 	NewPlayer.PktsForwarded         = 0;
@@ -679,12 +677,14 @@ FG_SERVER::AddBadClient
 		Message += ErrorMsg;
 		CreateChatMessage (NewPlayer.ClientID, Message);
 #ifdef FGMS_USE_THREADS
+		// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddBadClient() - mutex lock");
 		pthread_mutex_lock (& m_PlayerMutex);
 #endif
 		m_PlayerList.push_back (NewPlayer);
 		m_NumCurrentClients++;
 #ifdef FGMS_USE_THREADS
 		pthread_mutex_unlock (& m_PlayerMutex);
+		// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddBadClient() - mutex unlock");
 #endif
 	}
 } // FG_SERVER::AddBadClient ()
@@ -729,7 +729,6 @@ FG_SERVER::AddClient ( netAddress& Sender, char* Msg )
 	NewPlayer.IsLocal   = IsLocal;
 	NewPlayer.LastPos.clear();
 	NewPlayer.LastOrientation.clear();
-	NewPlayer.LastRelayedToInactive = 0;
 	NewPlayer.PktsReceivedFrom = 0;
 	NewPlayer.PktsSentTo       = 0;
 	NewPlayer.PktsForwarded    = 0;
@@ -1192,24 +1191,23 @@ FG_SERVER::SendToRelays ( char* Msg, int Bytes, mT_PlayerListIt& SendingPlayer )
 {
 	T_MsgHdr*       MsgHdr;
 	uint32_t        MsgMagic;
-	bool		SenderIsLocal;
 	unsigned int    PktsForwarded = 0;
 	mT_RelayListIt  CurrentRelay;
 	time_t          Now;
 
-	Now		= time (0);
 	MsgHdr		= (T_MsgHdr *) Msg;
 	MsgMagic	= XDR_decode<uint32_t> (MsgHdr->Magic);
-	SenderIsLocal	= true;
 	if (MsgMagic == RELAY_MAGIC)	// received from relay
 	{
 		if (! m_IamHUB)		// I'm not a hub, so don't relay again
 		{
 			return;
 		}
-		SenderIsLocal = false;
 	}
+	Now		= time (0);
 	MsgHdr->Magic	= XDR_encode<uint32_t> (RELAY_MAGIC);
+	// UPDATE_INACTIVE_PERIOD = 1 => send 1 packet every 2nd second
+	// FIXME: MsgID != POSMSG => send anyway
 	bool UpdateInactive = (Now - SendingPlayer->LastRelayedToInactive) > UPDATE_INACTIVE_PERIOD;
 	if (UpdateInactive)
 	{
@@ -1218,9 +1216,12 @@ FG_SERVER::SendToRelays ( char* Msg, int Bytes, mT_PlayerListIt& SendingPlayer )
 	CurrentRelay = m_RelayList.begin();
 	while (CurrentRelay != m_RelayList.end())
 	{
-		if ((SenderIsLocal) || (m_IamHUB))
+		if ((SendingPlayer->IsLocal) || (m_IamHUB))
 		{
-			if ( (CurrentRelay->Active && IsInRange(*CurrentRelay, *SendingPlayer)) || (UpdateInactive))
+			// IsInRange() => only send, if relay has clients in range
+			// FIXME: send anyway, if relay received last packet UPDATE_INACTIVE_PERIOD ago
+			if ((UpdateInactive)
+			||  (CurrentRelay->Active && IsInRange(*CurrentRelay, *SendingPlayer)))
 			{
 				if (CurrentRelay->Address != SendingPlayer->Address)
 				{
@@ -1230,9 +1231,8 @@ FG_SERVER::SendToRelays ( char* Msg, int Bytes, mT_PlayerListIt& SendingPlayer )
 			}
 		}
 		if (CurrentRelay->Address == SendingPlayer->Address)
-		{
-			// Renew timestamp of sending relay.
-			if (!CurrentRelay->Active)
+		{	// Renew timestamp of sending relay.
+			if (! CurrentRelay->Active)
 			{
 				SG_LOG (SG_SYSTEMS, SG_ALERT, "Activating relay " << CurrentRelay->Name);
 				CurrentRelay->Active = true;
@@ -1374,11 +1374,13 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
 			return;
 		}
 #ifdef FGMS_USE_THREADS
+		// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandlePacket() - mutex lock");
 		pthread_mutex_lock (& m_PlayerMutex);
 #endif
 		AddClient (SenderAddress, Msg);
 #ifdef FGMS_USE_THREADS
 		pthread_mutex_unlock (& m_PlayerMutex);
+		// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandlePacket() - mutex unlock");
 #endif
 	}
 	else if (ClientInList == 2)
@@ -1440,12 +1442,14 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, netAddress &SenderAddress )
 		if ( (Timestamp - CurrentPlayer->Timestamp) > m_PlayerExpires)
 		{
 #ifdef FGMS_USE_THREADS
+			// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandlePacket() - mutex lock");
 			pthread_mutex_lock (& m_PlayerMutex);
 #endif
 			DropClient (CurrentPlayer);
 			CurrentPlayer++;
 #ifdef FGMS_USE_THREADS
 			pthread_mutex_unlock (& m_PlayerMutex);
+			// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandlePacket() - mutex unlock");
 #endif
 			continue;
 		}

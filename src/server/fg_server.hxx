@@ -217,7 +217,6 @@ private:
 	mT_BlackList      m_BlackList;
 	bool              m_IamHUB;
 	pthread_mutex_t   m_PlayerMutex;
-	pthread_mutex_t   m_TelnetMutex;
 	//////////////////////////////////////////////////
 	//
 	//  statistics
