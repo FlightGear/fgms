@@ -33,35 +33,33 @@
 int
 FG_CONFIG::Read
 (
-  const std::string &ConfigName
+	const std::string &ConfigName
 )
 {
-  std::ifstream   ConfigFile;
-  std::string     ConfigLine;
-  int             LineNumber;
+	std::ifstream   ConfigFile;
+	std::string     ConfigLine;
+	int             LineNumber;
 
-  ConfigFile.open (ConfigName.c_str ());
-  if (!ConfigFile)
-  {
-    // std::cout << "could not open " << ConfigName
-    //  << " for reading!" << std::endl;
-    return (1);
-  }
-  LineNumber = 0;
-  while (ConfigFile)
-  {
-    getline (ConfigFile, ConfigLine);
-    LineNumber++;
-    if (ParseLine (ConfigLine))
-    {
-      std::cout << "error in line " << LineNumber
-      << " in file " << ConfigName
-      << std::endl;
-    }
-  }
-  ConfigFile.close ();
-  m_CurrentVar = m_VarList.begin ();
-  return (0);
+	ConfigFile.open (ConfigName.c_str ());
+	if (!ConfigFile)
+	{
+		return (1);
+	}
+	LineNumber = 0;
+	while (ConfigFile)
+	{
+		getline (ConfigFile, ConfigLine);
+		LineNumber++;
+		if (ParseLine (ConfigLine))
+		{
+			std::cout << "error in line " << LineNumber
+				<< " in file " << ConfigName
+				<< std::endl;
+		}
+	}
+	ConfigFile.close ();
+	m_CurrentVar = m_VarList.begin ();
+	return (0);
 } // FG_CONFIG::Read ()
 //////////////////////////////////////////////////////////////////////
 
@@ -74,19 +72,19 @@ FG_CONFIG::Read
 std::string
 FG_CONFIG::Get
 (
-  const std::string &VarName
+	const std::string &VarName
 )
 {
-  m_CurrentVar = m_VarList.begin();
-  while (m_CurrentVar != m_VarList.end())
-  {
-    if (m_CurrentVar->first == VarName)
-    {
-      return (m_CurrentVar->second);
-    }
-    m_CurrentVar++;
-  }
-  return ("");
+	m_CurrentVar = m_VarList.begin();
+	while (m_CurrentVar != m_VarList.end())
+	{
+		if (m_CurrentVar->first == VarName)
+		{
+			return (m_CurrentVar->second);
+		}
+		m_CurrentVar++;
+	}
+	return ("");
 } // FG_SERVER::Get ()
 //////////////////////////////////////////////////////////////////////
 
@@ -96,9 +94,10 @@ FG_CONFIG::Get
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_CONFIG::SetStart ()
+FG_CONFIG::SetStart
+()
 {
-  m_CurrentVar = m_VarList.begin();
+	m_CurrentVar = m_VarList.begin();
 } // FG_CONFIG::SetStart ()
 //////////////////////////////////////////////////////////////////////
 
@@ -109,18 +108,19 @@ FG_CONFIG::SetStart ()
 //
 //////////////////////////////////////////////////////////////////////
 int
-FG_CONFIG::Next ()
+FG_CONFIG::Next
+()
 {
-  if (m_CurrentVar == m_VarList.end())
-  {
-    return (0);
-  }
-  m_CurrentVar++;
-  if (m_CurrentVar == m_VarList.end())
-  {
-    return (0);
-  }
-  return (1);
+	if (m_CurrentVar == m_VarList.end())
+	{
+		return (0);
+	}
+	m_CurrentVar++;
+	if (m_CurrentVar == m_VarList.end())
+	{
+		return (0);
+	}
+	return (1);
 } // FG_CONFIG::Next()
 //////////////////////////////////////////////////////////////////////
 
@@ -130,13 +130,14 @@ FG_CONFIG::Next ()
 //
 //////////////////////////////////////////////////////////////////////
 std::string
-FG_CONFIG::GetName ()
+FG_CONFIG::GetName
+()
 {
-  if (m_CurrentVar != m_VarList.end())
-  {
-    return (m_CurrentVar->first);
-  }
-  return ("");
+	if (m_CurrentVar != m_VarList.end())
+	{
+		return (m_CurrentVar->first);
+	}
+	return ("");
 } // FG_CONFIG::GetName ()
 //////////////////////////////////////////////////////////////////////
 
@@ -146,13 +147,14 @@ FG_CONFIG::GetName ()
 //
 //////////////////////////////////////////////////////////////////////
 std::string
-FG_CONFIG::GetValue ()
+FG_CONFIG::GetValue
+()
 {
-  if (m_CurrentVar != m_VarList.end())
-  {
-    return (m_CurrentVar->second);
-  }
-  return ("");
+	if (m_CurrentVar != m_VarList.end())
+	{
+		return (m_CurrentVar->second);
+	}
+	return ("");
 } // FG_CONFIG::GetValue ()
 //////////////////////////////////////////////////////////////////////
 
@@ -167,20 +169,20 @@ FG_CONFIG::GetValue ()
 int
 FG_CONFIG::SetSection
 (
-  const std::string &SecName
+	const std::string &SecName
 )
 {
-  SetStart ();
-  while (m_CurrentVar != m_VarList.end())
-  {
-    if (m_CurrentVar->first.compare(0,SecName.size(),SecName) == 0)
-    {
-      m_CurrentSection = SecName;
-      return (1);
-    }
-    m_CurrentVar++;
-  }
-  return (0);
+	SetStart ();
+	while (m_CurrentVar != m_VarList.end())
+	{
+		if (m_CurrentVar->first.compare(0,SecName.size(),SecName) == 0)
+		{
+			m_CurrentSection = SecName;
+			return (1);
+		}
+		m_CurrentVar++;
+	}
+	return (0);
 } // FG_CONFIG::SetSection ( const std::string &SecName )
 //////////////////////////////////////////////////////////////////////
 
@@ -191,18 +193,19 @@ FG_CONFIG::SetSection
 //
 //////////////////////////////////////////////////////////////////////
 int
-FG_CONFIG::SecNext ()
+FG_CONFIG::SecNext
+()
 {
-  if (!Next())
-  {
-    return (0);
-  }
-  if (m_CurrentVar->first.compare (0,
-                                   m_CurrentSection.size(), m_CurrentSection) != 0)
-  {
-    return (0);
-  }
-  return (1);
+	if (!Next())
+	{
+		return (0);
+	}
+	if (m_CurrentVar->first.compare (0,
+	    m_CurrentSection.size(), m_CurrentSection) != 0)
+	{
+		return (0);
+	}
+	return (1);
 } // FG_CONFIG::GetSecNextVar ()
 //////////////////////////////////////////////////////////////////////
 
@@ -212,18 +215,19 @@ FG_CONFIG::SecNext ()
 //
 //////////////////////////////////////////////////////////////////////
 std::string
-FG_CONFIG::GetSecNextVar ()
+FG_CONFIG::GetSecNextVar
+()
 {
-  if (!Next())
-  {
-    return ("");
-  }
-  if (m_CurrentVar->first.compare (0,
-                                   m_CurrentSection.size(), m_CurrentSection) != 0)
-  {
-    return ("");
-  }
-  return (m_CurrentVar->first);
+	if (!Next())
+	{
+		return ("");
+	}
+	if (m_CurrentVar->first.compare (0,
+	    m_CurrentSection.size(), m_CurrentSection) != 0)
+	{
+		return ("");
+	}
+	return (m_CurrentVar->first);
 } // FG_CONFIG::GetSecNextVar ()
 //////////////////////////////////////////////////////////////////////
 
@@ -233,18 +237,19 @@ FG_CONFIG::GetSecNextVar ()
 //
 //////////////////////////////////////////////////////////////////////
 std::string
-FG_CONFIG::GetSecNextVal ()
+FG_CONFIG::GetSecNextVal
+()
 {
-  if (!Next())
-  {
-    return ("");
-  }
-  if (m_CurrentVar->first.compare (0,
-                                   m_CurrentSection.size(), m_CurrentSection) != 0)
-  {
-    return ("");
-  }
-  return (m_CurrentVar->second);
+	if (!Next())
+	{
+		return ("");
+	}
+	if (m_CurrentVar->first.compare (0,
+	    m_CurrentSection.size(), m_CurrentSection) != 0)
+	{
+		return ("");
+	}
+	return (m_CurrentVar->second);
 } // FG_CONFIG::GetSecNextVal ()
 //////////////////////////////////////////////////////////////////////
 
@@ -254,13 +259,14 @@ FG_CONFIG::GetSecNextVal ()
 //
 //////////////////////////////////////////////////////////////////////
 std::string
-FG_CONFIG::GetNext ()
+FG_CONFIG::GetNext
+()
 {
-  if (!Next())
-  {
-    return ("");
-  }
-  return (m_CurrentVar->second);
+	if (!Next())
+	{
+		return ("");
+	}
+	return (m_CurrentVar->second);
 } // FG_CONFIG::GetNext ()
 //////////////////////////////////////////////////////////////////////
 
@@ -270,21 +276,22 @@ FG_CONFIG::GetNext ()
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_CONFIG::Dump ()
+FG_CONFIG::Dump
+()
 {
-  m_CurrentVar = m_VarList.begin();
-  std::cout << std::endl;
-  std::cout << "dumping variables:" << std::endl;
-  while (m_CurrentVar != m_VarList.end())
-  {
-    std::cout << " Var: '" << m_CurrentVar->first << "'";
-    std::cout << " Val: '" << m_CurrentVar->second << "'";
-    std::cout << std::endl;
-    m_CurrentVar++;
-  }
-  std::cout << std::endl;
-  std::cout << "done." << std::endl;
-  std::cout << std::endl;
+	m_CurrentVar = m_VarList.begin();
+	std::cout << std::endl;
+	std::cout << "dumping variables:" << std::endl;
+	while (m_CurrentVar != m_VarList.end())
+	{
+		std::cout << " Var: '" << m_CurrentVar->first << "'";
+		std::cout << " Val: '" << m_CurrentVar->second << "'";
+		std::cout << std::endl;
+		m_CurrentVar++;
+	}
+	std::cout << std::endl;
+	std::cout << "done." << std::endl;
+	std::cout << std::endl;
 } // FG_SERVER::Dump ()
 //////////////////////////////////////////////////////////////////////
 
@@ -297,44 +304,44 @@ FG_CONFIG::Dump ()
 int
 FG_CONFIG::ParseLine
 (
-  const std::string &ConfigLine
+	const std::string &ConfigLine
 )
 {
-  size_t          nVarNameStart, nVarNameEnd;
-  size_t          nVarValueStart, nVarValueEnd;
-  mT_VarValue     NewVar;
+	size_t          nVarNameStart, nVarNameEnd;
+	size_t          nVarValueStart, nVarValueEnd;
+	mT_VarValue     NewVar;
 
-  if (ConfigLine.size() < 2) // ignore dos/windows 0x0d only
-  {
-    return (0);
-  }
-  if (ConfigLine[0] == '#')
-  {
-    return (0);
-  }
-  nVarNameStart = ConfigLine.find_first_not_of (" \t\n");
-  nVarNameEnd = ConfigLine.find ('=');
-  if ((nVarNameStart == std::string::npos)
-      || (nVarNameEnd == std::string::npos))
-  {
-    return (1);
-  }
-  nVarValueStart = ConfigLine.find_first_not_of (" \t\n", nVarNameEnd+1);
-  nVarValueEnd = ConfigLine.size();
-  while (isspace (ConfigLine[nVarNameEnd-1]))
-  {
-    nVarNameEnd--;
-  }
-  while (isspace (ConfigLine[nVarValueEnd-1]))
-  {
-    nVarValueEnd--;
-  }
-  NewVar.first = ConfigLine.substr
-                 (nVarNameStart, nVarNameEnd - nVarNameStart);
-  NewVar.second = ConfigLine.substr
-                  (nVarValueStart, nVarValueEnd - nVarValueStart);
-  m_VarList.push_back (NewVar);
-  return (0);
+	if (ConfigLine.size() < 2) // ignore dos/windows 0x0d only
+	{
+		return (0);
+	}
+	if (ConfigLine[0] == '#')
+	{
+		return (0);
+	}
+	nVarNameStart = ConfigLine.find_first_not_of (" \t\n");
+	nVarNameEnd = ConfigLine.find ('=');
+	if ((nVarNameStart == std::string::npos)
+	||  (nVarNameEnd == std::string::npos))
+	{
+		return (1);
+	}
+	nVarValueStart = ConfigLine.find_first_not_of (" \t\n", nVarNameEnd+1);
+	nVarValueEnd = ConfigLine.size();
+	while (isspace (ConfigLine[nVarNameEnd-1]))
+	{
+		nVarNameEnd--;
+	}
+	while (isspace (ConfigLine[nVarValueEnd-1]))
+	{
+		nVarValueEnd--;
+	}
+	NewVar.first = ConfigLine.substr
+		(nVarNameStart, nVarNameEnd - nVarNameStart);
+	NewVar.second = ConfigLine.substr
+		(nVarValueStart, nVarValueEnd - nVarValueStart);
+	m_VarList.push_back (NewVar);
+	return (0);
 } // FG_SERVER::ParseLine ()
 //////////////////////////////////////////////////////////////////////
 

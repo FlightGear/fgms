@@ -181,37 +181,35 @@ string NumToStr ( T n_Number, int n_Precision = 2, int n_Base = 10 )
 	//	for the floating point part
 	//
 	//////////////////////////////////////////////////
-    if (n_Precision != 0)
-    {
-        n_Factor = 1;
-        for (int i=n_Precision; i>0; i--)
-        {
-            n_Factor *= n_Base;
-        }
-        T tmp;
-        tmp = n_Number - ((t_longlong) n_Number);
-        n_WorkNumber = (t_longlong) (tmp * n_Factor);
-        n_WorkNumber = (t_longlong) n_WorkNumber;
-        if ((n_WorkNumber == 0) && (tmp != 0))
-        {
-            str_Return = "0" + str_Return;
-        }
-        else
-        {
-            n = n_Factor;
-            n_WorkNumber = std::llabs(n_WorkNumber);
-            while (n_WorkNumber >= 0 && n > 1)
-            {
-                str_Return = Numbers[n_WorkNumber % n_Base] + str_Return;
-                n_WorkNumber /= n_Base;
-                n /= n_Base;
-            }
-        }
-//        if (tmp != 0.0)
-//        {
-            str_Return = "." + str_Return;
-//        }
-    }
+
+	if (n_Precision != 0)
+	{
+		n_Factor = 1;
+		for (int i=n_Precision; i>0; i--)
+		{
+			n_Factor *= n_Base;
+		}
+		T tmp;
+		tmp = n_Number - ((t_longlong) n_Number);
+		n_WorkNumber = (t_longlong) (tmp * n_Factor);
+		n_WorkNumber = (t_longlong) n_WorkNumber;
+		if ((n_WorkNumber == 0) && (tmp != 0))
+		{
+			str_Return = "0" + str_Return;
+		}
+		else
+		{
+			n = n_Factor;
+			n_WorkNumber = std::llabs(n_WorkNumber);
+			while (n_WorkNumber >= 0 && n > 1)
+			{
+				str_Return = Numbers[n_WorkNumber % n_Base] + str_Return;
+				n_WorkNumber /= n_Base;
+				n /= n_Base;
+			}
+		}
+		str_Return = "." + str_Return;
+	}
 	n_WorkNumber = (t_longlong) n_Number;
 	if (n_WorkNumber < 0)
 	{
@@ -231,6 +229,6 @@ string NumToStr ( T n_Number, int n_Precision = 2, int n_Base = 10 )
 		str_Return = "-" + str_Return;
 	}
 	return (str_Return);
-}
+	}
 
 #endif

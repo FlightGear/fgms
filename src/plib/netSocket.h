@@ -71,6 +71,7 @@ public:
 
   bool getBroadcast () const ;
   bool operator == (const netAddress& Value) const;
+  bool operator != (const netAddress& Value) const;
 };
 
 

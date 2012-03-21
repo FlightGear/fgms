@@ -178,6 +178,14 @@ bool netAddress::operator == (const netAddress& Value) const
   return (false);
 }
 
+bool netAddress::operator != (const netAddress& Value) const
+{
+  if ((this->sin_family == Value.sin_family)
+  &&  (this->sin_addr == Value.sin_addr))
+    return (false);
+  return (true);
+}
+
 netSocket::netSocket ()
 {
   handle = -1 ;

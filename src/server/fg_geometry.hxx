@@ -32,19 +32,6 @@
 #define SG_DEGREES_TO_RADIANS (SG_PI/SG_180)
 #define SG_FEET_TO_METER    0.3048
 
-//#define SG_FEET_TO_METER 0.3048
-
-#if 0
-typedef float SGVec3f [ 3 ] ;
-typedef double SGVec3d [ 3 ] ;
-typedef float SGQuatf [ 4 ] ;
-typedef double sgdVec3 [ 3 ] ;
-typedef float sgMat4 [4][4] ;
-typedef float sgVec4 [ 4 ] ;
-
-typedef sgVec4 sgQuat;
-#endif
-
 typedef double t_Point3D;
 
 enum { X, Y, Z };
@@ -52,59 +39,59 @@ enum { Lat, Lon, Alt };
 
 class Point3D
 {
-public:
-  Point3D();
-  Point3D ( const Point3D& P );
-  Point3D ( const t_Point3D& X, const t_Point3D& Y, const t_Point3D& Z );
-  t_Point3D GetX () { return m_X; };
-  t_Point3D GetY () { return m_Y; };
-  t_Point3D GetZ () { return m_Z; };
-  void SetX ( const t_Point3D& nV ) { m_X = nV; };
-  void SetY ( const t_Point3D& nV ) { m_Y = nV; };
-  void SetZ ( const t_Point3D& nV ) { m_Z = nV; };
-  void Set ( const t_Point3D& X, const t_Point3D& Y, const t_Point3D& Z );
-  void CartToPolar();
-  void PolarToCart();
-  //////////////////////////////////////////////////
-  //  operators
-  //////////////////////////////////////////////////
-  void operator =  ( const Point3D& P );
-  void operator =  ( const sgdVec3& P );
-  void operator += ( const Point3D& P );
-  void operator -= ( const Point3D& P );
-  void operator *= ( const Point3D& P );
-  void operator /= ( const Point3D& P );
-  void operator ^= ( const Point3D& P );
-  void operator *= ( const t_Point3D& nV );
-  void operator /= ( const t_Point3D& nV );
-  bool operator == ( const Point3D& P );
-  bool operator != ( const Point3D& P );
-  t_Point3D operator[] ( const int Index ) const;
-  t_Point3D& operator[] ( const int Index );
-  friend Point3D operator + ( const Point3D& P1, const Point3D& P2 );
-  friend Point3D operator - ( const Point3D& P1, const Point3D& P2 );
-  friend Point3D operator * ( const Point3D& P1, const Point3D& P2 );
-  friend Point3D operator / ( const Point3D& P1, const Point3D& P2 );
-  friend Point3D operator ^ ( const Point3D& P1, const Point3D& P2 );
-  friend Point3D operator * ( const t_Point3D& nV, const Point3D& P1 );
-  friend Point3D operator / ( const t_Point3D& nV, const Point3D& P1 );
-  //////////////////////////////////////////////////
-  //  others
-  //////////////////////////////////////////////////
-  t_Point3D length () const;
-  friend t_Point3D length ( const Point3D& P );
-  void normalize ();
-  friend Point3D normalize ( const Point3D& P );
-  t_Point3D sqr ();
-  friend t_Point3D sqr ( const Point3D& P );
-  void invert ();
-  friend Point3D invert (const Point3D& P );
-  void clear ();
+	public:
+	Point3D();
+	Point3D ( const Point3D& P );
+	Point3D ( const t_Point3D& X, const t_Point3D& Y, const t_Point3D& Z );
+	t_Point3D GetX () { return m_X; };
+	t_Point3D GetY () { return m_Y; };
+	t_Point3D GetZ () { return m_Z; };
+	void SetX ( const t_Point3D& nV ) { m_X = nV; };
+	void SetY ( const t_Point3D& nV ) { m_Y = nV; };
+	void SetZ ( const t_Point3D& nV ) { m_Z = nV; };
+	void Set ( const t_Point3D& X, const t_Point3D& Y, const t_Point3D& Z );
+	void CartToPolar();
+	void PolarToCart();
+	//////////////////////////////////////////////////
+	//  operators
+	//////////////////////////////////////////////////
+	void operator =  ( const Point3D& P );
+	void operator =  ( const sgdVec3& P );
+	void operator += ( const Point3D& P );
+	void operator -= ( const Point3D& P );
+	void operator *= ( const Point3D& P );
+	void operator /= ( const Point3D& P );
+	void operator ^= ( const Point3D& P );
+	void operator *= ( const t_Point3D& nV );
+	void operator /= ( const t_Point3D& nV );
+	bool operator == ( const Point3D& P );
+	bool operator != ( const Point3D& P );
+	t_Point3D operator[] ( const int Index ) const;
+	t_Point3D& operator[] ( const int Index );
+	friend Point3D operator + ( const Point3D& P1, const Point3D& P2 );
+	friend Point3D operator - ( const Point3D& P1, const Point3D& P2 );
+	friend Point3D operator * ( const Point3D& P1, const Point3D& P2 );
+	friend Point3D operator / ( const Point3D& P1, const Point3D& P2 );
+	friend Point3D operator ^ ( const Point3D& P1, const Point3D& P2 );
+	friend Point3D operator * ( const t_Point3D& nV, const Point3D& P1 );
+	friend Point3D operator / ( const t_Point3D& nV, const Point3D& P1 );
+	//////////////////////////////////////////////////
+	//  others
+	//////////////////////////////////////////////////
+	t_Point3D length () const;
+	friend t_Point3D length ( const Point3D& P );
+	void normalize ();
+	friend Point3D normalize ( const Point3D& P );
+	t_Point3D sqr ();
+	friend t_Point3D sqr ( const Point3D& P );
+	void invert ();
+	friend Point3D invert (const Point3D& P );
+	void clear ();
 
-private:
-  t_Point3D m_X;
-  t_Point3D m_Y;
-  t_Point3D m_Z;
+	private:
+	t_Point3D m_X;
+	t_Point3D m_Y;
+	t_Point3D m_Z;
 }; // class Point3D
 
 void CopyPos (  const Point3D& src, Point3D &dst );

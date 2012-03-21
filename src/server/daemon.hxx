@@ -36,18 +36,18 @@ using namespace std;
 
 class cDaemon
 {
-  static pid_t PidOfDaemon;       // remember who we are
-  static list <pid_t> Children; // keep track of our children
+	static pid_t PidOfDaemon;       // remember who we are
+	static list <pid_t> Children; // keep track of our children
 
 public:
-  cDaemon();
-  ~cDaemon ();
-  static void SigHandler ( int SigType );
-  static int  Daemonize (); // make us a daemon
-  static void KillAllChildren (); // kill our children and ourself
-  static void AddChild ( pid_t ChildsPid );
-  static int  NumChildren ();
-  static int  GetPid() { return PidOfDaemon; };
+	cDaemon();
+	~cDaemon ();
+	static void SigHandler ( int SigType );
+	static int  Daemonize (); // make us a daemon
+	static void KillAllChildren (); // kill our children and ourself
+	static void AddChild ( pid_t ChildsPid );
+	static int  NumChildren ();
+	static int  GetPid() { return PidOfDaemon; };
 };
 
 #endif // #ifndef _MSC_VER

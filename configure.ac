@@ -47,7 +47,7 @@ dnl #####
 dnl ##################################################
 CURRENT="0"
 REVISION="10"
-AGE="9"
+AGE="10"
 AC_SUBST(CURRENT)
 AC_SUBST(REVISION)
 AC_SUBST(AGE)
@@ -97,6 +97,22 @@ AC_ARG_WITH(debug,
 
 dnl ##################################################
 dnl #####
+dnl #####       extra argument: --with-profiler
+dnl #####
+dnl ##################################################
+WITH_PROF="no"
+AC_ARG_WITH(prof,
+[  --with-prof			Use $(CC) -pg  (default=no) ],
+[ case "$withval" in
+	yes)
+		WITH_PROF="yes"
+		;;
+	*)
+		WITH_PROF="no"
+	esac ])
+
+dnl ##################################################
+dnl #####
 dnl #####       extra argument: --with-optimization
 dnl #####
 dnl ##################################################
@@ -133,7 +149,14 @@ dnl #####       2. checks for libraries
 dnl #####
 dnl ###########################################################################
 dnl AC_CANONICAL_HOST
-
+AC_SEARCH_LIBS(pthread_create, [pthread c_r])
+if test "x$ac_cv_header_pthread_h" = "xyes"; then
+	if test "x$ac_cv_search_pthread_exit" = "x-lc_r"; then
+		CXXFLAGS="-pthread $CXXFLAGS"
+		CFLAGS="-pthread $CFLAGS"
+		LIBS="-lsgthreads $LIBS"
+	fi
+fi
 
 dnl ##### #############################################################
 dnl #####
@@ -158,6 +181,7 @@ AC_CHECK_HEADERS(	\
 	string.h	\
 	syslog.h	\
 	libgen.h	\
+	pthread.h	\
 	)
 
 dnl ##################################################################
@@ -193,9 +217,12 @@ dnl #####
 dnl #####       Set Default CXXFLAGS
 dnl #####
 dnl ##################################################
-CXXFLAGS="-Wall \"-DSYSCONFDIR=\"\\\"$sysconfdir\\\""
+CXXFLAGS="-Wall \"-DSYSCONFDIR=\"\\\"$sysconfdir\\\" $CXXFLAGS"
 if test "x$WITH_DEBUG" = "xyes"; then
         CXXFLAGS="$CXXFLAGS -g -DENABLE_DEBUG"
+fi
+if test "x$WITH_PROF" = "xyes"; then
+        CXXFLAGS="$CXXFLAGS -pg"
 fi
 if test "x$WITH_OPTIMIZATION" != "xno"; then
 	CXXFLAGS="$CXXFLAGS -O$WITH_OPTIMIZATION -fno-strict-aliasing"

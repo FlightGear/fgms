@@ -25,7 +25,7 @@
 
 #include <cstdlib>
 #ifndef _MSC_VER
-#include <sys/wait.h>
+	#include <sys/wait.h>
 #endif
 #include <signal.h>
 #include "fg_server.hxx"
@@ -38,25 +38,25 @@ using namespace std;
 FG_SERVER       Servant;
 extern  bool    RunAsDaemon;
 #ifdef _MSC_VER
-#define M_IS_DIR _S_IFDIR
+	#define M_IS_DIR _S_IFDIR
 #else // !_MSC_VER
-#define M_IS_DIR S_IFDIR
-extern  cDaemon Myself;
+	#define M_IS_DIR S_IFDIR
+	extern  cDaemon Myself;
 #endif
-string          ConfigFileName; // from commandline
 static bool     bHadConfig = false; // must have a config file, with server name
 
 static int
-is_file_or_directory( char * path )
+is_file_or_directory ( char * path )
 {
-    struct stat buf;
-    if (stat(path,&buf) == 0) {
-        if (buf.st_mode & M_IS_DIR)
-            return 2;
-        else
-            return 1;
-    }
-    return 0;
+	struct stat buf;
+	if (stat(path,&buf) == 0)
+	{
+		if (buf.st_mode & M_IS_DIR)
+			return 2;
+		else
+			return 1;
+	}
+	return 0;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -67,61 +67,69 @@ is_file_or_directory( char * path )
 void
 PrintHelp ()
 {
-  cout << endl;
-  cout << "\n"
-  "options are:\n"
-  "-h            print this help screen\n"
-  "-a PORT       listen to PORT for telnet\n"
-  "-c config     read 'config' as configuration file\n"
-  "-p PORT       listen to PORT\n"
-  "-t TTL        Time a client is active while not sending packets\n"
-  "-o OOR        nautical miles two players must be apart to be out of reach\n"
-  "-l LOGFILE    Log to LOGFILE\n"
-  "-v LEVEL      verbosity (loglevel) in range 1 (few) and 5 (much)\n"
-  "-d            do _not_ run as a daemon (stay in foreground)\n"
-  "-D            do run as a daemon\n"
-  "\n"
-  "the default is to run as a daemon, which can be overridden in the\n"
-  "config file.\n"
-  "commandline parameters always override config file options\n"
-  "\n";
-  exit (0);
+	cout << endl;
+	cout << "\n"
+	"options are:\n"
+	"-h            print this help screen\n"
+	"-a PORT       listen to PORT for telnet\n"
+	"-c config     read 'config' as configuration file\n"
+	"-p PORT       listen to PORT\n"
+	"-t TTL        Time a client is active while not sending packets\n"
+	"-o OOR        nautical miles two players must be apart to be out of reach\n"
+	"-l LOGFILE    Log to LOGFILE\n"
+	"-v LEVEL      verbosity (loglevel) in range 1 (few) and 5 (much)\n"
+	"-d            do _not_ run as a daemon (stay in foreground)\n"
+	"-D            do run as a daemon\n"
+	"\n"
+	"the default is to run as a daemon, which can be overridden in the\n"
+	"config file.\n"
+	"\n";
+	exit (0);
 } // PrintHelp ()
 //////////////////////////////////////////////////////////////////////
+
 #ifdef _MSC_VER
 // kludge for getopt() for WIN32
 static char * optarg;
 static int curr_arg = 0;
 int getopt ( int argcount, char* argvars[], char * args )
 {
-    size_t len = strlen(args);
-    size_t i;
-    int c = 0;
-    if (curr_arg == 0) {
-        curr_arg = 1;
-    }
-    if (curr_arg < argcount) {
-        char * arg = argvars[curr_arg];
-        if (*arg == '-') {
-            arg++;
-            c = *arg; // get first char
-            for (i = 0; i < len; i++) {
-                if (c == args[i]) { // found 
-                    if ( args[i+1] == ':' ) {
-                        // fill in following
-                        curr_arg++;
-                        optarg = argvars[curr_arg];
-                    }
-                    break;
-                }
-            }
-            curr_arg++;
-            return c;
-        } else {
-            return '-';
-        }
-    }
-    return -1;
+	size_t len = strlen(args);
+	size_t i;
+	int c = 0;
+	if (curr_arg == 0)
+	{
+		curr_arg = 1;
+	}
+	if (curr_arg < argcount)
+	{
+		char * arg = argvars[curr_arg];
+		if (*arg == '-')
+		{
+			arg++;
+			c = *arg; // get first char
+			for (i = 0; i < len; i++)
+			{
+				if (c == args[i])
+				{	// found 
+					if ( args[i+1] == ':' )
+					{
+						// fill in following
+						curr_arg++;
+						optarg = argvars[curr_arg];
+					}
+					break;
+				}
+			}
+			curr_arg++;
+			return c;
+		}
+		else
+		{
+			return '-';
+		}
+	}
+	return -1;
 }
 #endif // _MSC_VER
 
@@ -133,250 +141,243 @@ int getopt ( int argcount, char* argvars[], char * args )
 bool
 ProcessConfig ( const string& ConfigName )
 {
-  FG_CONFIG   Config;
-  string      Val;
-  int         E;
+	FG_CONFIG   Config;
+	string      Val;
+	int         E;
 
-  if (Config.Read (ConfigName))
-  {
-    return (false);
-  }
-  SG_ALERT (SG_SYSTEMS, SG_ALERT, "processing " << ConfigName);
-  Val = Config.Get ("server.name");
-  if (Val != "")
-  {
-    Servant.SetServerName (Val);
-    bHadConfig = true; // got a serve name - minimum 
-  }
-  Val = Config.Get ("server.address");
-  if (Val != "")
-  {
-    Servant.SetBindAddress (Val);
-  }
-  Val = Config.Get ("server.port");
-  if (Val != "")
-  {
-    Servant.SetDataPort (StrToNum<int> (Val.c_str (), E));
-    if (E)
-    {
-      SG_ALERT (SG_SYSTEMS, SG_ALERT,
-        "invalid value for DataPort: '" << optarg << "'");
-      exit (1);
-    }
-  }
-  Val = Config.Get ("server.telnet_port");
-  if (Val != "")
-  {
-    Servant.SetTelnetPort (StrToNum<int> (Val.c_str (), E));
-    if (E)
-    {
-      SG_ALERT (SG_SYSTEMS, SG_ALERT,
-        "invalid value for TelnetPort: '" << optarg << "'");
-      exit (1);
-    }
-  }
-  Val = Config.Get("server.out_of_reach");
-  if (Val != "")
-  {
-    Servant.SetOutOfReach (StrToNum<int> (Val.c_str (), E));
-    if (E)
-    {
-      SG_ALERT (SG_SYSTEMS, SG_ALERT,
-        "invalid value for OutOfReach: '" << optarg << "'");
-      exit (1);
-    }
-  }
-  Val = Config.Get("server.playerexpires");
-  if (Val != "")
-  {
-    Servant.SetPlayerExpires (StrToNum<int> (Val.c_str (), E));
-    if (E)
-    {
-      SG_ALERT (SG_SYSTEMS, SG_ALERT,
-        "invalid value for Expire: '" << optarg << "'");
-      exit (1);
-    }
-  }
-  Val = Config.Get ("server.logfile");
-  if (Val != "")
-  {
-    Servant.SetLogfile (Val);
-  }
-  Val = Config.Get ("server.daemon");
-  if (Val != "")
-  {
-    if ((Val == "on") || (Val == "true"))
-    {
-      RunAsDaemon = true;
-    }
-    else if ((Val == "off") || (Val == "false"))
-    {
-      RunAsDaemon = false;
-    }
-    else
-    {
-      SG_ALERT (SG_SYSTEMS, SG_ALERT,
-        "unknown value for 'server.daemon'!" << " in file " << ConfigName);
-    }
-  }
-  Val = Config.Get ("server.tracked");
-  if (Val != "")
-  {
-    string  Server;
-    int     Port;
-    bool    tracked;
-    if (Val == "true")
-    {
-      tracked = true;
-    }
-    else
-    {
-      tracked = false;
-    }
-    Server = Config.Get ("server.tracking_server");
-    Val = Config.Get ("server.tracking_port");
-    Port = StrToNum<int> (Val.c_str (), E);
-    if (E)
-    {
-      SG_ALERT (SG_SYSTEMS, SG_ALERT,
-        "invalid value for tracking_port: '" << Val << "'");
-      exit (1);
-    }
-    Servant.AddTracker (Server, Port, tracked);
-    Val = Config.Get ("server.tracking_maxchilds");
-    if (Val != "")
-    {
-        Port = StrToNum<int> (Val.c_str (), E); // misuse of Port
-        if (E)
-        {
-          SG_ALERT (SG_SYSTEMS, SG_ALERT,
-            "invalid value for tracking_maxchilds: '" << Val << "'");
-          exit (1);
-        }
-        Servant.MaxTracker (Port);
-    }
-  }
-  Val = Config.Get ("server.is_hub");
-  if (Val != "")
-  {
-    if (Val == "true")
-    {
-      Servant.SetHub (true);
-    }
-    else
-    {
-      Servant.SetHub (false);
-    }
-  }
-  //////////////////////////////////////////////////
-  //      read the list of relays
-  //////////////////////////////////////////////////
-  bool    MoreToRead  = true;
-  string  Section = "relay";
-  string  Var;
-  string  Server = "";
-  int     Port   = 0;
+	if (bHadConfig)	// we already have a config, so ignore
+		return (true);
+	if (Config.Read (ConfigName))
+	{
+		return (false);
+	}
+	SG_ALERT (SG_SYSTEMS, SG_ALERT, "processing " << ConfigName);
+	Val = Config.Get ("server.name");
+	if (Val != "")
+	{
+		Servant.SetServerName (Val);
+		bHadConfig = true; // got a serve name - minimum 
+	}
+	Val = Config.Get ("server.address");
+	if (Val != "")
+	{
+		Servant.SetBindAddress (Val);
+	}
+	Val = Config.Get ("server.port");
+	if (Val != "")
+	{
+		Servant.SetDataPort (StrToNum<int> (Val.c_str (), E));
+		if (E)
+		{
+			SG_ALERT (SG_SYSTEMS, SG_ALERT, "invalid value for DataPort: '" << optarg << "'");
+			exit (1);
+		}
+	}
+	Val = Config.Get ("server.telnet_port");
+	if (Val != "")
+	{
+		Servant.SetTelnetPort (StrToNum<int> (Val.c_str (), E));
+		if (E)
+		{
+			SG_ALERT (SG_SYSTEMS, SG_ALERT, "invalid value for TelnetPort: '" << optarg << "'");
+			exit (1);
+		}
+	}
+	Val = Config.Get("server.out_of_reach");
+	if (Val != "")
+	{
+		Servant.SetOutOfReach (StrToNum<int> (Val.c_str (), E));
+		if (E)
+		{
+			SG_ALERT (SG_SYSTEMS, SG_ALERT, "invalid value for OutOfReach: '" << optarg << "'");
+			exit (1);
+		}
+	}
+	Val = Config.Get("server.playerexpires");
+	if (Val != "")
+	{
+		Servant.SetPlayerExpires (StrToNum<int> (Val.c_str (), E));
+		if (E)
+		{
+			SG_ALERT (SG_SYSTEMS, SG_ALERT, "invalid value for Expire: '" << optarg << "'");
+			exit (1);
+		}
+	}
+	Val = Config.Get ("server.logfile");
+	if (Val != "")
+	{
+		Servant.SetLogfile (Val);
+	}
+	Val = Config.Get ("server.daemon");
+	if (Val != "")
+	{
+		if ((Val == "on") || (Val == "true"))
+		{
+			RunAsDaemon = true;
+		}
+		else if ((Val == "off") || (Val == "false"))
+		{
+			RunAsDaemon = false;
+		}
+		else
+		{
+			SG_ALERT (SG_SYSTEMS, SG_ALERT, "unknown value for 'server.daemon'!" << " in file " << ConfigName);
+		}
+	}
+	Val = Config.Get ("server.tracked");
+	if (Val != "")
+	{
+		string  Server;
+		int     Port;
+		bool    tracked;
+		if (Val == "true")
+		{
+			tracked = true;
+		}
+		else
+		{
+			tracked = false;
+		}
+		Server = Config.Get ("server.tracking_server");
+		Val = Config.Get ("server.tracking_port");
+		Port = StrToNum<int> (Val.c_str (), E);
+		if (E)
+		{
+			SG_ALERT (SG_SYSTEMS, SG_ALERT, "invalid value for tracking_port: '" << Val << "'");
+			exit (1);
+		}
+		Servant.AddTracker (Server, Port, tracked);
+		Val = Config.Get ("server.tracking_maxchilds");
+		if (Val != "")
+		{
+			Port = StrToNum<int> (Val.c_str (), E); // misuse of Port
+			if (E)
+			{
+				SG_ALERT (SG_SYSTEMS, SG_ALERT, "invalid value for tracking_maxchilds: '" << Val << "'");
+				exit (1);
+			}
+			Servant.MaxTracker (Port);
+		}
+	}
+	Val = Config.Get ("server.is_hub");
+	if (Val != "")
+	{
+		if (Val == "true")
+		{
+			Servant.SetHub (true);
+		}
+		else
+		{
+			Servant.SetHub (false);
+		}
+	}
+	//////////////////////////////////////////////////
+	//      read the list of relays
+	//////////////////////////////////////////////////
+	bool    MoreToRead  = true;
+	string  Section = "relay";
+	string  Var;
+	string  Server = "";
+	int     Port   = 0;
 
-  if (! Config.SetSection (Section))
-  {
-    MoreToRead = false;
-  }
-  while (MoreToRead)
-  {
-    Var = Config.GetName ();
-    Val = Config.GetValue();
-    if (Var == "relay.host")
-    { 
-      Server = Val;
-    }
-    if (Var == "relay.port")
-    { 
-      Port = StrToNum<int> (Val.c_str(), E);
-      if (E)
-      { 
-        SG_ALERT (SG_SYSTEMS, SG_ALERT,
-            "invalid value for RelayPort: '" << Val << "'");
-        exit (1);
-      }
-    }
-    if ((Server != "") && (Port != 0))
-    { 
-      Servant.AddRelay (Server, Port);
-      Server = "";
-      Port   = 0;
-    }
-    if (Config.SecNext () == 0)
-    { 
-      MoreToRead = false;
-    }
-  }
-  //////////////////////////////////////////////////
-  //      read the list of crossfeeds
-  //////////////////////////////////////////////////
-  MoreToRead  = true;
-  Section = "crossfeed";
-  Var    = "";
-  Server = "";
-  Port   = 0;
-  if (! Config.SetSection (Section))
-  {
-    MoreToRead = false;
-  }
-  while (MoreToRead)
-  {
-    Var = Config.GetName ();
-    Val = Config.GetValue();
-    if (Var == "crossfeed.host")
-    {
-      Server = Val;
-    }
-    if (Var == "crossfeed.port")
-    {
-      Port = StrToNum<int> (Val.c_str(), E);
-      if (E)
-      {
-        SG_ALERT (SG_SYSTEMS, SG_ALERT,
-            "invalid value for crossfeed.port: '" << Val << "'");
-        exit (1);
-      }
-    }
-    if ((Server != "") && (Port != 0))
-    {
-      Servant.AddCrossfeed (Server, Port);
-      Server = "";
-      Port   = 0;
-    }
-    if (Config.SecNext () == 0)
-    {
-      MoreToRead = false;
-    }
-  }
-  //////////////////////////////////////////////////
-  //      read the list of blacklisted IPs
-  //////////////////////////////////////////////////
-  MoreToRead  = true;
-  Section = "blacklist";
-  Var    = "";
-  Val    = "";
-  if (! Config.SetSection (Section))
-  {
-    MoreToRead = false;
-  }
-  while (MoreToRead)
-  {
-    Var = Config.GetName ();
-    Val = Config.GetValue();
-    if (Var == "blacklist")
-    {
-      Servant.AddBlacklist (Val);
-    }
-    if (Config.SecNext () == 0)
-    {
-      MoreToRead = false;
-    }
-  }
-  //////////////////////////////////////////////////
-  return (true);
+	if (! Config.SetSection (Section))
+	{
+		MoreToRead = false;
+	}
+	while (MoreToRead)
+	{
+		Var = Config.GetName ();
+		Val = Config.GetValue();
+		if (Var == "relay.host")
+		{ 
+			Server = Val;
+		}
+		if (Var == "relay.port")
+		{ 
+			Port = StrToNum<int> (Val.c_str(), E);
+			if (E)
+			{ 
+				SG_ALERT (SG_SYSTEMS, SG_ALERT, "invalid value for RelayPort: '" << Val << "'");
+				exit (1);
+			}
+		}
+		if ((Server != "") && (Port != 0))
+		{ 
+			Servant.AddRelay (Server, Port);
+			Server = "";
+			Port   = 0;
+		}
+		if (Config.SecNext () == 0)
+		{ 
+			MoreToRead = false;
+		}
+	}
+	//////////////////////////////////////////////////
+	//      read the list of crossfeeds
+	//////////////////////////////////////////////////
+	MoreToRead  = true;
+	Section = "crossfeed";
+	Var    = "";
+	Server = "";
+	Port   = 0;
+	if (! Config.SetSection (Section))
+	{
+		MoreToRead = false;
+	}
+	while (MoreToRead)
+	{
+		Var = Config.GetName ();
+		Val = Config.GetValue();
+		if (Var == "crossfeed.host")
+		{
+			Server = Val;
+		}
+		if (Var == "crossfeed.port")
+		{
+			Port = StrToNum<int> (Val.c_str(), E);
+			if (E)
+			{
+				SG_ALERT (SG_SYSTEMS, SG_ALERT, "invalid value for crossfeed.port: '" << Val << "'");
+				exit (1);
+			}
+		}
+		if ((Server != "") && (Port != 0))
+		{
+			Servant.AddCrossfeed (Server, Port);
+			Server = "";
+			Port   = 0;
+		}
+		if (Config.SecNext () == 0)
+		{
+			MoreToRead = false;
+		}
+	}
+	//////////////////////////////////////////////////
+	//      read the list of blacklisted IPs
+	//////////////////////////////////////////////////
+	MoreToRead  = true;
+	Section = "blacklist";
+	Var    = "";
+	Val    = "";
+	if (! Config.SetSection (Section))
+	{
+		MoreToRead = false;
+	}
+	while (MoreToRead)
+	{
+		Var = Config.GetName ();
+		Val = Config.GetValue();
+		if (Var == "blacklist")
+		{
+			Servant.AddBlacklist (Val);
+		}
+		if (Config.SecNext () == 0)
+		{
+			MoreToRead = false;
+		}
+	}
+	//////////////////////////////////////////////////
+	return (true);
 } // ProcessConfig ( const string& ConfigName )
 //////////////////////////////////////////////////////////////////////
 
@@ -388,89 +389,89 @@ ProcessConfig ( const string& ConfigName )
 int
 ParseParams ( int argcount, char* argvars[] )
 {
-  int     m;
-  int     E;
+	int     m;
+	int     E;
 
-  while ((m=getopt(argcount,argvars,"a:c:dDhl:o:p:t:v:")) != -1) 
-  {
-    switch (m)
-    {
-      case 'h':
-        cerr << endl;
-        cerr << "syntax: " << argvars[0] << " options" << endl;
-        PrintHelp ();
-        break; // never reached
-      case 'a':
-        Servant.SetTelnetPort (StrToNum<int> (optarg, E));
-        if (E)
-        {
-          cerr << "invalid value for TelnetPort: '"
-               << optarg << "'" << endl;
-          exit(1);
-        }
-        break;
-      case 'c':
-        if (is_file_or_directory(optarg) == 1) {
-            ConfigFileName = optarg; // to be read later
-        } else {
-          cerr << "could not read '"
-               << optarg << "' for input!" 
-               << endl;
-          exit (1);
-        }
-        break;
-      case 'p':
-        Servant.SetDataPort (StrToNum<int>  (optarg, E));
-        if (E)
-        {
-          cerr << "invalid value for DataPort: '"
-               << optarg << "'" << endl;
-          exit(1);
-        }
-        break;
-      case 'o':
-        Servant.SetOutOfReach (StrToNum<int>  (optarg, E));
-        if (E)
-        {
-          cerr << "invalid value for OutOfReach: '"
-               << optarg << "'" << endl;
-          exit(1);
-        }
-        break;
-      case 'v':
-        Servant.SetLoglevel (StrToNum<int>  (optarg, E));
-        if (E)
-        {
-          cerr << "invalid value for Loglevel: '"
-               << optarg << "'" << endl;
-          exit(1);
-        }
-        break;
-      case 't':
-        Servant.SetPlayerExpires (StrToNum<int>  (optarg, E));
-        if (E)
-        {
-          cerr << "invalid value for expire: '"
-               << optarg << "'" << endl;
-          exit(1);
-        }
-        break;
-      case 'l':
-        Servant.SetLogfile (optarg);
-        break;
-      case 'd':
-        RunAsDaemon = false;
-        break;
-      case 'D':
-        RunAsDaemon = true;
-        break;
-      default:
-        cerr << endl << endl;
-        PrintHelp ();
-        exit (1);
-      } // switch ()
-    } // while ()
-  return (1); // success
+	while ((m=getopt(argcount,argvars,"a:c:dDhl:o:p:t:v:")) != -1) 
+	{
+		switch (m)
+		{
+			case 'h':
+				cerr << endl;
+				cerr << "syntax: " << argvars[0] << " options" << endl;
+				PrintHelp ();
+				break; // never reached
+			case 'a':
+				Servant.SetTelnetPort (StrToNum<int> (optarg, E));
+				if (E)
+				{
+					cerr << "invalid value for TelnetPort: '" << optarg << "'" << endl;
+					exit(1);
+				}
+				break;
+			case 'c':
+				if (is_file_or_directory(optarg) == 1)
+				{
+					ProcessConfig (optarg);
+				} else {
+					cerr << "could not read '"
+					<< optarg << "' for input!" 
+					<< endl;
+					exit (1);
+				}
+				break;
+			case 'p':
+				Servant.SetDataPort (StrToNum<int>  (optarg, E));
+				if (E)
+				{
+					cerr << "invalid value for DataPort: '"
+					<< optarg << "'" << endl;
+					exit(1);
+				}
+				break;
+			case 'o':
+				Servant.SetOutOfReach (StrToNum<int>  (optarg, E));
+				if (E)
+				{
+					cerr << "invalid value for OutOfReach: '"
+					<< optarg << "'" << endl;
+					exit(1);
+				}
+				break;
+			case 'v':
+				Servant.SetLoglevel (StrToNum<int>  (optarg, E));
+				if (E)
+				{
+					cerr << "invalid value for Loglevel: '"
+					<< optarg << "'" << endl;
+					exit(1);
+				}
+				break;
+			case 't':
+				Servant.SetPlayerExpires (StrToNum<int>  (optarg, E));
+				if (E)
+				{
+					cerr << "invalid value for expire: '"
+					<< optarg << "'" << endl;
+					exit(1);
+				}
+				break;
+			case 'l':
+				Servant.SetLogfile (optarg);
+				break;
+			case 'd':
+				RunAsDaemon = false;
+				break;
+			case 'D':
+				RunAsDaemon = true;
+				break;
+			default:
+				cerr << endl << endl;
+				PrintHelp ();
+				exit (1);
+		} // switch ()
+	} // while ()
+	return (1); // success
 } // ParseParams()
 //////////////////////////////////////////////////////////////////////
 
@@ -482,34 +483,33 @@ ParseParams ( int argcount, char* argvars[] )
 int
 ReadConfigs ( bool ReInit = false )
 {
-  string Path;
+	string Path;
 #ifndef _MSC_VER
-  Path = SYSCONFDIR;
-  Path += "/fgms.conf";
-  if (ProcessConfig (ConfigFileName) == true)
-    return 1;
-  if (ProcessConfig (Path) == true)
-    return 1;
-  Path = getenv ("HOME");
+	Path = SYSCONFDIR;
+	Path += "/fgms.conf";
+	if (ProcessConfig (Path) == true)
+		return 1;
+	Path = getenv ("HOME");
 #else
-    char *cp = getenv("HOME");
-    if (cp)
-        Path = cp;
-    else {
-        cp = getenv("USERPROFILE");
-        if (cp)
-            Path = cp;
-    }
+	char *cp = getenv("HOME");
+	if (cp)
+		Path = cp;
+	else
+	{
+		cp = getenv("USERPROFILE");
+		if (cp)
+			Path = cp;
+	}
 #endif
-  if (Path != "")
-  {
-    Path += "/fgms.conf";
-    if (ProcessConfig (Path))
-        return 1;
-  }
-  if (ProcessConfig ("fgms.conf"))
-      return 1;
-  return 0;
+	if (Path != "")
+	{
+		Path += "/fgms.conf";
+		if (ProcessConfig (Path))
+			return 1;
+	}
+	if (ProcessConfig ("fgms.conf"))
+		return 1;
+	return 0;
 } // ReadConfigs ()
 //////////////////////////////////////////////////////////////////////
 
@@ -520,19 +520,19 @@ ReadConfigs ( bool ReInit = false )
 //////////////////////////////////////////////////////////////////////
 void SigHUPHandler ( int SigType )
 {
-  Servant.PrepareInit();
-  if ( !ReadConfigs (true) )
-  {
-    SG_ALERT (SG_SYSTEMS, SG_ALERT, "received HUP signal, but read config file failed!");
-    exit (1);
-  }
-  if (Servant.Init () != 0)
-  {
-    SG_ALERT (SG_SYSTEMS, SG_ALERT, "received HUP signal, but reinit failed!");
-    exit (1);
-  }
+	Servant.PrepareInit();
+	if ( !ReadConfigs (true) )
+	{
+		SG_ALERT (SG_SYSTEMS, SG_ALERT, "received HUP signal, but read config file failed!");
+		exit (1);
+	}
+	if (Servant.Init () != 0)
+	{
+		SG_ALERT (SG_SYSTEMS, SG_ALERT, "received HUP signal, but reinit failed!");
+		exit (1);
+	}
 #ifndef _MSC_VER
-  signal (SigType, SigHUPHandler);
+	signal (SigType, SigHUPHandler);
 #endif
 } // SigHUPHandler ()
 //////////////////////////////////////////////////////////////////////
@@ -546,8 +546,8 @@ void SigHUPHandler ( int SigType )
 void
 SigCHLDHandler (int s)
 {
-  while (waitpid (-1, NULL, WNOHANG) > 0)
-    /* intentionally empty */ ;
+	while (waitpid (-1, NULL, WNOHANG) > 0)
+		/* intentionally empty */ ;
 } // SigCHLDHandler ()
 //////////////////////////////////////////////////////////////////////
 #endif // !_MSC_VER
@@ -560,54 +560,55 @@ SigCHLDHandler (int s)
 int
 main ( int argc, char* argv[] )
 {
-  int     I;
+	int     I;
 #ifndef _MSC_VER
-  struct  sigaction sig_child;
+	struct  sigaction sig_child;
 #endif
 #if defined ENABLE_DEBUG
-//  logbuf::set_log_classes(SG_GENERAL);
+	//  logbuf::set_log_classes(SG_GENERAL);
 #endif
 #ifndef _MSC_VER
-  // SIGHUP
-  signal (SIGHUP, SigHUPHandler);
-  // SIGCHLD
-  sig_child.sa_handler = SigCHLDHandler;
-  sigemptyset (&sig_child.sa_mask);
-  sig_child.sa_flags = SA_RESTART;
-  if (sigaction (SIGCHLD, &sig_child, NULL) == -1)
-  {
-    exit(1);
-  }
+	// SIGHUP
+	signal (SIGHUP, SigHUPHandler);
+	// SIGCHLD
+	sig_child.sa_handler = SigCHLDHandler;
+	sigemptyset (&sig_child.sa_mask);
+	sig_child.sa_flags = SA_RESTART;
+	if (sigaction (SIGCHLD, &sig_child, NULL) == -1)
+	{
+		exit(1);
+	}
 #endif
-  ParseParams (argc, argv);
-  ReadConfigs ();
-  if ( !bHadConfig ) {
-    printf("No configuration file 'fgms.conf' found!\n");
-    exit(1);
-  }
-  sglog().setLogLevels( SG_ALL, SG_INFO );
-  sglog().enable_with_date (true);
-  I = Servant.Init ();
-  if (I != 0)
-  {
-    Servant.CloseTracker();
-    return (I);
-  }
-#ifndef _MSC_VER
-  if (RunAsDaemon)
-  {
-    SG_ALERT (SG_SYSTEMS, SG_ALERT, "Main server started!");
-    Myself.Daemonize ();
-  }
-#endif
-  I = Servant.Loop();
-  if (I != 0)
-  {
-    Servant.CloseTracker();
-    return (I);
-  }
-  Servant.Done();
-  return (0);
+	ParseParams (argc, argv);
+	ReadConfigs ();
+	if ( !bHadConfig )
+	{
+		SG_ALERT (SG_SYSTEMS, SG_ALERT, "No configuration file 'fgms.conf' found!");
+		exit(1);
+	}
+	sglog().setLogLevels( SG_ALL, SG_INFO );
+	sglog().enable_with_date (true);
+	I = Servant.Init ();
+	if (I != 0)
+	{
+		Servant.CloseTracker();
+		return (I);
+	}
+	#ifndef _MSC_VER
+	if (RunAsDaemon)
+	{
+		SG_ALERT (SG_SYSTEMS, SG_ALERT, "Main server started!");
+		Myself.Daemonize ();
+	}
+	#endif
+	I = Servant.Loop();
+	if (I != 0)
+	{
+		Servant.CloseTracker();
+		return (I);
+	}
+	Servant.Done();
+	return (0);
 } // main()
 //////////////////////////////////////////////////////////////////////
 
