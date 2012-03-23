@@ -112,18 +112,14 @@ void netAddress::set ( const char* host, int port )
    This is always a string of the form 'dd.dd.dd.dd' (with variable
    size numbers). */
 
-const char* netAddress::getHost () const
+const string netAddress::getHost () const
 {
-#if 0
-  const char* buf = inet_ntoa ( sin_addr ) ;
-#else
-  static char buf [32];
 	long x = ntohl(sin_addr);
-	sprintf(buf, "%d.%d.%d.%d",
-		(int) (x>>24) & 0xff, (int) (x>>16) & 0xff,
-		(int) (x>> 8) & 0xff, (int) (x>> 0) & 0xff );
-#endif
-  return buf;
+	string result = NumToStr ((x>>24) & 0xff, 0) + ".";
+	result += NumToStr ((x>>16) & 0xff, 0) + ".";
+	result += NumToStr ((x>> 8) & 0xff, 0) + ".";
+	result += NumToStr ((x>> 0) & 0xff, 0);
+	return result;
 }
 
 unsigned int

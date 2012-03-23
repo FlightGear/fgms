@@ -29,6 +29,7 @@ src/server/fgms
 src/server/fgms.conf
 src/server/server.log
 src/server/fgms.log
+src/server/logfile
 
 src/flightgear/Makefile
 src/flightgear/Makefile.in

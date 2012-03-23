@@ -70,7 +70,6 @@ public:
 		ERROR_COULDNT_LISTEN    = 5,
 		// other constants
 		MAX_PACKET_SIZE         = 1024,
-		RELAY_TTL               = 10,
 		UPDATE_INACTIVE_PERIOD  = 1,
 		MAX_TELNETS             = 5,
 		RELAY_MAGIC             = 0x53464746    // GSGF
@@ -125,8 +124,6 @@ private:
 		public:
 		string      Name;
 		netAddress  Address;
-		time_t      Timestamp;
-		bool        Active;
 	};
 	//////////////////////////////////////////////////
 	//
@@ -233,15 +230,15 @@ private:
 	//  private methods
 	//  
 	//////////////////////////////////////////////////
-	void  AddClient     ( netAddress& Sender, char* Msg);
-	void  AddBadClient  ( netAddress& Sender, string &ErrorMsg,
+	void  AddClient     ( const netAddress& Sender, char* Msg);
+	void  AddBadClient  ( const netAddress& Sender, string &ErrorMsg,
 			bool IsLocal );
-	bool  IsBlackListed ( netAddress& SenderAddress );
-	bool  IsKnownRelay ( netAddress& SenderAddress );
+	bool  IsBlackListed ( const netAddress& SenderAddress );
+	bool  IsKnownRelay ( const netAddress& SenderAddress );
 	bool  PacketIsValid ( int Bytes, T_MsgHdr *MsgHdr,
-			netAddress &SenderAddress );
+			const netAddress &SenderAddress );
 	void  HandlePacket  ( char *sMsg, int Bytes,
-			netAddress &SenderAdress );
+			const netAddress &SenderAdress );
 	int   UpdateTracker ( string callsign, string passwd, string modelname,
 			time_t time, int type );
 	void  DropClient ( mT_PlayerListIt& CurrentPlayer );
@@ -249,7 +246,7 @@ private:
 	void  SendChatMessages ( mT_PlayerListIt& CurrentPlayer );
 	void  DeleteMessageQueue ();
 	bool  IsInRange ( mT_Relay& Relay,  mT_Player& SendingPlayer );
-	void  SendToCrossfeed ( char * Msg, int Bytes, netAddress SenderAddress );
+	void  SendToCrossfeed ( char * Msg, int Bytes, const netAddress& SenderAddress );
 	void  SendToRelays ( char* Msg, int Bytes, mT_PlayerListIt& SendingPlayer );
 	int   SenderIsKnown ( const string& SenderCallsign, const netAddress &SenderAddress);
 }; // FG_SERVER
