@@ -482,13 +482,14 @@ FG_SERVER::HandleTelnet ()
 	string          Message;
 	Point3D         PlayerPosGeod;  // Geodetic Coordinates
 	netAddress      TelnetAddress;
-	mT_PlayerListIt CurrentPlayer;
+	mT_Player	CurrentPlayer;
+	mT_PlayerListIt it;
 
 	errno = 0;
 	Fd = m_TelnetSocket->accept (&TelnetAddress);
 	if (Fd < 0)
 	{
-		if (errno != EAGAIN)
+		if ((errno != EAGAIN) && (errno != EPIPE))
 		{
 			SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror (errno));
 		}
@@ -526,6 +527,7 @@ FG_SERVER::HandleTelnet ()
 	m_DataSocket->close ();
 	m_TelnetSocket->close();
 #endif
+	errno = 0;
 	//////////////////////////////////////////////////
 	//
 	//      create the output message
@@ -536,8 +538,8 @@ FG_SERVER::HandleTelnet ()
 	Message += "\n";
 	Message += "# FlightGear Multiplayer Server v" + string(VERSION);
 	Message += " using protocol version v";
-	Message += NumToStr (m_ProtoMajorVersion, 0);
-	Message += "." + NumToStr (m_ProtoMinorVersion, 0);
+	Message += NumToStr (m_ProtoMajorVersion);
+	Message += "." + NumToStr (m_ProtoMinorVersion);
 	Message += " (LazyRelay enabled)";
 	Message += "\n";
 	if ( m_IsTracked )
@@ -546,74 +548,92 @@ FG_SERVER::HandleTelnet ()
 		Message += m_Tracker->GetTrackerServer();
 		Message += "\n";
 	}
-#ifdef FGMS_USE_THREADS
-	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - mutex lock");
-	pthread_mutex_lock (& m_PlayerMutex);
-#endif
-	NewTelnet.send (Message.c_str(),Message.size(),0);
-	Message  = "# "+ NumToStr (m_PlayerList.size(), 0);
-	if ( (m_PlayerList.size(), 0) == 1 )
-		Message += " pilot online\n";
-	else
-		Message += " pilots online\n";
-	NewTelnet.send (Message.c_str(), Message.size(), 0);
+	if (NewTelnet.send (Message.c_str(),Message.size(), MSG_NOSIGNAL) < 0)
+	{
+		if ((errno != EAGAIN) && (errno != EPIPE))
+			SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror (errno));
+		return (0);
+	}
+	#ifdef FGMS_USE_THREADS
+		//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - mutex lock");
+		pthread_mutex_lock (& m_PlayerMutex);
+	#endif
+	unsigned int NumPlayers = m_PlayerList.size();
+	#ifdef FGMS_USE_THREADS
+		//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - mutex unlock");
+		pthread_mutex_unlock (& m_PlayerMutex);
+	#endif
+	Message  = "# "+ NumToStr (NumPlayers);
+	Message += " pilot(s) online\n";
+	if (NewTelnet.send (Message.c_str(),Message.size(), MSG_NOSIGNAL) < 0)
+	{
+		if ((errno != EAGAIN) && (errno != EPIPE))
+			SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror (errno));
+		return (0);
+	}
 	//////////////////////////////////////////////////
 	//
 	//      create list of players
 	//
 	//////////////////////////////////////////////////
-	for (CurrentPlayer = m_PlayerList.begin();
-	     CurrentPlayer != m_PlayerList.end();
-	     CurrentPlayer++)
+	it = m_PlayerList.begin();
+	while (it != m_PlayerList.end())
 	{
-		sgCartToGeod (CurrentPlayer->LastPos, PlayerPosGeod);
-		Message = "";
-		if (CurrentPlayer->Callsign.compare(0, 3, "obs", 3) == 0)
-		{
-			Message = "# ";
-		}
-		Message += CurrentPlayer->Callsign + "@";
-		if (CurrentPlayer->IsLocal)
+		#ifdef FGMS_USE_THREADS
+			//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - mutex lock");
+			pthread_mutex_lock (& m_PlayerMutex);
+		#endif
+		CurrentPlayer = (*it);
+		it++;
+		#ifdef FGMS_USE_THREADS
+			//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - mutex unlock");
+			pthread_mutex_unlock (& m_PlayerMutex);
+		#endif
+		sgCartToGeod (CurrentPlayer.LastPos, PlayerPosGeod);
+		Message = CurrentPlayer.Callsign + "@";
+		if (CurrentPlayer.IsLocal)
 		{
 			Message += "LOCAL: ";
 		}
 		else
 		{
-			mT_RelayMapIt Relay = m_RelayMap.find(CurrentPlayer->Address.getIP());
+			mT_RelayMapIt Relay = m_RelayMap.find(CurrentPlayer.Address.getIP());
 			if (Relay != m_RelayMap.end())
 			{
 				Message += Relay->second + ": ";
 			}
 			else
 			{
-				Message += CurrentPlayer->Origin + ": ";
+				Message += CurrentPlayer.Origin + ": ";
 			}
 		}
-		if (CurrentPlayer->Error != "")
+		if (CurrentPlayer.Error != "")
 		{
-			Message += CurrentPlayer->Error + " ";
+			Message += CurrentPlayer.Error + " ";
 		}
-		Message += NumToStr (CurrentPlayer->LastPos[X], 6)+" ";
-		Message += NumToStr (CurrentPlayer->LastPos[Y], 6)+" ";
-		Message += NumToStr (CurrentPlayer->LastPos[Z], 6)+" ";
+		Message += NumToStr (CurrentPlayer.LastPos[X], 6)+" ";
+		Message += NumToStr (CurrentPlayer.LastPos[Y], 6)+" ";
+		Message += NumToStr (CurrentPlayer.LastPos[Z], 6)+" ";
 		Message += NumToStr (PlayerPosGeod[Lat], 6)+" ";
 		Message += NumToStr (PlayerPosGeod[Lon], 6)+" ";
 		Message += NumToStr (PlayerPosGeod[Alt], 6)+" ";
-		Message += NumToStr (CurrentPlayer->LastOrientation[X], 6)+" ";
-		Message += NumToStr (CurrentPlayer->LastOrientation[Y], 6)+" ";
-		Message += NumToStr (CurrentPlayer->LastOrientation[Z], 6)+" ";
-		Message += CurrentPlayer->ModelName;
+		Message += NumToStr (CurrentPlayer.LastOrientation[X], 6)+" ";
+		Message += NumToStr (CurrentPlayer.LastOrientation[Y], 6)+" ";
+		Message += NumToStr (CurrentPlayer.LastOrientation[Z], 6)+" ";
+		Message += CurrentPlayer.ModelName;
 		Message += "\n";
-		NewTelnet.send (Message.c_str(), Message.size(), 0);
+		if (NewTelnet.send (Message.c_str(),Message.size(), MSG_NOSIGNAL) < 0)
+		{
+			if ((errno != EAGAIN) && (errno != EPIPE))
+				SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror (errno));
+			return (0);
+		}
 	}
 	NewTelnet.close ();
-#ifdef FGMS_USE_THREADS
-	pthread_mutex_unlock (& m_PlayerMutex);
-	// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - mutex unlock");
-	return (0);
-#else
+#ifndef FGMS_USE_THREADS
 	exit (0);
 #endif
+	return (0);
 } // FG_SERVER::HandleTelnet ()
 //////////////////////////////////////////////////////////////////////
 
@@ -750,7 +770,15 @@ FG_SERVER::AddClient
 	NewPlayer.ModelName = PosMsg->Model;
 	m_MaxClientID++;
 	NewPlayer.ClientID = m_MaxClientID;
+#ifdef FGMS_USE_THREADS
+		// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddClient() - mutex lock");
+		pthread_mutex_lock (& m_PlayerMutex);
+#endif
 	m_PlayerList.push_back (NewPlayer);
+#ifdef FGMS_USE_THREADS
+		// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddClient() - mutex unlock");
+		pthread_mutex_unlock (& m_PlayerMutex);
+#endif
 	m_NumCurrentClients++;
 	if (m_NumCurrentClients > m_NumMaxClients)
 	{
@@ -773,7 +801,7 @@ FG_SERVER::AddClient
 		}
 		CreateChatMessage (NewPlayer.ClientID , Message);
 		UpdateTracker (NewPlayer.Callsign, NewPlayer.Passwd,
-		NewPlayer.ModelName, NewPlayer.Timestamp, CONNECT);
+		  NewPlayer.ModelName, NewPlayer.Timestamp, CONNECT);
 	}
 	Message  = NewPlayer.Callsign;
 	Message += " is now online, using ";
@@ -929,7 +957,7 @@ FG_SERVER::DropClient ( mT_PlayerListIt& CurrentPlayer )
 		Origin = "LOCAL";
 	}
 	m_NumCurrentClients--;
-	SG_LOG (SG_SYSTEMS, SG_INFO, "TTL exeeded, dropping pilot "
+	SG_LOG (SG_SYSTEMS, SG_INFO, "TTL exceeded, dropping pilot "
 		<< CurrentPlayer->Callsign << "@" << Origin
 		<< "  after " << time(0)-CurrentPlayer->JoinTime << " seconds."
 		<< "  Usage #packets in: " << CurrentPlayer->PktsReceivedFrom
@@ -945,7 +973,15 @@ FG_SERVER::DropClient ( mT_PlayerListIt& CurrentPlayer )
 		Message += "' has left";
 		CreateChatMessage (0, Message);
 	}
+#ifdef FGMS_USE_THREADS
+		// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::DropClient() - mutex lock");
+		pthread_mutex_lock (& m_PlayerMutex);
+#endif
 	CurrentPlayer = m_PlayerList.erase (CurrentPlayer);
+#ifdef FGMS_USE_THREADS
+		// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::DropClient() - mutex unlock");
+		pthread_mutex_unlock (& m_PlayerMutex);
+#endif
 } // FG_SERVER::DropClient ()
 //////////////////////////////////////////////////////////////////////
 
@@ -1348,15 +1384,7 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, const netAddress &SenderAddress
 		{	// ignore clients until we have a valid position
 			return;
 		}
-#ifdef FGMS_USE_THREADS
-		// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandlePacket() - mutex lock");
-		pthread_mutex_lock (& m_PlayerMutex);
-#endif
 		AddClient (SenderAddress, Msg);
-#ifdef FGMS_USE_THREADS
-		pthread_mutex_unlock (& m_PlayerMutex);
-		// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandlePacket() - mutex unlock");
-#endif
 	}
 	else if (ClientInList == 2)
 	{	// known, but different IP => ignore
@@ -1416,16 +1444,7 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, const netAddress &SenderAddress
 		//////////////////////////////////////////////////
 		if ( (Timestamp - CurrentPlayer->Timestamp) > m_PlayerExpires)
 		{
-#ifdef FGMS_USE_THREADS
-			// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandlePacket() - mutex lock");
-			pthread_mutex_lock (& m_PlayerMutex);
-#endif
 			DropClient (CurrentPlayer);
-			// CurrentPlayer++;
-#ifdef FGMS_USE_THREADS
-			pthread_mutex_unlock (& m_PlayerMutex);
-			// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandlePacket() - mutex unlock");
-#endif
 			continue;
 		}
 		//////////////////////////////////////////////////
