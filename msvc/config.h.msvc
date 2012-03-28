@@ -14,7 +14,7 @@
 #include <time.h>
 
 #ifndef VERSION
-#define VERSION "0.10.10-WIN32"
+#define VERSION "0.10.12-WIN32"
 #endif
 
 #define sleep(a) Sleep(a * 1000)

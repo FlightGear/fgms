@@ -46,6 +46,8 @@
 #include <string.h>
 #include <assert.h>
 #include <stdarg.h>
+#include <string>
+#include "../server/typcnvt.hxx"
 
 /*
  * Socket address, internet style.
@@ -63,7 +65,7 @@ public:
   netAddress ( const char* host, int port ) ;
 
   void set ( const char* host, int port ) ;
-  const char* getHost () const ;
+  const string getHost () const ;
   unsigned int getPort() const ;
   unsigned int getIP () const ;
   unsigned int getFamily () const ;

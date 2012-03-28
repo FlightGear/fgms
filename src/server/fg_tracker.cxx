@@ -83,12 +83,6 @@ FG_TRACKER::InitTracker ( const int MaxChildren )
 			TrackerLoop ();
 			exit (0);
 		}
-		#ifndef _MSC_VER
-		if (ChildsPID > 0)
-		{
-			SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER PID:" << ChildsPID);
-		}
-		#endif // _MSC_VER
 	}
 	#endif // NO_TRACKER_PORT
 	return (0);
@@ -179,6 +173,12 @@ FG_TRACKER::Connect ()
 {
 	bool connected = false;
 
+	//////////////////////////////////////////////////
+	// close all inherited open sockets, but
+	// leave cin, cout, cerr open
+	//////////////////////////////////////////////////
+	for (int i=3; i<32; i++)
+		SCLOSE (i);
 	if ( m_TrackerSocket > 0 )
 		SCLOSE (m_TrackerSocket);
 	while (connected == false)

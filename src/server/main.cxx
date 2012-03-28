@@ -213,10 +213,12 @@ ProcessConfig ( const string& ConfigName )
 	{
 		if ((Val == "on") || (Val == "true"))
 		{
+			cout << "config daemon = true" << endl;
 			RunAsDaemon = true;
 		}
 		else if ((Val == "off") || (Val == "false"))
 		{
+			cout << "config daemon = false" << endl;
 			RunAsDaemon = false;
 		}
 		else
@@ -460,9 +462,11 @@ ParseParams ( int argcount, char* argvars[] )
 				Servant.SetLogfile (optarg);
 				break;
 			case 'd':
+				cout << "param daemon = false" << endl;
 				RunAsDaemon = false;
 				break;
 			case 'D':
+				cout << "param daemon = true" << endl;
 				RunAsDaemon = true;
 				break;
 			default:
@@ -597,8 +601,8 @@ main ( int argc, char* argv[] )
 	#ifndef _MSC_VER
 	if (RunAsDaemon)
 	{
-		SG_ALERT (SG_SYSTEMS, SG_ALERT, "Main server started!");
 		Myself.Daemonize ();
+		SG_ALERT (SG_SYSTEMS, SG_ALERT, "Main server started!");
 	}
 	#endif
 	I = Servant.Loop();
