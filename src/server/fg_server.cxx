@@ -538,8 +538,8 @@ FG_SERVER::HandleTelnet ()
 	Message += "\n";
 	Message += "# FlightGear Multiplayer Server v" + string(VERSION);
 	Message += " using protocol version v";
-	Message += NumToStr (m_ProtoMajorVersion);
-	Message += "." + NumToStr (m_ProtoMinorVersion);
+	Message += NumToStr (m_ProtoMajorVersion, 0);
+	Message += "." + NumToStr (m_ProtoMinorVersion, 0);
 	Message += " (LazyRelay enabled)";
 	Message += "\n";
 	if ( m_IsTracked )
@@ -563,7 +563,7 @@ FG_SERVER::HandleTelnet ()
 		//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - mutex unlock");
 		pthread_mutex_unlock (& m_PlayerMutex);
 	#endif
-	Message  = "# "+ NumToStr (NumPlayers);
+	Message  = "# "+ NumToStr (NumPlayers, 0);
 	Message += " pilot(s) online\n";
 	if (NewTelnet.send (Message.c_str(),Message.size(), MSG_NOSIGNAL) < 0)
 	{
