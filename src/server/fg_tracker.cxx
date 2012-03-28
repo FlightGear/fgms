@@ -215,6 +215,7 @@ FG_TRACKER::Disconnect ()
 } // Disconnect ()
 //////////////////////////////////////////////////////////////////////
 #ifdef _MSC_VER
+#if (NTDDI_VERSION < NTDDI_VISTA)   // if less than VISTA, provide alternative
 #ifndef EAFNOSUPPORT
 #define	EAFNOSUPPORT	97	/* not present in errno.h provided with VC */
 #endif
@@ -232,6 +233,7 @@ int inet_pton(int af, const char *src, void *dst)
 	}
 	return inet_aton (src, (struct in_addr *)dst);
 }
+#endif // #if (NTDDI_VERSION < NTDDI_VISTA)
 #endif // _MSC_VER
 //////////////////////////////////////////////////////////////////////
 //
