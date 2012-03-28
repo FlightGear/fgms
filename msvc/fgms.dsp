@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir "."
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /YX /c
-# ADD CPP /nologo /MT /W3 /GR /GX /O2 /I "." /I "..\src" /I ".." /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_CRT_SECURE_NO_WARNINGS" /D "UL_WIN32" /D "UL_MSVC" /D "NO_TRACKER_PORT" /D "_USE_MATH_DEFINES" /D "_CRT_SECURE_NO_DEPRECATE" /D "HAVE_CONFIG_H" /D "NOMINMAX" /D "FREEGLUT_STATIC" /D "FREEGLUT_LIB_PRAGMAS" /D "OPENALSDK" /D "_SCL_SECURE_NO_WARNINGS" /D "__CRT_NONSTDC_NO_WARNINGS" /FD /c
+# ADD CPP /nologo /MT /W3 /GR /GX /O2 /I "." /I "..\src" /I ".." /I "C:\Projects\3rdparty\include" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_CRT_SECURE_NO_WARNINGS" /D "UL_WIN32" /D "UL_MSVC" /D "NO_TRACKER_PORT" /D "_USE_MATH_DEFINES" /D "_CRT_SECURE_NO_DEPRECATE" /D "HAVE_CONFIG_H" /D "NOMINMAX" /D "FREEGLUT_STATIC" /D "FREEGLUT_LIB_PRAGMAS" /D "OPENALSDK" /D "_SCL_SECURE_NO_WARNINGS" /D "__CRT_NONSTDC_NO_WARNINGS" /FD /c
 # SUBTRACT CPP /YX
 # ADD BASE RSC /l 0x809 /d "NDEBUG"
 # ADD RSC /l 0x809 /d "NDEBUG"
@@ -51,7 +51,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib Winmm.lib ws2_32.lib libfg_server_a.lib libplib_a.lib libsgdebug_a.lib libMultiPlayer_a.lib /libpath:"lib" /nologo /subsystem:console /machine:I386 /out:"bin\fgms.exe"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib Winmm.lib ws2_32.lib libfg_server_a.lib libplib_a.lib libsgdebug_a.lib libMultiPlayer_a.lib /libpath:"lib" pthreadVC2.lib /libpath:"C:\Projects\3rdparty\lib" /nologo /subsystem:console /machine:I386 /out:"bin\fgms.exe"
 
 !ELSEIF  "$(CFG)" == "fgms - Win32 Debug"
 
@@ -67,7 +67,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir "."
 # ADD BASE CPP /nologo /W3 /Gm /GX /Zi /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /YX /c
-# ADD CPP /nologo /MTd /W3 /Gm /GR /GX /ZI /Od /I "." /I "..\src" /I ".." /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_CRT_SECURE_NO_WARNINGS" /D "UL_WIN32" /D "UL_MSVC" /D "NO_TRACKER_PORT" /D "_USE_MATH_DEFINES" /D "_CRT_SECURE_NO_DEPRECATE" /D "HAVE_CONFIG_H" /D "NOMINMAX" /D "FREEGLUT_STATIC" /D "FREEGLUT_LIB_PRAGMAS" /D "OPENALSDK" /D "_SCL_SECURE_NO_WARNINGS" /D "__CRT_NONSTDC_NO_WARNINGS" /FD /c
+# ADD CPP /nologo /MTd /W3 /Gm /GR /GX /ZI /Od /I "." /I "..\src" /I ".." /I "C:\Projects\3rdparty\include" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_CRT_SECURE_NO_WARNINGS" /D "UL_WIN32" /D "UL_MSVC" /D "NO_TRACKER_PORT" /D "_USE_MATH_DEFINES" /D "_CRT_SECURE_NO_DEPRECATE" /D "HAVE_CONFIG_H" /D "NOMINMAX" /D "FREEGLUT_STATIC" /D "FREEGLUT_LIB_PRAGMAS" /D "OPENALSDK" /D "_SCL_SECURE_NO_WARNINGS" /D "__CRT_NONSTDC_NO_WARNINGS" /FD /c
 # SUBTRACT CPP /YX
 # ADD BASE RSC /l 0x809 /d "_DEBUG"
 # ADD RSC /l 0x809 /d "_DEBUG"
@@ -76,7 +76,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib /nologo /subsystem:console /debug /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib Winmm.lib ws2_32.lib libfg_server_aD.lib libplib_aD.lib libsgdebug_aD.lib libMultiPlayer_aD.lib /libpath:"lib" /nologo /subsystem:console /debug /machine:I386 /out:"bin\fgmsD.exe"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib Winmm.lib ws2_32.lib libfg_server_aD.lib libplib_aD.lib libsgdebug_aD.lib libMultiPlayer_aD.lib /libpath:"lib" pthreadVC2.lib /libpath:"C:\Projects\3rdparty\lib" /nologo /subsystem:console /debug /machine:I386 /out:"bin\fgmsD.exe"
 
 !ENDIF 
 
