@@ -14,9 +14,9 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
 //
 
-#ifndef _MSC_VER
+// #ifndef _MSC_VER - now ported to windows also
 #define FGMS_USE_THREADS
-#endif
+// #endif
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -51,6 +51,9 @@
 #ifdef _MSC_VER
 	#include <conio.h> // for _kbhit(), _getch
 	typedef int pid_t;
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
 #else
 	cDaemon Myself;
 #endif
@@ -496,12 +499,12 @@ FG_SERVER::HandleTelnet ()
 		return 0;
 	}
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(FGMS_USE_THREADS)
 	pNewTelnet = new netSocket;
 	pNewTelnet->setHandle( Fd );
 	TelnetReply( pNewTelnet );
 	return 0;
-#endif // _MSC_VER
+#else // !_MSC_VER or FGMS_USE_THREADS
 
 	netSocket       NewTelnet;
 	NewTelnet.setHandle (Fd);
@@ -634,6 +637,7 @@ FG_SERVER::HandleTelnet ()
 	exit (0);
 #endif
 	return (0);
+#endif // (_MSC_VER && !FGMS_USE_THREADS) y/n
 } // FG_SERVER::HandleTelnet ()
 //////////////////////////////////////////////////////////////////////
 
@@ -1586,7 +1590,7 @@ FG_SERVER::check_keyboard()
 		}
 		else
 		{
-			printf("Got UNKNOWN keyboard! %#X - Only ESC, to exit.\n", ch);
+			printf("Got UNKNOWN keyboard! %#X - Only ESC, to exit, R reset, S stats.\n", ch);
 		}
 	}
 #endif
@@ -1858,8 +1862,6 @@ FG_SERVER::UpdateTracker
 )
 {
 #ifndef NO_TRACKER_PORT
-	return (0);
-#endif
 	char            TimeStr[100];
 	mT_PlayerListIt CurrentPlayer;
 	Point3D         PlayerPosGeod;
@@ -1956,6 +1958,7 @@ FG_SERVER::UpdateTracker
 		Message.erase(0);
 		CurrentPlayer++;
 	} // while
+#endif // !NO_TRACKER_PORT
 	return (0);
 } // UpdateTracker (...)
 //////////////////////////////////////////////////////////////////////

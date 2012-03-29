@@ -1,4 +1,17 @@
 @setlocal
+@echo.
+@echo This is NOT what it seems... it is NOT a batch file for building fgms!
+@echo This batch file uses some very specialised perl scripts, to 
+@echo create the initial MSVC build files dsw/dsp...
+@echo It uses the fgms.inp file to define the project, 
+@echo and then runs various batch files, and the above perl scripts...
+@echo.
+@echo Building fgms is done using MSVC. Load the fgms.dsw or fgms.sln into MSVC,
+@echo AFTER you have run the SETUP.BAT batch file, and build fgms that way...
+@echo.
+@echo *** CONTINUE? *** Only Ctlr+c will abort. All other keys continue...
+@pause
+
 @set PROJ=fgms
 @set NCBFILE=%PROJ%.ncb
 @set INPFILE=%PROJ%.inp

@@ -58,10 +58,16 @@ src/plib/*.a
 src/plib/.deps
 
 msvc/lib
-msvc/fgms.ncb
+msvc/*.ncb
+msvc/*.sdf
+msvc/*.opensdf
+msvc/*.suo
+msvc/*.filters
+msvc/*.user
 msvc/bin
 msvc/Debug
 msvc/Release
+msvc/ipch
 fgms.log
 
 

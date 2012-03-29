@@ -2,25 +2,40 @@ file: README.msvc
 
 This is a port of fgms-0-x to MS Windows.
 
-Two set of MSVC build files are included, 
-fgms.dsw and fgms.sln (for MSVC8)...
+Three sets of MSVC build files are included, 
+fgms.dsw, fgms.sln (for MSVC8) and fgms10.sln
+(for MSVC10). All should build the same.
 
-To build the server, load fgms.sln into MSVC,
+To build the server, first run SETUP.BAT to 
+establish the 'config.h' file...
+
+Then load fgms.dsw or *.sln into MSVC,
 and allow it to convert the files to its own 
 format if a later MSVC version.
 
 The final fgms.exe server should be in the 'bin' 
 folder.
 
+Note this project has a dependence on pthreads
+see - http://sourceware.org/pthreads-win32/
+You MUST have the pthread.h header, and some 
+others available, and pthreadVC2.lib for the 
+link, and ptheadVC2.dll for the runtime.
+
+But this can be turned off...
+
 As with the unix version, it is necessary to 
-copy and modify a configuration file. This must 
-at least contain the servers 'name'.
+copy and modify a configuration file, fgms.conf. 
+This must at least contain the servers 'name'.
 
 Enjoy.
 
 Geoff.
 mailto: reports (at) geoffair (dot) info
-source: http://gitorious.org/~geoffmcl/fgms/geoffmcls-fgms-0-x
+source: https://gitorious.org/fgms/fgms-0-x
 site: http://geoffair.org/fg/fgms.htm
-2011/08/16
+2012/03/22
+
+
+
 
