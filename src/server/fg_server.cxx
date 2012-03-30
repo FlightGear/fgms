@@ -225,7 +225,8 @@ FG_SERVER::Init ()
 	SG_ALERT (SG_SYSTEMS, SG_ALERT, "# using protocol version v"
 		<< m_ProtoMajorVersion << "." << m_ProtoMinorVersion
 		<< " (LazyRelay enabled)");
-	SG_ALERT (SG_SYSTEMS, SG_ALERT,"# listening on " << m_BindAddress);
+	if (m_BindAddress != "")
+		SG_ALERT (SG_SYSTEMS, SG_ALERT,"# listening on " << m_BindAddress);
 	SG_ALERT (SG_SYSTEMS, SG_ALERT,"# listening to port " << m_ListenPort);
 	SG_ALERT (SG_SYSTEMS, SG_ALERT,"# telnet port " << m_TelnetPort);
 	SG_ALERT (SG_SYSTEMS, SG_ALERT,"# using logfile " << m_LogFileName);
@@ -540,7 +541,8 @@ FG_SERVER::HandleTelnet ()
 	Message  = "# This is " + m_ServerName;
 	Message += "\n";
 	Message += "# FlightGear Multiplayer Server v" + string(VERSION);
-	Message += " using protocol version v";
+	Message += "\n";
+	Message += "# using protocol version v";
 	Message += NumToStr (m_ProtoMajorVersion, 0);
 	Message += "." + NumToStr (m_ProtoMinorVersion, 0);
 	Message += " (LazyRelay enabled)";
@@ -1365,11 +1367,14 @@ FG_SERVER::HandlePacket ( char * Msg, int Bytes, const netAddress &SenderAddress
 	{
 		m_PositionData++;
 		PosMsg = (T_PositionMsg *) (Msg + sizeof(T_MsgHdr));
-		SenderPosition.Set (
-			XDR_decode64<double> (PosMsg->position[X]),
-			XDR_decode64<double> (PosMsg->position[Y]),
-			XDR_decode64<double> (PosMsg->position[Z])
-		);
+		double x = XDR_decode64<double> (PosMsg->position[X]);
+		double y = XDR_decode64<double> (PosMsg->position[Y]);
+		double z = XDR_decode64<double> (PosMsg->position[Z]);
+		if ( (x == 0.0) || (y == 0.0) || (z == 0.0) )
+		{	// ignore while position is not settled
+			return;
+		}
+		SenderPosition.Set (x, y, z);
 		SenderOrientation.Set (
 			XDR_decode<float> (PosMsg->orientation[X]),
 			XDR_decode<float> (PosMsg->orientation[Y]),
