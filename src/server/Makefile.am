@@ -9,6 +9,8 @@ libfg_server_a_SOURCES = \
 	fg_tracker.hxx	\
 	fg_config.cxx	\
 	fg_config.hxx	\
+	fg_player.cxx	\
+	fg_player.hxx	\
 	daemon.cxx	\
 	daemon.hxx	\
 	typcnvt.hxx	\

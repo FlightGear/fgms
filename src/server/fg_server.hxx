@@ -42,6 +42,7 @@
 #include <simgear/debug/logstream.hxx>
 #include "daemon.hxx"
 #include "fg_geometry.hxx"
+#include "fg_player.hxx"
 #include "fg_tracker.hxx"
 
 using namespace std;
@@ -127,32 +128,6 @@ private:
 	};
 	//////////////////////////////////////////////////
 	//
-	//  type of list of players
-	//  
-	//////////////////////////////////////////////////
-	class mT_Player
-	{
-		public:
-		string        Origin;
-		netAddress    Address;
-		string        Callsign;
-		string        Passwd;
-		string        ModelName;
-		time_t        JoinTime;
-		time_t        Timestamp;
-		Point3D       LastPos;
-		Point3D       LastOrientation;
-		bool          IsLocal;
-		string        Error;    // in case of errors
-		bool          HasErrors;
-		int           ClientID;
-		time_t        LastRelayedToInactive;
-		unsigned int  PktsReceivedFrom;  // From client
-		unsigned int  PktsSentTo;        // Sent to client
-		unsigned int  PktsForwarded;     // From client sent to other players/relays
-	}; // mT_Player
-	//////////////////////////////////////////////////
-	//
 	//  chat messages from server to clients
 	//  
 	//////////////////////////////////////////////////
@@ -168,7 +143,7 @@ private:
 	//  private variables
 	//  
 	//////////////////////////////////////////////////
-	typedef std::list<mT_Player>              mT_PlayerList;
+	typedef std::list<FG_Player>              mT_PlayerList;
 	typedef mT_PlayerList::iterator           mT_PlayerListIt;
 	typedef std::list<mT_Relay>               mT_RelayList;
 	typedef mT_RelayList::iterator            mT_RelayListIt;
@@ -245,7 +220,7 @@ private:
 	void  CreateChatMessage ( int ID, string Msg );
 	void  SendChatMessages ( mT_PlayerListIt& CurrentPlayer );
 	void  DeleteMessageQueue ();
-	bool  IsInRange ( mT_Relay& Relay,  mT_Player& SendingPlayer );
+	bool  IsInRange ( mT_Relay& Relay,  FG_Player& SendingPlayer );
 	void  SendToCrossfeed ( char * Msg, int Bytes, const netAddress& SenderAddress );
 	void  SendToRelays ( char* Msg, int Bytes, mT_PlayerListIt& SendingPlayer );
 	int   SenderIsKnown ( const string& SenderCallsign, const netAddress &SenderAddress);

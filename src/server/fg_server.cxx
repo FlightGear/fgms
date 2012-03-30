@@ -485,7 +485,7 @@ FG_SERVER::HandleTelnet ()
 	string          Message;
 	Point3D         PlayerPosGeod;  // Geodetic Coordinates
 	netAddress      TelnetAddress;
-	mT_Player	CurrentPlayer;
+	FG_Player	CurrentPlayer;
 	mT_PlayerListIt it;
 
 	errno = 0;
@@ -659,7 +659,7 @@ FG_SERVER::AddBadClient
 {
 	bool                    AlreadyThere;
 	string                  Message;
-	mT_Player               NewPlayer;
+	FG_Player               NewPlayer;
 	mT_PlayerListIt         CurrentPlayer;
 
 	m_MaxClientID++;
@@ -734,7 +734,7 @@ FG_SERVER::AddClient
 	string          Origin;
 	T_MsgHdr*       MsgHdr;
 	T_PositionMsg*  PosMsg;
-	mT_Player       NewPlayer;
+	FG_Player       NewPlayer;
 	bool		IsLocal;
 
 	Timestamp           = time(0);
@@ -1985,7 +1985,7 @@ FG_SERVER::CloseTracker()
 //
 //////////////////////////////////////////////////////////////////////
 bool
-FG_SERVER::IsInRange( mT_Relay& Relay,  mT_Player& SendingPlayer )
+FG_SERVER::IsInRange( mT_Relay& Relay,  FG_Player& SendingPlayer )
 {
 	mT_PlayerListIt         CurrentPlayer;
 
