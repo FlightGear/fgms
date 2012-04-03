@@ -14,9 +14,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
 //
 
-// #ifndef _MSC_VER - now ported to windows also
 #define FGMS_USE_THREADS
-// #endif
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -106,9 +104,7 @@ FG_SERVER::FG_SERVER
 	m_PacketsInvalid      = 0;	// invalid packet
 	m_UnknownRelay        = 0;	// unknown relay
 	m_PositionData        = 0;	// position data packet
-#ifdef FGMS_USE_THREADS
 	pthread_mutex_init( &m_PlayerMutex, 0 );
-#endif
 } // FG_SERVER::FG_SERVER()
 //////////////////////////////////////////////////////////////////////
 
@@ -117,7 +113,8 @@ FG_SERVER::FG_SERVER
 //      standard destructor
 //
 //////////////////////////////////////////////////////////////////////
-FG_SERVER::~FG_SERVER ()
+FG_SERVER::~FG_SERVER
+()
 {
 	Done();
 } // FG_SERVER::~FG_SERVER()
@@ -129,7 +126,8 @@ FG_SERVER::~FG_SERVER ()
 //
 //////////////////////////////////////////////////////////////////////
 int
-FG_SERVER::Init ()
+FG_SERVER::Init
+()
 {
 	//////////////////////////////////////////////////
 	//      if we are already initialized, close
@@ -270,7 +268,8 @@ FG_SERVER::Init ()
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::PrepareInit ()
+FG_SERVER::PrepareInit
+()
 {
 	SG_ALERT (SG_SYSTEMS, SG_ALERT, "# caught SIGHUP, doing reinit!");
 	m_RelayList.clear ();
@@ -280,197 +279,16 @@ FG_SERVER::PrepareInit ()
 } // FG_SERVER::PrepareInit ()
 //////////////////////////////////////////////////////////////////////
 
-
-#ifdef _MSC_VER
-#include <vector>
-
-typedef std::vector<string> STG_LIST;
-typedef STG_LIST::iterator STG_LIST_I;
-
-static STG_LIST msg_list;
-static netSocket* pNewTelnet = 0;
-
-DWORD WINAPI TelnetSend( LPVOID vp )
-{
-	string Message;
-	int res = 0;
-	STG_LIST_I i = msg_list.begin();
-	int count = 0;
-	for ( ; i != msg_list.end(); i++ )
-	{
-		Message = *i;
-		res = pNewTelnet->send (Message.c_str(), Message.size(), 0);
-		if ( res == SOCKET_ERROR )
-		{
-			res = WSAGetLastError();
-			switch (res)
-			{
-				case WSANOTINITIALISED:
-					Message = "Not initialised";
-					break;
-				case WSAENETDOWN:
-					Message = "subsystem has failed.";
-					break;
-				case WSAEACCES:
-					Message = "broadcast, but flag not set.";
-					break;
-				case WSAEINTR:
-					Message = "call was canceled through WSACancelBlockingCall.";
-					break;
-				case WSAEINPROGRESS:
-					Message = "still processing a callback function.";
-					break;
-				case WSAEFAULT:
-					Message = "buf not completely in user address space.";
-					break;
-				case WSAENETRESET:
-					Message = "connection broken.";
-					break;
-				case WSAENOBUFS:
-					Message = "No buffer space is available.";
-					break;
-				case WSAENOTCONN:
-					Message = "is not connected.";
-					break;
-				case WSAENOTSOCK:
-					Message = "descriptor is not a socket.";
-					break;
-				case WSAEOPNOTSUPP:
-					Message = "Not supprted.";
-					break;
-				case WSAESHUTDOWN:
-					Message = "shut down.";
-					break;
-				case WSAEWOULDBLOCK:
-					Message = "would block.";
-					break;
-				case WSAEMSGSIZE:
-					Message = "message size.";
-					break;
-				case WSAEHOSTUNREACH:
-					Message = "host cannot be reached from this host at this time.";
-					break;
-				case WSAEINVAL:
-					Message = "bound with bind, or an unknown flag.";
-					break;
-				case WSAECONNABORTED:
-					Message = "circuit was terminated.";
-					break;
-				case WSAECONNRESET:
-					Message = "circuit was reset by the remote side.";
-					break;
-				case WSAETIMEDOUT:
-					Message = "connection has been dropped.";
-					break;
-				default:
-					Message = "Uncased error";
-					break;
-			}
-			SG_LOG (SG_SYSTEMS, SG_ALERT,
-			"TelnetSend: - " << Message << ", handle " << pNewTelnet->getHandle() );
-			break;
-		}
-		count++;
-	}
-	if ( res != SOCKET_ERROR )
-	{
-		SG_LOG (SG_SYSTEMS, SG_ALERT,
-		"TelnetSend: - Sent " << count << " messages, handle " << pNewTelnet->getHandle() <<
-		( vp ? ", direct" : ", on thread" ));
-	}
-	pNewTelnet->close ();
-	delete pNewTelnet;
-	pNewTelnet = 0;
-	return 0xdead;
-}
-
-void FG_SERVER::TelnetReply(netSocket* NewTelnet)
-{
-	DWORD                   dwd;
-	string                  Message;
-	mT_PlayerListIt         CurrentPlayer;
-	Point3D                 PlayerPosGeod;  // Geodetic Coordinates
-
-	msg_list.clear(); // clear the list
-	//////////////////////////////////////////////////
-	//
-	//      create the output message
-	//      header
-	//
-	//////////////////////////////////////////////////
-	Message  = "# This is " + m_ServerName;
-	Message += "\n";
-	Message += "# FlightGear Multiplayer Server v" + string(VERSION);
-	Message += " using protocol version v";
-	Message += NumToStr (m_ProtoMajorVersion, 0);
-	Message += "." + NumToStr (m_ProtoMinorVersion, 0);
-	Message += "\n";
-	msg_list.push_back(Message); // 1
-	// NewTelnet->send (Message.c_str(), Message.size(), 0);
-	Message  = "# "+ NumToStr (m_PlayerList.size(), 0);
-	Message += " pilots(s) online\n";
-	msg_list.push_back(Message); // 2
-	//NewTelnet->send (Message.c_str(), Message.size(), 0);
-	//////////////////////////////////////////////////
-	//
-	//      create list of players
-	//
-	//////////////////////////////////////////////////
-	for (CurrentPlayer = m_PlayerList.begin();
-	     CurrentPlayer != m_PlayerList.end();
-	     CurrentPlayer++)
-	{
-		sgCartToGeod (CurrentPlayer->LastPos, PlayerPosGeod);
-		Message = CurrentPlayer->Callsign + "@";
-		if (CurrentPlayer->IsLocal)
-		{
-			Message += "LOCAL: ";
-		}
-		else
-		{
-			Message += CurrentPlayer->Origin + ": ";
-		}
-		if (CurrentPlayer->Error != "")
-		{
-			Message += CurrentPlayer->Error + " ";
-		}
-		Message += NumToStr (CurrentPlayer->LastPos[X], 6)+" ";
-		Message += NumToStr (CurrentPlayer->LastPos[Y], 6)+" ";
-		Message += NumToStr (CurrentPlayer->LastPos[Z], 6)+" ";
-		Message += NumToStr (PlayerPosGeod[Lat], 6)+" ";
-		Message += NumToStr (PlayerPosGeod[Lon], 6)+" ";
-		Message += NumToStr (PlayerPosGeod[Alt], 6)+" ";
-		Message += NumToStr (CurrentPlayer->LastOrientation[X], 6)+" ";
-		Message += NumToStr (CurrentPlayer->LastOrientation[Y], 6)+" ";
-		Message += NumToStr (CurrentPlayer->LastOrientation[Z], 6)+" ";
-		Message += CurrentPlayer->ModelName;
-		Message += "\n";
-		msg_list.push_back(Message); // 3++
-		//NewTelnet->send (Message.c_str(), Message.size(), 0);
-	}
-	HANDLE hand = CreateThread (
-		0,		// __in_opt   LPSECURITY_ATTRIBUTES lpThreadAttributes,
-		0,		// __in       SIZE_T dwStackSize,
-		&TelnetSend,	// __in       LPTHREAD_START_ROUTINE lpStartAddress,
-		0,		// __in_opt   LPVOID lpParameter,
-		0,		// __in       DWORD dwCreationFlags,
-		&dwd );		// __out_opt  LPDWORD lpThreadId
-	if (hand)
-		CloseHandle (hand);
-	else
-		TelnetSend( (LPVOID)1 );
-}
-#endif // _MSC_VER
-
-#ifdef FGMS_USE_THREADS
 static void*
-telnet_helper(void *context)
+telnet_helper
+(
+	void *context
+)
 {
 	pthread_detach (pthread_self());
 	FG_SERVER *tmp_server = reinterpret_cast<FG_SERVER *>(context);
 	return (tmp_server->HandleTelnet());
 }
-#endif
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -480,16 +298,20 @@ telnet_helper(void *context)
 //
 //////////////////////////////////////////////////////////////////////
 void*
-FG_SERVER::HandleTelnet ()
+FG_SERVER::HandleTelnet
+()
 {
 	int             Fd;
-	string          Message;
-	Point3D         PlayerPosGeod;  // Geodetic Coordinates
 	netAddress      TelnetAddress;
-	FG_Player	CurrentPlayer;
-	mT_PlayerListIt it;
 
 	errno = 0;
+	//////////////////////////////////////////////////
+	// This should be moved to the main thread.
+	// The main thread generates more several threads
+	// before the accept() call is finished.
+	// The accept()ed Fd should be a parameter to
+	// telnet_helper ()
+	//////////////////////////////////////////////////
 	Fd = m_TelnetSocket->accept (&TelnetAddress);
 	if (Fd < 0)
 	{
@@ -499,38 +321,14 @@ FG_SERVER::HandleTelnet ()
 		}
 		return 0;
 	}
-
-#if defined(_MSC_VER) && !defined(FGMS_USE_THREADS)
-	pNewTelnet = new netSocket;
-	pNewTelnet->setHandle( Fd );
-	TelnetReply( pNewTelnet );
-	return 0;
-#else // !_MSC_VER or FGMS_USE_THREADS
-
+	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet(" << pthread_self() << ") - created");
+	string          Message;
+	Point3D         PlayerPosGeod;  // Geodetic Coordinates
+	FG_Player	CurrentPlayer;
+	mT_PlayerListIt it;
 	netSocket       NewTelnet;
+	int		Done;
 	NewTelnet.setHandle (Fd);
-
-#ifndef FGMS_USE_THREADS
-	//////////////////////////////////////////////////
-	//
-	//      fork a new process,
-	//      creating a new thread migth be better
-	//
-	//////////////////////////////////////////////////
-	pid_t		Pid;
-	if ( (Pid = fork ()) < 0)
-	{
-		SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - couldn't fork!");
-		return 0; // something went wrong!
-	}
-	if (Pid > 0)
-	{	// parent
-		return 0;
-	}
-	m_IsParent = false;
-	m_DataSocket->close ();
-	m_TelnetSocket->close();
-#endif
 	errno = 0;
 	//////////////////////////////////////////////////
 	//
@@ -559,15 +357,11 @@ FG_SERVER::HandleTelnet ()
 			SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror (errno));
 		return (0);
 	}
-	#ifdef FGMS_USE_THREADS
-		//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - mutex lock");
-		pthread_mutex_lock (& m_PlayerMutex);
-	#endif
+	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet(" << pthread_self() << ") - mutex lock");
+	pthread_mutex_lock (& m_PlayerMutex);
 	unsigned int NumPlayers = m_PlayerList.size();
-	#ifdef FGMS_USE_THREADS
-		//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - mutex unlock");
-		pthread_mutex_unlock (& m_PlayerMutex);
-	#endif
+	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet(" << pthread_self() << ") - mutex unlock");
+	pthread_mutex_unlock (& m_PlayerMutex);
 	Message  = "# "+ NumToStr (NumPlayers, 0);
 	Message += " pilot(s) online\n";
 	if (NewTelnet.send (Message.c_str(),Message.size(), MSG_NOSIGNAL) < 0)
@@ -581,19 +375,34 @@ FG_SERVER::HandleTelnet ()
 	//      create list of players
 	//
 	//////////////////////////////////////////////////
-	it = m_PlayerList.begin();
-	while (it != m_PlayerList.end())
+	//for (it = m_PlayerList.begin(); it != m_PlayerList.end(); it++)
+	Done = 0;
+	for (;;)
 	{
-		#ifdef FGMS_USE_THREADS
-			//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - mutex lock");
-			pthread_mutex_lock (& m_PlayerMutex);
-		#endif
-		CurrentPlayer = (*it);
-		it++;
-		#ifdef FGMS_USE_THREADS
-			//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - mutex unlock");
+
+		//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet(" << pthread_self() << ") - mutex lock");
+		pthread_mutex_lock (& m_PlayerMutex);
+		if (Done == 0)
+		{
+			it = m_PlayerList.begin();
+			Done = 1;
+		}
+		else
+		{
+			it++;
+		}
+		if (it != m_PlayerList.end())
+		{
+			CurrentPlayer = (*it); 
+		}
+		else
+		{
 			pthread_mutex_unlock (& m_PlayerMutex);
-		#endif
+			break;
+		}
+		//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet(" << pthread_self() << ") - mutex unlock");
+		pthread_mutex_unlock (& m_PlayerMutex);
+
 		sgCartToGeod (CurrentPlayer.LastPos, PlayerPosGeod);
 		Message = CurrentPlayer.Callsign + "@";
 		if (CurrentPlayer.IsLocal)
@@ -635,11 +444,9 @@ FG_SERVER::HandleTelnet ()
 		}
 	}
 	NewTelnet.close ();
-#ifndef FGMS_USE_THREADS
-	exit (0);
-#endif
+	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet(" << pthread_self() << ") - ended");
+	CurrentPlayer.Callsign = "@@@";
 	return (0);
-#endif // (_MSC_VER && !FGMS_USE_THREADS) y/n
 } // FG_SERVER::HandleTelnet ()
 //////////////////////////////////////////////////////////////////////
 
@@ -702,16 +509,12 @@ FG_SERVER::AddBadClient
 		Message += Sender.getHost() + string(": ");
 		Message += ErrorMsg;
 		CreateChatMessage (NewPlayer.ClientID, Message);
-#ifdef FGMS_USE_THREADS
-		// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddBadClient() - mutex lock");
+		//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddBadClient(" << pthread_self() << ") - mutex lock");
 		pthread_mutex_lock (& m_PlayerMutex);
-#endif
 		m_PlayerList.push_back (NewPlayer);
 		m_NumCurrentClients++;
-#ifdef FGMS_USE_THREADS
+		//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddBadClient(" << pthread_self() << ") - mutex unlock");
 		pthread_mutex_unlock (& m_PlayerMutex);
-		// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddBadClient() - mutex unlock");
-#endif
 	}
 } // FG_SERVER::AddBadClient ()
 //////////////////////////////////////////////////////////////////////
@@ -776,15 +579,11 @@ FG_SERVER::AddClient
 	NewPlayer.ModelName = PosMsg->Model;
 	m_MaxClientID++;
 	NewPlayer.ClientID = m_MaxClientID;
-#ifdef FGMS_USE_THREADS
-		// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddClient() - mutex lock");
-		pthread_mutex_lock (& m_PlayerMutex);
-#endif
+	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddClient(" << pthread_self() << ") - mutex lock");
+	pthread_mutex_lock (& m_PlayerMutex);
 	m_PlayerList.push_back (NewPlayer);
-#ifdef FGMS_USE_THREADS
-		// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddClient() - mutex unlock");
-		pthread_mutex_unlock (& m_PlayerMutex);
-#endif
+	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddClient(" << pthread_self() << ") - mutex unlock");
+	pthread_mutex_unlock (& m_PlayerMutex);
 	m_NumCurrentClients++;
 	if (m_NumCurrentClients > m_NumMaxClients)
 	{
@@ -844,7 +643,11 @@ FG_SERVER::AddClient
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::AddRelay ( const string & Server, int Port )
+FG_SERVER::AddRelay
+(
+	const string & Server,
+	int Port
+)
 {
 	mT_Relay        NewRelay;
 	unsigned int    IP;
@@ -872,7 +675,11 @@ FG_SERVER::AddRelay ( const string & Server, int Port )
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::AddCrossfeed ( const string & Server, int Port )
+FG_SERVER::AddCrossfeed
+(
+	const string & Server,
+	int Port
+)
 {
 	mT_Relay        NewRelay;
 	unsigned int    IP;
@@ -893,7 +700,12 @@ FG_SERVER::AddCrossfeed ( const string & Server, int Port )
 //
 //////////////////////////////////////////////////////////////////////
 int
-FG_SERVER::AddTracker ( const string & Server, int Port, bool IsTracked )
+FG_SERVER::AddTracker
+(
+	const string & Server,
+	int Port,
+	bool IsTracked
+)
 {
 	m_IsTracked     = IsTracked;
 #ifndef NO_TRACKER_PORT
@@ -915,7 +727,10 @@ FG_SERVER::AddTracker ( const string & Server, int Port, bool IsTracked )
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::MaxTracker ( const int MaxTracker )
+FG_SERVER::MaxTracker
+(
+	const int MaxTracker
+)
 {
 	m_MaxTracker = MaxTracker;
 } // FG_SERVER::MaxTracker()
@@ -927,7 +742,10 @@ FG_SERVER::MaxTracker ( const int MaxTracker )
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::AddBlacklist ( const string& FourDottedIP )
+FG_SERVER::AddBlacklist
+(
+	const string& FourDottedIP
+)
 {
 	SG_ALERT (SG_SYSTEMS, SG_ALERT, "Adding to blacklist: " << FourDottedIP);
 	m_BlackList[netAddress(FourDottedIP.c_str(), 0).getIP()] = true;
@@ -940,7 +758,10 @@ FG_SERVER::AddBlacklist ( const string& FourDottedIP )
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::DropClient ( mT_PlayerListIt& CurrentPlayer )
+FG_SERVER::DropClient
+(
+	mT_PlayerListIt& CurrentPlayer
+)
 {
 	string Origin;
 
@@ -979,15 +800,11 @@ FG_SERVER::DropClient ( mT_PlayerListIt& CurrentPlayer )
 		Message += "' has left";
 		CreateChatMessage (0, Message);
 	}
-#ifdef FGMS_USE_THREADS
-		// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::DropClient() - mutex lock");
-		pthread_mutex_lock (& m_PlayerMutex);
-#endif
+	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::DropClient(" << pthread_self() << ") - mutex lock");
+	pthread_mutex_lock (& m_PlayerMutex);
 	CurrentPlayer = m_PlayerList.erase (CurrentPlayer);
-#ifdef FGMS_USE_THREADS
-		// SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::DropClient() - mutex unlock");
-		pthread_mutex_unlock (& m_PlayerMutex);
-#endif
+	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::DropClient(" << pthread_self() << ") - mutex unlock");
+	pthread_mutex_unlock (& m_PlayerMutex);
 } // FG_SERVER::DropClient ()
 //////////////////////////////////////////////////////////////////////
 
@@ -997,7 +814,11 @@ FG_SERVER::DropClient ( mT_PlayerListIt& CurrentPlayer )
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::CreateChatMessage ( int ID, string Msg )
+FG_SERVER::CreateChatMessage
+(
+	int ID,
+	string Msg
+)
 {
 	T_MsgHdr        MsgHdr;
 	T_ChatMsg       ChatMsg;
@@ -1035,7 +856,10 @@ FG_SERVER::CreateChatMessage ( int ID, string Msg )
 //
 //////////////////////////////////////////////////////////////////////
 bool
-FG_SERVER::IsBlackListed ( const netAddress &SenderAddress )
+FG_SERVER::IsBlackListed
+(
+	const netAddress &SenderAddress
+)
 {
 	if (m_BlackList.find(SenderAddress.getIP()) != m_BlackList.end())
 	{
@@ -1051,7 +875,10 @@ FG_SERVER::IsBlackListed ( const netAddress &SenderAddress )
 //
 //////////////////////////////////////////////////////////////////////
 bool
-FG_SERVER::IsKnownRelay ( const netAddress &SenderAddress )
+FG_SERVER::IsKnownRelay
+(
+	const netAddress &SenderAddress
+)
 {
 	mT_RelayListIt  CurrentRelay = m_RelayList.begin();
 	while (CurrentRelay != m_RelayList.end())
@@ -1153,7 +980,10 @@ FG_SERVER::PacketIsValid
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::SendChatMessages ( mT_PlayerListIt& CurrentPlayer )
+FG_SERVER::SendChatMessages
+(
+	mT_PlayerListIt& CurrentPlayer
+)
 {
 	T_ChatMsg*    ChatMsg;
 	mT_MessageIt  CurrentMessage;
@@ -1183,7 +1013,8 @@ FG_SERVER::SendChatMessages ( mT_PlayerListIt& CurrentPlayer )
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::DeleteMessageQueue ()
+FG_SERVER::DeleteMessageQueue
+()
 {
 	mT_MessageIt    CurrentMessage;
 	if (! m_MessageList.size())
@@ -1205,7 +1036,12 @@ FG_SERVER::DeleteMessageQueue ()
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::SendToCrossfeed ( char* Msg, int Bytes, const netAddress & SenderAddress )
+FG_SERVER::SendToCrossfeed
+(
+	char* Msg,
+	int Bytes,
+	const netAddress & SenderAddress
+)
 {
 	T_MsgHdr*       MsgHdr;
 	uint32_t        MsgMagic;
@@ -1230,7 +1066,12 @@ FG_SERVER::SendToCrossfeed ( char* Msg, int Bytes, const netAddress & SenderAddr
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::SendToRelays ( char* Msg, int Bytes, mT_PlayerListIt& SendingPlayer )
+FG_SERVER::SendToRelays
+(
+	char* Msg,
+	int Bytes,
+	mT_PlayerListIt& SendingPlayer
+)
 {
 	T_MsgHdr*       MsgHdr;
 	uint32_t        MsgMagic;
@@ -1281,8 +1122,8 @@ FG_SERVER::SendToRelays ( char* Msg, int Bytes, mT_PlayerListIt& SendingPlayer )
 int
 FG_SERVER::SenderIsKnown
 (
-    const string& SenderCallsign,
-    const netAddress &SenderAddress
+	const string& SenderCallsign,
+	const netAddress &SenderAddress
 )
 {
 	mT_PlayerListIt CurrentPlayer;
@@ -1310,7 +1151,12 @@ FG_SERVER::SenderIsKnown
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::HandlePacket ( char * Msg, int Bytes, const netAddress &SenderAddress )
+FG_SERVER::HandlePacket
+(
+	char * Msg,
+	int Bytes,
+	const netAddress &SenderAddress
+)
 {
 	T_MsgHdr*       MsgHdr;
 	T_PositionMsg*  PosMsg;
@@ -1514,7 +1360,8 @@ static char * reset_file = (char *)"fgms_reset";
 static char * stat_file = (char *)"fgms_stat";
 
 int
-FG_SERVER::check_keyboard()
+FG_SERVER::check_keyboard
+()
 {
 	struct stat buf;
 	if (stat(exit_file,&buf) == 0)
@@ -1608,7 +1455,8 @@ FG_SERVER::check_keyboard()
 //
 //////////////////////////////////////////////////////////////////////
 int
-FG_SERVER::Loop ()
+FG_SERVER::Loop
+()
 {
 	int         Bytes;
 	char        Msg[MAX_PACKET_SIZE];
@@ -1670,15 +1518,11 @@ FG_SERVER::Loop ()
 			m_PacketsReceived++;
 			HandlePacket ((char*)&Msg,Bytes,SenderAddress);
 		}	// DataSocket
-		else if (ListenSockets[1] != 0)
+		else if (ListenSockets[1] > 0)
 		{	// something on the wire (telnet)
 			m_TelnetReceived++;
-#ifdef FGMS_USE_THREADS
 			pthread_t t;
 			pthread_create (&t, NULL, &telnet_helper, this);
-#else
-			HandleTelnet ();
-#endif
 		}	// TelnetSocket
 	}
 	return (0);
@@ -1691,7 +1535,10 @@ FG_SERVER::Loop ()
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::SetDataPort ( int Port )
+FG_SERVER::SetDataPort
+(
+	int Port
+)
 {
 	if (Port != m_ListenPort)
 	{
@@ -1707,7 +1554,10 @@ FG_SERVER::SetDataPort ( int Port )
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::SetTelnetPort ( int Port )
+FG_SERVER::SetTelnetPort
+(
+	int Port
+)
 {
 	if (m_TelnetPort != Port)
 	{
@@ -1724,7 +1574,10 @@ FG_SERVER::SetTelnetPort ( int Port )
 //
 //////////////////////////////////////////////////////////////////////
 void    
-FG_SERVER::SetPlayerExpires ( int Seconds )
+FG_SERVER::SetPlayerExpires
+(
+	int Seconds
+)
 {
 	m_PlayerExpires = Seconds;
 } // FG_SERVER::SetPlayerExpires ( int iSeconds )
@@ -1737,7 +1590,10 @@ FG_SERVER::SetPlayerExpires ( int Seconds )
 //
 //////////////////////////////////////////////////////////////////////
 void    
-FG_SERVER::SetOutOfReach ( int OutOfReach )
+FG_SERVER::SetOutOfReach
+(
+	int OutOfReach
+)
 {
 	m_PlayerIsOutOfReach = OutOfReach;
 } // FG_SERVER::SetOutOfReach ( int iOutOfReach )
@@ -1749,7 +1605,10 @@ FG_SERVER::SetOutOfReach ( int OutOfReach )
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::SetLoglevel ( int Loglevel )
+FG_SERVER::SetLoglevel
+(
+	int Loglevel
+)
 {
 	m_Loglevel = (sgDebugPriority) Loglevel;
 	sglog().setLogLevels (SG_ALL, m_Loglevel);
@@ -1762,7 +1621,10 @@ FG_SERVER::SetLoglevel ( int Loglevel )
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::SetLogfile ( const std::string &LogfileName )
+FG_SERVER::SetLogfile
+(
+	const std::string &LogfileName
+)
 {
 	if (m_LogFile)
 	{
@@ -1781,7 +1643,10 @@ FG_SERVER::SetLogfile ( const std::string &LogfileName )
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::SetHub ( bool IamHUB )
+FG_SERVER::SetHub
+(
+	bool IamHUB
+)
 {
 	m_IamHUB = IamHUB;
 } // FG_SERVER::SetLoglevel ( int iLoglevel )
@@ -1793,7 +1658,10 @@ FG_SERVER::SetHub ( bool IamHUB )
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::SetServerName ( const std::string &ServerName )
+FG_SERVER::SetServerName
+(
+	const std::string &ServerName
+)
 {
 	m_ServerName = ServerName;
 } // FG_SERVER::SetLogfile ( const std::string &LogfileName )
@@ -1805,7 +1673,10 @@ FG_SERVER::SetServerName ( const std::string &ServerName )
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::SetBindAddress ( const std::string &BindAddress )
+FG_SERVER::SetBindAddress
+(
+	const std::string &BindAddress
+)
 {
 	m_BindAddress = BindAddress;
 } // FG_SERVER::SetLogfile ( const std::string &LogfileName )
@@ -1817,7 +1688,8 @@ FG_SERVER::SetBindAddress ( const std::string &BindAddress )
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::Done ()
+FG_SERVER::Done
+()
 {
 	if (! m_IsParent)
 		return;
@@ -1974,7 +1846,8 @@ FG_SERVER::UpdateTracker
 //
 //////////////////////////////////////////////////////////////////////
 void
-FG_SERVER::CloseTracker()
+FG_SERVER::CloseTracker
+()
 {
 	if (m_IsTracked)
 	{
@@ -1990,7 +1863,11 @@ FG_SERVER::CloseTracker()
 //
 //////////////////////////////////////////////////////////////////////
 bool
-FG_SERVER::IsInRange( mT_Relay& Relay,  FG_Player& SendingPlayer )
+FG_SERVER::IsInRange
+(
+	mT_Relay& Relay,
+	FG_Player& SendingPlayer
+)
 {
 	mT_PlayerListIt         CurrentPlayer;
 

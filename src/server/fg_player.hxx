@@ -28,6 +28,7 @@
 #include <string>
 #include <time.h>
 #include <plib/netSocket.h>
+#include <simgear/debug/logstream.hxx>
 #include "fg_geometry.hxx"
 
 using namespace std;
@@ -55,6 +56,7 @@ public:
 
 	FG_Player ();
 	FG_Player ( const FG_Player& P);
+	~FG_Player ();
 	void operator =  ( const FG_Player& P );
 private:
 	void assign ( const FG_Player& P );

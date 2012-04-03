@@ -49,6 +49,14 @@ FG_Player::FG_Player
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+FG_Player::~FG_Player
+()
+{
+	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_Player::~FG_Player(" << pthread_self() << ") - " << this->Callsign);
+}
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
 void
 FG_Player::operator =
 (
@@ -66,6 +74,7 @@ FG_Player::assign
 	const FG_Player& P
 )
 {
+	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_Player::assign(" << pthread_self() << ") - " << P.Callsign);
         Origin          = P.Origin;
         Address         = P.Address;
         Callsign        = P.Callsign;
