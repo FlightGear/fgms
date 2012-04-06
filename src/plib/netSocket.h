@@ -72,8 +72,9 @@ public:
   static const char* getLocalHost () ;
 
   bool getBroadcast () const ;
-  bool operator == (const netAddress& Value) const;
-  bool operator != (const netAddress& Value) const;
+  bool operator == ( const netAddress& Value ) const;
+  bool operator != ( const netAddress& Value ) const;
+  void operator =  ( const netAddress& Value );
 };
 
 

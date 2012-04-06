@@ -182,6 +182,16 @@ bool netAddress::operator != (const netAddress& Value) const
   return (true);
 }
 
+void netAddress::operator = (const netAddress& Value)
+{
+
+  this->sin_family	= Value.sin_family;
+  this->sin_port	= Value.sin_port;
+  this->sin_addr	= Value.sin_addr;
+  for (int i=0; i<8; i++)
+  	this->sin_zero[i] = Value.sin_zero[i];
+}
+
 netSocket::netSocket ()
 {
   handle = -1 ;

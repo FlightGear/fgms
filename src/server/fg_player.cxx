@@ -75,16 +75,19 @@ FG_Player::assign
 )
 {
 	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_Player::assign(" << pthread_self() << ") - " << P.Callsign);
-        Origin          = P.Origin;
+	//
+	// using str.c_str() here to prevent copy-on-write in std::string!
+	//
+        Origin          = P.Origin.c_str();
         Address         = P.Address;
-        Callsign        = P.Callsign;
-        Passwd          = P.Passwd;
-        ModelName       = P.ModelName;
+        Callsign        = P.Callsign.c_str();
+        Passwd          = P.Passwd.c_str();
+        ModelName       = P.ModelName.c_str();
         JoinTime        = P.JoinTime;
         Timestamp       = P.Timestamp;
         LastPos         = P.LastPos;
         IsLocal         = P.IsLocal;
-        Error           = P.Error;
+        Error           = P.Error.c_str();
         HasErrors       = P.HasErrors;
         ClientID        = P.ClientID;
         PktsSentTo      = P.PktsSentTo;
@@ -92,6 +95,13 @@ FG_Player::assign
         LastOrientation         = P.LastOrientation;
         PktsReceivedFrom        = P.PktsReceivedFrom;
         LastRelayedToInactive   = P.LastRelayedToInactive;
+	#if 0
+	void* p;
+	void* q;
+	p = (void*)   Callsign.c_str();
+	q = (void*) P.Callsign.c_str();
+	cout << " assign p: " << p << " q: " << q << endl;
+	#endif
 }
 //////////////////////////////////////////////////////////////////////
 
