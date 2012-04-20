@@ -28,6 +28,7 @@
 #include <iostream>
 #include <fstream>
 #include <list>
+#include <vector>
 #include <map>
 #include <string>
 #include <string.h>
@@ -112,7 +113,7 @@ public:
 	void  TelnetReply(netSocket* NewTelnet);
 	#endif
 	int   check_keyboard();
-	void* HandleTelnet  ();
+	void* HandleTelnet  (int Fd);
 
 private:
 	//////////////////////////////////////////////////
@@ -143,7 +144,7 @@ private:
 	//  private variables
 	//  
 	//////////////////////////////////////////////////
-	typedef std::list<FG_Player>              mT_PlayerList;
+	typedef std::vector<FG_Player>              mT_PlayerList;
 	typedef mT_PlayerList::iterator           mT_PlayerListIt;
 	typedef std::list<mT_Relay>               mT_RelayList;
 	typedef mT_RelayList::iterator            mT_RelayListIt;
@@ -226,6 +227,11 @@ private:
 	int   SenderIsKnown ( const string& SenderCallsign, const netAddress &SenderAddress);
 }; // FG_SERVER
 
+typedef struct st_telnet
+{
+	FG_SERVER* Instance;
+	int        Fd;
+} st_telnet;
 #endif
 
 // vim: ts=2:sw=2:sts=0

@@ -286,8 +286,11 @@ telnet_helper
 )
 {
 	pthread_detach (pthread_self());
-	FG_SERVER *tmp_server = reinterpret_cast<FG_SERVER *>(context);
-	return (tmp_server->HandleTelnet());
+	st_telnet* t = reinterpret_cast<st_telnet*> (context);
+	FG_SERVER *tmp_server = t->Instance;
+	tmp_server->HandleTelnet(t->Fd);
+	delete t;
+	return 0;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -299,35 +302,16 @@ telnet_helper
 //////////////////////////////////////////////////////////////////////
 void*
 FG_SERVER::HandleTelnet
-()
+(
+	int Fd
+)
 {
-	int             Fd;
-	netAddress      TelnetAddress;
-
 	errno = 0;
-	//////////////////////////////////////////////////
-	// This should be moved to the main thread.
-	// The main thread generates more several threads
-	// before the accept() call is finished.
-	// The accept()ed Fd should be a parameter to
-	// telnet_helper ()
-	//////////////////////////////////////////////////
-	Fd = m_TelnetSocket->accept (&TelnetAddress);
-	if (Fd < 0)
-	{
-		if ((errno != EAGAIN) && (errno != EPIPE))
-		{
-			SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror (errno));
-		}
-		return 0;
-	}
-	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet(" << pthread_self() << ") - created");
 	string          Message;
 	Point3D         PlayerPosGeod;  // Geodetic Coordinates
 	FG_Player	CurrentPlayer;
-	mT_PlayerListIt it;
 	netSocket       NewTelnet;
-	int		Done;
+	unsigned int	it;
 	NewTelnet.setHandle (Fd);
 	errno = 0;
 	//////////////////////////////////////////////////
@@ -357,50 +341,26 @@ FG_SERVER::HandleTelnet
 			SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror (errno));
 		return (0);
 	}
-	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet(" << pthread_self() << ") - mutex lock");
-	pthread_mutex_lock (& m_PlayerMutex);
-	unsigned int NumPlayers = m_PlayerList.size();
-	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet(" << pthread_self() << ") - mutex unlock");
-	pthread_mutex_unlock (& m_PlayerMutex);
-	Message  = "# "+ NumToStr (NumPlayers, 0);
-	Message += " pilot(s) online\n";
-	if (NewTelnet.send (Message.c_str(),Message.size(), MSG_NOSIGNAL) < 0)
-	{
-		if ((errno != EAGAIN) && (errno != EPIPE))
-			SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror (errno));
-		return (0);
-	}
 	//////////////////////////////////////////////////
 	//
 	//      create list of players
 	//
 	//////////////////////////////////////////////////
-	//for (it = m_PlayerList.begin(); it != m_PlayerList.end(); it++)
-	Done = 0;
+	it = 0;
 	for (;;)
 	{
-
 		//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet(" << pthread_self() << ") - mutex lock");
 		pthread_mutex_lock (& m_PlayerMutex);
-		if (Done == 0)
+		if (it < m_PlayerList.size())
 		{
-			it = m_PlayerList.begin();
-			Done = 1;
-		}
-		else
-		{
+			CurrentPlayer = m_PlayerList[it]; 
 			it++;
-		}
-		if (it != m_PlayerList.end())
-		{
-			CurrentPlayer = (*it); 
 		}
 		else
 		{
 			pthread_mutex_unlock (& m_PlayerMutex);
 			break;
 		}
-		//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet(" << pthread_self() << ") - mutex unlock");
 		pthread_mutex_unlock (& m_PlayerMutex);
 
 		sgCartToGeod (CurrentPlayer.LastPos, PlayerPosGeod);
@@ -443,9 +403,10 @@ FG_SERVER::HandleTelnet
 			return (0);
 		}
 	}
+	Message  = "# "+ NumToStr (it, 0);
+	Message += " pilot(s) online\n";
+	NewTelnet.send (Message.c_str(),Message.size(), MSG_NOSIGNAL);
 	NewTelnet.close ();
-	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet(" << pthread_self() << ") - ended");
-	CurrentPlayer.Callsign = "@@@";
 	return (0);
 } // FG_SERVER::HandleTelnet ()
 //////////////////////////////////////////////////////////////////////
@@ -466,11 +427,26 @@ FG_SERVER::AddBadClient
 	bool			IsLocal
 )
 {
-	bool                    AlreadyThere;
 	string                  Message;
 	FG_Player               NewPlayer;
 	mT_PlayerListIt         CurrentPlayer;
 
+	CurrentPlayer = m_PlayerList.begin();
+	//////////////////////////////////////////////////
+	//      see, if we already know the client
+	//////////////////////////////////////////////////
+	while (CurrentPlayer != m_PlayerList.end())
+	{
+		if (CurrentPlayer->Address.getIP() == Sender.getIP())
+		{
+			CurrentPlayer->Timestamp = time (0);
+			return;
+		}
+		CurrentPlayer++;
+	}
+	//////////////////////////////////////////////////
+	//      new client, send an error message
+	//////////////////////////////////////////////////
 	m_MaxClientID++;
 	NewPlayer.Callsign      = "* Bad Client *";
 	NewPlayer.ModelName     = "* unknown *";
@@ -486,36 +462,17 @@ FG_SERVER::AddBadClient
 	NewPlayer.PktsSentTo            = 0;
 	NewPlayer.PktsForwarded         = 0;
 	NewPlayer.LastRelayedToInactive = 0;
-	AlreadyThere  = false;
-	CurrentPlayer = m_PlayerList.begin();
-	//////////////////////////////////////////////////
-	//      see, if we already know the client
-	//////////////////////////////////////////////////
-	while (CurrentPlayer != m_PlayerList.end())
-	{
-		if (CurrentPlayer->Address.getIP() == Sender.getIP())
-		{
-			AlreadyThere = true;
-		}
-		CurrentPlayer++;
-	}
-	//////////////////////////////////////////////////
-	//      new client, send an error message
-	//////////////////////////////////////////////////
-	if (! AlreadyThere)
-	{
-		SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddBadClient() - " << ErrorMsg);
-		Message = "bad client connected: ";
-		Message += Sender.getHost() + string(": ");
-		Message += ErrorMsg;
-		CreateChatMessage (NewPlayer.ClientID, Message);
-		//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddBadClient(" << pthread_self() << ") - mutex lock");
-		pthread_mutex_lock (& m_PlayerMutex);
-		m_PlayerList.push_back (NewPlayer);
-		m_NumCurrentClients++;
-		//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddBadClient(" << pthread_self() << ") - mutex unlock");
-		pthread_mutex_unlock (& m_PlayerMutex);
-	}
+	SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddBadClient() - " << ErrorMsg);
+	Message = "bad client connected: ";
+	Message += Sender.getHost() + string(": ");
+	Message += ErrorMsg;
+	CreateChatMessage (NewPlayer.ClientID, Message);
+	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddBadClient(" << pthread_self() << ") - mutex lock");
+	pthread_mutex_lock (& m_PlayerMutex);
+	m_PlayerList.push_back (NewPlayer);
+	m_NumCurrentClients++;
+	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddBadClient(" << pthread_self() << ") - mutex unlock");
+	pthread_mutex_unlock (& m_PlayerMutex);
 } // FG_SERVER::AddBadClient ()
 //////////////////////////////////////////////////////////////////////
 
@@ -936,8 +893,12 @@ FG_SERVER::PacketIsValid
 	}
 	if ((MsgMagic != MSG_MAGIC) && (MsgMagic != RELAY_MAGIC))
 	{
+		char m[5];
+		memcpy (m, (char*) &MsgMagic, 4);
+		m[4] = 0;
 		ErrorMsg  = Origin;
-		ErrorMsg += " illegal magic number!";
+		ErrorMsg += " BAD magic number: ";
+		ErrorMsg += m;
 		AddBadClient (SenderAddress, ErrorMsg, true);
 		return (false);
 	}
@@ -945,7 +906,7 @@ FG_SERVER::PacketIsValid
 	{
 		MsgHdr->Version = XDR_decode<uint32_t> (MsgHdr->Version);
 		ErrorMsg  = Origin;
-		ErrorMsg += " illegal protocol version! Should be ";
+		ErrorMsg += " BAD protocol version! Should be ";
 		converter*    tmp;
 		tmp = (converter*) (& PROTO_VER);
 		ErrorMsg += NumToStr (tmp->High, 0);
@@ -1259,6 +1220,15 @@ FG_SERVER::HandlePacket
 	while (CurrentPlayer != m_PlayerList.end())
 	{
 		//////////////////////////////////////////////////
+		//        Drop CurrentPlayer if last sign of
+		//        life is older then TTL
+		//////////////////////////////////////////////////
+		if ( (Timestamp - CurrentPlayer->Timestamp) > m_PlayerExpires)
+		{
+			DropClient (CurrentPlayer);
+			continue;
+		}
+		//////////////////////////////////////////////////
 		//
 		//      ignore clients with errors
 		//
@@ -1292,15 +1262,6 @@ FG_SERVER::HandlePacket
 			CurrentPlayer->PktsReceivedFrom++;
 			CurrentPlayer++;
 			continue; // don't send packet back to sender
-		}
-		//////////////////////////////////////////////////
-		//        Drop CurrentPlayer if last sign of
-		//        life is older then TTL
-		//////////////////////////////////////////////////
-		if ( (Timestamp - CurrentPlayer->Timestamp) > m_PlayerExpires)
-		{
-			DropClient (CurrentPlayer);
-			continue;
 		}
 		//////////////////////////////////////////////////
 		//      do not send packets to clients if the
@@ -1520,9 +1481,22 @@ FG_SERVER::Loop
 		}	// DataSocket
 		else if (ListenSockets[1] > 0)
 		{	// something on the wire (telnet)
+			netAddress TelnetAddress;
 			m_TelnetReceived++;
-			pthread_t t;
-			pthread_create (&t, NULL, &telnet_helper, this);
+			int Fd = m_TelnetSocket->accept (&TelnetAddress);
+			if (Fd < 0)
+			{
+				if ((errno != EAGAIN) && (errno != EPIPE))
+				{
+					SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror (errno));
+				}
+				return 0;
+			}
+			st_telnet* t = new st_telnet;
+			t->Instance = this;
+			t->Fd       = Fd;
+			pthread_t th;
+			pthread_create (&th, NULL, &telnet_helper, t);
 		}	// TelnetSocket
 	}
 	return (0);
