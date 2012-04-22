@@ -341,6 +341,16 @@ FG_SERVER::HandleTelnet
 			SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror (errno));
 		return (0);
 	}
+	pthread_mutex_lock (& m_PlayerMutex);
+	Message  = "# "+ NumToStr (m_PlayerList.size(), 0);
+	Message += " pilot(s) online\n";
+	if (NewTelnet.send (Message.c_str(),Message.size(), MSG_NOSIGNAL) < 0)
+	{
+		if ((errno != EAGAIN) && (errno != EPIPE))
+			SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror (errno));
+		return (0);
+	}
+	pthread_mutex_unlock (& m_PlayerMutex);
 	//////////////////////////////////////////////////
 	//
 	//      create list of players
@@ -349,7 +359,6 @@ FG_SERVER::HandleTelnet
 	it = 0;
 	for (;;)
 	{
-		//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet(" << pthread_self() << ") - mutex lock");
 		pthread_mutex_lock (& m_PlayerMutex);
 		if (it < m_PlayerList.size())
 		{
@@ -362,7 +371,6 @@ FG_SERVER::HandleTelnet
 			break;
 		}
 		pthread_mutex_unlock (& m_PlayerMutex);
-
 		sgCartToGeod (CurrentPlayer.LastPos, PlayerPosGeod);
 		Message = CurrentPlayer.Callsign + "@";
 		if (CurrentPlayer.IsLocal)
@@ -403,9 +411,6 @@ FG_SERVER::HandleTelnet
 			return (0);
 		}
 	}
-	Message  = "# "+ NumToStr (it, 0);
-	Message += " pilot(s) online\n";
-	NewTelnet.send (Message.c_str(),Message.size(), MSG_NOSIGNAL);
 	NewTelnet.close ();
 	return (0);
 } // FG_SERVER::HandleTelnet ()
@@ -467,11 +472,9 @@ FG_SERVER::AddBadClient
 	Message += Sender.getHost() + string(": ");
 	Message += ErrorMsg;
 	CreateChatMessage (NewPlayer.ClientID, Message);
-	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddBadClient(" << pthread_self() << ") - mutex lock");
 	pthread_mutex_lock (& m_PlayerMutex);
 	m_PlayerList.push_back (NewPlayer);
 	m_NumCurrentClients++;
-	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddBadClient(" << pthread_self() << ") - mutex unlock");
 	pthread_mutex_unlock (& m_PlayerMutex);
 } // FG_SERVER::AddBadClient ()
 //////////////////////////////////////////////////////////////////////
@@ -536,10 +539,8 @@ FG_SERVER::AddClient
 	NewPlayer.ModelName = PosMsg->Model;
 	m_MaxClientID++;
 	NewPlayer.ClientID = m_MaxClientID;
-	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddClient(" << pthread_self() << ") - mutex lock");
 	pthread_mutex_lock (& m_PlayerMutex);
 	m_PlayerList.push_back (NewPlayer);
-	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddClient(" << pthread_self() << ") - mutex unlock");
 	pthread_mutex_unlock (& m_PlayerMutex);
 	m_NumCurrentClients++;
 	if (m_NumCurrentClients > m_NumMaxClients)
@@ -757,10 +758,8 @@ FG_SERVER::DropClient
 		Message += "' has left";
 		CreateChatMessage (0, Message);
 	}
-	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::DropClient(" << pthread_self() << ") - mutex lock");
 	pthread_mutex_lock (& m_PlayerMutex);
 	CurrentPlayer = m_PlayerList.erase (CurrentPlayer);
-	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::DropClient(" << pthread_self() << ") - mutex unlock");
 	pthread_mutex_unlock (& m_PlayerMutex);
 } // FG_SERVER::DropClient ()
 //////////////////////////////////////////////////////////////////////
