@@ -343,6 +343,7 @@ FG_SERVER::HandleTelnet
 	}
 	pthread_mutex_lock (& m_PlayerMutex);
 	Message  = "# "+ NumToStr (m_PlayerList.size(), 0);
+	pthread_mutex_unlock (& m_PlayerMutex);
 	Message += " pilot(s) online\n";
 	if (NewTelnet.send (Message.c_str(),Message.size(), MSG_NOSIGNAL) < 0)
 	{
@@ -350,7 +351,6 @@ FG_SERVER::HandleTelnet
 			SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror (errno));
 		return (0);
 	}
-	pthread_mutex_unlock (& m_PlayerMutex);
 	//////////////////////////////////////////////////
 	//
 	//      create list of players
