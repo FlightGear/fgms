@@ -40,6 +40,11 @@
 #ifndef NET_SOCKET_H
 #define NET_SOCKET_H
 
+#if __FreeBSD__
+  #include <sys/types.h>
+  #include <sys/socket.h>
+#endif
+
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -55,9 +60,16 @@
 class netAddress
 {
   /* DANGER!!!  This MUST match 'struct sockaddr_in' exactly! */
+#if __FreeBSD__
+  int8_t         sin_len        ;
+  sa_family_t    sin_family     ;
+  in_port_t      sin_port       ;
+  in_addr_t      sin_addr       ;
+#else 
   short          sin_family     ;
   unsigned short sin_port       ;
   unsigned int   sin_addr       ;
+#endif
   char           sin_zero [ 8 ] ;
 
 public:

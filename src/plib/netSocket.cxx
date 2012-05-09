@@ -70,6 +70,9 @@ void netAddress::set ( const char* host, int port )
 {
   memset(this, 0, sizeof(netAddress));
 
+#if __FreeBSD__
+  sin_len = sizeof(netAddress);
+#endif
   sin_family = AF_INET ;
   sin_port = htons (port);
 

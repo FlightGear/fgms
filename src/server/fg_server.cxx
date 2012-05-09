@@ -22,6 +22,7 @@
 //      (c) 2005-2012 Oliver Schroeder
 //      (c) 2006 Julien Pierru ( UpdateTracker() )
 //      (c) 2007-2010 Anders Gidenstam ( LazyRelay )
+//      (c) 2012 Rob Dosogne ( FreeBSD friendly )
 //
 //////////////////////////////////////////////////////////////////////
 #include "config.h"
@@ -31,7 +32,9 @@
 #include <time.h>
 #include <string.h>
 #ifndef _MSC_VER
-	#include <endian.h>
+	#ifndef __FreeBSD__
+		#include <endian.h>
+	#endif
 	#include <sys/ipc.h>
 	#include <sys/msg.h>
 	#include <netinet/in.h>
@@ -69,8 +72,8 @@ FG_SERVER::FG_SERVER
 	typedef union
 	{
 		uint32_t    complete;
-		uint16_t    High;
-		uint16_t    Low;
+		int32_t     High;
+		int32_t     Low;
 	} converter;
 	converter*    tmp;
 	m_Initialized         = true;	// Init() will do it
@@ -875,8 +878,8 @@ FG_SERVER::PacketIsValid
 	typedef union
 	{
 		uint32_t    complete;
-		uint16_t    High;
-		uint16_t    Low;
+		int32_t     High;
+		int32_t     Low;
 	} converter;
 
 	Origin = SenderAddress.getHost();

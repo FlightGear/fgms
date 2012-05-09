@@ -6,7 +6,9 @@
 #endif
 
 #ifndef _MSC_VER
-#include "error.h"
+  #ifndef __FreeBSD__
+    #include "error.h"
+  #endif
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>

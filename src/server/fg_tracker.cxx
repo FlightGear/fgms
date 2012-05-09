@@ -2,6 +2,7 @@
 //
 //  server tracker for FlightGear
 //  (c) 2006 Julien Pierru
+//  (c) 2012 Rob Dosogne ( FreeBSD friendly )
 //
 //  Licenced under GPL
 //
@@ -14,14 +15,16 @@
 #include <string>
 #include <string.h>
 #ifndef _MSC_VER
-#include <errno.h>
-#include <time.h>
-#include <stdint.h>
-#include <unistd.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <sys/types.h>
-#include <endian.h>
+	#include <errno.h>
+	#include <time.h>
+	#include <stdint.h>
+	#include <unistd.h>
+	#include <sys/ipc.h>
+	#include <sys/msg.h>
+	#include <sys/types.h>
+	#ifndef __FreeBSD__
+		#include <endian.h>
+	#endif
 #endif
 #include <unistd.h>
 #include "common.h"
