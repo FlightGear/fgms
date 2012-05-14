@@ -588,7 +588,6 @@ main ( int argc, char* argv[] )
 	if ( !bHadConfig )
 	{
 		SG_ALERT (SG_SYSTEMS, SG_ALERT, "No configuration file 'fgms.conf' found!");
-		exit(1);
 	}
 	sglog().setLogLevels( SG_ALL, SG_INFO );
 	sglog().enable_with_date (true);
