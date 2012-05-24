@@ -215,7 +215,7 @@ FG_TRACKER::Disconnect ()
 } // Disconnect ()
 //////////////////////////////////////////////////////////////////////
 #ifdef _MSC_VER
-#if (NTDDI_VERSION < NTDDI_VISTA)   // if less than VISTA, provide alternative
+#if !defined(NTDDI_VERSION) || !defined(NTDDI_VISTA) || (NTDDI_VERSION < NTDDI_VISTA)   // if less than VISTA, provide alternative
 #ifndef EAFNOSUPPORT
 #define	EAFNOSUPPORT	97	/* not present in errno.h provided with VC */
 #endif
