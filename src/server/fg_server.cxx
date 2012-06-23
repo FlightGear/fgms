@@ -106,6 +106,8 @@ FG_SERVER::FG_SERVER
 	m_PacketsInvalid      = 0;	// invalid packet
 	m_UnknownRelay        = 0;	// unknown relay
 	m_PositionData        = 0;	// position data packet
+    mT_PacketsReceived = mT_BlackRejected = mT_PacketsInvalid = mT_UnknownRelay = mT_PositionData = mT_TelnetReceived = 0; // totals since start
+
 	pthread_mutex_init( &m_PlayerMutex, 0 );
 } // FG_SERVER::FG_SERVER()
 //////////////////////////////////////////////////////////////////////
@@ -1321,10 +1323,15 @@ FG_SERVER::HandlePacket
 //////////////////////////////////////////////////////////////////////
 
 extern void SigHUPHandler ( int SigType );
-
+#if _MSC_VER
 static char * exit_file = (char *)"fgms_exit";
 static char * reset_file = (char *)"fgms_reset";
 static char * stat_file = (char *)"fgms_stat";
+#else // !_MSC_VER
+static char * exit_file = (char *)"/tmp/fgms_exit";
+static char * reset_file = (char *)"/tmp/fgms_reset";
+static char * stat_file = (char *)"/tmp/fgms_stat";
+#endif // _MSC_VER y/n
 
 int
 FG_SERVER::check_keyboard
@@ -1333,22 +1340,22 @@ FG_SERVER::check_keyboard
 	struct stat buf;
 	if (stat(exit_file,&buf) == 0)
 	{
-		printf("Got EXIT file %s...\n",exit_file);
+		SG_LOG (SG_SYSTEMS, SG_ALERT, "Got EXIT file : " << exit_file);
 		unlink(exit_file);
 		if (stat(exit_file,&buf) == 0)
 		{
-			printf("ERROR: Unable to delete EXIT file %s...\n",exit_file);
+			SG_LOG (SG_SYSTEMS, SG_ALERT, "ERROR: Unable to delete exit file! Doing hard exit...");
 			exit(1);
 		}
 		return 1;
 	}
 	else if ( stat(reset_file,&buf) == 0)
 	{
-		printf("Got RESET file %s...\n",reset_file);
+		SG_LOG (SG_SYSTEMS, SG_ALERT, "Got RESET file " << reset_file);
 		unlink(reset_file);
 		if (stat(reset_file,&buf) == 0)
 		{
-			printf("ERROR: Unable to delete RESET file %s...\n",reset_file);
+			SG_LOG (SG_SYSTEMS, SG_ALERT, "ERROR: Unable to delete reset file! Doing hard exit...");
 			exit(1);
 		}
 		m_Initialized         = true; // Init() will do it
@@ -1359,22 +1366,43 @@ FG_SERVER::check_keyboard
 	}
 	else if ( stat(stat_file,&buf) == 0)
 	{
-		printf("Got STAT file %s...\n",stat_file);
+		SG_LOG (SG_SYSTEMS, SG_ALERT, "Got STAT file " << stat_file);
 		unlink(stat_file);
 		if (stat(stat_file,&buf) == 0)
 		{
-			printf("ERROR: Unable to delete STAT file %s...\n",stat_file);
+			SG_LOG (SG_SYSTEMS, SG_ALERT, "ERROR: Unable to delete stat file! Doing hard exit...");
 			exit(1);
 		}
-		printf("Pilots %u Packets=%d, BL=%d INV=%d UR=%d PD=%d Telnet: %d\n",
-			m_PlayerList.size(),    // active pilots
-			m_PacketsReceived,
-			m_BlackRejected,        // in black list
-			m_PacketsInvalid,       // invalid packet
-			m_UnknownRelay,         // unknown relay
-			m_PositionData,         // position data packet
-			m_TelnetReceived	// telnet queries
-		);
+
+        // update totals since start
+        mT_PacketsReceived += m_PacketsReceived;
+        mT_BlackRejected   += m_BlackRejected;
+        mT_PacketsInvalid  += m_PacketsInvalid;
+        mT_UnknownRelay    += m_UnknownRelay;
+        mT_PositionData    += m_PositionData;
+        mT_TelnetReceived  += m_TelnetReceived;
+
+		SG_LOG (SG_SYSTEMS, SG_ALERT, "Pilots " <<
+			m_PlayerList.size() );
+
+		SG_LOG (SG_SYSTEMS, SG_ALERT, "Total: Packets " <<
+			mT_PacketsReceived << " BL=" <<
+			mT_BlackRejected << " INV=" <<
+			mT_PacketsInvalid << " UR=" <<
+			mT_UnknownRelay << " PD=" <<
+			mT_PositionData << " Telnet " <<
+			mT_TelnetReceived );
+
+		SG_LOG (SG_SYSTEMS, SG_ALERT, "Since: Packets " <<
+			m_PacketsReceived << " BL=" <<
+			m_BlackRejected << " INV=" <<
+			m_PacketsInvalid << " UR=" <<
+			m_UnknownRelay << " PD=" <<
+			m_PositionData << " Telnet " <<
+			m_TelnetReceived );
+
+        // restart 'since' last stat counter
+        m_PacketsReceived = m_BlackRejected = m_PacketsInvalid = m_UnknownRelay = m_PositionData = m_TelnetReceived = 0; // reset
 	}
 #ifdef _MSC_VER
 	if (_kbhit())
@@ -1461,10 +1489,8 @@ FG_SERVER::Loop
 				// regularly (tracker)
 				UpdateTracker (string(""),string(""), string(""),tick0,UPDATE);
 			}
-#ifdef _MSC_VER
 			if (check_keyboard())
 				break;
-#endif
 		} // position (tracker)
 		errno = 0;
 		ListenSockets[0] = m_DataSocket;
