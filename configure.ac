@@ -47,7 +47,7 @@ dnl #####
 dnl ##################################################
 CURRENT="0"
 REVISION="10"
-AGE="15"
+AGE="16"
 AC_SUBST(CURRENT)
 AC_SUBST(REVISION)
 AC_SUBST(AGE)

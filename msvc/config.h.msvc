@@ -1,4 +1,6 @@
 // config.h
+// SPECIAL HAND CRAFTED CONFIG.H FOR MSVC
+// 20120623 - Bumped verions, to agree with configure.ac
 // 20120322 - update using pthreads for telnet
 // 20110812 - updated with latest source - updfgms-stable.bat
 // 20110324 - hand crafted for MSVC
@@ -14,7 +16,7 @@
 #include <time.h>
 
 #ifndef VERSION
-#define VERSION "0.10.12-WIN32"
+#define VERSION "0.10.16-WIN32" // UPD20120623
 #endif
 
 #define sleep(a) Sleep(a * 1000)
@@ -31,3 +33,4 @@
 
 #endif // #ifndef _FGMS_CONFIG_H_
 // eof - config.h
+

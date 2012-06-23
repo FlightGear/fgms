@@ -96,7 +96,9 @@ FG_SERVER::FG_SERVER
 	//wp                  = fopen("wp.txt", "w");
 	m_BlackList           = map<uint32_t, bool>();
 	m_RelayMap            = map<uint32_t, string>();
-	m_MaxTracker          = 0;
+    m_IsTracked           = false; // off until config file read
+	m_MaxTracker          = 3; // set sensible default value
+    m_Tracker             = 0; // no tracker yet
 	// clear stats
 	m_PacketsReceived     = 0;
 	m_TelnetReceived      = 0;
@@ -236,9 +238,15 @@ FG_SERVER::Init
 	{
 		SG_ALERT (SG_SYSTEMS, SG_ALERT, "# tracked to "
 			<< m_Tracker->GetTrackerServer ()
-			<< ":" << m_Tracker->GetTrackerPort ());
+			<< ":" << m_Tracker->GetTrackerPort ()
+            << ", using " << m_MaxTracker << " children." );
 		m_Tracker->InitTracker(m_MaxTracker);
 	}
+    else
+    {
+		SG_ALERT (SG_SYSTEMS, SG_ALERT, "# tracking is disabled.");
+    }
+
 	SG_ALERT (SG_SYSTEMS, SG_ALERT, "# I have " << m_RelayList.size() << " relays");
 	mT_RelayListIt CurrentRelay = m_RelayList.begin();
 	while (CurrentRelay != m_RelayList.end())
@@ -256,7 +264,6 @@ FG_SERVER::Init
 	}
 	SG_ALERT (SG_SYSTEMS, SG_ALERT, "# I have " << m_BlackList.size() << " blacklisted IPs");
 	m_Listening = true;
-	m_MaxTracker = 3;
 	return (SUCCESS);
 } // FG_SERVER::Init()
 //////////////////////////////////////////////////////////////////////
@@ -1824,7 +1831,8 @@ FG_SERVER::CloseTracker
 {
 	if (m_IsTracked)
 	{
-		delete m_Tracker;
+        if (m_Tracker) // delete only if enabled
+            delete m_Tracker;
 		m_Tracker = 0;
 	}
 } // CloseTracker ( )

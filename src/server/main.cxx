@@ -35,6 +35,10 @@
 
 using namespace std;
 
+#ifndef DEF_TRACKER_CHILDS
+#define DEF_TRACKER_CHILDS 3
+#endif
+
 FG_SERVER       Servant;
 extern  bool    RunAsDaemon;
 #ifdef _MSC_VER
@@ -248,7 +252,7 @@ ProcessConfig ( const string& ConfigName )
 			SG_ALERT (SG_SYSTEMS, SG_ALERT, "invalid value for tracking_port: '" << Val << "'");
 			exit (1);
 		}
-		Servant.AddTracker (Server, Port, tracked);
+		Servant.AddTracker (Server, Port, tracked); // set master m_IsTracked
 		Val = Config.Get ("server.tracking_maxchilds");
 		if (Val != "")
 		{
@@ -260,6 +264,10 @@ ProcessConfig ( const string& ConfigName )
 			}
 			Servant.MaxTracker (Port);
 		}
+        else
+        {
+			Servant.MaxTracker (DEF_TRACKER_CHILDS); // use a default if none defined - Hazuki Amamiya 20120623
+        }
 	}
 	Val = Config.Get ("server.is_hub");
 	if (Val != "")
