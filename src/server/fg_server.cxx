@@ -57,6 +57,30 @@
 #endif
 
 bool    RunAsDaemon = false;
+#ifndef DEF_SERVER_LOG
+#define DEF_SERVER_LOG "fg_server.log"
+#endif
+
+extern void SigHUPHandler ( int SigType );
+#ifndef DEF_EXIT_FILE
+#define DEF_EXIT_FILE "fgms_exit"
+#endif
+#ifndef DEF_RESET_FILE
+#define DEF_RESET_FILE "fgms_reset"
+#endif
+#ifndef DEF_STAT_FILE
+#define DEF_STAT_FILE "fgms_stat"
+#endif
+
+#if _MSC_VER
+static char * exit_file = (char *)DEF_EXIT_FILE; // "fgms_exit"
+static char * reset_file = (char *)DEF_RESET_FILE; // "fgms_reset"
+static char * stat_file = (char *)DEF_STAT_FILE; // "fgms_stat"
+#else // !_MSC_VER
+static char * exit_file = (char *)"/tmp/" DEF_EXIT_FILE;
+static char * reset_file = (char *)"/tmp/" DEF_RESET_FILE;
+static char * stat_file = (char *)"/tmp/" DEF_STAT_FILE;
+#endif // _MSC_VER y/n
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -92,7 +116,7 @@ FG_SERVER::FG_SERVER
 	tmp                   = (converter*) (& PROTO_VER);
 	m_ProtoMinorVersion   = tmp->High;
 	m_ProtoMajorVersion   = tmp->Low;
-	m_LogFileName         = "fg_server.log";
+	m_LogFileName         = DEF_SERVER_LOG; // "fg_server.log";
 	//wp                  = fopen("wp.txt", "w");
 	m_BlackList           = map<uint32_t, bool>();
 	m_RelayMap            = map<uint32_t, string>();
@@ -106,7 +130,8 @@ FG_SERVER::FG_SERVER
 	m_PacketsInvalid      = 0;	// invalid packet
 	m_UnknownRelay        = 0;	// unknown relay
 	m_PositionData        = 0;	// position data packet
-    mT_PacketsReceived = mT_BlackRejected = mT_PacketsInvalid = mT_UnknownRelay = mT_PositionData = mT_TelnetReceived = 0; // totals since start
+    mT_PacketsReceived = mT_BlackRejected = mT_PacketsInvalid = 0;
+    mT_UnknownRelay = mT_PositionData = mT_TelnetReceived = 0; // totals since start
 
 	pthread_mutex_init( &m_PlayerMutex, 0 );
 } // FG_SERVER::FG_SERVER()
@@ -1322,17 +1347,6 @@ FG_SERVER::HandlePacket
 } // FG_SERVER::HandlePacket ( char* sMsg[MAX_PACKET_SIZE] )
 //////////////////////////////////////////////////////////////////////
 
-extern void SigHUPHandler ( int SigType );
-#if _MSC_VER
-static char * exit_file = (char *)"fgms_exit";
-static char * reset_file = (char *)"fgms_reset";
-static char * stat_file = (char *)"fgms_stat";
-#else // !_MSC_VER
-static char * exit_file = (char *)"/tmp/fgms_exit";
-static char * reset_file = (char *)"/tmp/fgms_reset";
-static char * stat_file = (char *)"/tmp/fgms_stat";
-#endif // _MSC_VER y/n
-
 int
 FG_SERVER::check_keyboard
 ()
@@ -1340,7 +1354,7 @@ FG_SERVER::check_keyboard
 	struct stat buf;
 	if (stat(exit_file,&buf) == 0)
 	{
-		SG_LOG (SG_SYSTEMS, SG_ALERT, "Got EXIT file : " << exit_file);
+        SG_LOG (SG_SYSTEMS, SG_ALERT, "## Got EXIT file : " << exit_file);
 		unlink(exit_file);
 		if (stat(exit_file,&buf) == 0)
 		{
@@ -1351,7 +1365,7 @@ FG_SERVER::check_keyboard
 	}
 	else if ( stat(reset_file,&buf) == 0)
 	{
-		SG_LOG (SG_SYSTEMS, SG_ALERT, "Got RESET file " << reset_file);
+        SG_LOG (SG_SYSTEMS, SG_ALERT, "## Got RESET file " << reset_file);
 		unlink(reset_file);
 		if (stat(reset_file,&buf) == 0)
 		{
@@ -1366,7 +1380,7 @@ FG_SERVER::check_keyboard
 	}
 	else if ( stat(stat_file,&buf) == 0)
 	{
-		SG_LOG (SG_SYSTEMS, SG_ALERT, "Got STAT file " << stat_file);
+        SG_LOG (SG_SYSTEMS, SG_ALERT, "## Got STAT file " << stat_file);
 		unlink(stat_file);
 		if (stat(stat_file,&buf) == 0)
 		{
@@ -1382,10 +1396,10 @@ FG_SERVER::check_keyboard
         mT_PositionData    += m_PositionData;
         mT_TelnetReceived  += m_TelnetReceived;
 
-		SG_LOG (SG_SYSTEMS, SG_ALERT, "Pilots " <<
+        SG_LOG (SG_SYSTEMS, SG_ALERT, "## Pilots " <<
 			m_PlayerList.size() );
 
-		SG_LOG (SG_SYSTEMS, SG_ALERT, "Total: Packets " <<
+        SG_LOG (SG_SYSTEMS, SG_ALERT, "## Total: Packets " <<
 			mT_PacketsReceived << " BL=" <<
 			mT_BlackRejected << " INV=" <<
 			mT_PacketsInvalid << " UR=" <<
@@ -1393,7 +1407,7 @@ FG_SERVER::check_keyboard
 			mT_PositionData << " Telnet " <<
 			mT_TelnetReceived );
 
-		SG_LOG (SG_SYSTEMS, SG_ALERT, "Since: Packets " <<
+        SG_LOG (SG_SYSTEMS, SG_ALERT, "## Since: Packets " <<
 			m_PacketsReceived << " BL=" <<
 			m_BlackRejected << " INV=" <<
 			m_PacketsInvalid << " UR=" <<
@@ -1402,7 +1416,8 @@ FG_SERVER::check_keyboard
 			m_TelnetReceived );
 
         // restart 'since' last stat counter
-        m_PacketsReceived = m_BlackRejected = m_PacketsInvalid = m_UnknownRelay = m_PositionData = m_TelnetReceived = 0; // reset
+        m_PacketsReceived = m_BlackRejected = m_PacketsInvalid = 0;
+        m_UnknownRelay = m_PositionData = m_TelnetReceived = 0; // reset
 	}
 #ifdef _MSC_VER
 	if (_kbhit())

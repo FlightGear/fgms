@@ -49,6 +49,10 @@ extern  bool    RunAsDaemon;
 #endif
 static bool     bHadConfig = false; // must have a config file, with server name
 
+#ifndef DEF_CONF_FILE
+#define DEF_CONF_FILE "fgms.conf"
+#endif
+
 static int
 is_file_or_directory ( char * path )
 {
@@ -498,7 +502,7 @@ ReadConfigs ( bool ReInit = false )
 	string Path;
 #ifndef _MSC_VER
 	Path = SYSCONFDIR;
-	Path += "/fgms.conf";
+	Path += "/" DEF_CONF_FILE; // fgms.conf
 	if (ProcessConfig (Path) == true)
 		return 1;
 	Path = getenv ("HOME");
@@ -508,18 +512,18 @@ ReadConfigs ( bool ReInit = false )
 		Path = cp;
 	else
 	{
-		cp = getenv("USERPROFILE");
+		cp = getenv("USERPROFILE"); // XP=C:\Documents and Settings\<name>, Win7=C:\Users\<user>
 		if (cp)
 			Path = cp;
 	}
 #endif
 	if (Path != "")
 	{
-		Path += "/fgms.conf";
+		Path += "/" DEF_CONF_FILE;
 		if (ProcessConfig (Path))
 			return 1;
 	}
-	if (ProcessConfig ("fgms.conf"))
+	if (ProcessConfig (DEF_CONF_FILE))
 		return 1;
 	return 0;
 } // ReadConfigs ()
@@ -595,7 +599,7 @@ main ( int argc, char* argv[] )
 	ReadConfigs ();
 	if ( !bHadConfig )
 	{
-		SG_ALERT (SG_SYSTEMS, SG_ALERT, "No configuration file 'fgms.conf' found!");
+		SG_ALERT (SG_SYSTEMS, SG_ALERT, "No configuration file '" << DEF_CONF_FILE << "' found!");
 	}
 	sglog().setLogLevels( SG_ALL, SG_INFO );
 	sglog().enable_with_date (true);

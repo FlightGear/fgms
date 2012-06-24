@@ -201,6 +201,8 @@ private:
 	int               m_UnknownRelay; // unknown relay
 	int               m_PositionData;   // position data packet
 	int               m_TelnetReceived;
+    int               mT_PacketsReceived, mT_BlackRejected, mT_PacketsInvalid;
+    int               mT_UnknownRelay, mT_PositionData, mT_TelnetReceived;
 	//////////////////////////////////////////////////
 	//
 	//  private methods
