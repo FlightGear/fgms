@@ -61,6 +61,10 @@ bool    RunAsDaemon = false;
 #define DEF_SERVER_LOG "fg_server.log"
 #endif
 
+#ifndef DEF_UPDATE_SECS
+#define DEF_UPDATE_SECS 10
+#endif
+
 extern void SigHUPHandler ( int SigType );
 #ifndef DEF_EXIT_FILE
 #define DEF_EXIT_FILE "fgms_exit"
@@ -123,6 +127,7 @@ FG_SERVER::FG_SERVER
     m_IsTracked           = false; // off until config file read
 	m_MaxTracker          = 3; // set sensible default value
     m_Tracker             = 0; // no tracker yet
+    m_UpdateSecs          = DEF_UPDATE_SECS;
 	// clear stats
 	m_PacketsReceived     = 0;
 	m_TelnetReceived      = 0;
@@ -1253,15 +1258,6 @@ FG_SERVER::HandlePacket
 	while (CurrentPlayer != m_PlayerList.end())
 	{
 		//////////////////////////////////////////////////
-		//        Drop CurrentPlayer if last sign of
-		//        life is older then TTL
-		//////////////////////////////////////////////////
-		if ( (Timestamp - CurrentPlayer->Timestamp) > m_PlayerExpires)
-		{
-			DropClient (CurrentPlayer);
-			continue;
-		}
-		//////////////////////////////////////////////////
 		//
 		//      ignore clients with errors
 		//
@@ -1474,6 +1470,7 @@ FG_SERVER::Loop
 	netSocket*  ListenSockets[3 + MAX_TELNETS];
 	time_t      tick0;
 	time_t      CurrentTime;
+	mT_PlayerListIt	fg_Player;
 
 	tick0 = time(0);
 	m_IsParent = true;
@@ -1495,12 +1492,29 @@ FG_SERVER::Loop
 	for (;;)
 	{
 		CurrentTime = time(0);
-		// Update tracker every 10 secondes
-		if ((float) (CurrentTime - tick0) >= 10.0) 
+		// Update some things every (default) 10 secondes
+		if ((CurrentTime - tick0) >= m_UpdateSecs) 
 		{
 			tick0 = time(0);
 			if (m_PlayerList.size()>0)
-			{	// updates the position of the users
+			{	
+				//check TTL of the pilots, drop if expired
+				fg_Player = m_PlayerList.begin();
+				while (fg_Player != m_PlayerList.end())
+				{
+					//////////////////////////////////////////////////
+					//        Drop fg_Player if last sign of
+					//        life is older than TTL
+					//////////////////////////////////////////////////
+					if ( (tick0 - fg_Player->Timestamp) > m_PlayerExpires)
+					{
+						DropClient (fg_Player);
+						continue;
+					}
+					fg_Player++;
+				}
+				
+				// updates the position of the users
 				// regularly (tracker)
 				UpdateTracker (string(""),string(""), string(""),tick0,UPDATE);
 			}

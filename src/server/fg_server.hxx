@@ -190,6 +190,7 @@ private:
 	mT_BlackList      m_BlackList;
 	bool              m_IamHUB;
 	pthread_mutex_t   m_PlayerMutex;
+    time_t            m_UpdateSecs;
 	//////////////////////////////////////////////////
 	//
 	//  statistics
