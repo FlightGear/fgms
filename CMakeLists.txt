@@ -7,7 +7,7 @@ project( fgms )
 # The version number.
 set( fgms_MAJOR 0 )
 set( fgms_MINOR 10 )
-set( fgms_AGE 17 )
+set( fgms_AGE 16 )
 
 # Allow developer to select is Dynamic or static library built
 set( LIB_TYPE STATIC )  # set default static
