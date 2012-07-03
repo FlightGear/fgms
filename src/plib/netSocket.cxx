@@ -542,14 +542,6 @@ static void netExit ( void )
 }
 
 
-int netInit ( int* argc, char** argv )
-{
-  /* Legacy */
-
-  return netInit () ;
-}
-
-
 int netInit ()
 {
   assert ( sizeof(sockaddr_in) == sizeof(netAddress) ) ;

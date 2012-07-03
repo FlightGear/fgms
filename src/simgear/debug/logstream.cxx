@@ -19,7 +19,10 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 // $Id: logstream.cxx,v 1.2 2010/02/15 08:04:17 oliver Exp $
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
 #include "logstream.hxx"
 #include "stdio.h"
 

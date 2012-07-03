@@ -115,13 +115,17 @@ public:
 } ;
 
 
-int netInit ( int* argc, char** argv = NULL ) ;  /* Legacy */
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
 
-int netInit () ;
+extern int netInit () ;
 
+extern const char* netFormat ( const char* fmt, ... ) ;
 
-const char* netFormat ( const char* fmt, ... ) ;
-
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif // NET_SOCKET_H
 

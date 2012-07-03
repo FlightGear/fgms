@@ -24,7 +24,9 @@
 //      (c) 2007-2010 Anders Gidenstam ( LazyRelay )
 //
 //////////////////////////////////////////////////////////////////////
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 
 #include <sys/types.h>
 #include <unistd.h>

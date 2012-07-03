@@ -21,11 +21,13 @@
 // main program
 //
 //////////////////////////////////////////////////////////////////////
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 
 #include <cstdlib>
 #ifndef _MSC_VER
-	#include <sys/wait.h>
+#include <sys/wait.h>
 #endif
 #include <signal.h>
 #include "fg_server.hxx"
@@ -51,6 +53,10 @@ static bool     bHadConfig = false; // must have a config file, with server name
 
 #ifndef DEF_CONF_FILE
 #define DEF_CONF_FILE "fgms.conf"
+#endif
+
+#ifndef SYSCONFDIR
+#define SYSCONFDIR "/usr/etc"
 #endif
 
 static int
@@ -600,6 +606,7 @@ main ( int argc, char* argv[] )
 	if ( !bHadConfig )
 	{
 		SG_ALERT (SG_SYSTEMS, SG_ALERT, "No configuration file '" << DEF_CONF_FILE << "' found!");
+		exit(1);
 	}
 	sglog().setLogLevels( SG_ALL, SG_INFO );
 	sglog().enable_with_date (true);

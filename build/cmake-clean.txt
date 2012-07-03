@@ -1,0 +1,9 @@
+libfg_server.a
+libMultiPlayer.a
+libPlib.a
+libSGdebug.a
+libfg_server.so
+libMultiPlayer.so
+libPlib.so
+libSGdebug.so
+fgms
