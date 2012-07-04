@@ -7,6 +7,9 @@ and an experimental CMakeLists.txt added instead.
 
 Building:
 
+Note the special additional requirements for 
+Windows below.
+
 For those unfamiliar with CMake (http://www.cmake.org/), 
 it works best for out-of-source building. That is you 
 create a separate directory, say build-fgms, change 
@@ -31,17 +34,40 @@ tree!
 
 Push [ Configure ], choose which generator to use,
 maybe correct, and fix especially any 'red' lines,
-and push [ Configure ] perhaps several times, then 
-when the list looks clean, push [ Generate ].
+and push [ Configure ] again, perhaps several times, 
+then when the list looks clean, push [ Generate ].
+
+Special Requirements for Windows ONLY:
+======================================
 
 Specifically, and ONLY for Windows, you MUST copy 
 the fgms source file config.h.msvc to your build 
 directory, naming it config.h. This is NOT required 
 in any unix system, and may cause problems if done.
 
+In your build directory, CREATE two blank files,
+'stdint.h' and 'unistd.h'. As stated these must exist,
+but can be completely empty files.
+
+Further fgms has a requirement of pthreads for 
+windows - see http://sourceware.org/pthreads-win32/
+During the compile of fgms it must find the 'pthread.h' 
+header, and others, 'sched.h' and 'semaphore.h', and 
+for the link find 'pthreadVC2.lib', and for the running 
+'pthreadVC2.dll'.
+
+You can either first download this source, and compile 
+it in your system, or get a copy of the latest pre built 
+release zip, unzipping it to a directory or your choice.
+
+Then in the CMake GUI make sure 'thread_INC' points to 
+where the pthread.h header is, and 'thread_LIB' has 
+the full path pthreadVC2.lib in it, before you push 
+[ Generate ].
+
 Now, if you had chosen say a Visual Studio generator,
 you can load fgms.sln into MSVC, and proceed to do 
-the build.
+the build in the IDE.
 
 Installing:
 
@@ -53,11 +79,12 @@ Or the cmake way -
 $ cmake -DBUILD_TYPE=Release -P cmake_install.cmake
 
 Or in the MSVC IDE, running the 'INSTALL' project 
-manually. It is disabled by default.
+manually. Right click on the INSTALL project, and 
+select build it. It is disabled by default.
 
 Normally fgms installs in /usr/sbin in unix systems,
-but can be controlled by adding the folowing to 
-the cmake command
+but can be controlled by adding the following to 
+the cmake command -
 
 $ cmake /path/to/fgms -DCMAKE_INSTALL_PREFIX=<anywhere>
 
@@ -86,8 +113,8 @@ options are:
 -d            do _not_ run as a daemon (stay in foreground)
 -D            do run as a daemon
 
-the default is to run as a daemon, which can be overridden in the
-config file.
+In unix systems the default is to run as a daemon, which can 
+be overridden in the config file.
 
 The configuration file can also set all these options, except 
 verbosity. See the src/server/fgms_example.conf for details.
@@ -98,7 +125,7 @@ Additional Build Options:
 Server #2:
 
 The above server will use default file names of fgms.conf,
-as the confgiuration file, fgms-exit, fgms-stat, as the 
+as the configuration file, fgms-exit, fgms-stat, as the 
 file interface files, and fg_server.log. This latter log 
 file name can also be established in fgms.conf.
 
@@ -116,15 +143,24 @@ adding the following to the cmake command -
  -DBUILD_TRACKER
 
 But be aware, this fgtracker presently has a dependency 
-on PostgreSQL, so you must install this package, configure, 
-and get the postgresql server running first.
+on PostgreSQL, see http://www.postgresql.org/, so you must 
+install this package, configure, and get the postgresql server 
+running first.
 
 Also then cmake uses find_package(PostgreSQL REQUIRED). In
 this case, so you MUST have FindPostgreSQL.cmake installed, 
 and this is not always done by default.
 
-The files that need to be found are the header libpq-fe.h,
+The files that need to be found are the header 'libpq-fe.h',
 and the 'pg' library.
+
+shared libraries:
+
+There is an option to generate the 'intermediate' libraries 
+as shared libraries - DLL in windows - but this is NOT 
+needed nor recommended. The default static library builds 
+are fine. They are only used in fgms, so no need to 
+'share' them.
 
 General:
 
@@ -134,7 +170,7 @@ Makefile.am - system, it is hope after it has been tested
 fully, that it will become the ONLY build system in the 
 fgms source.
 
-Meantime, both will be maintained - also read INSTALL 
+Meantime, both will be maintained - also read the INSTALL 
 file.
 
 Have fun!

@@ -1,0 +1,36 @@
+// config.h
+// SPECIAL HAND CRAFTED CONFIG.H FOR MSVC
+// 20120623 - Bumped verions, to agree with configure.ac
+// 20120322 - update using pthreads for telnet
+// 20110812 - updated with latest source - updfgms-stable.bat
+// 20110324 - hand crafted for MSVC
+#ifndef _FGMS_CONFIG_H_
+#define _FGMS_CONFIG_H_
+
+#pragma warning ( disable : 4996 )  // remove warning "The POSIX name for this item is depreciated" ...
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <time.h>
+
+#ifndef VERSION
+#define VERSION "0.10.16-WIN32" // UPD20120623
+#endif
+
+#define sleep(a) Sleep(a * 1000)
+#define strncasecmp strncmp
+#define unlink _unlink
+
+// if an alternative to fork() found, and a msgget/msgsnd/msgrcv IPC implemented
+// #ifdef NO_TRACKER_PORT
+// #undef NO_TRACKER_PORT
+// #endif // NO_TRACKER_PORT
+
+/* Define to 1 if you have <pthread.h>, and the pthreadVC2.lib and dll */
+#define HAVE_PTHREAD_H 1
+
+#endif // #ifndef _FGMS_CONFIG_H_
+// eof - config.h
+
