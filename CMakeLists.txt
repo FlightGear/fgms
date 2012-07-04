@@ -174,19 +174,29 @@ else(WIN32)
 endif(WIN32)
 
 if(BUILD_TRACKER)
-# TODO - Must find postgresql include and libraries
-# =================================================
-set( tracker_SRCS contrib/fgtacker/error.c contrib/fgtacker/wrappers.c )
-set( tracker_HDRS contrib/fgtacker/error.h contrib/fgtacker/wrappers.h contrib/fgtacker/config.h contrib/fgtacker/common.h )
-add_library( tracker ${LIB_TYPE} ${tracker_SRCS} ${tracker_HDRS} )
-list( APPEND add_LIBS tracker )
+# find postgresql include and libraries
+# =====================================
+find_package(PostgreSQL REQUIRED)
 
-set( server_SRCS contrib/fgtacker/server.c )
+if(PostgreSQL_FOUND)
+set( add_LIBS ${PostgreSQL_LIBRARIES} )
+include_directories( SYSTEM "${PostgreSQL_INCLUDE_DIRS}" )
+message(STATUS "*** Found PosgreSQL ${PostgreSQL_INCLUDE_DIRS} ${PostgreSQL_LIBRARIES}")
+else(PostgreSQL_FOUND)
+message(FATAL_ERROR "*** PosgreSQL NOT FOUND! Run cmake with -DBUILD_TRACKER:BOOL=FALSE")
+endif(PostgreSQL_FOUND)
+
+set( tracker_SRCS contrib/fgtracker/error.c contrib/fgtracker/wrappers.c )
+set( tracker_HDRS contrib/fgtracker/error.h contrib/fgtracker/wrappers.h contrib/fgtracker/config.h contrib/fgtracker/common.h )
+add_library( tracker ${LIB_TYPE} ${tracker_SRCS} ${tracker_HDRS} )
+list(APPEND add_LIBS tracker)
+
+set( server_SRCS contrib/fgtracker/server.c )
 add_executable( fgt_server ${server_SRCS} )
 target_link_libraries( fgt_server ${add_LIBS} )
 set_target_properties( fgt_server PROPERTIES DEBUG_POSTFIX "d" )
 
-set( client_SRCS contrib/fgtacker/client.c )
+set( client_SRCS contrib/fgtracker/client.c )
 add_executable( fgt_client ${client_SRCS} )
 target_link_libraries( fgt_client ${add_LIBS} )
 set_target_properties( fgt_client PROPERTIES DEBUG_POSTFIX "d" )
