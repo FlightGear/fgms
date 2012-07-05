@@ -14,35 +14,42 @@
 #include "wrappers.h"
 #include "error.h"
 
+static char *server_address = (char *)SERVER_ADDRESS;
+static uint32_t server_port = SERVER_PORT;
+
 int main (int argc, char **argv)
 {
 	char msg[MAXLINE];
 	int len;
-
+	char *s;
 	int sockfd;
 	struct sockaddr_in serveraddr;
 
 	sockfd=Socket(AF_INET, SOCK_STREAM, 0);
 
 	bzero(&serveraddr,sizeof(serveraddr));
-
-	serveraddr.sin_family = AF_INET;
-	serveraddr.sin_port = htons(SERVER_PORT);
+	printf("fgt_client connecting to %s, on port %u\n", server_address, server_port);
 	
- 	inet_pton(AF_INET, SERVER_ADDRESS, &serveraddr.sin_addr);
+	serveraddr.sin_family = AF_INET;
+	serveraddr.sin_port = htons(server_port);
+	
+ 	inet_pton(AF_INET, server_address, &serveraddr.sin_addr);
 
 	Connect(sockfd, (SA *) &serveraddr, sizeof(serveraddr));
 
 	bzero(msg,MAXLINE);
 
-	while ( strncmp(msg,"QUIT\n",MAXLINE)!=0 )
+	while ( strncmp(msg,"QUIT\n",MAXLINE) != 0 )
 	{
-		fgets(msg,MAXLINE,stdin);
-		len=strlen(msg);
+		s = fgets(msg,MAXLINE,stdin);
+		len = strlen(msg);
 		if (len>0)
 		{
 			msg[len]='\0';
-			write(sockfd,msg,len);
+			if ( write(sockfd,msg,len) != len ) {
+				printf("ERROR: Write socket FAILED!\n");
+				break;	/* out of here */
+			}
 		}
   	}
 

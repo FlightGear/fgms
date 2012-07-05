@@ -40,6 +40,9 @@
 	extern  cDaemon Myself;
 #endif // !_MSC_VER
 
+extern bool RunAsDaemon;
+static bool AddDebug = true;
+
 //////////////////////////////////////////////////////////////////////
 //
 //      Initilize to standard values
@@ -50,6 +53,7 @@ FG_TRACKER::FG_TRACKER (int port, string server, int id)
 	ipcid         = id;
 	m_TrackerPort = port;
 	strcpy (m_TrackerServer, server.c_str());
+    if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::FG_TRACKER: Server: %s, Port: %d\n", m_TrackerServer, m_TrackerPort);
 } // FG_TRACKER()
 //////////////////////////////////////////////////////////////////////
 
@@ -75,7 +79,7 @@ FG_TRACKER::InitTracker ( const int MaxChildren )
 	#ifndef NO_TRACKER_PORT
 	int i;
 	pid_t ChildsPID;
-
+    if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::InitTracker: %d children\n", MaxChildren);
 	for ( i=0 ; i<MaxChildren ; i++)
 	{
 		ChildsPID = fork ();
@@ -116,6 +120,7 @@ FG_TRACKER::TrackerLoop ()
 	sent = true;
 	strcpy ( res, "" );
 
+    if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::TrackerLoop entered\n");
 	for ( ; ; )
 	{
 		length = 0;
@@ -183,6 +188,7 @@ FG_TRACKER::Connect ()
 		SCLOSE (i);
 	if ( m_TrackerSocket > 0 )
 		SCLOSE (m_TrackerSocket);
+    if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::Connect: Server: %s, Port: %d\n", m_TrackerServer, m_TrackerPort);
 	while (connected == false)
 	{
 		m_TrackerSocket = TcpConnect (m_TrackerServer, m_TrackerPort);
@@ -199,6 +205,7 @@ FG_TRACKER::Connect ()
 	}
 	sleep (5);
 	SWRITE(m_TrackerSocket,"REPLY",sizeof("REPLY"));
+    if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::Connect: Written 'REPLY'\n");
 	sleep (2);
 	return (0);
 } // Connect ()

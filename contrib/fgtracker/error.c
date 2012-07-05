@@ -15,7 +15,7 @@
 #include    <stdarg.h>          /* ANSI C header file */ 
 #include    <syslog.h>          /* for syslog() */ 
 
-int     daemon_proc;            /* set nonzero by daemon_init() */ 
+int     daemon_proc = 0;        /* set nonzero by server daemon_init() */ 
 
 /* Nonfatal error related to system call 
  * Print message and return */ 
@@ -85,7 +85,7 @@ err_quit(const char *fmt, ...)
 
 /* Print message and return to caller 
  * Caller specifies "errnoflag" and "level" */ 
-static void 
+void 
 err_doit(int errnoflag, int level, const char *fmt, va_list ap) 
 { 
     int     errno_save, n; 
@@ -101,7 +101,7 @@ err_doit(int errnoflag, int level, const char *fmt, va_list ap)
         snprintf(buf + n, MAXLINE - n, ": %s", strerror(errno_save)); 
     strcat(buf, "\n"); 
     if (daemon_proc) { 
-        syslog(level, buf); 
+        syslog(level, "%s", buf); 
     } else { 
         fflush(stdout);         /* in case stdout and stderr are the same */ 
         fputs(buf, stderr); 
@@ -118,6 +118,13 @@ debug(int level,char *str)
 	{
 		//printf("%s\n",str);
 		snprintf(buf,MAXLINE,"%s",str);
-	       	syslog(level, buf); 
+		if (daemon_proc)
+	       	syslog(level, "%s", buf); 
+	   else
+				printf("%s\n",str);
+	   
 	}
 }
+
+/* eof - error.c */
+

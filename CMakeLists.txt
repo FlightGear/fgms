@@ -181,7 +181,7 @@ find_package(PostgreSQL REQUIRED)
 if(PostgreSQL_FOUND)
 set( add_LIBS ${PostgreSQL_LIBRARIES} )
 include_directories( SYSTEM "${PostgreSQL_INCLUDE_DIRS}" )
-message(STATUS "*** Found PosgreSQL ${PostgreSQL_INCLUDE_DIRS} ${PostgreSQL_LIBRARIES}")
+message(STATUS "*** Found PosgreSQL headers [${PostgreSQL_INCLUDE_DIRS}] lib [${PostgreSQL_LIBRARIES}]")
 else(PostgreSQL_FOUND)
 message(FATAL_ERROR "*** PosgreSQL NOT FOUND! Run cmake with -DBUILD_TRACKER:BOOL=FALSE")
 endif(PostgreSQL_FOUND)
@@ -201,7 +201,12 @@ add_executable( fgt_client ${client_SRCS} )
 target_link_libraries( fgt_client ${add_LIBS} )
 set_target_properties( fgt_client PROPERTIES DEBUG_POSTFIX "d" )
 
-install(TARGETS fgt_server fgt_client DESTINATION bin)
+set( testdb_SRCS contrib/fgtracker/testdb.c )
+add_executable( testdb ${testdb_SRCS} )
+target_link_libraries( testdb ${add_LIBS} )
+set_target_properties( testdb PROPERTIES DEBUG_POSTFIX "d" )
+
+install(TARGETS fgt_server fgt_client testdb DESTINATION bin)
 endif(BUILD_TRACKER)
 
 # eof - CMakeLists.txt

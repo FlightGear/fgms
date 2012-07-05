@@ -1,0 +1,75 @@
+file: README.tracker
+
+This code is to establish a 'tracking' server 
+for fgms to connect to, and pass LOCAL pilot 
+information.
+
+It requires PostgreSQL to be installed, configured 
+and running. See -
+ http://www.postgresql.org/
+
+If you want to use create_fgt.sql to do the setup, 
+you need to create a user called 'fgtracker', and 
+a database 'fgtracker', with password 'fgtracker'. 
+Or amend the file to suit your own requirements.
+
+It expects the postgresql libraries to be in -
+ /usr/lib/postgresql/8.4/lib/pg_trgm.so
+Either ensure you install version 8.4, or later, 
+say 9.1, but this path must be amended before 
+'importing' this sql script.
+
+A second example, create_db.sql is also available 
+using a path of -
+ /opt/postgresql/lib/libpg_trgm.so
+and a completely different set of users, and 
+database and user names. Just as a second example.
+
+This is part of the CMakeLists.txt supplied to build 
+fgt_server and fgt_client binaries, and once postgresql 
+is installed you should be able to build these 
+by adding an OPTION to the cmake generation 
+ -DBUILD_TRACKER:BOOL=TRUE
+
+Included in the build is a simple 'testdb' app 
+to check your connection to the database... the 
+default values are -
+
+#ifndef DEF_IP_ADDRESS
+#define DEF_IP_ADDRESS "192.168.1.105"
+#endif
+#ifndef DEF_PORT
+#define DEF_PORT "5432"
+#endif
+#ifndef DEF_DATABASE
+#define DEF_DATABASE "fgtracker"
+#endif
+#ifndef DEF_USER_LOGIN
+#define DEF_USER_LOGIN "fgtracker"
+#endif
+#ifndef DEF_USER_PWD
+#define DEF_USER_PWD "fgtracker"
+#endif
+
+Adjust these, or define new values during the 
+compile, but these values can also be given on 
+the command line when running fgt_server and 
+testdb... use -? to show the help.
+
+Operation:
+
+1. Start fgt_server
+2. Start fgms, with 'tracker' set true
+3. Connect a fgfs flights to fgms...
+
+Multiplayer packets from fgfs -> fgms should 
+be forwarded onto fgt_server, which stores the 
+information in the postgresql 'fgtracker' database, 
+for subsequent display in say a web page.
+
+HTH.
+
+Geoff.
+20120704
+
+# eof

@@ -7,6 +7,8 @@
  *   $Log: server.c,v $
  *   Revision 1.2  2006/05/10 21:22:34  koversrac
  *   Comment with author and license has been added.
+ *   Revision 1.3 2012/07/04 geoff (reports _at_ geoffair _dot_ info)
+ *   Add user configuration and help
  *
  */
 
@@ -14,6 +16,41 @@
 #include "wrappers.h"
 #include "error.h"
 #include <libpq-fe.h>
+
+// static int run_as_daemon = RUN_AS_DAEMON;
+static int run_as_daemon = 0;
+
+static uint32_t server_port = SERVER_PORT;
+static char *server_addr = 0;
+
+/* postgresql default values */
+#ifndef DEF_IP_ADDRESS
+#define DEF_IP_ADDRESS "192.168.1.105"
+#endif
+
+#ifndef DEF_PORT
+#define DEF_PORT "5432"
+#endif
+
+#ifndef DEF_DATABASE
+#define DEF_DATABASE "fgtracker"
+#endif
+
+#ifndef DEF_USER_LOGIN
+#define DEF_USER_LOGIN "fgtracker"
+#endif
+
+#ifndef DEF_USER_PWD
+#define DEF_USER_PWD "fgtracker"
+#endif
+
+static char *ip_address = (char *)DEF_IP_ADDRESS;
+static char *port = (char *)DEF_PORT;
+static char *database = (char *)DEF_DATABASE;
+static char *user = (char *)DEF_USER_LOGIN;
+static char *pwd = (char *)DEF_USER_PWD;
+static char *pgoptions = (char *)"";
+static char *pgtty = (char *)"";
 
 int
 daemon_init(void)
@@ -28,7 +65,8 @@ daemon_init(void)
 	/* child continues */
 	setsid();		/* become session leader */
 
-	chdir("/");		/* change working directory */
+	if(chdir("/"))		/* change working directory */
+        return(1);
 
 	umask(0);		/* clear our file mode creation mask */
 
@@ -52,17 +90,32 @@ void sighup_handler(int s)
     exit(0);
 }
 
-void ConnectDB(PGconn **conn)
-{
-  char debugstr[MAXLINE];
-  *conn=PQsetdbLogin("62.112.194.20", "5432", "", "", "FlightGear-log", "tgbp", "password");
+/* --------------------------------------
+PGconn *PQsetdbLogin(const char *pghost,
+                     const char *pgport,
+                     const char *pgoptions,
+                     const char *pgtty,
+                     const char *dbName,
+                     const char *login,
+                     const char *pwd);
+   ------------------------------------- */
 
-  if (PQstatus(*conn) != CONNECTION_OK)
-  {
-    sprintf(debugstr, "Connection to database failed: %s",PQerrorMessage(*conn));
-    debug(1,debugstr);
-    PQfinish(*conn);
-  }
+
+int ConnectDB(PGconn **conn)
+{
+    int iret = 0;   /* assume no error */
+    char debugstr[MAXLINE];
+
+    *conn = PQsetdbLogin(ip_address, port, pgoptions, pgtty, database, user, pwd);
+
+	if (PQstatus(*conn) != CONNECTION_OK)
+   {
+   	sprintf(debugstr, "Connection to database failed: %s",PQerrorMessage(*conn));
+    	debug(1,debugstr);
+    	PQfinish(*conn);
+    	iret = 1;
+  	}
+  	return iret;
 }
 
 int logFlight(PGconn *conn,char *callsign,char *model, char *date, int connect)
@@ -230,7 +283,8 @@ void doit(int fd)
 
 		if (strncmp("PING",event,4)==0)
 		{
-			write(fd,"PONG",5);
+			if (write(fd,"PONG",5) != 5)
+                debug(1,"write PONG failed");
 		}
 
 		if (strncmp("CONNECT",event,7)==0)
@@ -240,9 +294,10 @@ void doit(int fd)
        			if (strncmp("mpdummy",callsign,7)!=0 && strncmp("obscam",callsign,6)!=0) logFlight(conn,callsign,model,time,1);
 			if (reply)
 			{
-				write(fd,"OK",2);
-				//write(stdout,"OK",2);
-				debug(3,"reply sent");
+				if (write(fd,"OK",2) != 2)
+                    debug(1,"write OK1 failed");
+                else
+                    debug(3,"reply sent");
 			}
 		}
 		else if (strncmp("DISCONNECT",event,10)==0)
@@ -252,8 +307,10 @@ void doit(int fd)
        			if (strncmp("mpdummy",callsign,7)!=0 && strncmp("obscam",callsign,6)!=0) logFlight(conn,callsign,model,time,0);
 			if (reply)
 			{
-				write(fd,"OK",2);
-				debug(3,"reply sent");
+				if (write(fd,"OK",2) != 2)
+                    debug(1,"write OK2 failed");
+                else
+                    debug(3,"reply sent");
 			}
 		}
        		else if (strncmp("POSITION",event,8)==0)
@@ -263,12 +320,211 @@ void doit(int fd)
        			if (strncmp("mpdummy",callsign,7)!=0 && strncmp("obscam",callsign,6)!=0) logPosition(conn,callsign,time,lon,lat,alt);
 			if (reply)
 			{
-				write(fd,"OK",2);
-				debug(3,"reply sent");
+				if (write(fd,"OK",2) != 2)
+                    debug(1,"write OK2 failed");
+                else
+                    debug(3,"reply sent");
 			}
 		}
 	}
   }
+}
+
+char *get_base_name(char *name)
+{
+    char *bn = strdup(name);
+    size_t len = strlen(bn);
+    size_t i, off;
+    int c;
+    off = 0;
+    for (i = 0; i < len; i++) {
+        c = bn[i];
+        if (( c == '/' )||( c == '\\' ))
+            off = i + 1;
+    }
+    return &bn[off];
+}
+
+void give_help(char *name)
+{
+    char *bn = get_base_name(name);
+    printf("%s - version 1.3, compiled %s, at %s\n", bn, __DATE__, __TIME__);
+    printf("PostgreSQL Database Information\n");
+    printf(" --db database (-d) = Set the database name. (def=%s)\n",database);
+    printf(" --ip addr     (-i) = Set the IP address of the postgresql server. (def=%s)\n",ip_address);
+    printf(" --port val    (-p) = Set the port of the postgreql server. (def=%s)\n",port);
+    printf(" --user name   (-u) = Set the user name. (def=%s)\n",user);
+    printf(" --word pwd    (-w) = Set the password for the above user. (def=%s)\n",pwd);
+    printf("fgms connection\n");
+    printf(" --IP addr     (-I) = Set IP address to connect to fgms. (def=IPADDR_ANY)\n");
+    printf(" --PORT val    (-P) = Set PORT address to connect to fgms. (dep=%d)\n", server_port);
+    printf("General Options\n");
+    printf(" --help    (-h. -?) = This help, and exit(0).\n");
+    printf(" --version     (-v) = This help, and exit(0).\n");
+    printf(" --DAEMON y|n  (-D) = Run as daemon yes or no. (def=%s).\n", (run_as_daemon ? "y" : "n"));
+    printf(" %s will connect to an instance of 'fgms', receive and add flight and position\n",bn);
+    printf(" messages to the PostgreSQL database, for later 'tracker' display.\n");
+}
+
+int parse_commands( int argc, char **argv )
+{
+    int i, i2;
+    char *arg;
+    char *sarg;
+    
+    for ( i = 1; i < argc; i++ ) {
+        i2 = i + 1;
+        arg = argv[i];
+        sarg = arg;
+        if ((strcmp(arg,"--help") == 0) || (strcmp(arg,"-h") == 0) ||
+            (strcmp(arg,"-?") == 0) || (strcmp(arg,"--version") == 0)) {
+            give_help(argv[0]);
+            exit(0);
+        } else if (*sarg == '-') {
+            sarg++;
+            while (*sarg == '-') sarg++;
+            switch (*sarg) 
+            {
+            case 'd':
+                if (i2 < argc) {
+                    sarg = argv[i2];
+                    database = strdup(sarg);
+                    i++;
+                } else {
+                    printf("database name must follow!\n");
+                    goto Bad_ARG;
+                }
+                break;
+            case 'i':
+                if (i2 < argc) {
+                    sarg = argv[i2];
+                    ip_address = strdup(sarg);
+                    i++;
+                } else {
+                    printf("IP address must follow!\n");
+                    goto Bad_ARG;
+                }
+                break;
+            case 'p':
+                if (i2 < argc) {
+                    sarg = argv[i2];
+                    port = strdup(sarg);
+                    i++;
+                } else {
+                    printf("port value must follow!\n");
+                    goto Bad_ARG;
+                }
+                break;
+            case 'u':
+                if (i2 < argc) {
+                    sarg = argv[i2];
+                    user = strdup(sarg);
+                    i++;
+                } else {
+                    printf("user name must follow!\n");
+                    goto Bad_ARG;
+                }
+                break;
+            case 'w':
+                if (i2 < argc) {
+                    sarg = argv[i2];
+                    pwd = strdup(sarg);
+                    i++;
+                } else {
+                    printf("password must follow!\n");
+                    goto Bad_ARG;
+                }
+                break;
+            case 'I':
+                if (i2 < argc) {
+                    sarg = argv[i2];
+                    server_addr = strdup(sarg);
+                    i++;
+                } else {
+                    printf("fgms server IP address must follow!\n");
+                    goto Bad_ARG;
+                }
+                break;
+            case 'P':
+                if (i2 < argc) {
+                    sarg = argv[i2];
+                    server_port = atoi(sarg);
+                    i++;
+                } else {
+                    printf("fgms server PORT value must follow!\n");
+                    goto Bad_ARG;
+                }
+                break;
+            default:
+                goto Bad_ARG;
+            }
+        } else {
+Bad_ARG:
+            printf("ERROR: Unknown argument [%s]! Try -?\n",arg);
+            exit(1);
+        }
+    }
+    return 0;
+}
+
+#define PQ_EXEC_SUCCESS(res) ((PQresultStatus(res) == PGRES_COMMAND_OK)||(PQresultStatus(res) == PGRES_TUPLES_OK))
+int check_tables(PGconn *conn)
+{
+    PGresult *res;
+    char buff[MAXLINE];
+    char *cp = buff;
+    char *val;
+    int i, j, i2, nFields, nRows;
+    int got_flights = 0;
+    int got_waypts = 0;
+    if (PQstatus(conn) == CONNECTION_OK) {
+        res = PQexec(conn,"BEGIN");
+        if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+            PQclear(res);
+            return 1;
+        }
+        /* should PQclear PGresult whenever it is no longer needed to avoid memory leaks */
+        PQclear(res);
+        strcpy(cp,"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';");
+        res = PQexec(conn, cp);
+        if (PQ_EXEC_SUCCESS(res)) {
+            nFields = PQnfields(res);
+            nRows = PQntuples(res);
+            for (j = 0; j < nFields; j++) {
+                for (i = 0; i < nRows; i++) {
+                    i2 = i + 1;
+                    val = PQgetvalue(res, i, j);
+                    if (val) {
+                        if (strcmp(val,"flights") == 0)
+                            got_flights = 1;
+                        else if (strcmp(val,"waypoints") == 0)
+                            got_waypts = 1;
+                    }
+                }
+            }
+       } else {
+            return 1;
+       }
+       PQclear(res);
+       /* end the transaction */
+       res = PQexec(conn, "END");
+       PQclear(res);
+    } else {
+        return 1;
+    }
+    return ((got_flights && got_waypts) ? 0 : 1);
+}
+
+int test_db_connection()
+{
+    int iret;
+    PGconn *conn = NULL;
+    if (ConnectDB(&conn)) {
+        return 1;   /* FAILED - conn closed */
+    }
+    iret = check_tables(conn);
+    PQfinish(conn);
+    return iret;
 }
 
 int main (int argc, char **argv)
@@ -277,27 +533,57 @@ int main (int argc, char **argv)
 	int listenfd, connfd;
 	struct sigaction sig_child;
 	char debugstr[MAXLINE];
-
 	struct sockaddr_in serveraddr,clientaddr;
-	char buff[MAXLINE];
-	time_t ticks;
 	socklen_t clientaddrlen;
 
-	openlog("fgtracker-server",LOG_PID,LOG_LOCAL1);
-	daemon_proc=daemon_init();
+    parse_commands(argc,argv);  /* parse user command line - no return if error */
 
-	debug(1,"FlightGear tracker started!");
+    if (test_db_connection()) {
+        printf("PostgreSQL connection FAILED on [%s], port [%s], database [%s], user [%s], pwd [%s]. Aborting...\n",
+            ip_address, port, database, user, pwd );
+        return 1;
+    }
+
+    openlog("fgtracker-server",LOG_PID,LOG_LOCAL1);
+
+	daemon_proc = 0;
 	
+
+	if (run_as_daemon)
+		daemon_proc = daemon_init();
+
 	listenfd=Socket(AF_INET,SOCK_STREAM,0);
 
 	bzero(&serveraddr,sizeof(serveraddr));
 
 	serveraddr.sin_family = AF_INET;
-	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serveraddr.sin_port = htons(SERVER_PORT);
+	if (server_addr) {
+        serveraddr.sin_addr.s_addr = inet_addr(server_addr);
+        if (serveraddr.sin_addr.s_addr == INADDR_NONE) {
+            struct hostent *hp = gethostbyname(server_addr);
+            if (hp == NULL) {
+                sprintf(debugstr,"FlightGear tracker unable to resolve address %s, reverting to INADDR_ANY!",server_addr);
+                debug(1,debugstr);
+                serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+                server_addr = 0;
+            } else {
+                memcpy((char *)&serveraddr.sin_addr.s_addr, hp->h_addr, hp->h_length);
+            }
+        }
+	} else {
+        serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    }
+
+	serveraddr.sin_port = htons(server_port);
 
 	Bind(listenfd,(SA *)&serveraddr,sizeof(serveraddr));
 
+    if (server_addr)
+        sprintf(debugstr,"FlightGear tracker started listening on %s, port %d!",server_addr,server_port);
+    else
+        sprintf(debugstr,"FlightGear tracker started listening on INADDR_ANY, port %d!",server_port);
+	debug(1,debugstr);
+	
 	Listen(listenfd,SERVER_LISTENQ);
 
 
@@ -310,6 +596,7 @@ int main (int argc, char **argv)
       		exit(1);
 	}
 	
+	debug(1,"FlightGear tracker, got connection...");
 	for ( ; ; )
 	{
 		clientaddrlen=sizeof(clientaddr);
@@ -337,4 +624,6 @@ int main (int argc, char **argv)
 
 	closelog();
 }
+
+/* eof - server.c */
 
