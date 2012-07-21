@@ -10,12 +10,39 @@
  *
  */
 
-#include    "common.h"
-#include    "error.h"
+#include    "fgt_common.h"
+#include    "fgt_error.h"
 #include    <stdarg.h>          /* ANSI C header file */ 
+#ifdef _MSC_VER
+#define LOG_INFO 1
+#define LOG_ERR  2
+#define snprintf _snprintf
+#else // !_MSC_VER
 #include    <syslog.h>          /* for syslog() */ 
+#endif // _MSC_VER y/n
 
 int     daemon_proc = 0;        /* set nonzero by server daemon_init() */ 
+
+#ifdef _MSC_VER
+int syslog(int lev, char *fmt, ...) 
+{
+    char    buf[MAXLINE + 1]; 
+    va_list ap; 
+    va_start(ap, fmt); 
+#ifdef HAVE_VSNPRINTF 
+    vsnprintf(buf, MAXLINE, fmt, ap);   * safe */ 
+#else 
+    vsprintf(buf, fmt, ap);     /* not safe */ 
+#endif 
+    strcat(buf, "\n"); 
+    fflush(stdout);         /* in case stdout and stderr are the same */ 
+    fputs(buf, stderr); 
+    fflush(stderr); 
+    va_end(ap); 
+    return lev;
+}
+#endif // _MSC_VER
+
 
 /* Nonfatal error related to system call 
  * Print message and return */ 

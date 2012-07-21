@@ -14,6 +14,8 @@ set( LIB_TYPE STATIC )  # set default static
 option( BUILD_SHARED_LIB "Build Shared Library" OFF )
 option( BUILD_TRACKER "Build 'tracker' server and client" OFF )
 option( BUILD_SERVER2 "Build a server with different defaults" OFF )
+option( USE_TRACKER_PORT "Use pthreads to replace fork, and a vector for message exchange." OFF )
+option( USE_POSTGRESQL "Use a PostgreSQL database in the tracking server." ON )
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     set( WARNING_FLAGS -Wall )
@@ -37,10 +39,17 @@ if(WIN32)
         # endif (${MSVC_VERSION} EQUAL 1600)
     endif(MSVC)
     set( NOMINMAX 1 )
-    add_definitions( -DUL_MSVC -DOPENALSDK -DHAVE_CONFIG_H -DFREEGLUT_LIB_PRAGMAS -DUL_WIN32 -D_CRT_SECURE_NO_DEPRECATE -DFREEGLUT_STATIC -DNO_TRACKER_PORT )
+    add_definitions( -DUL_MSVC -DOPENALSDK -DHAVE_CONFIG_H -DFREEGLUT_LIB_PRAGMAS -DUL_WIN32 -D_CRT_SECURE_NO_DEPRECATE -DFREEGLUT_STATIC )
+	if(NOT USE_TRACKER_PORT)
+		add_definitions( -DNO_TRACKER_PORT )
+	endif(NOT USE_TRACKER_PORT)
 else(WIN32)
     list(APPEND EXTRA_LD_FLAGS -L.)
 endif(WIN32)
+
+if(USE_TRACKER_PORT)
+	add_definitions( -DUSE_TRACKER_PORT )
+endif(USE_TRACKER_PORT)
 
 if(BUILD_SERVER2)
     add_definitions( -DDEF_SERVER_LOG="fg_server2.log" -DDEF_EXIT_FILE="fgms_exit2"
@@ -82,9 +91,9 @@ set( fg_server_HDRS  src/server/fg_server.hxx src/server/fg_tracker.hxx
 add_library( fg_server ${LIB_TYPE} ${fg_server_SRCS} ${fg_server_HDRS} )
 # NO INSTALL [noinst_LIBRARIES]
 if(WIN32)
-list( APPEND add_LIBS fg_server )
+    list( APPEND add_LIBS fg_server )
 else(WIN32)
-list(APPEND add_LIBS -lfg_server)
+    list(APPEND add_LIBS -lfg_server)
 endif(WIN32)
 
 #### add_subdirectory( src/flightgear/MultiPlayer )
@@ -95,9 +104,9 @@ set( MultiPlayer_HDRS src/flightgear/MultiPlayer/tiny_xdr.hxx
 add_library( MultiPlayer ${LIB_TYPE} ${MultiPlayer_SRCS} ${MultiPlayer_HDRS} )
 # NO INSTALL [noinst_LIBRARIES]
 if(WIN32)
-list(APPEND add_LIBS MultiPlayer)
+    list(APPEND add_LIBS MultiPlayer)
 else(WIN32)
-list(APPEND add_LIBS -lMultiPlayer)
+    list(APPEND add_LIBS -lMultiPlayer)
 endif(WIN32)
 
 #### add_subdirectory( src/plib )
@@ -107,9 +116,9 @@ set( plib_HDRS src/plib/netSocket.h )
 add_library( Plib ${LIB_TYPE} ${plib_SRCS} ${plib_HDRS} )
 # NO INSTALL [noinst_LIBRARIES]
 if(WIN32)
-list(APPEND add_LIBS Plib)
+    list(APPEND add_LIBS Plib)
 else(WIN32)
-list(APPEND add_LIBS -lPlib)
+    list(APPEND add_LIBS -lPlib)
 endif(WIN32)
 
 ### add_subdirectory( src/simgear/debug )
@@ -120,9 +129,9 @@ set( sgdebug_HDRS src/simgear/debug/debug_types.h
 add_library( SGdebug ${LIB_TYPE} ${sgdebug_SRCS} ${sgdebug_HDRS} )
 # NO INSTALL [noinst_LIBRARIES]
 if(WIN32)
-list(APPEND add_LIBS SGdebug)
+    list(APPEND add_LIBS SGdebug)
 else(WIN32)
-list(APPEND add_LIBS -lSGdebug)
+    list(APPEND add_LIBS -lSGdebug)
 endif(WIN32)
 
 # Project [fgms] [Console Application] [sbin_PROGRAMS], with 1 sources. deps [sgdebug MultiPlayer plib fg_server]4
@@ -174,39 +183,38 @@ else(WIN32)
 endif(WIN32)
 
 if(BUILD_TRACKER)
-# find postgresql include and libraries
-# =====================================
-find_package(PostgreSQL REQUIRED)
+    if(USE_POSTGRESQL)
+        # find postgresql include and libraries
+        # =====================================
+        find_package(PostgreSQL REQUIRED)
+        if(PostgreSQL_FOUND)
+            set( add_LIBS ${PostgreSQL_LIBRARIES} )
+            include_directories( SYSTEM "${PostgreSQL_INCLUDE_DIRS}" )
+            message(STATUS "*** Found PosgreSQL ${PostgreSQL_INCLUDE_DIRS} ${PostgreSQL_LIBRARIES}")
+        else(PostgreSQL_FOUND)
+            message(FATAL_ERROR "*** PosgreSQL NOT FOUND! Run cmake with -DBUILD_TRACKER:BOOL=FALSE")
+        endif(PostgreSQL_FOUND)
+    else(USE_POSTGRESQL)
+        add_definitions( -DNO_POSTGRESQL )
+    endif(USE_POSTGRESQL)
 
-if(PostgreSQL_FOUND)
-set( add_LIBS ${PostgreSQL_LIBRARIES} )
-include_directories( SYSTEM "${PostgreSQL_INCLUDE_DIRS}" )
-message(STATUS "*** Found PosgreSQL headers [${PostgreSQL_INCLUDE_DIRS}] lib [${PostgreSQL_LIBRARIES}]")
-else(PostgreSQL_FOUND)
-message(FATAL_ERROR "*** PosgreSQL NOT FOUND! Run cmake with -DBUILD_TRACKER:BOOL=FALSE")
-endif(PostgreSQL_FOUND)
+    set( tracker_SRCS contrib/fgtracker/fgt_error.c contrib/fgtracker/wrappers.c )
+    set( tracker_HDRS contrib/fgtracker/fgt_error.h contrib/fgtracker/wrappers.h contrib/fgtracker/fgt_config.h contrib/fgtracker/fgt_common.h )
+    add_library( tracker ${LIB_TYPE} ${tracker_SRCS} ${tracker_HDRS} )
+    list(APPEND add_LIBS tracker)
 
-set( tracker_SRCS contrib/fgtracker/error.c contrib/fgtracker/wrappers.c )
-set( tracker_HDRS contrib/fgtracker/error.h contrib/fgtracker/wrappers.h contrib/fgtracker/config.h contrib/fgtracker/common.h )
-add_library( tracker ${LIB_TYPE} ${tracker_SRCS} ${tracker_HDRS} )
-list(APPEND add_LIBS tracker)
+    set( server_SRCS contrib/fgtracker/server.c )
+    add_executable( fgt_server ${server_SRCS} )
+    target_link_libraries( fgt_server ${add_LIBS} )
+    set_target_properties( fgt_server PROPERTIES DEBUG_POSTFIX "d" )
 
-set( server_SRCS contrib/fgtracker/server.c )
-add_executable( fgt_server ${server_SRCS} )
-target_link_libraries( fgt_server ${add_LIBS} )
-set_target_properties( fgt_server PROPERTIES DEBUG_POSTFIX "d" )
+    set( client_SRCS contrib/fgtracker/client.c )
+    add_executable( fgt_client ${client_SRCS} )
+    target_link_libraries( fgt_client ${add_LIBS} )
+    set_target_properties( fgt_client PROPERTIES DEBUG_POSTFIX "d" )
 
-set( client_SRCS contrib/fgtracker/client.c )
-add_executable( fgt_client ${client_SRCS} )
-target_link_libraries( fgt_client ${add_LIBS} )
-set_target_properties( fgt_client PROPERTIES DEBUG_POSTFIX "d" )
-
-set( testdb_SRCS contrib/fgtracker/testdb.c )
-add_executable( testdb ${testdb_SRCS} )
-target_link_libraries( testdb ${add_LIBS} )
-set_target_properties( testdb PROPERTIES DEBUG_POSTFIX "d" )
-
-install(TARGETS fgt_server fgt_client testdb DESTINATION bin)
+    # deal with INSTALL
+    install(TARGETS fgt_server fgt_client DESTINATION bin)
 endif(BUILD_TRACKER)
 
 # eof - CMakeLists.txt

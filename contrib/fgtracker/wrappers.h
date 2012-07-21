@@ -12,8 +12,8 @@
 
 #ifndef __wrappers_h
 #define __wrappers_h
-#include "common.h"
-#include "error.h"
+#include "fgt_common.h"
+#include "fgt_error.h"
 
 
 int Accept(int sockfd,struct sockaddr *cliaddr, socklen_t *addrlen) ;

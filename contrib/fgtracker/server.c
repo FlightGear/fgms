@@ -12,10 +12,12 @@
  *
  */
 
-#include "common.h"
+#include "fgt_common.h"
 #include "wrappers.h"
-#include "error.h"
+#include "fgt_error.h"
+#ifndef NO_POSTGRESQL
 #include <libpq-fe.h>
+#endif // NO_POSTGRESQL
 
 // static int run_as_daemon = RUN_AS_DAEMON;
 static int run_as_daemon = 0;
@@ -52,9 +54,26 @@ static char *pwd = (char *)DEF_USER_PWD;
 static char *pgoptions = (char *)"";
 static char *pgtty = (char *)"";
 
+#ifdef NO_POSTGRESQL
+typedef struct tagPGconn {
+    FILE * fp;
+}PGconn;
+#endif // NO_POSTGRESQL
+
+#ifdef _MSC_VER
+#define pid_t int
+int getpid(void) {
+    return (int)GetCurrentThreadId();
+}
+#define snprintf _snprintf
+
+#endif // _MSC_VER
+
+
 int
 daemon_init(void)
 {
+#ifndef _MSC_VER
 	pid_t	pid;
 
 	if ( (pid = fork()) < 0)
@@ -69,12 +88,14 @@ daemon_init(void)
         return(1);
 
 	umask(0);		/* clear our file mode creation mask */
+#endif // !_MSC_VER
 
 	return(0);
 }
 
 void sigchld_handler(int s)
 {
+#ifndef _MSC_VER
     pid_t childpid;
     char debugstr[MAXLINE];
 
@@ -83,12 +104,60 @@ void sigchld_handler(int s)
 	sprintf(debugstr,"Child stopped: %d",childpid);
 	debug(2,debugstr);
     }
+#endif // !_MSC_VER
 }
 
 void sighup_handler(int s)
 {
     exit(0);
 }
+
+#ifdef NO_POSTGRESQL
+#define CONNECTION_OK  0
+#define CONNECTION_FAILED -1
+int PQstatus(PGconn *conn)
+{
+    if (conn && conn->fp)
+        return CONNECTION_OK;
+    return CONNECTION_FAILED;
+}
+int PQfinish( PGconn *conn )
+{
+    if (conn) {
+        if (conn->fp)
+            fclose(conn->fp);
+        conn->fp = 0;
+        free(conn);
+    }
+    return 0;
+}
+
+#ifndef DEF_MESSAGE_LOG
+#define DEF_MESSAGE_LOG "fgt_server.log"
+#endif
+
+static char *msg_log = (char *)DEF_MESSAGE_LOG;
+static FILE *msg_file = NULL;
+static void write_message_log(const char *msg, int len)
+{
+    if (msg_file == NULL) {
+        msg_file = fopen(msg_log,"ab");
+        if (!msg_file) {
+            printf("ERROR: Failed to OPEN/append %s log file!\n", msg_log);
+            msg_file = (FILE *)-1;
+        }
+    }
+    if (msg_file && (msg_file != (FILE *)-1)) {
+        int wtn = (int)fwrite(msg,1,len,msg_file);
+        if (wtn != len) {
+            fclose(msg_file);
+            msg_file = (FILE *)-1;
+            printf("ERROR: Failed to WRITE %d != %d to %s log file!\n", wtn, len, msg_log);
+        }
+    }
+}
+
+#endif // NO_POSTGRESQL
 
 /* --------------------------------------
 PGconn *PQsetdbLogin(const char *pghost,
@@ -105,6 +174,25 @@ int ConnectDB(PGconn **conn)
 {
     int iret = 0;   /* assume no error */
     char debugstr[MAXLINE];
+#ifdef NO_POSTGRESQL
+    FILE *fp;
+    PGconn *cp;
+    *conn = (PGconn *)malloc(sizeof(PGconn));
+    if (!*conn) {
+        printf("ERROR: memory allocation FAILED! Aborting...\n");
+        exit(1);
+    }
+    fp = fopen(database,"a");
+    cp = *conn;
+    if (fp) {
+        cp->fp = fp;
+    } else {
+   	    sprintf(debugstr, "Connection to database failed: %s. NO OPEN/Append",database);
+    	debug(1,debugstr);
+    	PQfinish(*conn);
+        iret = 1;
+    }
+#else // !NO_POSTGRESQL
 
     *conn = PQsetdbLogin(ip_address, port, pgoptions, pgtty, database, user, pwd);
 
@@ -115,11 +203,15 @@ int ConnectDB(PGconn **conn)
     	PQfinish(*conn);
     	iret = 1;
   	}
+#endif // NO_POSTGRESQL y/n
   	return iret;
 }
 
 int logFlight(PGconn *conn,char *callsign,char *model, char *date, int connect)
 {
+#ifdef NO_POSTGRESQL
+    return 0;
+#else // !#ifdef NO_POSTGRESQL
   PGresult		*res;
   char			statement[MAXLINE];
   char			date2[MAXLINE];
@@ -155,11 +247,15 @@ int logFlight(PGconn *conn,char *callsign,char *model, char *date, int connect)
   }
 
   return(0);
-  
+#endif // #ifdef NO_POSTGRESQL y/n
+ 
 }
 
 int logPosition(PGconn *conn, char *callsign, char *date, char *lon, char *lat, char *alt)
 {
+#ifdef NO_POSTGRESQL
+    return 0;
+#else // !#ifdef NO_POSTGRESQL
   PGresult		*res;
   char			statement[MAXLINE];
   char			date2[MAXLINE];
@@ -189,7 +285,7 @@ int logPosition(PGconn *conn, char *callsign, char *date, char *lon, char *lat, 
   }
 
   return(0);
-
+#endif // #ifdef NO_POSTGRESQL y/n
 }
 
 void doit(int fd)
@@ -221,7 +317,7 @@ void doit(int fd)
   sprintf(debugstr,"connection from %s, port %d", inet_ntop(AF_INET, &clientaddr.sin_addr, msg, sizeof(msg)), ntohs(clientaddr.sin_port));
   debug(2,debugstr);
 
-  while ( (len = read(fd, msg, MAXLINE)) >0)
+  while ( (len = SREAD(fd, msg, MAXLINE)) >0)
   {
        	msg[len]='\0';
 
@@ -248,7 +344,9 @@ void doit(int fd)
 		debug(3,debugstr);
 
 		pg_reconn_counter=0;
-
+#ifdef NO_POSTGRESQL
+        write_message_log(msg,len);
+#else // !#ifdef NO_POSTGRESQL
 		while ( (PQstatus(conn)!=CONNECTION_OK) && (pg_reconn_counter<120) )
                 {
 			sprintf(debugstr,"Reconn loop %d",pg_reconn_counter);
@@ -273,6 +371,7 @@ void doit(int fd)
 			}
 
                 }
+#endif // #ifdef NO_POSTGRESQL
 		pg_reconn_counter=0;
 
 		if (strncmp("REPLY",event,5)==0)
@@ -283,7 +382,7 @@ void doit(int fd)
 
 		if (strncmp("PING",event,4)==0)
 		{
-			if (write(fd,"PONG",5) != 5)
+			if (SWRITE(fd,"PONG",5) != 5)
                 debug(1,"write PONG failed");
 		}
 
@@ -294,7 +393,7 @@ void doit(int fd)
        			if (strncmp("mpdummy",callsign,7)!=0 && strncmp("obscam",callsign,6)!=0) logFlight(conn,callsign,model,time,1);
 			if (reply)
 			{
-				if (write(fd,"OK",2) != 2)
+				if (SWRITE(fd,"OK",2) != 2)
                     debug(1,"write OK1 failed");
                 else
                     debug(3,"reply sent");
@@ -307,7 +406,7 @@ void doit(int fd)
        			if (strncmp("mpdummy",callsign,7)!=0 && strncmp("obscam",callsign,6)!=0) logFlight(conn,callsign,model,time,0);
 			if (reply)
 			{
-				if (write(fd,"OK",2) != 2)
+				if (SWRITE(fd,"OK",2) != 2)
                     debug(1,"write OK2 failed");
                 else
                     debug(3,"reply sent");
@@ -320,7 +419,7 @@ void doit(int fd)
        			if (strncmp("mpdummy",callsign,7)!=0 && strncmp("obscam",callsign,6)!=0) logPosition(conn,callsign,time,lon,lat,alt);
 			if (reply)
 			{
-				if (write(fd,"OK",2) != 2)
+				if (SWRITE(fd,"OK",2) != 2)
                     debug(1,"write OK2 failed");
                 else
                     debug(3,"reply sent");
@@ -470,6 +569,9 @@ Bad_ARG:
 #define PQ_EXEC_SUCCESS(res) ((PQresultStatus(res) == PGRES_COMMAND_OK)||(PQresultStatus(res) == PGRES_TUPLES_OK))
 int check_tables(PGconn *conn)
 {
+#ifdef NO_POSTGRESQL
+    return 0;
+#else // !NO_POSTGRESQL
     PGresult *res;
     char buff[MAXLINE];
     char *cp = buff;
@@ -513,11 +615,12 @@ int check_tables(PGconn *conn)
         return 1;
     }
     return ((got_flights && got_waypts) ? 0 : 1);
+#endif // NO_POSTGRESQL y/n
 }
 
 int test_db_connection()
 {
-    int iret;
+    int iret = 1;
     PGconn *conn = NULL;
     if (ConnectDB(&conn)) {
         return 1;   /* FAILED - conn closed */
@@ -531,7 +634,9 @@ int main (int argc, char **argv)
 {
 	pid_t pid,childpid;
 	int listenfd, connfd;
+#ifndef _MSC_VER
 	struct sigaction sig_child;
+#endif // !_MSC_VER
 	char debugstr[MAXLINE];
 	struct sockaddr_in serveraddr,clientaddr;
 	socklen_t clientaddrlen;
@@ -544,7 +649,9 @@ int main (int argc, char **argv)
         return 1;
     }
 
+#ifndef _MSC_VER
     openlog("fgtracker-server",LOG_PID,LOG_LOCAL1);
+#endif
 
 	daemon_proc = 0;
 	
@@ -586,7 +693,7 @@ int main (int argc, char **argv)
 	
 	Listen(listenfd,SERVER_LISTENQ);
 
-
+#ifndef _MSC_VER
   	sig_child.sa_handler = sigchld_handler;
   	sigemptyset(&sig_child.sa_mask);
   	sig_child.sa_flags = SA_RESTART;
@@ -595,7 +702,8 @@ int main (int argc, char **argv)
 		err_sys("sigaction error");
       		exit(1);
 	}
-	
+#endif // !_MSC_VER
+
 	debug(1,"FlightGear tracker, got connection...");
 	for ( ; ; )
 	{
@@ -621,8 +729,9 @@ int main (int argc, char **argv)
 		}
 		Close(connfd);
 	}
-
+#ifndef _MSC_VER
 	closelog();
+#endif // !_MSC_VER
 }
 
 /* eof - server.c */

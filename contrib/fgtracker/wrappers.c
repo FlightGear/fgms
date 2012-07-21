@@ -35,7 +35,7 @@ int
 Close(int sockfd)
 {
     int     n; 
-    if ( (n = close(sockfd)) < 0) 
+    if ( (n = SCLOSE(sockfd)) < 0) 
         err_sys("close error"); 
     return (n); 
 }
@@ -52,8 +52,10 @@ Connect(int sockfd, const struct sockaddr *serveraddr, socklen_t addrlen)
 int
 Fork()
 {
-    int    n;
+    int    n = -1;
+#ifndef _MSC_VER
     if ( (n = fork()) <0 )
+#endif
 	err_sys("fork error");
     return (n);
 }

@@ -66,7 +66,11 @@ public:
 		char mtext[1024];
 	};
 
+#ifdef USE_TRACKER_PORT    // leave all members PUBLIC!
+    pthread_t thread;
+#else // !USE_TRACKER_POSRT
 private:
+#endif // USE_TRACKER_PORT y/n
 	//////////////////////////////////////////////////
 	//
 	//  private methods

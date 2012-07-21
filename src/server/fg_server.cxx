@@ -45,7 +45,8 @@
 	#define INADDR_NONE ((unsigned long)-1)
 #endif
 
-#include "fg_server.hxx"
+#include "fg_server.hxx"    /* includes pthread.h */
+#include "common.h"
 #include "typcnvt.hxx"
 
 #ifdef _MSC_VER
@@ -78,6 +79,13 @@ extern void SigHUPHandler ( int SigType );
 #define DEF_STAT_FILE "fgms_stat"
 #endif
 
+#ifndef DEF_MESSAGE_LOG
+#define DEF_MESSAGE_LOG "fg_message.log"
+#endif
+
+static char *msg_log = (char *)DEF_MESSAGE_LOG;
+static FILE *msg_file = NULL;
+
 #if _MSC_VER
 static char * exit_file = (char *)DEF_EXIT_FILE; // "fgms_exit"
 static char * reset_file = (char *)DEF_RESET_FILE; // "fgms_reset"
@@ -87,6 +95,36 @@ static char * exit_file = (char *)"/tmp/" DEF_EXIT_FILE;
 static char * reset_file = (char *)"/tmp/" DEF_RESET_FILE;
 static char * stat_file = (char *)"/tmp/" DEF_STAT_FILE;
 #endif // _MSC_VER y/n
+
+
+#ifdef USE_TRACKER_PORT
+pthread_mutex_t msg_mutex     = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  condition_var   = PTHREAD_COND_INITIALIZER;
+vMSG msg_queue; // queue for messages
+
+#ifdef ADD_TRACKER_LOG
+void write_msg_log(char *src, const char *msg, int len)
+{
+    if (msg_file == NULL) {
+        msg_file = fopen(msg_log,"ab");
+        if (!msg_file) {
+            printf("ERROR: Failed to OPEN/append %s log file!\n", msg_log);
+            msg_file = (FILE *)-1;
+        }
+    }
+    if (msg_file && (msg_file != (FILE *)-1)) {
+        fwrite(src,1,strlen(src),msg_file);
+        int wtn = (int)fwrite(msg,1,len,msg_file);
+        if (wtn != len) {
+            fclose(msg_file);
+            msg_file = (FILE *)-1;
+            printf("ERROR: Failed to WRITE %d != %d to %s log file!\n", wtn, len, msg_log);
+        }
+    }
+}
+#endif // #ifdef ADD_TRACKER_LOG
+
+#endif // #ifdef USE_TRACKER_PORT
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -130,15 +168,21 @@ FG_SERVER::FG_SERVER
 	m_MaxTracker          = 3; // set sensible default value
     m_Tracker             = 0; // no tracker yet
     m_UpdateSecs          = DEF_UPDATE_SECS;
-	// clear stats
+	// clear stats - should show what type of packet was received
 	m_PacketsReceived     = 0;
 	m_TelnetReceived      = 0;
 	m_BlackRejected       = 0;	// in black list
 	m_PacketsInvalid      = 0;	// invalid packet
 	m_UnknownRelay        = 0;	// unknown relay
+    m_RelayMagic          = 0;  // relay magic packet
 	m_PositionData        = 0;	// position data packet
+    m_NotPosData          = 0;
+    // clear totals
     mT_PacketsReceived = mT_BlackRejected = mT_PacketsInvalid = 0;
-    mT_UnknownRelay = mT_PositionData = mT_TelnetReceived = 0; // totals since start
+    mT_UnknownRelay = mT_PositionData = mT_TelnetReceived = 0;
+    mT_RelayMagic = mT_NotPosData = 0;
+    m_CrossFeedFailed = m_CrossFeedSent = 0;
+    mT_CrossFeedFailed = mT_CrossFeedSent = 0;
 
 	pthread_mutex_init( &m_PlayerMutex, 0 );
 } // FG_SERVER::FG_SERVER()
@@ -270,11 +314,25 @@ FG_SERVER::Init
 	}
 	if (m_IsTracked)
 	{
-		SG_ALERT (SG_SYSTEMS, SG_ALERT, "# tracked to "
-			<< m_Tracker->GetTrackerServer ()
-			<< ":" << m_Tracker->GetTrackerPort ()
-            << ", using " << m_MaxTracker << " children." );
-		m_Tracker->InitTracker(m_MaxTracker);
+		if( m_Tracker->InitTracker(m_MaxTracker) )
+        {
+    		SG_ALERT (SG_SYSTEMS, SG_ALERT, "# InitTracker FAILED! Disabling tracker!");
+            m_IsTracked = false;
+        }
+        else
+        {
+#ifdef USE_TRACKER_PORT
+		    SG_ALERT (SG_SYSTEMS, SG_ALERT, "# tracked to "
+			    << m_Tracker->GetTrackerServer ()
+			    << ":" << m_Tracker->GetTrackerPort ()
+                << ", using a thread." );
+#else // #ifdef USE_TRACKER_PORT
+		    SG_ALERT (SG_SYSTEMS, SG_ALERT, "# tracked to "
+			    << m_Tracker->GetTrackerServer ()
+			    << ":" << m_Tracker->GetTrackerPort ()
+                << ", using " << m_MaxTracker << " children." );
+#endif // #ifdef USE_TRACKER_PORT y/n
+        }
 	}
     else
     {
@@ -297,6 +355,7 @@ FG_SERVER::Init
 		CurrentCrossfeed++;
 	}
 	SG_ALERT (SG_SYSTEMS, SG_ALERT, "# I have " << m_BlackList.size() << " blacklisted IPs");
+	SG_ALERT (SG_SYSTEMS, SG_ALERT, "# Files: exit=[" << exit_file << "] stat=[" << stat_file << "]");
 	m_Listening = true;
 	return (SUCCESS);
 } // FG_SERVER::Init()
@@ -682,14 +741,23 @@ FG_SERVER::AddCrossfeed
 {
 	mT_Relay        NewRelay;
 	unsigned int    IP;
-
-	NewRelay.Name = Server;
-	NewRelay.Address.set ((char*) Server.c_str(), Port);
+    string s = Server;
+#ifdef _MSC_VER
+    if (s == "localhost") {
+        s = "127.0.0.1";
+    }
+#endif // _MSC_VER
+	NewRelay.Name = s;
+	NewRelay.Address.set ((char*) s.c_str(), Port);
 	IP = NewRelay.Address.getIP();
 	if ( IP != INADDR_ANY && IP != INADDR_NONE )
 	{
 		m_CrossfeedList.push_back (NewRelay);
 	}
+    else
+    {
+    	SG_ALERT (SG_SYSTEMS, SG_ALERT, "AddCrossfeed: FAILED on " << Server << ", port " << Port);
+    }
 } // FG_SERVER::AddCrossfeed()
 //////////////////////////////////////////////////////////////////////
 
@@ -708,6 +776,12 @@ FG_SERVER::AddTracker
 {
 	m_IsTracked     = IsTracked;
 #ifndef NO_TRACKER_PORT
+#ifdef USE_TRACKER_PORT
+    if ( m_Tracker ) {
+        delete m_Tracker;
+    }
+	m_Tracker = new FG_TRACKER(Port,Server,0);
+#else // !#ifdef USE_TRACKER_PORT
 	if ( m_Tracker )
 	{
 		msgctl(m_ipcid,IPC_RMID,NULL);
@@ -715,6 +789,7 @@ FG_SERVER::AddTracker
 	}
 	m_ipcid         = msgget(IPCKEY,IPCPERMS|IPC_CREAT);
 	m_Tracker = new FG_TRACKER(Port,Server,m_ipcid);
+#endif // #ifdef USE_TRACKER_PORT y/n
 #endif // NO_TRACKER_PORT
 	return (SUCCESS);
 } // FG_SERVER::AddTracker()
@@ -1046,6 +1121,7 @@ FG_SERVER::SendToCrossfeed
 {
 	T_MsgHdr*       MsgHdr;
 	uint32_t        MsgMagic;
+    int             sent;
 
 	MsgHdr		= (T_MsgHdr *) Msg;
 	MsgMagic	= MsgHdr->Magic;
@@ -1053,8 +1129,14 @@ FG_SERVER::SendToCrossfeed
 	mT_RelayListIt CurrentCrossfeed = m_CrossfeedList.begin();
 	while (CurrentCrossfeed != m_CrossfeedList.end())
 	{
-		if (CurrentCrossfeed->Address.getIP() != SenderAddress.getIP())
-			m_DataSocket->sendto(Msg, Bytes, 0, &CurrentCrossfeed->Address);
+		if (CurrentCrossfeed->Address.getIP() != SenderAddress.getIP()) {
+			sent = m_DataSocket->sendto(Msg, Bytes, 0, &CurrentCrossfeed->Address);
+            if (SERROR(sent)) {
+                m_CrossFeedFailed++;
+            } else {
+                m_CrossFeedSent++;
+            }
+        }
 		CurrentCrossfeed++;
 	}
 	MsgHdr->Magic = MsgMagic;  // restore the magic value
@@ -1204,6 +1286,10 @@ FG_SERVER::HandlePacket
 			m_UnknownRelay++;
 			return;
 		}
+        else
+        {
+            m_RelayMagic++; // bump relay magic packet
+        }
 	}
 	//////////////////////////////////////////////////
 	//
@@ -1227,7 +1313,11 @@ FG_SERVER::HandlePacket
 			XDR_decode<float> (PosMsg->orientation[Y]),
 			XDR_decode<float> (PosMsg->orientation[Z])
 		);
-	}
+	} 
+    else
+    {
+        m_NotPosData++;
+    }
 	//////////////////////////////////////////////////
 	//
 	//    Add Client to list if its not known
@@ -1344,6 +1434,53 @@ FG_SERVER::HandlePacket
 	SendToRelays (Msg, Bytes, SendingPlayer);
 } // FG_SERVER::HandlePacket ( char* sMsg[MAX_PACKET_SIZE] )
 //////////////////////////////////////////////////////////////////////
+void FG_SERVER::Show_Stats(void)
+{
+    // update totals since start
+
+    mT_PacketsReceived += m_PacketsReceived;
+    mT_BlackRejected   += m_BlackRejected;
+    mT_PacketsInvalid  += m_PacketsInvalid;
+    mT_UnknownRelay    += m_UnknownRelay;
+    mT_RelayMagic      += m_RelayMagic;
+    mT_PositionData    += m_PositionData;
+    mT_NotPosData      += m_NotPosData;
+    mT_TelnetReceived  += m_TelnetReceived;
+    mT_CrossFeedFailed += m_CrossFeedFailed;
+    mT_CrossFeedSent   += m_CrossFeedSent;
+
+    // output to LOG and cerr channels
+    SG_ALERT (SG_SYSTEMS, SG_ALERT, "## Pilots " <<
+		m_PlayerList.size() );
+
+    SG_ALERT (SG_SYSTEMS, SG_ALERT, "## Since: Packets " <<
+		m_PacketsReceived << " BL=" <<
+		m_BlackRejected << " INV=" <<
+		m_PacketsInvalid << " UR=" <<
+		m_UnknownRelay << " RD=" <<
+        m_RelayMagic << " PD=" <<
+		m_PositionData << " NP=" <<
+        m_NotPosData << " CF=" <<
+        m_CrossFeedSent << '/' << m_CrossFeedFailed << " TN=" <<
+		m_TelnetReceived );
+
+    SG_ALERT (SG_SYSTEMS, SG_ALERT, "## Total: Packets " <<
+		mT_PacketsReceived << " BL=" <<
+		mT_BlackRejected << " INV=" <<
+		mT_PacketsInvalid << " UR=" <<
+		mT_UnknownRelay << " RD=" <<
+        mT_RelayMagic << " PD=" <<
+		mT_PositionData << " NP=" <<
+        mT_NotPosData <<  " CF=" <<
+        m_CrossFeedSent << '/' << m_CrossFeedFailed << " TN=" <<
+		mT_TelnetReceived );
+
+    // restart 'since' last stat counter
+    m_PacketsReceived = m_BlackRejected = m_PacketsInvalid = 0;
+    m_UnknownRelay = m_PositionData = m_TelnetReceived = 0; // reset
+    m_RelayMagic = m_NotPosData = 0; // reset
+    m_CrossFeedFailed = m_CrossFeedSent = 0;
+}
 
 int
 FG_SERVER::check_keyboard
@@ -1385,37 +1522,7 @@ FG_SERVER::check_keyboard
 			SG_LOG (SG_SYSTEMS, SG_ALERT, "ERROR: Unable to delete stat file! Doing hard exit...");
 			exit(1);
 		}
-
-        // update totals since start
-        mT_PacketsReceived += m_PacketsReceived;
-        mT_BlackRejected   += m_BlackRejected;
-        mT_PacketsInvalid  += m_PacketsInvalid;
-        mT_UnknownRelay    += m_UnknownRelay;
-        mT_PositionData    += m_PositionData;
-        mT_TelnetReceived  += m_TelnetReceived;
-
-        SG_LOG (SG_SYSTEMS, SG_ALERT, "## Pilots " <<
-			m_PlayerList.size() );
-
-        SG_LOG (SG_SYSTEMS, SG_ALERT, "## Total: Packets " <<
-			mT_PacketsReceived << " BL=" <<
-			mT_BlackRejected << " INV=" <<
-			mT_PacketsInvalid << " UR=" <<
-			mT_UnknownRelay << " PD=" <<
-			mT_PositionData << " Telnet " <<
-			mT_TelnetReceived );
-
-        SG_LOG (SG_SYSTEMS, SG_ALERT, "## Since: Packets " <<
-			m_PacketsReceived << " BL=" <<
-			m_BlackRejected << " INV=" <<
-			m_PacketsInvalid << " UR=" <<
-			m_UnknownRelay << " PD=" <<
-			m_PositionData << " Telnet " <<
-			m_TelnetReceived );
-
-        // restart 'since' last stat counter
-        m_PacketsReceived = m_BlackRejected = m_PacketsInvalid = 0;
-        m_UnknownRelay = m_PositionData = m_TelnetReceived = 0; // reset
+        Show_Stats();
 	}
 #ifdef _MSC_VER
 	if (_kbhit())
@@ -1423,10 +1530,11 @@ FG_SERVER::check_keyboard
 		int ch = _getch ();
 		if ( ch == 0x1b )
 		{
+            Show_Stats();   // show stats beofre exit
 			printf("Got ESC key to exit...\n");
 			return 1;
 		}
-		else if ( ch == 'R' )
+		else if (( ch == 'R' ) || ( ch == 'r' ))
 		{
 			printf("Got 'R' - Reset key...\n");
 			m_Initialized         = true; // Init() will do it
@@ -1435,22 +1543,14 @@ FG_SERVER::check_keyboard
 			m_Listening           = false;
 			SigHUPHandler ( 0 );
 		}
-		else if ( ch == 'S' )
+		else if (( ch == 'S' ) || ( ch == 's' ))
 		{
 			printf("Show stats\n");
-			printf("Pilots %ld Packets=%d, BL=%d INV=%d UR=%d PD=%d Telnet: %d\n",
-				m_PlayerList.size(),    // active pilots
-				m_PacketsReceived,
-				m_BlackRejected,        // in black list
-				m_PacketsInvalid,       // invalid packet
-				m_UnknownRelay,         // unknown relay
-				m_PositionData,         // position data packet
-				m_TelnetReceived	// telnet queries
-			);    
+            Show_Stats();
 		}
 		else
 		{
-			printf("Got UNKNOWN keyboard! %#X - Only ESC, to exit, R reset, S stats.\n", ch);
+			printf("Got UNKNOWN keyboard! %#X - Only ESC, to exit, R/r reset, S/s stats.\n", ch);
 		}
 	}
 #endif
@@ -1483,7 +1583,7 @@ FG_SERVER::Loop
 		return (ERROR_NOT_LISTENING);
 	}
 #ifdef _MSC_VER
-	SG_ALERT (SG_SYSTEMS, SG_ALERT,  "ESC key to EXIT (after select timeout)." );
+	SG_ALERT (SG_SYSTEMS, SG_ALERT,  "ESC key to EXIT (after select " << m_PlayerExpires << " sec timeout)." );
 #endif
 	//////////////////////////////////////////////////
 	//
@@ -1829,7 +1929,17 @@ FG_SERVER::UpdateTracker
 		// queue the message
 		sprintf (buf.mtext, "%s", Message.c_str());
 		buf.mtype = 1;
+#ifdef USE_TRACKER_PORT
+        pthread_mutex_lock( &msg_mutex ); // acquire the lock
+        msg_queue.push_back(Message); // queue the message
+#ifdef ADD_TRACKER_LOG
+        write_msg_log("ADD: ", Message.c_str(), Message.size()); // write message log
+#endif // #ifdef ADD_TRACKER_LOG
+        pthread_cond_signal( &condition_var );  // wake up the worker
+        pthread_mutex_unlock( &msg_mutex ); // give up the lock
+#else // !#ifdef USE_TRACKER_PORT
 		msgsnd (m_ipcid, &buf, strlen(buf.mtext), IPC_NOWAIT);
+#endif // #ifdef USE_TRACKER_PORT y/n
 		return (0);
 	}
 	else if (type == DISCONNECT)
@@ -1845,7 +1955,17 @@ FG_SERVER::UpdateTracker
 		// queue the message
 		sprintf (buf.mtext, "%s", Message.c_str());
 		buf.mtype = 1;
+#ifdef USE_TRACKER_PORT
+        pthread_mutex_lock( &msg_mutex ); // acquire the lock
+        msg_queue.push_back(Message); // queue the message
+#ifdef ADD_TRACKER_LOG
+        write_msg_log("ADD: ", Message.c_str(), Message.size()); // write message log
+#endif // #ifdef ADD_TRACKER_LOG
+        pthread_cond_signal( &condition_var );  // wake up the worker
+        pthread_mutex_unlock( &msg_mutex ); // give up the lock
+#else // !#ifdef USE_TRACKER_PORT
 		msgsnd (m_ipcid, &buf, strlen(buf.mtext), IPC_NOWAIT);
+#endif // #ifdef USE_TRACKER_PORT y/n
 		return (0);
 	}
 	// we only arrive here if type!=CONNECT and !=DISCONNECT
@@ -1867,7 +1987,14 @@ FG_SERVER::UpdateTracker
 			// queue the message
 			sprintf(buf.mtext,"%s",Message.c_str());
 			buf.mtype=1;
+#ifdef USE_TRACKER_PORT
+            pthread_mutex_lock( &msg_mutex ); // acquire the lock
+            msg_queue.push_back(Message); // queue the message
+            pthread_cond_signal( &condition_var );  // wake up the worker
+            pthread_mutex_unlock( &msg_mutex ); // give up the lock
+#else // !#ifdef USE_TRACKER_PORT
 			msgsnd(m_ipcid,&buf,strlen(buf.mtext),IPC_NOWAIT);
+#endif // #ifdef USE_TRACKER_PORT y/n
 		}
 		Message.erase(0);
 		CurrentPlayer++;

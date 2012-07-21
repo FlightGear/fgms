@@ -13,9 +13,10 @@
 #ifndef __common_h
 #define __common_h
 
-#include "config.h"
-#include "error.h"
+#include "fgt_config.h"
+#include "fgt_error.h"
 
+#ifndef _MSC_VER
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -36,6 +37,7 @@
 #include <syslog.h>
 #include <string.h>
 #include <unistd.h>
+#endif // _MSC_VER
 
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
@@ -218,8 +220,32 @@ struct sockaddr_storage {
 
 typedef void Sigfunc (int);     /* for signal handlers */ 
 
+#ifdef _MSC_VER
+// #include <simgear/misc/stdint.hxx>
+typedef signed char      int8_t;
+typedef signed short     int16_t;
+typedef signed int       int32_t;
+typedef signed __int64   int64_t;
+typedef unsigned char    uint8_t;
+typedef unsigned short   uint16_t;
+typedef unsigned int     uint32_t;
+typedef unsigned __int64 uint64_t;
+
+#if !defined(socklen_t)
+#define socklen_t int
+#endif
+	#define SWRITE(a,b,c) send(a,b,c,0)
+	#define SREAD(a,b,c)  recv(a,b,c,0)
+	#define SCLOSE closesocket
+    #define SERROR(a) (a == SOCKET_ERROR)
+#else // !_MSC_VER
 #define min(a,b)    ((a) < (b) ? (a) : (b)) 
 #define max(a,b)    ((a) > (b) ? (a) : (b)) 
+	#define SWRITE write
+	#define SREAD  read
+	#define SCLOSE close
+    #define SERROR(a) (a < 0)
+#endif // _MSC_VER y/n
 
 #ifndef HAVE_IF_NAMEINDEX_STRUCT 
 struct if_nameindex { 
@@ -228,4 +254,6 @@ struct if_nameindex {
 }; 
 #endif 
 
-#endif
+#endif // #ifndef __common_h
+/* eof - common.h */
+

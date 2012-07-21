@@ -223,4 +223,39 @@ struct if_nameindex {
 }; 
 #endif 
 
+#ifdef USE_TRACKER_PORT
+#define ADD_TRACKER_LOG
+/* Compile time option
+ * Use a vector to pass messages from 'server' to 'tracker',
+ * with the 'msg_queue' protected by a 'msg_mutex', and signaled
+ * by a 'condition_var' that the tracker thread waits on...
+ * replacing the unix IPC msgctl/msgsnd/msgrcv...
+ * expose these globally 
+ */
+#include <vector>
+typedef std::vector<std::string> vMSG;  /* string vector */
+typedef vMSG::iterator VI;              /* string vector iterator */
+extern pthread_mutex_t msg_mutex;       /* message queue mutext */
+extern pthread_cond_t  condition_var;   /* message queue condition */
+extern vMSG msg_queue;                  /* the single message queue */
+
+#ifdef ADD_TRACKER_LOG
+extern void write_msg_log(char *src, const char *msg, int len); // write to 'tracker' log
+#endif // #ifdef ADD_TRACKER_LOG
+#endif // #ifdef USE_TRACKER_PORT
+
+#ifdef _MSC_VER
+	#define SWRITE(a,b,c) send(a,b,c,0)
+	#define SREAD(a,b,c)  recv(a,b,c,0)
+	#define SCLOSE closesocket
+    #define SERROR(a) (a == SOCKET_ERROR)
+#else
+	#define SWRITE write
+	#define SREAD  read
+	#define SCLOSE close
+    #define SERROR(a) (a < 0)
 #endif
+
+
+#endif // #ifndef __common_h
+/* eof - common.h */

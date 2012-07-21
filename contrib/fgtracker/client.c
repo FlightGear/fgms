@@ -10,9 +10,9 @@
  *
  */
 
-#include "common.h"
+#include "fgt_common.h"
 #include "wrappers.h"
-#include "error.h"
+#include "fgt_error.h"
 
 static char *server_address = (char *)SERVER_ADDRESS;
 static uint32_t server_port = SERVER_PORT;
@@ -46,7 +46,7 @@ int main (int argc, char **argv)
 		if (len>0)
 		{
 			msg[len]='\0';
-			if ( write(sockfd,msg,len) != len ) {
+			if ( SWRITE(sockfd,msg,len) != len ) {
 				printf("ERROR: Write socket FAILED!\n");
 				break;	/* out of here */
 			}

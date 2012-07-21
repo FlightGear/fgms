@@ -33,6 +33,9 @@
 #include "daemon.hxx"
 
 #define MAXLINE 4096
+#ifndef DEF_TRACKER_SLEEP
+#define DEF_TRACKER_SLEEP 600   // try to connect each ten minutes
+#endif // DEF_TRACKER_SLEEP
 
 #ifdef _MSC_VER
 	typedef int pid_t;
@@ -68,6 +71,17 @@ FG_TRACKER::~FG_TRACKER ()
 } // ~FG_TRACKER()
 //////////////////////////////////////////////////////////////////////
 
+#ifdef USE_TRACKER_PORT
+void *func_Tracker(void *vp)
+{
+    FG_TRACKER *pt = (FG_TRACKER *)vp;
+    pt->Connect();
+    pt->TrackerLoop();
+    return ((void *)0xdead);
+}
+
+#endif // #ifdef USE_TRACKER_PORT
+
 //////////////////////////////////////////////////////////////////////
 //
 //      Initilize the tracker
@@ -76,10 +90,16 @@ FG_TRACKER::~FG_TRACKER ()
 int
 FG_TRACKER::InitTracker ( const int MaxChildren )
 {
-	#ifndef NO_TRACKER_PORT
+    if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::InitTracker: %d children\n", MaxChildren);
+#ifndef NO_TRACKER_PORT
+#ifdef USE_TRACKER_PORT
+    if (pthread_create( &thread, NULL, func_Tracker, (void*)this )) {
+        SG_ALERT (SG_SYSTEMS, SG_ALERT, "# FG_TRACKER::InitTracker: can't create thread...");
+        return 1;
+    }
+#else // !#ifdef USE_TRACKER_PORT
 	int i;
 	pid_t ChildsPID;
-    if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::InitTracker: %d children\n", MaxChildren);
 	for ( i=0 ; i<MaxChildren ; i++)
 	{
 		ChildsPID = fork ();
@@ -90,20 +110,12 @@ FG_TRACKER::InitTracker ( const int MaxChildren )
 			exit (0);
 		}
 	}
-	#endif // NO_TRACKER_PORT
+#endif // #ifdef USE_TRACKER_PORT y/n
+#endif // NO_TRACKER_PORT
 	return (0);
 } // InitTracker (int port, string server, int id, int pid)
 //////////////////////////////////////////////////////////////////////
 
-#ifdef _MSC_VER
-	#define SWRITE(a,b,c) send(a,b,c,0)
-	#define SREAD(a,b,c)  recv(a,b,c,0)
-	#define SCLOSE closesocket
-#else
-	#define SWRITE write
-	#define SREAD  read
-	#define SCLOSE close
-#endif
 //////////////////////////////////////////////////////////////////////
 //
 //  send the messages to the tracker server
@@ -127,9 +139,25 @@ FG_TRACKER::TrackerLoop ()
 		// get message from queue
 		if (sent)
 		{
-			#ifndef NO_TRACKER_PORT
+#ifndef NO_TRACKER_PORT
+#ifdef USE_TRACKER_PORT
+            pthread_mutex_lock( &msg_mutex );   // acquire the lock
+            pthread_cond_wait( &condition_var, &msg_mutex );    // go wait for the condition
+            VI vi = msg_queue.begin(); // get first message
+            if (vi != msg_queue.end()) {
+                std::string s = *vi;
+                msg_queue.erase(vi);    // remove from queue
+                length = (int)s.size(); // should I worry about LENGTH???
+                strcpy( buf.mtext, s.c_str() ); // mtext is 1024 bytes!!!
+#ifdef ADD_TRACKER_LOG
+                write_msg_log("OUT: ", s.c_str(), length);
+#endif // #ifdef ADD_TRACKER_LOG
+            }
+            pthread_mutex_unlock( &msg_mutex ); // unlock the mutex
+#else // !#ifdef USE_TRACKER_PORT
 			length = msgrcv (ipcid, &buf, MAXLINE, 0, MSG_NOERROR);
-			#endif // NO_TRACKER_PORT
+#endif // #ifdef USE_TRACKER_PORT y/n
+#endif // NO_TRACKER_PORT
 			buf.mtext[length] = '\0';
 			sent = false;
 		}
@@ -184,8 +212,10 @@ FG_TRACKER::Connect ()
 	// close all inherited open sockets, but
 	// leave cin, cout, cerr open
 	//////////////////////////////////////////////////
+#ifndef _MSC_VER
 	for (int i=3; i<32; i++)
 		SCLOSE (i);
+#endif // !_MSC_VER
 	if ( m_TrackerSocket > 0 )
 		SCLOSE (m_TrackerSocket);
     if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::Connect: Server: %s, Port: %d\n", m_TrackerServer, m_TrackerPort);
@@ -199,8 +229,8 @@ FG_TRACKER::Connect ()
 		}
 		else
 		{
-			SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::Connect: failed");
-			sleep (600);  // sleep 10 minutes and try again
+			SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::Connect: failed! Will sleep " << DEF_TRACKER_SLEEP << " secs before trying again.");
+			sleep (DEF_TRACKER_SLEEP);  // sleep 10 minutes and try again
 		}
 	}
 	sleep (5);
@@ -221,8 +251,10 @@ FG_TRACKER::Disconnect ()
 {
 	if ( m_TrackerSocket > 0 )
 		SCLOSE (m_TrackerSocket);
+    m_TrackerSocket = 0;
 } // Disconnect ()
 //////////////////////////////////////////////////////////////////////
+
 #ifdef _MSC_VER
 #if !defined(NTDDI_VERSION) || !defined(NTDDI_VISTA) || (NTDDI_VERSION < NTDDI_VISTA)   // if less than VISTA, provide alternative
 #ifndef EAFNOSUPPORT
@@ -244,6 +276,7 @@ int inet_pton(int af, const char *src, void *dst)
 }
 #endif // #if (NTDDI_VERSION < NTDDI_VISTA)
 #endif // _MSC_VER
+
 //////////////////////////////////////////////////////////////////////
 //
 //  creates a TCP connection
@@ -256,18 +289,31 @@ FG_TRACKER::TcpConnect (char *server_address,int server_port)
 	int sockfd;
 
 	sockfd=socket(AF_INET, SOCK_STREAM, 0);
+    if (SERROR(sockfd))
+    {
+        SG_ALERT (SG_SYSTEMS, SG_ALERT, "# FG_TRACKER::TcpConnect: can't get socket...");
+        return -1;
+
+    }
 	bzero(&serveraddr,sizeof(serveraddr));
 	serveraddr.sin_family = AF_INET;
 	serveraddr.sin_port = htons(server_port);
 #ifdef _MSC_VER
-	if ( inet_pton(AF_INET, server_address, &serveraddr.sin_addr) == -1 )
+	if ( inet_pton(AF_INET, server_address, &serveraddr.sin_addr) == -1 ) {
+        SG_ALERT (SG_SYSTEMS, SG_ALERT, "# FG_TRACKER::TcpConnect: inet_pton failed!");
+        if (!SERROR(sockfd))
+            SCLOSE(sockfd);
 		return -1;
+    }
 #else
 	inet_pton(AF_INET, server_address, &serveraddr.sin_addr);
 #endif
-	if (connect(sockfd, (SA *) &serveraddr, sizeof(serveraddr))<0 )
+	if (connect(sockfd, (SA *) &serveraddr, sizeof(serveraddr))<0 ) {
+        if (!SERROR(sockfd))
+            SCLOSE(sockfd); // close the socket
+        SG_ALERT (SG_SYSTEMS, SG_ALERT, "# FG_TRACKER::TcpConnect: connect failed!");
 		return -1;
-	else
+    } else
 		return (sockfd);
 }  // TcpConnect  ()
 //////////////////////////////////////////////////////////////////////

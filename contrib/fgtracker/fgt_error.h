@@ -10,9 +10,11 @@
  *
  */
 
-#include    "common.h"
+#include    "fgt_common.h"
 #include    <stdarg.h>          /* ANSI C header file */ 
+#ifndef _MSC_VER
 #include    <syslog.h>          /* for syslog() */ 
+#endif // !_MSC_VER
 
 extern int     daemon_proc;            /* set nonzero by daemon_init() */ 
 

@@ -15,6 +15,25 @@
 #ifndef __config_h
 #define __config_h
 
+#ifdef _MSC_VER
+#include <Winsock2.h> /* NOTE: This ALSO includes <windows.h> */
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <Ws2tcpip.h>
+#include <time.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
+#define inline __inline
+#ifndef bool
+#define bool int
+#endif
+#endif // _MSC_VER
+
 #ifndef SERVER_ADDRESS
 #define SERVER_ADDRESS		"127.0.0.1"
 #endif

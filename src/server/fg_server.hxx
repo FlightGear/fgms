@@ -113,6 +113,7 @@ public:
 	void  TelnetReply(netSocket* NewTelnet);
 	#endif
 	int   check_keyboard();
+    void  Show_Stats(void);
 	void* HandleTelnet  (int Fd);
 
 private:
@@ -200,10 +201,16 @@ private:
 	int               m_BlackRejected;  // in black list
 	int               m_PacketsInvalid; // invalid packet
 	int               m_UnknownRelay; // unknown relay
+	int               m_RelayMagic; // known relay packet
 	int               m_PositionData;   // position data packet
+    int               m_NotPosData;     // packet NOT pos data
 	int               m_TelnetReceived;
     int               mT_PacketsReceived, mT_BlackRejected, mT_PacketsInvalid;
     int               mT_UnknownRelay, mT_PositionData, mT_TelnetReceived;
+    int               mT_RelayMagic, mT_NotPosData;
+    int               m_CrossFeedFailed, m_CrossFeedSent;
+    int               mT_CrossFeedFailed, mT_CrossFeedSent;
+
 	//////////////////////////////////////////////////
 	//
 	//  private methods
