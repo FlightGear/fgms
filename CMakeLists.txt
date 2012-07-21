@@ -9,13 +9,19 @@ set( fgms_MAJOR 0 )
 set( fgms_MINOR 10 )
 set( fgms_AGE 16 )
 
+set( EXE_NAME fgms )
+
 # Allow developer to select is Dynamic or static library built
 set( LIB_TYPE STATIC )  # set default static
 option( BUILD_SHARED_LIB "Build Shared Library" OFF )
 option( BUILD_TRACKER "Build 'tracker' server and client" OFF )
 option( BUILD_SERVER2 "Build a server with different defaults" OFF )
 option( USE_TRACKER_PORT "Use pthreads to replace fork, and a vector for message exchange." OFF )
+option( ENABLE_TRACKER_LOG "Enable a tracker message log." OFF )
 option( USE_POSTGRESQL "Use a PostgreSQL database in the tracking server." ON )
+if(UNIX)
+    option( ENABLED_DEBUG_SYMBOLS "Add debug symbols into the binary." OFF )
+endif(UNIX)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     set( WARNING_FLAGS -Wall )
@@ -44,6 +50,9 @@ if(WIN32)
 		add_definitions( -DNO_TRACKER_PORT )
 	endif(NOT USE_TRACKER_PORT)
 else(WIN32)
+    if(ENABLE_DEBUG_SYMBOLS)
+        list(APPEND EXTRA_FLAGS "-g")
+    endif(ENABLE_DEBUG_SYMBOLS)
     list(APPEND EXTRA_LD_FLAGS -L.)
 endif(WIN32)
 
@@ -51,7 +60,12 @@ if(USE_TRACKER_PORT)
 	add_definitions( -DUSE_TRACKER_PORT )
 endif(USE_TRACKER_PORT)
 
+if(ENABLE_TRACKER_LOG)
+    add_definitions( -DENABLE_TRACKER_LOG )
+endif(ENABLE_TRACKER_LOG)
+
 if(BUILD_SERVER2)
+    set( EXE_NAME mp_server2 )
     add_definitions( -DDEF_SERVER_LOG="fg_server2.log" -DDEF_EXIT_FILE="fgms_exit2"
         -DDEF_RESET_FILE="fgms_reset2" -DDEF_STAT_FILE="fgms_stat2" -DDEF_CONF_FILE="fgms2.conf" )
     message(STATUS "*** Building server 2. File fg_server2.log fgms_exit2 fgms_reset2 fgms_stat2 fgms2.conf")
@@ -60,6 +74,7 @@ endif(BUILD_SERVER2)
 set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${EXTRA_FLAGS} -D_REENTRANT" )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS} ${EXTRA_FLAGS} -D_REENTRANT" )
 set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EXTRA_LD_FLAGS}" )
+message(STATUS "*** set CXX FLAGS [${CMAKE_CXX_FLAGS}] C FLAGS [${CMAKE_C_FLAGS}]")
 
 add_definitions( -DVERSION="${fgms_MAJOR}.${fgms_MINOR}.${fgms_AGE}" )
 
@@ -136,7 +151,7 @@ endif(WIN32)
 
 # Project [fgms] [Console Application] [sbin_PROGRAMS], with 1 sources. deps [sgdebug MultiPlayer plib fg_server]4
 set( fgms_SRCS src/server/main.cxx )
-add_executable( fgms ${fgms_SRCS} )
+add_executable( ${EXE_NAME} ${fgms_SRCS} )
 
 # find the threads library
 find_package(Threads REQUIRED)
@@ -173,13 +188,13 @@ else(Threads_FOUND)
   message( FATAL_ERROR "*** THREADS NOT FOUND!")
 endif(Threads_FOUND)
 
-target_link_libraries( fgms ${add_LIBS} )
-message(STATUS "*** target_link_libraries( fgms ${add_LIBS} )" )
+target_link_libraries( ${EXE_NAME} ${add_LIBS} )
+message(STATUS "*** target_link_libraries( ${EXE_NAME} ${add_LIBS} )" )
 if(WIN32)
-    set_target_properties( fgms PROPERTIES DEBUG_POSTFIX "d" )
-    install(TARGETS fgms DESTINATION bin)
+    set_target_properties( ${EXE_NAME} PROPERTIES DEBUG_POSTFIX "d" )
+    install(TARGETS ${EXE_NAME} DESTINATION bin)
 else(WIN32)
-    install(TARGETS fgms DESTINATION sbin)
+    install(TARGETS ${EXE_NAME} DESTINATION sbin)
 endif(WIN32)
 
 if(BUILD_TRACKER)
