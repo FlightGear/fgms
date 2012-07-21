@@ -79,12 +79,13 @@ extern void SigHUPHandler ( int SigType );
 #define DEF_STAT_FILE "fgms_stat"
 #endif
 
+#ifdef ADD_TRACKER_LOG
 #ifndef DEF_MESSAGE_LOG
 #define DEF_MESSAGE_LOG "fg_message.log"
 #endif
-
 static char *msg_log = (char *)DEF_MESSAGE_LOG;
 static FILE *msg_file = NULL;
+#endif // #ifdef ADD_TRACKER_LOG
 
 #if _MSC_VER
 static char * exit_file = (char *)DEF_EXIT_FILE; // "fgms_exit"
@@ -101,6 +102,7 @@ static char * stat_file = (char *)"/tmp/" DEF_STAT_FILE;
 pthread_mutex_t msg_mutex     = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  condition_var   = PTHREAD_COND_INITIALIZER;
 vMSG msg_queue; // queue for messages
+#endif // #ifdef USE_TRACKER_PORT
 
 #ifdef ADD_TRACKER_LOG
 void write_msg_log(char *src, const char *msg, int len)
@@ -124,7 +126,6 @@ void write_msg_log(char *src, const char *msg, int len)
 }
 #endif // #ifdef ADD_TRACKER_LOG
 
-#endif // #ifdef USE_TRACKER_PORT
 
 //////////////////////////////////////////////////////////////////////
 //
