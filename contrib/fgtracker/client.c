@@ -17,6 +17,28 @@
 static char *server_address = (char *)SERVER_ADDRESS;
 static uint32_t server_port = SERVER_PORT;
 
+#ifdef _MSC_VER
+#if !defined(NTDDI_VERSION) || !defined(NTDDI_VISTA) || (NTDDI_VERSION < NTDDI_VISTA)   // if less than VISTA, provide alternative
+#ifndef EAFNOSUPPORT
+#define	EAFNOSUPPORT	97	/* not present in errno.h provided with VC */
+#endif
+int inet_aton(const char *cp, struct in_addr *addr)
+{
+	addr->s_addr = inet_addr(cp);
+	return (addr->s_addr == INADDR_NONE) ? -1 : 0;
+}
+int inet_pton(int af, const char *src, void *dst)
+{
+	if (af != AF_INET)
+	{
+		errno = EAFNOSUPPORT;
+		return -1;
+	}
+	return inet_aton (src, (struct in_addr *)dst);
+}
+#endif // #if (NTDDI_VERSION < NTDDI_VISTA)
+#endif // _MSC_VER
+
 int main (int argc, char **argv)
 {
 	char msg[MAXLINE];

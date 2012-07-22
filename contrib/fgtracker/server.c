@@ -314,7 +314,11 @@ void doit(int fd)
 
   getpeername(fd, (SA *) &clientaddr, &clientaddrlen);
 
+#if defined(_MSC_VER) && (!defined(NTDDI_VERSION) || !defined(NTDDI_VISTA) || (NTDDI_VERSION < NTDDI_VISTA))   // if less than VISTA, need alternative
+  sprintf(debugstr,"connection on port %d", ntohs(clientaddr.sin_port));
+#else
   sprintf(debugstr,"connection from %s, port %d", inet_ntop(AF_INET, &clientaddr.sin_addr, msg, sizeof(msg)), ntohs(clientaddr.sin_port));
+#endif
   debug(2,debugstr);
 
   while ( (len = SREAD(fd, msg, MAXLINE)) >0)
