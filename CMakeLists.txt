@@ -7,7 +7,7 @@ project( fgms )
 # The version number.
 set( fgms_MAJOR 0 )
 set( fgms_MINOR 10 )
-set( fgms_AGE 17 )
+set( fgms_AGE 18 )
 
 set( EXE_NAME fgms )
 

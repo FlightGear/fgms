@@ -48,6 +48,10 @@
 
 using namespace std;
 
+#ifndef MAX_TRACKER_CHILD
+#define MAX_TRACKER_CHILD 32
+#endif // MAX_TRACKER_CHILD
+
 //////////////////////////////////////////////////////////////////////
 //
 //  the server class
@@ -115,6 +119,7 @@ public:
 	int   check_keyboard();
     void  Show_Stats(void);
 	void* HandleTelnet  (int Fd);
+	pid_t m_TrackerPIDS[MAX_TRACKER_CHILD]; // tracker child list
 
 private:
 	//////////////////////////////////////////////////

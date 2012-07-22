@@ -52,7 +52,7 @@ public:
 	//  public methods
 	//
 	//////////////////////////////////////////////////
-	int       InitTracker ( const int MaxChildren );
+	int       InitTracker ( const int MaxChildren, pid_t *pPid );
 	int       TcpConnect (char *server_address, int server_port);
 	int       TrackerLoop ();
 	string    GetTrackerServer () { return m_TrackerServer; };

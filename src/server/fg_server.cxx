@@ -315,7 +315,7 @@ FG_SERVER::Init
 	}
 	if (m_IsTracked)
 	{
-		if( m_Tracker->InitTracker(m_MaxTracker) )
+		if( m_Tracker->InitTracker(m_MaxTracker, &m_TrackerPIDS[0]) )
         {
     		SG_ALERT (SG_SYSTEMS, SG_ALERT, "# InitTracker FAILED! Disabling tracker!");
             m_IsTracked = false;
@@ -1831,6 +1831,28 @@ FG_SERVER::Done
 {
 	if (! m_IsParent)
 		return;
+    if (m_IsTracked)
+    {
+#ifdef USE_TRACKER_PORT
+        // using a thread - could kill it, but...
+#else // #ifdef USE_TRACKER_PORT
+        // using fork() - must kill child processes
+        int i;
+        for (i = 0; i < m_MaxTracker; i++)
+        {
+            pid_t kid = m_TrackerPIDS[i];
+            if (kill(kid, SIGTERM))
+            {
+                SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Done() kill(" << kid << ", SIGKILL)!");
+                kill(kid, SIGKILL);
+            }
+            else
+            {
+                SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Done() kill(" << kid << ", SIGTERM) return ok.");
+            }
+        }
+#endif // #ifdef USE_TRACKER_PORT y/n
+    }
 	SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Done() - exiting");
 	m_LogFile.close();
 	if (m_Listening == false)

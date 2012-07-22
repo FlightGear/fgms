@@ -273,6 +273,15 @@ ProcessConfig ( const string& ConfigName )
 				exit (1);
 			}
 			Servant.MaxTracker (Port);
+			if (tracked) // value not used if not tracked, so no problem
+			{
+                if (Port > MAX_TRACKER_CHILD)   // YEEK, will overrun the m_TrackerPIDS[] buffer
+                {
+                    SG_ALERT (SG_SYSTEMS, SG_ALERT, "got t.child cnt " << Port << " but max. is " << MAX_TRACKER_CHILD << 
+                    "! Set lower value or recompile setting MAX_TRACKER_PORT.");
+                    exit (1);
+                }
+			}
 		}
         else
         {
