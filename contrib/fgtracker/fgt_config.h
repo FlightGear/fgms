@@ -1,5 +1,5 @@
 /*
- * config.h - configuration options
+ * fgt_config.h - configuration options
  *
  *   Author: Gabor Toth <tgbp@freemail.hu>
  *   License: GPL
@@ -12,8 +12,8 @@
  *
  */
 
-#ifndef __config_h
-#define __config_h
+#ifndef _fgt_config_h
+#define _fgt_config_h
 
 #ifdef _MSC_VER
 #include <Winsock2.h> /* NOTE: This ALSO includes <windows.h> */
@@ -47,13 +47,13 @@
 #endif
 
 #ifndef DEBUG_LEVEL
-#define DEBUG_LEVEL		1
+#define DEBUG_LEVEL		3 // 0 = none, max is 3, to syslog("fgtracker-server") if daemon, else printf()
 #endif
 
 #ifndef RUN_AS_DAEMON
 #define RUN_AS_DAEMON   1
 #endif
 
-#endif
-/* eof - config.h */
+#endif // #ifndef _fgt_config_h
+/* eof - fgt_config.h */
 

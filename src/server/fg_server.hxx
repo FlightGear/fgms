@@ -215,6 +215,7 @@ private:
     int               mT_RelayMagic, mT_NotPosData;
     int               m_CrossFeedFailed, m_CrossFeedSent;
     int               mT_CrossFeedFailed, mT_CrossFeedSent;
+    int               m_TrackerConnect, m_TrackerDisconnect,m_TrackerPostion;
 
 	//////////////////////////////////////////////////
 	//

@@ -105,7 +105,25 @@ vMSG msg_queue; // queue for messages
 #endif // #ifdef USE_TRACKER_PORT
 
 #ifdef ADD_TRACKER_LOG
-void write_msg_log(char *src, const char *msg, int len)
+static void write_time_string(FILE *file)
+{
+    time_t Timestamp = time(0);
+    char TimeStr[100];
+    tm  *tm;
+    // Creates the UTC time string
+	tm = gmtime (& Timestamp);
+	int len = sprintf (
+		    TimeStr,
+		    "%04d-%02d-%02d %02d:%02d:%02d: ",
+		    tm->tm_year+1900,
+		    tm->tm_mon+1,
+		    tm->tm_mday,
+		    tm->tm_hour,
+		    tm->tm_min,
+		    tm->tm_sec );
+    fwrite(TimeStr,1,len,file);
+}
+void write_msg_log(const char *msg, int len, char *src)
 {
     if (msg_file == NULL) {
         msg_file = fopen(msg_log,"ab");
@@ -114,13 +132,19 @@ void write_msg_log(char *src, const char *msg, int len)
             msg_file = (FILE *)-1;
         }
     }
-    if (msg_file && (msg_file != (FILE *)-1)) {
-        fwrite(src,1,strlen(src),msg_file);
+    if (len && msg_file && (msg_file != (FILE *)-1)) {
+        write_time_string(msg_file);
+        if (src && strlen(src))
+            fwrite(src,1,strlen(src),msg_file);
         int wtn = (int)fwrite(msg,1,len,msg_file);
         if (wtn != len) {
             fclose(msg_file);
             msg_file = (FILE *)-1;
             printf("ERROR: Failed to WRITE %d != %d to %s log file!\n", wtn, len, msg_log);
+        } else {
+            if (msg[len-1] != '\n')
+                fwrite((char *)"\n",1,1,msg_file);
+            fflush(msg_file); // push to disk now
         }
     }
 }
@@ -184,6 +208,8 @@ FG_SERVER::FG_SERVER
     mT_RelayMagic = mT_NotPosData = 0;
     m_CrossFeedFailed = m_CrossFeedSent = 0;
     mT_CrossFeedFailed = mT_CrossFeedSent = 0;
+
+    m_TrackerConnect = m_TrackerDisconnect = m_TrackerPostion = 0; // Tracker messages queued
 
 	pthread_mutex_init( &m_PlayerMutex, 0 );
 } // FG_SERVER::FG_SERVER()
@@ -1462,7 +1488,7 @@ void FG_SERVER::Show_Stats(void)
         m_RelayMagic << " PD=" <<
 		m_PositionData << " NP=" <<
         m_NotPosData << " CF=" <<
-        m_CrossFeedSent << '/' << m_CrossFeedFailed << " TN=" <<
+        m_CrossFeedSent << "/" << m_CrossFeedFailed << " TN=" <<
 		m_TelnetReceived );
 
     SG_ALERT (SG_SYSTEMS, SG_ALERT, "## Total: Packets " <<
@@ -1473,8 +1499,9 @@ void FG_SERVER::Show_Stats(void)
         mT_RelayMagic << " PD=" <<
 		mT_PositionData << " NP=" <<
         mT_NotPosData <<  " CF=" <<
-        m_CrossFeedSent << '/' << m_CrossFeedFailed << " TN=" <<
-		mT_TelnetReceived );
+        m_CrossFeedSent << "/" << m_CrossFeedFailed << " TN=" <<
+		mT_TelnetReceived << " TC/D/P=" <<
+        m_TrackerConnect << "/" << m_TrackerDisconnect << "/" << m_TrackerPostion );
 
     // restart 'since' last stat counter
     m_PacketsReceived = m_BlackRejected = m_PacketsInvalid = 0;
@@ -1955,14 +1982,14 @@ FG_SERVER::UpdateTracker
 #ifdef USE_TRACKER_PORT
         pthread_mutex_lock( &msg_mutex ); // acquire the lock
         msg_queue.push_back(Message); // queue the message
-#ifdef ADD_TRACKER_LOG
-        write_msg_log("ADD: ", Message.c_str(), Message.size()); // write message log
-#endif // #ifdef ADD_TRACKER_LOG
         pthread_cond_signal( &condition_var );  // wake up the worker
         pthread_mutex_unlock( &msg_mutex ); // give up the lock
 #else // !#ifdef USE_TRACKER_PORT
 		msgsnd (m_ipcid, &buf, strlen(buf.mtext), IPC_NOWAIT);
 #endif // #ifdef USE_TRACKER_PORT y/n
+#ifdef ADD_TRACKER_LOG
+        write_msg_log(Message.c_str(), Message.size(), (char *)"IN: "); // write message log
+#endif // #ifdef ADD_TRACKER_LOG
 		return (0);
 	}
 	else if (type == DISCONNECT)
@@ -1981,14 +2008,14 @@ FG_SERVER::UpdateTracker
 #ifdef USE_TRACKER_PORT
         pthread_mutex_lock( &msg_mutex ); // acquire the lock
         msg_queue.push_back(Message); // queue the message
-#ifdef ADD_TRACKER_LOG
-        write_msg_log("ADD: ", Message.c_str(), Message.size()); // write message log
-#endif // #ifdef ADD_TRACKER_LOG
         pthread_cond_signal( &condition_var );  // wake up the worker
         pthread_mutex_unlock( &msg_mutex ); // give up the lock
 #else // !#ifdef USE_TRACKER_PORT
 		msgsnd (m_ipcid, &buf, strlen(buf.mtext), IPC_NOWAIT);
 #endif // #ifdef USE_TRACKER_PORT y/n
+#ifdef ADD_TRACKER_LOG
+        write_msg_log(Message.c_str(), Message.size(),(char *)"IN: "); // write message log
+#endif // #ifdef ADD_TRACKER_LOG
 		return (0);
 	}
 	// we only arrive here if type!=CONNECT and !=DISCONNECT

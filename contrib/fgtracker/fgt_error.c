@@ -1,5 +1,5 @@
 /*
- * error.c - error handling functions
+ * fgt_error.c - error handling functions
  *
  *   Author: Gabor Toth <tgbp@freemail.hu>
  *   License: GPL
@@ -23,6 +23,16 @@
 
 int     daemon_proc = 0;        /* set nonzero by server daemon_init() */ 
 
+void pgm_exit(int val)
+{
+#if defined(_MSC_VER) && !defined(NDEBUG)
+    int c;
+    printf("Enter a key to exit...: ");
+    c = getchar();
+#endif // _MSC_VER an !NDEBUG
+    exit(val);
+}
+
 #ifdef _MSC_VER
 int syslog(int lev, char *fmt, ...) 
 {
@@ -40,6 +50,34 @@ int syslog(int lev, char *fmt, ...)
     fflush(stderr); 
     va_end(ap); 
     return lev;
+}
+
+// get a message from the system for this error value
+char *get_message_text( int err )
+{
+    LPSTR ptr = 0;
+    DWORD fm = FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER |
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        err,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPSTR)&ptr,
+        0,
+        NULL );
+    if (ptr) {
+        size_t len = strlen(ptr);
+        while(len--) {
+            if (ptr[len] > ' ')
+                break;
+            ptr[len] = 0;
+        }
+        if (len)
+            return ptr;
+        LocalFree(ptr);
+    }
+    return NULL;
 }
 #endif // _MSC_VER
 
@@ -66,7 +104,7 @@ err_sys(const char *fmt, ...)
     va_start(ap, fmt); 
     err_doit(1, LOG_ERR, fmt, ap); 
     va_end(ap); 
-    exit(1); 
+    pgm_exit(1); 
 } 
 
 
@@ -106,7 +144,7 @@ err_quit(const char *fmt, ...)
     va_start(ap, fmt); 
     err_doit(0, LOG_ERR, fmt, ap); 
     va_end(ap); 
-    exit(1); 
+    pgm_exit(1); 
 } 
 
 
@@ -124,8 +162,25 @@ err_doit(int errnoflag, int level, const char *fmt, va_list ap)
     vsprintf(buf, fmt, ap);     /* not safe */ 
 #endif 
     n = strlen(buf); 
-    if (errnoflag) 
+    if (errnoflag) {
+#ifdef _MSC_VER
+        // most likely came from a socket function error
+        int err = WSAGetLastError();
+        if (err) {  // got a socket error
+            char *ptr = get_message_text(err);
+            if (ptr) {
+                snprintf(buf + n, MAXLINE - n, ": %s", ptr); 
+                LocalFree(ptr);
+            } else {
+                snprintf(buf + n, MAXLINE - n, ": Got socket err %d", err); 
+            }
+        } else if (errno_save) {
+            snprintf(buf + n, MAXLINE - n, ": %s", strerror(errno_save)); 
+        }
+#else // _MSC_VER
         snprintf(buf + n, MAXLINE - n, ": %s", strerror(errno_save)); 
+#endif // _MSC_VER y/n
+    }
     strcat(buf, "\n"); 
     if (daemon_proc) { 
         syslog(level, "%s", buf); 
@@ -153,5 +208,5 @@ debug(int level,char *str)
 	}
 }
 
-/* eof - error.c */
+/* eof - fgt_error.c */
 

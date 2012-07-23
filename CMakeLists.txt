@@ -1,3 +1,5 @@
+# 20120723 - Add ENABLE_DEBUG_OUTPUT, which defines DEF_DEBUG_OUTPUT in fg_tracker.cxx
+# and add USE_PTHREAD_IN_TRACKER server, replacing fork()
 # single CMakeLists.txt for fgms-0-x - hand crafted 2012/07/03
 
 cmake_minimum_required( VERSION 2.6 )
@@ -22,6 +24,10 @@ option( USE_POSTGRESQL "Use a PostgreSQL database in the tracking server." ON )
 if(UNIX)
     option( ENABLED_DEBUG_SYMBOLS "Add debug symbols into the binary." OFF )
 endif(UNIX)
+option( ENABLE_DEBUG_OUTPUT "Enable so extra debug output in fg_tracker.cxx." OFF )
+# this should not be confused with the fact that pthread is used in fgms by default. This is in the fgt_server server.c
+# and of course need to be building the 'tracker' for this to have any effect.
+option( USE_PTHREAD_IN_TRACKER "Use pthread in the tracker server, replacing fork()." OFF )
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     set( WARNING_FLAGS -Wall )
@@ -77,6 +83,10 @@ set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EXTRA_LD_FLAGS}" )
 message(STATUS "*** set CXX FLAGS [${CMAKE_CXX_FLAGS}] C FLAGS [${CMAKE_C_FLAGS}]")
 
 add_definitions( -DVERSION="${fgms_MAJOR}.${fgms_MINOR}.${fgms_AGE}" )
+
+if(ENABLE_DEBUG_OUTPUT)
+   add_definitions( -DDEF_DEBUG_OUTPUT=true )
+endif(ENABLE_DEBUG_OUTPUT)
 
 # to distinguish between debug and release lib
 set( CMAKE_DEBUG_POSTFIX "d" )
@@ -212,6 +222,9 @@ if(BUILD_TRACKER)
     else(USE_POSTGRESQL)
         add_definitions( -DNO_POSTGRESQL )
     endif(USE_POSTGRESQL)
+    if(USE_PTHREAD_IN_TRACKER)
+        add_definitions( -DUSE_PTHREAD )
+    endif(USE_PTHREAD_IN_TRACKER)
 
     set( tracker_SRCS contrib/fgtracker/fgt_error.c contrib/fgtracker/wrappers.c )
     set( tracker_HDRS contrib/fgtracker/fgt_error.h contrib/fgtracker/wrappers.h contrib/fgtracker/fgt_config.h contrib/fgtracker/fgt_common.h )

@@ -240,7 +240,7 @@ extern pthread_cond_t  condition_var;   /* message queue condition */
 extern vMSG msg_queue;                  /* the single message queue */
 
 #ifdef ADD_TRACKER_LOG
-extern void write_msg_log(char *src, const char *msg, int len); // write to 'tracker' log
+extern void write_msg_log(const char *msg, int len, char *src = 0); // write to 'tracker' log
 #endif // #ifdef ADD_TRACKER_LOG
 #endif // #ifdef USE_TRACKER_PORT
 

@@ -39,12 +39,19 @@
 
 #ifdef _MSC_VER
 	typedef int pid_t;
+int getpid(void) {
+    return (int)GetCurrentThreadId();
+}
 #else
 	extern  cDaemon Myself;
 #endif // !_MSC_VER
 
+#ifndef DEF_DEBUG_OUTPUT
+#define DEF_DEBUG_OUTPUT false
+#endif
+
 extern bool RunAsDaemon;
-static bool AddDebug = true;
+static bool AddDebug = DEF_DEBUG_OUTPUT;
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -137,11 +144,12 @@ FG_TRACKER::TrackerLoop ()
 	bool  sent;
 	int   length;
 	char  res[MAXLINE];
+    pid_t pid = getpid();
 
 	sent = true;
 	strcpy ( res, "" );
 
-    if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::TrackerLoop entered\n");
+    if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::TrackerLoop entered PID %d\n",pid);
 	for ( ; ; )
 	{
 		length = 0;
@@ -158,9 +166,6 @@ FG_TRACKER::TrackerLoop ()
                 msg_queue.erase(vi);    // remove from queue
                 length = (int)s.size(); // should I worry about LENGTH???
                 strcpy( buf.mtext, s.c_str() ); // mtext is 1024 bytes!!!
-#ifdef ADD_TRACKER_LOG
-                write_msg_log("OUT: ", s.c_str(), length);
-#endif // #ifdef ADD_TRACKER_LOG
             }
             pthread_mutex_unlock( &msg_mutex ); // unlock the mutex
 #else // !#ifdef USE_TRACKER_PORT
@@ -169,20 +174,25 @@ FG_TRACKER::TrackerLoop ()
 #endif // NO_TRACKER_PORT
 			buf.mtext[length] = '\0';
 			sent = false;
+#ifdef ADD_TRACKER_LOG
+            if (length)
+                write_msg_log(&buf.mtext[0], length, (char *)"OUT: ");
+#endif // #ifdef ADD_TRACKER_LOG
 		}
 		if ( length > 0 )
 		{
+            if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::TrackerLoop sending msg %d bytes PID %d\n", length,pid);
 			// send message via tcp
 			if (SWRITE (m_TrackerSocket,buf.mtext,strlen(buf.mtext)) < 0)
 			{
-				SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: can't write to server...");
+				SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: can't write to server... PID " << pid);
 				Connect ();
 			}
 			sleep (1);
 			// receive answer from server
 			if ( SREAD (m_TrackerSocket,res,MAXLINE) <= 0 )
 			{
-				SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: can't read from server...");
+				SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: can't read from server... PID " << pid);
 				Connect ();
 				sent = false;
 			}
@@ -193,6 +203,10 @@ FG_TRACKER::TrackerLoop ()
 					sent = true;
 					strcpy ( res, "" );
 				}
+				else
+				{
+                    SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: Responce " << res << " not OK! Send again... PID " << pid);
+				}
 			}
 		}
 		else
@@ -200,6 +214,7 @@ FG_TRACKER::TrackerLoop ()
 			// an error with the queue has occured
 			// avoid an infinite loop
 			// return (2);
+            SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: message queue error... PID " << pid);
 			sent = true;
 		}
 	}
@@ -216,6 +231,7 @@ int
 FG_TRACKER::Connect ()
 {
 	bool connected = false;
+    pid_t pid = getpid();
 
 	//////////////////////////////////////////////////
 	// close all inherited open sockets, but
@@ -227,24 +243,24 @@ FG_TRACKER::Connect ()
 #endif // !_MSC_VER
 	if ( m_TrackerSocket > 0 )
 		SCLOSE (m_TrackerSocket);
-    if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::Connect: Server: %s, Port: %d\n", m_TrackerServer, m_TrackerPort);
+    if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::Connect: Server: %s, Port: %d PID %d\n", m_TrackerServer, m_TrackerPort, pid);
 	while (connected == false)
 	{
 		m_TrackerSocket = TcpConnect (m_TrackerServer, m_TrackerPort);
 		if (m_TrackerSocket >= 0)
 		{
-			SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::Connect: success");
+			SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::Connect: success PID " << pid);
 			connected = true;
 		}
 		else
 		{
-			SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::Connect: failed! Will sleep " << DEF_TRACKER_SLEEP << " secs before trying again.");
+			SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::Connect: failed! sleep " << DEF_TRACKER_SLEEP << " secs PID " << pid);
 			sleep (DEF_TRACKER_SLEEP);  // sleep 10 minutes and try again
 		}
 	}
 	sleep (5);
 	SWRITE(m_TrackerSocket,"REPLY",sizeof("REPLY"));
-    if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::Connect: Written 'REPLY'\n");
+    if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::Connect: Written 'REPLY' PID %d\n",pid);
 	sleep (2);
 	return (0);
 } // Connect ()

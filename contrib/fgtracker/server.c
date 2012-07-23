@@ -18,6 +18,9 @@
 #ifndef NO_POSTGRESQL
 #include <libpq-fe.h>
 #endif // NO_POSTGRESQL
+#if defined(_MSC_VER) || defined(USE_PTHREAD)
+#include <pthread.h>
+#endif // _MSC_VER or USE_PTHREAD
 
 // static int run_as_daemon = RUN_AS_DAEMON;
 static int run_as_daemon = 0;
@@ -147,12 +150,16 @@ static void write_message_log(const char *msg, int len)
             msg_file = (FILE *)-1;
         }
     }
-    if (msg_file && (msg_file != (FILE *)-1)) {
+    if (len && msg_file && (msg_file != (FILE *)-1)) {
         int wtn = (int)fwrite(msg,1,len,msg_file);
         if (wtn != len) {
             fclose(msg_file);
             msg_file = (FILE *)-1;
             printf("ERROR: Failed to WRITE %d != %d to %s log file!\n", wtn, len, msg_log);
+        } else {
+            if (msg[len-1] != '\n')
+                fwrite((char *)"\n",1,1,msg_file);
+            fflush(msg_file);   // push it to disk now
         }
     }
 }
@@ -634,10 +641,63 @@ int test_db_connection()
     return iret;
 }
 
+static void net_exit ( void )
+{
+#ifdef _MSC_VER
+	/* Clean up windows networking */
+	if ( WSACleanup() == SOCKET_ERROR ) {
+		if ( WSAGetLastError() == WSAEINPROGRESS ) {
+			WSACancelBlockingCall();
+			WSACleanup();
+		}
+	}
+#endif
+}
+
+
+int net_init ()
+{
+#ifdef _MSC_VER
+	/* Start up the windows networking */
+	WORD version_wanted = MAKEWORD(1,1);
+	WSADATA wsaData;
+
+	if ( WSAStartup(version_wanted, &wsaData) != 0 ) {
+		printf("Couldn't initialize Winsock 1.1\n");
+		return(1);
+	}
+#endif
+
+    atexit( net_exit ) ;
+	return(0);
+}
+
+static pid_t pid,childpid;
+static int listenfd, connfd;
+
+#if defined(_MSC_VER) || defined(USE_PTHREAD)
+static pthread_t thread;
+void *func_child(void *vp)
+{
+	static char debugstr2[MAXLINE];
+
+	childpid=getpid();
+
+	sprintf(debugstr2,"CLIENT[%5d] started",childpid);
+	debug(2,debugstr2);
+
+	doit(connfd);
+			
+	Close(connfd);
+	sprintf(debugstr2,"CLIENT[%5d] stopped",childpid);
+	debug(2,debugstr2);
+
+    return ((void *)0xdead);
+}
+#endif // _MSC_VER || USE_PTHREAD
+
 int main (int argc, char **argv)
 {
-	pid_t pid,childpid;
-	int listenfd, connfd;
 #ifndef _MSC_VER
 	struct sigaction sig_child;
 #endif // !_MSC_VER
@@ -650,6 +710,10 @@ int main (int argc, char **argv)
     if (test_db_connection()) {
         printf("PostgreSQL connection FAILED on [%s], port [%s], database [%s], user [%s], pwd [%s]. Aborting...\n",
             ip_address, port, database, user, pwd );
+        return 1;
+    }
+
+    if ( net_init() ) {
         return 1;
     }
 
@@ -715,6 +779,13 @@ int main (int argc, char **argv)
 
 		connfd=Accept(listenfd,(SA *) &clientaddr, &clientaddrlen);
 
+#if defined(_MSC_VER) || defined(USE_PTHREAD)
+        // use a thread
+        if (pthread_create( &thread, NULL, func_child, (void*)0 )) {
+        	debug(1,"ERROR: Failed to create child thread!");
+        }
+#else // !_MSC_VER
+        Close(listenfd);
 		if ( (pid = Fork()) == 0 )
 		{	/* child */
 			Close(listenfd);
@@ -732,6 +803,7 @@ int main (int argc, char **argv)
 			exit(0);
 		}
 		Close(connfd);
+#endif // _MSC_VER or USE_PTHREAD y/n
 	}
 #ifndef _MSC_VER
 	closelog();
