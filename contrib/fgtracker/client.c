@@ -39,6 +39,38 @@ int inet_pton(int af, const char *src, void *dst)
 #endif // #if (NTDDI_VERSION < NTDDI_VISTA)
 #endif // _MSC_VER
 
+static void net_exit ( void )
+{
+#ifdef _MSC_VER
+	/* Clean up windows networking */
+	if ( WSACleanup() == SOCKET_ERROR ) {
+		if ( WSAGetLastError() == WSAEINPROGRESS ) {
+			WSACancelBlockingCall();
+			WSACleanup();
+		}
+	}
+#endif
+}
+
+
+int net_init ()
+{
+#ifdef _MSC_VER
+	/* Start up the windows networking */
+	WORD version_wanted = MAKEWORD(1,1);
+	WSADATA wsaData;
+
+	if ( WSAStartup(version_wanted, &wsaData) != 0 ) {
+		printf("Couldn't initialize Winsock 1.1\n");
+		return(1);
+	}
+#endif
+
+    atexit( net_exit ) ;
+	return(0);
+}
+
+
 int main (int argc, char **argv)
 {
 	char msg[MAXLINE];
@@ -46,6 +78,9 @@ int main (int argc, char **argv)
 	char *s;
 	int sockfd;
 	struct sockaddr_in serveraddr;
+
+    if (net_init())
+        return 1;
 
 	sockfd=Socket(AF_INET, SOCK_STREAM, 0);
 
