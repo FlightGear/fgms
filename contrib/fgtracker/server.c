@@ -785,7 +785,6 @@ int main (int argc, char **argv)
         	debug(1,"ERROR: Failed to create child thread!");
         }
 #else // !_MSC_VER
-        Close(listenfd);
 		if ( (pid = Fork()) == 0 )
 		{	/* child */
 			Close(listenfd);
