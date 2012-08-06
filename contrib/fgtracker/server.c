@@ -7,8 +7,11 @@
  *   $Log: server.c,v $
  *   Revision 1.2  2006/05/10 21:22:34  koversrac
  *   Comment with author and license has been added.
+ *   Revision 1.4 2012/08/06 geoff (reports _at_ geoffair _dot_ info)
+ *      Fix missing -D y|n options, and chop PostgreSQL help if not compiled
+ *
  *   Revision 1.3 2012/07/04 geoff (reports _at_ geoffair _dot_ info)
- *   Add user configuration and help
+ *      Add user configuration and help
  *
  */
 
@@ -54,13 +57,14 @@ static char *port = (char *)DEF_PORT;
 static char *database = (char *)DEF_DATABASE;
 static char *user = (char *)DEF_USER_LOGIN;
 static char *pwd = (char *)DEF_USER_PWD;
-static char *pgoptions = (char *)"";
-static char *pgtty = (char *)"";
 
 #ifdef NO_POSTGRESQL
 typedef struct tagPGconn {
     FILE * fp;
 }PGconn;
+#else // !NO_POSTGRESQL = use PostreSQL
+static char *pgoptions = (char *)"";
+static char *pgtty = (char *)"";
 #endif // NO_POSTGRESQL
 
 #ifdef _MSC_VER
@@ -459,21 +463,29 @@ void give_help(char *name)
 {
     char *bn = get_base_name(name);
     printf("%s - version 1.3, compiled %s, at %s\n", bn, __DATE__, __TIME__);
+#ifndef NO_POSTGRESQL
     printf("PostgreSQL Database Information\n");
     printf(" --db database (-d) = Set the database name. (def=%s)\n",database);
     printf(" --ip addr     (-i) = Set the IP address of the postgresql server. (def=%s)\n",ip_address);
     printf(" --port val    (-p) = Set the port of the postgreql server. (def=%s)\n",port);
     printf(" --user name   (-u) = Set the user name. (def=%s)\n",user);
     printf(" --word pwd    (-w) = Set the password for the above user. (def=%s)\n",pwd);
+#endif
     printf("fgms connection\n");
     printf(" --IP addr     (-I) = Set IP address to connect to fgms. (def=IPADDR_ANY)\n");
     printf(" --PORT val    (-P) = Set PORT address to connect to fgms. (dep=%d)\n", server_port);
     printf("General Options\n");
     printf(" --help    (-h. -?) = This help, and exit(0).\n");
     printf(" --version     (-v) = This help, and exit(0).\n");
+#ifndef _MSC_VER
     printf(" --DAEMON y|n  (-D) = Run as daemon yes or no. (def=%s).\n", (run_as_daemon ? "y" : "n"));
-    printf(" %s will connect to an instance of 'fgms', receive and add flight and position\n",bn);
-    printf(" messages to the PostgreSQL database, for later 'tracker' display.\n");
+#endif
+    printf(" %s will connect to an instance of 'fgms', receive flight and position messages.\n",bn);
+#ifdef NO_POSTGRESQL
+    printf(" These will be written to a message log [%s].\n", msg_log ); 
+#else
+    printf(" These will be stored in a PostgreSQL database, for later 'tracker' display.\n");
+#endif
 }
 
 int parse_commands( int argc, char **argv )
@@ -487,7 +499,8 @@ int parse_commands( int argc, char **argv )
         arg = argv[i];
         sarg = arg;
         if ((strcmp(arg,"--help") == 0) || (strcmp(arg,"-h") == 0) ||
-            (strcmp(arg,"-?") == 0) || (strcmp(arg,"--version") == 0)) {
+            (strcmp(arg,"-?") == 0) || (strcmp(arg,"--version") == 0)||
+            (strcmp(arg,"-v") == 0)) {
             give_help(argv[0]);
             exit(0);
         } else if (*sarg == '-') {
@@ -565,6 +578,25 @@ int parse_commands( int argc, char **argv )
                     goto Bad_ARG;
                 }
                 break;
+#ifndef _MSC_VER
+            case 'D':
+                if (i2 < argc) {
+                    sarg = argv[i2];
+                    if (strcmp(sarg,"y") == 0) {
+                        run_as_daemon = 1;
+                    } else if (strcmp(sarg,"n") == 0) {
+                        run_as_daemon = 0;
+                    } else {
+                        printf("Only 'y' or 'n' can follow -D!\n");
+                        goto Bad_ARG;
+                    }
+                    i++;    // skip following argument
+                } else {
+                    printf("either 'y' or 'n' must follow!\n");
+                    goto Bad_ARG;
+                }
+                break;
+#endif
             default:
                 goto Bad_ARG;
             }
@@ -723,7 +755,6 @@ int main (int argc, char **argv)
 
 	daemon_proc = 0;
 	
-
 	if (run_as_daemon)
 		daemon_proc = daemon_init();
 
@@ -810,4 +841,3 @@ int main (int argc, char **argv)
 }
 
 /* eof - server.c */
-
