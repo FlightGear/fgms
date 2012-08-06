@@ -214,7 +214,7 @@ FG_TRACKER::TrackerLoop ()
 			// an error with the queue has occured
 			// avoid an infinite loop
 			// return (2);
-            SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: message queue error... PID " << pid);
+            SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: message queue error " << errno << ", PID " << pid);
 			sent = true;
 		}
 	}
