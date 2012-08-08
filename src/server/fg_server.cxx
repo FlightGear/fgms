@@ -1995,6 +1995,7 @@ FG_SERVER::UpdateTracker
 #ifdef ADD_TRACKER_LOG
         write_msg_log(Message.c_str(), Message.size(), (char *)"IN: "); // write message log
 #endif // #ifdef ADD_TRACKER_LOG
+        m_TrackerConnect++; // count a CONNECT message queued
 		return (0);
 	}
 	else if (type == DISCONNECT)
@@ -2021,6 +2022,7 @@ FG_SERVER::UpdateTracker
 #ifdef ADD_TRACKER_LOG
         write_msg_log(Message.c_str(), Message.size(),(char *)"IN: "); // write message log
 #endif // #ifdef ADD_TRACKER_LOG
+        m_TrackerDisconnect++; // count a DISCONNECT message queued
 		return (0);
 	}
 	// we only arrive here if type!=CONNECT and !=DISCONNECT
@@ -2050,6 +2052,7 @@ FG_SERVER::UpdateTracker
 #else // !#ifdef USE_TRACKER_PORT
 			msgsnd(m_ipcid,&buf,strlen(buf.mtext),IPC_NOWAIT);
 #endif // #ifdef USE_TRACKER_PORT y/n
+            m_TrackerPostion++; // count a POSITION messge queued
 		}
 		Message.erase(0);
 		CurrentPlayer++;
