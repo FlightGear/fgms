@@ -1,3 +1,4 @@
+# 20120808 - Change the IPCKEY value if building mp_server2 - bumped AGE to 19
 # 20120723 - Add ENABLE_DEBUG_OUTPUT, which defines DEF_DEBUG_OUTPUT in fg_tracker.cxx
 # and add USE_PTHREAD_IN_TRACKER server, replacing fork()
 # single CMakeLists.txt for fgms-0-x - hand crafted 2012/07/03
@@ -9,7 +10,7 @@ project( fgms )
 # The version number.
 set( fgms_MAJOR 0 )
 set( fgms_MINOR 10 )
-set( fgms_AGE 18 )
+set( fgms_AGE 19 )
 
 set( EXE_NAME fgms )
 
@@ -73,7 +74,8 @@ endif(ENABLE_TRACKER_LOG)
 if(BUILD_SERVER2)
     set( EXE_NAME mp_server2 )
     add_definitions( -DDEF_SERVER_LOG="fg_server2.log" -DDEF_EXIT_FILE="fgms_exit2"
-        -DDEF_RESET_FILE="fgms_reset2" -DDEF_STAT_FILE="fgms_stat2" -DDEF_CONF_FILE="fgms2.conf" )
+        -DDEF_RESET_FILE="fgms_reset2" -DDEF_STAT_FILE="fgms_stat2" -DDEF_CONF_FILE="fgms2.conf"
+        -DIPCKEY=0xf9f6 )
     message(STATUS "*** Building server 2. File fg_server2.log fgms_exit2 fgms_reset2 fgms_stat2 fgms2.conf")
 endif(BUILD_SERVER2)
 

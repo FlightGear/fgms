@@ -28,8 +28,13 @@ using namespace std;
 #define DISCONNECT  1
 #define UPDATE    2
 
+#ifndef IPCKEY
 #define IPCKEY    0xf9f5
+#endif
+
+#ifndef IPCPERMS
 #define IPCPERMS    0600
+#endif
 
 //////////////////////////////////////////////////////////////////////
 //
