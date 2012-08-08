@@ -813,8 +813,13 @@ FG_SERVER::AddTracker
 	{
 		msgctl(m_ipcid,IPC_RMID,NULL);
 		delete m_Tracker;
+        m_Tracker = 0; // just deleted
 	}
 	m_ipcid         = msgget(IPCKEY,IPCPERMS|IPC_CREAT);
+    if (m_ipcid < 0) {
+        perror("msgget getting ipc id failed");
+        return -1;
+    }
 	m_Tracker = new FG_TRACKER(Port,Server,m_ipcid);
 #endif // #ifdef USE_TRACKER_PORT y/n
 #endif // NO_TRACKER_PORT
