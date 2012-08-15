@@ -1,7 +1,10 @@
+#
+# single CMakeLists.txt for fgms-0-x - hand crafted - commecned 2012/07/03
+# 20120815 - In Unix, install to /usr/sbin if CMAKE_INSTALL_PREFIX not given - default is /usr/local/sbin
+#            Bump AGE to 20, since a number of other commits done.
 # 20120808 - Change the IPCKEY value if building mp_server2 - bumped AGE to 19
 # 20120723 - Add ENABLE_DEBUG_OUTPUT, which defines DEF_DEBUG_OUTPUT in fg_tracker.cxx
 # and add USE_PTHREAD_IN_TRACKER server, replacing fork()
-# single CMakeLists.txt for fgms-0-x - hand crafted 2012/07/03
 
 cmake_minimum_required( VERSION 2.6 )
 
@@ -10,9 +13,11 @@ project( fgms )
 # The version number.
 set( fgms_MAJOR 0 )
 set( fgms_MINOR 10 )
-set( fgms_AGE 19 )
+set( fgms_AGE 20 )
 
+# change names if build server and tracker #2
 set( EXE_NAME fgms )
+set( TRK_NAME fgt_server )
 
 # Allow developer to select is Dynamic or static library built
 set( LIB_TYPE STATIC )  # set default static
@@ -25,7 +30,7 @@ option( USE_POSTGRESQL "Use a PostgreSQL database in the tracking server." ON )
 if(UNIX)
     option( ENABLED_DEBUG_SYMBOLS "Add debug symbols into the binary." OFF )
 endif(UNIX)
-option( ENABLE_DEBUG_OUTPUT "Enable so extra debug output in fg_tracker.cxx." OFF )
+option( ENABLE_DEBUG_OUTPUT "Enable some extra debug output in fg_tracker.cxx." OFF )
 # this should not be confused with the fact that pthread is used in fgms by default. This is in the fgt_server server.c
 # and of course need to be building the 'tracker' for this to have any effect.
 option( USE_PTHREAD_IN_TRACKER "Use pthread in the tracker server, replacing fork()." OFF )
@@ -73,6 +78,7 @@ endif(ENABLE_TRACKER_LOG)
 
 if(BUILD_SERVER2)
     set( EXE_NAME mp_server2 )
+    set( TRK_NAME mpt_server2 )
     add_definitions( -DDEF_SERVER_LOG="fg_server2.log" -DDEF_EXIT_FILE="fgms_exit2"
         -DDEF_RESET_FILE="fgms_reset2" -DDEF_STAT_FILE="fgms_stat2" -DDEF_CONF_FILE="fgms2.conf"
         -DIPCKEY=0xf9f6 )
@@ -206,6 +212,10 @@ if(WIN32)
     set_target_properties( ${EXE_NAME} PROPERTIES DEBUG_POSTFIX "d" )
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 else(WIN32)
+    if(CMAKE_INSTALL_PREFIX STREQUAL "/usr/local")
+        set(CMAKE_INSTALL_PREFIX /usr)
+    endif(CMAKE_INSTALL_PREFIX STREQUAL "/usr/local")
+    message(STATUS "*** Will install to ${CMAKE_INSTALL_PREFIX}/sbin")
     install(TARGETS ${EXE_NAME} DESTINATION sbin)
 endif(WIN32)
 
@@ -234,9 +244,9 @@ if(BUILD_TRACKER)
     list(APPEND add_LIBS tracker)
 
     set( server_SRCS contrib/fgtracker/server.c )
-    add_executable( fgt_server ${server_SRCS} )
-    target_link_libraries( fgt_server ${add_LIBS} )
-    set_target_properties( fgt_server PROPERTIES DEBUG_POSTFIX "d" )
+    add_executable( ${TRK_NAME} ${server_SRCS} )
+    target_link_libraries( ${TRK_NAME} ${add_LIBS} )
+    set_target_properties( ${TRK_NAME} PROPERTIES DEBUG_POSTFIX "d" )
 
     set( client_SRCS contrib/fgtracker/client.c )
     add_executable( fgt_client ${client_SRCS} )
@@ -244,7 +254,7 @@ if(BUILD_TRACKER)
     set_target_properties( fgt_client PROPERTIES DEBUG_POSTFIX "d" )
 
     # deal with INSTALL
-    install(TARGETS fgt_server fgt_client DESTINATION bin)
+    install(TARGETS ${TRK_NAME} fgt_client DESTINATION bin)
 endif(BUILD_TRACKER)
 
 # eof - CMakeLists.txt
