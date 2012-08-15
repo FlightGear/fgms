@@ -299,7 +299,274 @@ int logPosition(PGconn *conn, char *callsign, char *date, char *lon, char *lat, 
 #endif // #ifdef NO_POSTGRESQL y/n
 }
 
+/* =============================================
+   FIX20120812 - Due to the fact that at present
+   the CALLSIGN sent from fgfs to fgms, and 
+   from fgms to fgt_server can contain SPACE
+   write a parser to not trip on the space.
+   BUT this parser depend on the FACT that 
+   at the moment fgms uses ' test ' as the passwd 
+   in the ASCII message transferred.
+   ============================================= */
+
+// TODO - For Windows must shift out strerror(errno)
+// providing and alternative for windows sockets
+
+// establish message types
+enum MsgType {
+    MT_UNKNOWN,
+    MT_REPLY,
+    MT_PING,
+    MT_CONNECT,
+    MT_DISCONNECT,
+    MT_POSITION
+};
+
+// some easy very specific macros
+#define EatSpace    for ( ; i < len; i++ ) { \
+                        if (msg[i] > ' ') break; }
+
+#define Collect(a)  off = 0;\
+    for ( ; i < len; i++ ) { \
+        c = msg[i]; \
+        if ( c <= ' ' ) break; \
+        a[off++] = (char)c; \
+    } \
+    a[off] = 0
+    
+#define ISUPPER(a) (( a >= 'A' )&&( a <= 'Z' ))
+
+int parse_message( char * msg, char *event,
+   char *callsign, char *passwd, char *model, 
+   char *lat, char *lon, char *alt,
+   char *time1, char *time2 )
+{
+    int iret = MT_UNKNOWN;
+    size_t len = strlen(msg);
+    size_t i, off, j;
+    int c;
+    char *cp;
+
+    off = 0;
+    // forget some 'bad' message
+    if ( !ISUPPER(*msg) )
+        return MT_UNKNOWN; // does NOT start with upper
+
+    for ( i = 0; i < len; i++ ) {
+        c = msg[i];
+        if (!ISUPPER(c))
+            break;
+        event[off++] = (char)c;
+    }
+    event[off] = 0; // zero terminate the string
+
+    // deal with some short message types
+    if (strcmp(event,"REPLY") == 0)
+        return MT_REPLY;    // all done
+    else if (strcmp(event,"PING") == 0)
+        return MT_PING; // all done
+    else if (strcmp(event,"CONNECT") == 0)
+        iret = MT_CONNECT;
+    else if (strcmp(event,"DISCONNECT") == 0)
+        iret = MT_DISCONNECT;
+    else if (strcmp(event,"POSITION") == 0)
+        iret = MT_POSITION;
+    else
+        return MT_UNKNOWN;  // should not happen, but...
+
+    EatSpace;
+    // Expect up to an 8 character CALLSIGN, but 
+    // unfortunatley CAN have spaces, so...
+    Collect(callsign);
+    // it WILL currently be followed by 'test '
+    //                   123456
+    cp = strstr(&msg[i]," test ");
+    if (!cp) {
+        // TODO - could return unknown, but
+        //return MT_UNKNOWN;
+        cp = &msg[i];
+    }
+    j = (size_t)( cp - &msg[i] );
+    // collect BALANCE of the callsign
+    // TODO - Maybe here CHANGE spaces to some
+    // other character so no trouble with SQL
+    // commands as well...
+    for ( ; j && (i < len); i++) {
+        c = msg[i];
+        if (c <= ' ')
+            c = '-';
+        callsign[off++] = (char)c;
+        j--;
+    }
+    callsign[off] = 0;
+
+    EatSpace;
+    Collect(passwd);
+    EatSpace;
+
+    // now changes for type
+    if (iret == MT_POSITION) {
+        Collect(lat);
+        EatSpace;
+        Collect(lon);
+        EatSpace;
+        Collect(alt);
+        // TODO - Could validate these values
+    } else {    // if ((iret == MT_CONNECT)||(iret == MT_DISCONNECT))
+        Collect(model);
+    }
+
+    // collect time strings - TODO - could add validation
+    EatSpace;
+    Collect(time1); // date YYYY-MM-DD
+    EatSpace;
+    Collect(time2); // time HH:MM:SS
+    return iret;
+}
+// remove macros
+#undef EatSpace
+#undef Collect
+
 void doit(int fd)
+{
+    // put these BIG buffers outside the function stack
+    static char debugstr[MAXLINE];
+    static char msg[MAXLINE];
+    static char event[MAXLINE];
+    static char callsign[MAXLINE];
+    static char passwd[MAXLINE];
+    static char model[MAXLINE];
+    static char time1[MAXLINE];
+    static char time2[MAXLINE];
+    static char time[MAXLINE];
+    static char lon[MAXLINE];
+    static char lat[MAXLINE];
+    static char alt[MAXLINE];
+    int pg_reconn_counter;
+    int len;
+    pid_t mypid;
+    struct sockaddr_in clientaddr;
+    socklen_t clientaddrlen;
+    PGconn *conn = NULL;
+    int reply = 0;
+    int res, sendok;
+
+    mypid = getpid();
+
+    getpeername(fd, (SA *) &clientaddr, &clientaddrlen);
+
+#if defined(_MSC_VER) && (!defined(NTDDI_VERSION) || !defined(NTDDI_VISTA) || (NTDDI_VERSION < NTDDI_VISTA))   // if less than VISTA, need alternative
+    sprintf(debugstr,"PID %d: connection on port %d", mypid, ntohs(clientaddr.sin_port));
+#else
+    sprintf(debugstr,"PID %d: connection from %s, port %d", mypid,
+        inet_ntop(AF_INET, &clientaddr.sin_addr, msg, sizeof(msg)), ntohs(clientaddr.sin_port));
+#endif
+    debug(2,debugstr);
+
+    while ( (len = SREAD(fd, msg, MAXLINE)) > 0)
+    {
+        msg[len]='\0';
+        snprintf(debugstr,MAXLINE,"PID %d: read %d bytes\n",mypid,len);
+        debug(3,debugstr);
+
+        // no need to clear the WHOLE buffer - just first byte
+        event[0] = 0;
+        callsign[0] = 0;
+        passwd[0] = 0;
+        model[0] = 0;
+        time1[0] = 0;
+        time2[0] = 0;
+        time[0] = 0;
+        lon[0] = 0;
+        lat[0] = 0;
+        alt[0] = 0;
+
+        // parse the message
+        res = parse_message( msg, event, callsign, passwd, model, 
+                        lat, lon, alt, time1, time2 );
+        sprintf(debugstr,"PID %d: msg: %s",mypid,msg);
+        debug(3,debugstr);
+
+        pg_reconn_counter=0;
+#ifdef NO_POSTGRESQL
+        write_message_log(msg,strlen(msg));
+#else // !#ifdef NO_POSTGRESQL
+        while ( (PQstatus(conn) != CONNECTION_OK) && (pg_reconn_counter<120) ) {
+            sprintf(debugstr,"PID %d: Reconn loop %d",mypid,pg_reconn_counter);
+            debug(3,debugstr);
+            pg_reconn_counter++;
+            PQfinish(conn);
+            ConnectDB(&conn);
+            sleep(1);
+            if (PQstatus(conn)==CONNECTION_OK)
+            {
+                sprintf(debugstr,"PID %d: Reconnected to PQ successful after %d tries",mypid,pg_reconn_counter);
+                debug(1,debugstr);
+            }
+            else
+            {
+                if (pg_reconn_counter%10==0)
+                {
+                    sprintf(debugstr,"PID %d: Reconnected to PQ failed after %d tries",mypid,pg_reconn_counter);
+                    debug(1,debugstr);
+                }
+            }
+        }
+#endif // #ifdef NO_POSTGRESQL
+        pg_reconn_counter=0;
+
+        sendok = 0; // some messages require an 'OK' reply, if a 'REPLY' command was received
+        switch (res) {
+        case MT_REPLY:
+            reply = 1;  // server want REPLY to each message
+            break;
+        case MT_PING:
+            if (SWRITE(fd,"PONG",5) != 5) {
+                sprintf(debugstr,"PID %d: write PONG failed! - %s", mypid, strerror(errno));
+                debug(1,debugstr);
+            }
+            break;
+        case MT_CONNECT:
+            sprintf(time,"%s %s Z",time1,time2);
+            if ((strncmp("mpdummy",callsign,7) != 0) && (strncmp("obscam",callsign,6) != 0))
+                logFlight(conn,callsign,model,time,1);
+            sendok = 1;
+            break;
+        case MT_DISCONNECT:
+            sprintf(time,"%s %s Z",time1,time2);
+            if ((strncmp("mpdummy",callsign,7) != 0) && (strncmp("obscam",callsign,6) != 0))
+                logFlight(conn,callsign,model,time,0);
+            sendok = 1;
+            break;
+        case MT_POSITION:
+            sprintf(time,"%s %s Z",time1,time2);
+            if (strncmp("mpdummy",callsign,7) != 0 && strncmp("obscam",callsign,6) != 0)
+                logPosition(conn,callsign,time,lon,lat,alt);
+            sendok = 1;
+            break;
+        default:
+            sprintf(debugstr,"PID %d: Uncased message!",mypid);
+            debug(1,debugstr);
+            sendok = 1; // not a valid message but server wating reply, so...
+            break;
+        }
+        if (sendok && reply) {
+            if (SWRITE(fd,"OK",2) != 2) {
+                sprintf(debugstr,"PID %d: write OK failed - %s", mypid, strerror(errno));
+                debug(1,debugstr);
+            } else {
+                sprintf(debugstr,"PID %d: reply sent.", mypid);
+                debug(3,debugstr);
+            }
+        }
+    }
+    sprintf(debugstr,"PID %d: read failed! - %s", mypid, strerror(errno));
+    debug(1,debugstr);
+}
+
+#if 0 // code to be removed when replacement found to be working
+
+void doit2(int fd)
 {
   int pg_reconn_counter;
   int len;
@@ -443,6 +710,8 @@ void doit(int fd)
 	}
   }
 }
+
+#endif // 0 - code to be removed when replacement tested
 
 char *get_base_name(char *name)
 {
