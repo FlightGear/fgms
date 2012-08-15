@@ -187,6 +187,7 @@ FG_TRACKER::TrackerLoop ()
 			{
 				SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: can't write to server... PID " << pid);
 				Connect ();
+                continue; // FIX20120812 - re-write the failed message now before wait reply!!!
 			}
 			sleep (1);
 			// receive answer from server
