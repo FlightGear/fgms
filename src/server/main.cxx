@@ -583,6 +583,9 @@ SigCHLDHandler (int s)
 {
 	while (waitpid (-1, NULL, WNOHANG) > 0)
 		/* intentionally empty */ ;
+    SG_ALERT (SG_SYSTEMS, SG_ALERT, "SigCHLDHandler: PID " << getpid() <<
+        " reason " << s << " called!");
+
 } // SigCHLDHandler ()
 //////////////////////////////////////////////////////////////////////
 #endif // !_MSC_VER
@@ -611,6 +614,7 @@ main ( int argc, char* argv[] )
 	sig_child.sa_flags = SA_RESTART;
 	if (sigaction (SIGCHLD, &sig_child, NULL) == -1)
 	{
+        perror("sigaction reported SIGCHLD failed!");
 		exit(1);
 	}
 #endif
