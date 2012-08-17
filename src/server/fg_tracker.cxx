@@ -183,11 +183,10 @@ FG_TRACKER::TrackerLoop ()
 		{
             if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::TrackerLoop sending msg %d bytes PID %d\n", length,pid);
 			// send message via tcp
-			if (SWRITE (m_TrackerSocket,buf.mtext,strlen(buf.mtext)) < 0)
-			{
+			while (SWRITE (m_TrackerSocket,buf.mtext,strlen(buf.mtext)) < 0)
+			{	// FIX20120812 - re-write the failed message now before wait reply!!!
 				SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: can't write to server... PID " << pid);
 				Connect ();
-                continue; // FIX20120812 - re-write the failed message now before wait reply!!!
 			}
 			sleep (1);
 			// receive answer from server
