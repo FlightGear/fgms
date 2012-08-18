@@ -13,7 +13,7 @@ project( fgms )
 # The version number.
 set( fgms_MAJOR 0 )
 set( fgms_MINOR 10 )
-set( fgms_AGE 20 )
+set( fgms_AGE 21 )
 
 # change names if build server and tracker #2
 set( EXE_NAME fgms )

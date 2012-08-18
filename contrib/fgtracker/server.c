@@ -514,7 +514,7 @@ void doit(int fd)
 				time_out_counter_u++;
 				time_out_counter_l=0;
 			}
-			if (time_out_counter_u%60==0 && time_out_counter_l==0)
+			if (time_out_counter_u%60==0 && time_out_counter_u >=300 && time_out_counter_l==0)
 			{	/*Print warning*/
 				snprintf(debugstr,MAXLINE,"[%d] %s:%d: Warning: No data receive from client for %d seconds",mypid,clientip,clientport,time_out_counter_u);
 				debug(3,debugstr);
@@ -1157,7 +1157,7 @@ int main (int argc, char **argv)
 	}
 #endif // !_MSC_VER
 
-	debug(1,"FlightGear tracker initalized. Waiting connection...");
+	debug(1,"FlightGear tracker initailized. Waiting connection...");
 	for ( ; ; )
 	{
 		clientaddrlen=sizeof(clientaddr);

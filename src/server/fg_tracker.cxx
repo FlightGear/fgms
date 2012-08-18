@@ -117,6 +117,7 @@ FG_TRACKER::InitTracker ( const int MaxChildren, pid_t *pPIDS )
 		}
 		else if (ChildsPID == 0)
 		{
+			usleep(2500);
 			Connect ();
 			TrackerLoop ();
 			exit (0);
@@ -142,20 +143,45 @@ FG_TRACKER::TrackerLoop ()
 {
 	m_MsgBuffer buf;
 	bool  sent;
+	bool  waiting_reply;
 	int   length;
 	char  res[MAXLINE];
     pid_t pid = getpid();
-
+	short int time_out_counter_l=0;
+	unsigned int time_out_counter_u=0;
+	short int time_out_fraction=5; /* 1000000/time_out_fraction must be integer*/
+	waiting_reply= false;
 	sent = true;
 	strcpy ( res, "" );
 
-    if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::TrackerLoop entered PID %d\n",pid);
+    if (!RunAsDaemon || AddDebug) printf("[%d] FG_TRACKER::TrackerLoop entered\n",pid);
 	for ( ; ; )
 	{
-		length = 0;
-		// get message from queue
-		if (sent)
+		/*time-out issue*/
+		usleep(1000000/time_out_fraction);
+		time_out_counter_l++;
+		if (time_out_counter_l==time_out_fraction)
 		{
+			time_out_counter_u++;
+			time_out_counter_l=0;
+		}
+		if (time_out_counter_u%60==0 && time_out_counter_u >=180 && time_out_counter_l==0)
+		{	/*Print warning*/
+			printf("[%d] Warning: FG_TRACKER::TrackerLoop No data receive from server for %d seconds\n",pid,time_out_counter_u);
+		}
+		if (time_out_counter_u%300==0 && time_out_counter_l==0)
+		{	/*Timed out - reconnect*/
+			printf("[%d] FG_TRACKER::TrackerLoop Connection timed out...\n",pid);
+			SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Connection timed out...");
+			time_out_counter_l=1;
+			time_out_counter_u=0;
+			Connect ();
+		}
+		/*time-out issue End*/
+		
+		if (sent)
+		{ // get message from queue
+			length = 0;
 #ifndef NO_TRACKER_PORT
 #ifdef USE_TRACKER_PORT
             pthread_mutex_lock( &msg_mutex );   // acquire the lock
@@ -169,7 +195,7 @@ FG_TRACKER::TrackerLoop ()
             }
             pthread_mutex_unlock( &msg_mutex ); // unlock the mutex
 #else // !#ifdef USE_TRACKER_PORT
-			length = msgrcv (ipcid, &buf, MAXLINE, 0, MSG_NOERROR);
+			length = msgrcv (ipcid, &buf, MAXLINE, 0, MSG_NOERROR | IPC_NOWAIT);
 #endif // #ifdef USE_TRACKER_PORT y/n
 #endif // NO_TRACKER_PORT
 			buf.mtext[length] = '\0';
@@ -179,42 +205,66 @@ FG_TRACKER::TrackerLoop ()
                 write_msg_log(&buf.mtext[0], length, (char *)"OUT: ");
 #endif // #ifdef ADD_TRACKER_LOG
 		}
+		
 		if ( length > 0 )
 		{
-            if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::TrackerLoop sending msg %d bytes PID %d\n", length,pid);
+
 			// send message via tcp
-			while (SWRITE (m_TrackerSocket,buf.mtext,strlen(buf.mtext)) < 0)
-			{	// FIX20120812 - re-write the failed message now before wait reply!!!
-				SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: can't write to server... PID " << pid);
-				Connect ();
+			if (waiting_reply==false)
+			{
+				if (!RunAsDaemon || AddDebug) 
+				{
+					printf("[%d] FG_TRACKER::TrackerLoop sending msg %d bytes\n",pid,length);
+					printf("[%d] FG_TRACKER::TrackerLoop Msg: %s\n",pid,buf.mtext);	
+				}
+				while (SWRITE (m_TrackerSocket,buf.mtext,strlen(buf.mtext)) < 0)
+				{	// FIX20120812 - re-write the failed message now before wait reply!!!
+					printf("[%d] FG_TRACKER::TrackerLoop Can't write to server...\n",pid);
+					SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Can't write to server...");
+					Connect ();
+				}
+				waiting_reply=true;
 			}
-			sleep (1);
+
 			// receive answer from server
-			if ( SREAD (m_TrackerSocket,res,MAXLINE) <= 0 )
-			{
-				SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: can't read from server... PID " << pid);
-				Connect ();
-				sent = false;
-			}
-			else
-			{
+			if (SREAD (m_TrackerSocket,res,MAXLINE) > 0)
+			{	/*Data received from server*/
 				if ( strncmp( res, "OK", 2 ) == 0 )
 				{
+					time_out_counter_l=1;
+					time_out_counter_u=0;
 					sent = true;
+					waiting_reply=false;
 					strcpy ( res, "" );
 				}
 				else
 				{
-                    SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: Responce " << res << " not OK! Send again... PID " << pid);
+					SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Responce " << res << " not OK! Send again...");
 				}
 			}
 		}
+		#ifndef USE_TRACKER_PORT
+		else if (errno==ENOMSG)
+		{//check
+			if (SREAD (m_TrackerSocket,res,MAXLINE) > 0)
+			{
+				if ( strncmp( res, "PING", 4 ) == 0 )
+				{
+					time_out_counter_l=1;
+					time_out_counter_u=0;
+					printf("[%d] FG_TRACKER::TrackerLoop PING from server received\n",pid);
+					SWRITE (m_TrackerSocket,"PONG",4);
+					strcpy ( res, "" );
+				}
+			}
+		}
+		#endif
 		else
 		{
 			// an error with the queue has occured
 			// avoid an infinite loop
 			// return (2);
-            SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::TrackerLoop: message queue error " << errno << ", PID " << pid);
+            SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: message queue error " << errno);
 			sent = true;
 		}
 	}
@@ -243,24 +293,24 @@ FG_TRACKER::Connect ()
 #endif // !_MSC_VER
 	if ( m_TrackerSocket > 0 )
 		SCLOSE (m_TrackerSocket);
-    if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::Connect: Server: %s, Port: %d PID %d\n", m_TrackerServer, m_TrackerPort, pid);
+    if (!RunAsDaemon || AddDebug) printf("[%d] FG_TRACKER::Connect: Server: %s, Port: %d\n",pid, m_TrackerServer, m_TrackerPort);
 	while (connected == false)
 	{
 		m_TrackerSocket = TcpConnect (m_TrackerServer, m_TrackerPort);
 		if (m_TrackerSocket >= 0)
 		{
-			SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::Connect: success PID " << pid);
+			SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::Connect: success");
 			connected = true;
 		}
 		else
 		{
-			SG_ALERT (SG_SYSTEMS, SG_ALERT, "FG_TRACKER::Connect: failed! sleep " << DEF_TRACKER_SLEEP << " secs PID " << pid);
+			SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::Connect: failed! sleep " << DEF_TRACKER_SLEEP << " secs");
 			sleep (DEF_TRACKER_SLEEP);  // sleep 10 minutes and try again
 		}
 	}
 	sleep (5);
 	SWRITE(m_TrackerSocket,"REPLY",sizeof("REPLY"));
-    if (!RunAsDaemon || AddDebug) printf("FG_TRACKER::Connect: Written 'REPLY' PID %d\n",pid);
+    if (!RunAsDaemon || AddDebug) printf("[%d] FG_TRACKER::Connect: Written 'REPLY'\n",pid);
 	sleep (2);
 	return (0);
 } // Connect ()
@@ -312,11 +362,12 @@ FG_TRACKER::TcpConnect (char *server_address,int server_port)
 {
 	struct sockaddr_in serveraddr;
 	int sockfd;
-
+	pid_t pid = getpid();
+	
 	sockfd=socket(AF_INET, SOCK_STREAM, 0);
     if (SERROR(sockfd))
     {
-        SG_ALERT (SG_SYSTEMS, SG_ALERT, "# FG_TRACKER::TcpConnect: can't get socket...");
+        SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: can't get socket...");
         return -1;
 
     }
@@ -325,20 +376,36 @@ FG_TRACKER::TcpConnect (char *server_address,int server_port)
 	serveraddr.sin_port = htons(server_port);
 #ifdef _MSC_VER
 	if ( inet_pton(AF_INET, server_address, &serveraddr.sin_addr) == -1 ) {
-        SG_ALERT (SG_SYSTEMS, SG_ALERT, "# FG_TRACKER::TcpConnect: inet_pton failed!");
+        SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: inet_pton failed!");
         if (!SERROR(sockfd))
             SCLOSE(sockfd);
 		return -1;
     }
 #else
 	inet_pton(AF_INET, server_address, &serveraddr.sin_addr);
+	
 #endif
+
 	if (connect(sockfd, (SA *) &serveraddr, sizeof(serveraddr))<0 ) {
         if (!SERROR(sockfd))
             SCLOSE(sockfd); // close the socket
-        SG_ALERT (SG_SYSTEMS, SG_ALERT, "# FG_TRACKER::TcpConnect: connect failed!");
+        SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: connect failed!");
 		return -1;
     } else
+	{
+		if(fcntl(sockfd, F_GETFL) & O_NONBLOCK) 
+		{
+			// socket is non-blocking
+			SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: Socket is in non-blocking mode");
+		} else
+		{
+			SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: Socket is in blocking mode");
+			if(fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL) | O_NONBLOCK) < 0)
+				{SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: FAILED to set the socket to non-blocking mode");}
+			else
+				SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: Socket set to non-blocking mode");
+		}
 		return (sockfd);
+	}
 }  // TcpConnect  ()
 //////////////////////////////////////////////////////////////////////
