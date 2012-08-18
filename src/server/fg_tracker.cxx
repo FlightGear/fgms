@@ -179,9 +179,9 @@ FG_TRACKER::TrackerLoop ()
 			Connect ();
 		}
 		/*time-out issue End*/
-		
+
 		if (sent)
-		{ // get message from queue
+		{ 	// get message from queue
 			length = 0;
 #ifndef NO_TRACKER_PORT
 #ifdef USE_TRACKER_PORT
@@ -201,7 +201,6 @@ FG_TRACKER::TrackerLoop ()
 #endif // #ifdef USE_TRACKER_PORT y/n
 #endif // NO_TRACKER_PORT
 			buf.mtext[length] = '\0';
-			sent = false;
 #ifdef ADD_TRACKER_LOG
             if (length)
                 write_msg_log(&buf.mtext[0], length, (char *)"OUT: ");
@@ -210,7 +209,7 @@ FG_TRACKER::TrackerLoop ()
 		
 		if ( length > 0 )
 		{
-
+			sent = false;
 			// send message via tcp
 			if (waiting_reply==false)
 			{
