@@ -815,7 +815,7 @@ FG_SERVER::AddTracker
 		delete m_Tracker;
         m_Tracker = 0; // just deleted
 	}
-	printf("Estblishing IPC\n");
+	printf("Establishing IPC\n");
 	m_ipcid         = msgget(IPC_PRIVATE,IPCPERMS);
     if (m_ipcid <= 0) {
         perror("msgget getting ipc id failed");

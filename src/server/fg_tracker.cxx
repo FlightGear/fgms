@@ -150,6 +150,7 @@ FG_TRACKER::TrackerLoop ()
 	short int time_out_counter_l=0;
 	unsigned int time_out_counter_u=0;
 	short int time_out_fraction=5; /* 1000000/time_out_fraction must be integer*/
+	int msgrcv_errno=0;
 	waiting_reply= false;
 	sent = true;
 	strcpy ( res, "" );
@@ -196,6 +197,7 @@ FG_TRACKER::TrackerLoop ()
             pthread_mutex_unlock( &msg_mutex ); // unlock the mutex
 #else // !#ifdef USE_TRACKER_PORT
 			length = msgrcv (ipcid, &buf, MAXLINE, 0, MSG_NOERROR | IPC_NOWAIT);
+			msgrcv_errno=errno;
 #endif // #ifdef USE_TRACKER_PORT y/n
 #endif // NO_TRACKER_PORT
 			buf.mtext[length] = '\0';
@@ -244,7 +246,7 @@ FG_TRACKER::TrackerLoop ()
 			}
 		}
 		#ifndef USE_TRACKER_PORT
-		else if (errno==ENOMSG)
+		else if (msgrcv_errno==ENOMSG)
 		{//check
 			if (SREAD (m_TrackerSocket,res,MAXLINE) > 0)
 			{
@@ -264,7 +266,7 @@ FG_TRACKER::TrackerLoop ()
 			// an error with the queue has occured
 			// avoid an infinite loop
 			// return (2);
-            SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: message queue error " << errno);
+            printf("[%d] FG_TRACKER::TrackerLoop: message queue error %d\n",pid,errno);
 			sent = true;
 		}
 	}

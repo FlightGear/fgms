@@ -1157,7 +1157,7 @@ int main (int argc, char **argv)
 	}
 #endif // !_MSC_VER
 
-	debug(1,"FlightGear tracker initailized. Waiting connection...");
+	debug(1,"FlightGear tracker initialized. Waiting connection...");
 	for ( ; ; )
 	{
 		clientaddrlen=sizeof(clientaddr);
