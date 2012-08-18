@@ -319,7 +319,8 @@ enum MsgType {
     MT_PING,
     MT_CONNECT,
     MT_DISCONNECT,
-    MT_POSITION
+    MT_POSITION,
+	MT_PONG
 };
 
 // some easy very specific macros
@@ -365,6 +366,8 @@ int parse_message( char * msg, char *event,
         return MT_REPLY;    // all done
     else if (strcmp(event,"PING") == 0)
         return MT_PING; // all done
+	else if (strcmp(event,"PONG") == 0)
+        return MT_PONG; // all done
     else if (strcmp(event,"CONNECT") == 0)
         iret = MT_CONNECT;
     else if (strcmp(event,"DISCONNECT") == 0)
@@ -442,7 +445,13 @@ void doit(int fd)
     static char lon[MAXLINE];
     static char lat[MAXLINE];
     static char alt[MAXLINE];
-    int pg_reconn_counter;
+	static char *clientip;
+    uint16_t clientport =1;
+	int i=0;
+	int pg_reconn_counter;
+	short int time_out_counter_l=1;
+	unsigned int time_out_counter_u=0;
+	short int time_out_fraction=5; /* 1000000/time_out_fraction must be integer*/
     int len;
     pid_t mypid;
     struct sockaddr_in clientaddr;
@@ -450,23 +459,83 @@ void doit(int fd)
     PGconn *conn = NULL;
     int reply = 0;
     int res, sendok;
-
+	unsigned long no_of_line=0;
+	
     mypid = getpid();
+	
+	if(fcntl(fd, F_GETFL) & O_NONBLOCK) 
+	{
+		// socket is non-blocking
+		sprintf(debugstr,"[%d] Socket is in non-blocking mode",mypid);
+	} else
+	{
+		sprintf(debugstr,"[%d] Socket is in blocking mode",mypid);
+		debug(2,debugstr);
+		if(fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) < 0)
+			sprintf(debugstr,"[%d] FAILED to set the socket to non-blocking mode",mypid);
+		else
+			sprintf(debugstr,"[%d] Socket set to non-blocking mode. %d scans per second",mypid,time_out_fraction);
 
-    getpeername(fd, (SA *) &clientaddr, &clientaddrlen);
+	}
+	debug(2,debugstr);
+	
+	clientaddrlen = sizeof(struct sockaddr_in);
+    while (getpeername(fd, (SA *) &clientaddr, &clientaddrlen)==-1)
+	{
+		sprintf(debugstr,"[%d] Failed to get IP address of client! 1 sec to retry.",mypid);
+		debug(2,debugstr);
+		if (i>10)
+		{
+			sprintf(debugstr,"[%d] Stop retrying to get the client address.",mypid);
+			debug(2,debugstr);
+			clientip = "Unknown";
+			break;
+		}	
+		sleep(1);
+		i++;
+	}
+	if (i<=10)
+	{
+		sprintf(debugstr,"[%d] Got IP address of client. CIP %s POR %d",mypid,inet_ntoa(clientaddr.sin_addr),ntohs(clientaddr.sin_port));	
+		debug(2,debugstr);
+		clientip = inet_ntoa(clientaddr.sin_addr);	
+		clientport = ntohs(clientaddr.sin_port);
+	}
+	i=0;
 
-#if defined(_MSC_VER) && (!defined(NTDDI_VERSION) || !defined(NTDDI_VISTA) || (NTDDI_VERSION < NTDDI_VISTA))   // if less than VISTA, need alternative
-    sprintf(debugstr,"PID %d: connection on port %d", mypid, ntohs(clientaddr.sin_port));
-#else
-    sprintf(debugstr,"PID %d: connection from %s, port %d", mypid,
-        inet_ntop(AF_INET, &clientaddr.sin_addr, msg, sizeof(msg)), ntohs(clientaddr.sin_port));
-#endif
-    debug(2,debugstr);
-
-    while ( (len = SREAD(fd, msg, MAXLINE)) > 0)
+    while (1)
     {
-        msg[len]='\0';
-        snprintf(debugstr,MAXLINE,"PID %d: read %d bytes\n",mypid,len);
+        if ((len = SREAD(fd, msg, MAXLINE)) <= 0)
+		{
+			usleep(1000000/time_out_fraction);
+			time_out_counter_l++;
+			if (time_out_counter_l==time_out_fraction)
+			{
+				time_out_counter_u++;
+				time_out_counter_l=0;
+			}
+			if (time_out_counter_u%60==0 && time_out_counter_l==0)
+			{	/*Print warning*/
+				snprintf(debugstr,MAXLINE,"[%d] %s:%d: Warning: No data receive from client for %d seconds",mypid,clientip,clientport,time_out_counter_u);
+				debug(3,debugstr);
+			}
+			if (time_out_counter_u%120==0 && time_out_counter_l==0) 
+			{	/*Send PING*/
+				if (SWRITE(fd,"PING",5) != 5)
+					sprintf(debugstr,"[%d] %s:%d: Write PING failed! - %s", mypid, clientip,clientport,strerror(errno));
+				else
+					sprintf(debugstr,"[%d] %s:%d: Wrote PING. Waiting reply", mypid, clientip,clientport);
+				debug(1,debugstr);
+			}
+			if (time_out_counter_u%86400==0 && time_out_counter_l==0) /*Exit - timeout. TRANSISTIONAL - timeout should be set to around 300 after PONG function of fgms is implemented.*/
+				break;
+			continue;
+		}
+		time_out_counter_l=1;
+		time_out_counter_u=0;
+		no_of_line++;
+		msg[len]='\0';
+        snprintf(debugstr,MAXLINE,"[%d] %s:%d: Read %d bytes",mypid,clientip,clientport,len);
         debug(3,debugstr);
 
         // no need to clear the WHOLE buffer - just first byte
@@ -482,17 +551,17 @@ void doit(int fd)
         alt[0] = 0;
 
         // parse the message
-        res = parse_message( msg, event, callsign, passwd, model, 
-                        lat, lon, alt, time1, time2 );
-        sprintf(debugstr,"PID %d: msg: %s",mypid,msg);
+        res = parse_message( msg, event, callsign, passwd, model, lat, lon, alt, time1, time2 );
+        sprintf(debugstr,"[%d] %s:%d: msg: %s",mypid,clientip,clientport,msg);
         debug(3,debugstr);
 
         pg_reconn_counter=0;
 #ifdef NO_POSTGRESQL
         write_message_log(msg,strlen(msg));
 #else // !#ifdef NO_POSTGRESQL
-        while ( (PQstatus(conn) != CONNECTION_OK) && (pg_reconn_counter<120) ) {
-            sprintf(debugstr,"PID %d: Reconn loop %d",mypid,pg_reconn_counter);
+        while ( (PQstatus(conn) != CONNECTION_OK) && (pg_reconn_counter<120) ) 
+		{
+            sprintf(debugstr,"[%d] %s:%d: (Re)Connnet loop - %d",mypid,clientip,clientport,pg_reconn_counter);
             debug(3,debugstr);
             pg_reconn_counter++;
             PQfinish(conn);
@@ -500,14 +569,14 @@ void doit(int fd)
             sleep(1);
             if (PQstatus(conn)==CONNECTION_OK)
             {
-                sprintf(debugstr,"PID %d: Reconnected to PQ successful after %d tries",mypid,pg_reconn_counter);
+                sprintf(debugstr,"[%d] %s:%d: (Re)Connected to PQ successful after %d tries",mypid,clientip,clientport,pg_reconn_counter);
                 debug(1,debugstr);
             }
             else
             {
                 if (pg_reconn_counter%10==0)
                 {
-                    sprintf(debugstr,"PID %d: Reconnected to PQ failed after %d tries",mypid,pg_reconn_counter);
+                    sprintf(debugstr,"[%d] %s:%d: Reconnected to PQ failed after %d tries",mypid,clientip,clientport,pg_reconn_counter);
                     debug(1,debugstr);
                 }
             }
@@ -516,51 +585,66 @@ void doit(int fd)
         pg_reconn_counter=0;
 
         sendok = 0; // some messages require an 'OK' reply, if a 'REPLY' command was received
-        switch (res) {
-        case MT_REPLY:
-            reply = 1;  // server want REPLY to each message
-            break;
-        case MT_PING:
-            if (SWRITE(fd,"PONG",5) != 5) {
-                sprintf(debugstr,"PID %d: write PONG failed! - %s", mypid, strerror(errno));
-                debug(1,debugstr);
-            }
-            break;
-        case MT_CONNECT:
-            sprintf(time,"%s %s Z",time1,time2);
-            if ((strncmp("mpdummy",callsign,7) != 0) && (strncmp("obscam",callsign,6) != 0))
-                logFlight(conn,callsign,model,time,1);
-            sendok = 1;
-            break;
-        case MT_DISCONNECT:
-            sprintf(time,"%s %s Z",time1,time2);
-            if ((strncmp("mpdummy",callsign,7) != 0) && (strncmp("obscam",callsign,6) != 0))
-                logFlight(conn,callsign,model,time,0);
-            sendok = 1;
-            break;
-        case MT_POSITION:
-            sprintf(time,"%s %s Z",time1,time2);
-            if (strncmp("mpdummy",callsign,7) != 0 && strncmp("obscam",callsign,6) != 0)
-                logPosition(conn,callsign,time,lon,lat,alt);
-            sendok = 1;
-            break;
-        default:
-            sprintf(debugstr,"PID %d: Uncased message!",mypid);
-            debug(1,debugstr);
-            sendok = 1; // not a valid message but server wating reply, so...
-            break;
+
+		switch (res) 
+		{
+			case MT_REPLY:
+				reply = 1;  // server want REPLY to each message
+				sprintf(debugstr,"[%d] %s:%d: REPLY mode is ON", mypid, clientip,clientport);
+				debug(1,debugstr);
+				break;
+			case MT_UNKNOWN:
+			        if (no_of_line!=1)
+					{ 	//first line from fgms will be ignored.
+						sprintf(debugstr,"[%d] %s:%d: Unknown msg received", mypid, clientip,clientport);
+						debug(1,debugstr);
+					}
+				break;
+			case MT_PING:
+				if (SWRITE(fd,"PONG",5) != 5) {
+					sprintf(debugstr,"[%d] %s:%d: write PONG failed! - %s", mypid, clientip,clientport,strerror(errno));
+					debug(1,debugstr);
+				}
+				break;
+			case MT_PONG:
+					sprintf(debugstr,"[%d] %s:%d: PONG Received", mypid, clientip,clientport);
+					debug(1,debugstr);
+				break;
+			case MT_CONNECT:
+				sprintf(time,"%s %s Z",time1,time2);
+				if ((strncmp("mpdummy",callsign,7) != 0) && (strncmp("obscam",callsign,6) != 0))
+					logFlight(conn,callsign,model,time,1);
+				sendok = 1;
+				break;
+			case MT_DISCONNECT:
+				sprintf(time,"%s %s Z",time1,time2);
+				if ((strncmp("mpdummy",callsign,7) != 0) && (strncmp("obscam",callsign,6) != 0))
+					logFlight(conn,callsign,model,time,0);
+				sendok = 1;
+				break;
+			case MT_POSITION:
+				sprintf(time,"%s %s Z",time1,time2);
+				if (strncmp("mpdummy",callsign,7) != 0 && strncmp("obscam",callsign,6) != 0)
+					logPosition(conn,callsign,time,lon,lat,alt);
+				sendok = 1;
+				break;
+			default:
+				sprintf(debugstr,"[%d] %s:%d: Uncased message received!",mypid,clientip,clientport);
+				debug(1,debugstr);
+				sendok = 1; // not a valid message but server wating reply, so...
+				break;
         }
         if (sendok && reply) {
             if (SWRITE(fd,"OK",2) != 2) {
-                sprintf(debugstr,"PID %d: write OK failed - %s", mypid, strerror(errno));
+                sprintf(debugstr,"[%d] %s:%d: Write OK failed - %s", mypid, clientip,clientport,strerror(errno));
                 debug(1,debugstr);
             } else {
-                sprintf(debugstr,"PID %d: reply sent.", mypid);
+                sprintf(debugstr,"[%d] %s:%d: Reply sent.", mypid,clientip,clientport);
                 debug(3,debugstr);
             }
         }
     }
-    sprintf(debugstr,"PID %d: read failed! - %s", mypid, strerror(errno));
+    sprintf(debugstr,"[%d] %s:%d: Connection timeout after %d seconds. Exiting...", mypid, clientip,clientport,time_out_counter_u);
     debug(1,debugstr);
 }
 
@@ -888,7 +972,7 @@ int check_tables(PGconn *conn)
     char buff[MAXLINE];
     char *cp = buff;
     char *val;
-    int i, j, i2, nFields, nRows;
+    int i, j, nFields, nRows;
     int got_flights = 0;
     int got_waypts = 0;
     if (PQstatus(conn) == CONNECTION_OK) {
@@ -906,7 +990,6 @@ int check_tables(PGconn *conn)
             nRows = PQntuples(res);
             for (j = 0; j < nFields; j++) {
                 for (i = 0; i < nRows; i++) {
-                    i2 = i + 1;
                     val = PQgetvalue(res, i, j);
                     if (val) {
                         if (strcmp(val,"flights") == 0)
@@ -1008,11 +1091,13 @@ int main (int argc, char **argv)
 
     parse_commands(argc,argv);  /* parse user command line - no return if error */
 
-    if (test_db_connection()) {
+    if (test_db_connection()) 
+	{
         printf("PostgreSQL connection FAILED on [%s], port [%s], database [%s], user [%s], pwd [%s]. Aborting...\n",
             ip_address, port, database, user, pwd );
         return 1;
     }
+	printf("PostgreSQL connection test finished.\n");
 
     if ( net_init() ) {
         return 1;
@@ -1072,7 +1157,7 @@ int main (int argc, char **argv)
 	}
 #endif // !_MSC_VER
 
-	debug(1,"FlightGear tracker, got connection...");
+	debug(1,"FlightGear tracker initalized. Waiting connection...");
 	for ( ; ; )
 	{
 		clientaddrlen=sizeof(clientaddr);
@@ -1093,9 +1178,7 @@ int main (int argc, char **argv)
 
 			sprintf(debugstr,"CLIENT[%5d] started",childpid);
 			debug(2,debugstr);
-
 			doit(connfd);
-			
 			Close(connfd);
 			sprintf(debugstr,"CLIENT[%5d] stopped",childpid);
 			debug(2,debugstr);
