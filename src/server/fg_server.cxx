@@ -190,7 +190,7 @@ FG_SERVER::FG_SERVER
 	m_BlackList           = map<uint32_t, bool>();
 	m_RelayMap            = map<uint32_t, string>();
     m_IsTracked           = false; // off until config file read
-	m_MaxTracker          = 3; // set sensible default value
+	m_MaxTracker          = 1; // set sensible default value (Was 3 but now set to 1 due to a bug on unproper handling of out-of-sequence messages)
     m_Tracker             = 0; // no tracker yet
     m_UpdateSecs          = DEF_UPDATE_SECS;
 	// clear stats - should show what type of packet was received

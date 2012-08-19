@@ -168,18 +168,47 @@ FG_TRACKER::TrackerLoop ()
 		}
 		if (time_out_counter_u%60==0 && time_out_counter_u >=180 && time_out_counter_l==0)
 		{	/*Print warning*/
-			printf("[%d] Warning: FG_TRACKER::TrackerLoop No data receive from server for %d seconds\n",pid,time_out_counter_u);
+			if (!RunAsDaemon || AddDebug)
+				printf("[%d] Warning: FG_TRACKER::TrackerLoop No data receive from server for %d seconds\n",pid,time_out_counter_u);
 		}
 		if (time_out_counter_u%300==0 && time_out_counter_l==0)
 		{	/*Timed out - reconnect*/
 			printf("[%d] FG_TRACKER::TrackerLoop Connection timed out...\n",pid);
 			SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Connection timed out...");
+			Connect ();
+			waiting_reply=false;
 			time_out_counter_l=1;
 			time_out_counter_u=0;
-			Connect ();
 		}
 		/*time-out issue End*/
 
+		/*Read socket and see if anything arrived*/
+		if (SREAD (m_TrackerSocket,res,MAXLINE) > 0)
+		{	/*ACK from server*/
+			if ( strncmp( res, "OK", 2 ) == 0 )
+			{
+				time_out_counter_l=1;
+				time_out_counter_u=0;
+				sent = true;
+				waiting_reply=false;
+				strcpy ( res, "" );
+			}else
+			/*reply PONG*/
+			if ( strncmp( res, "PING", 4 ) == 0 )
+			{
+				time_out_counter_l=1;
+				time_out_counter_u=0;
+				if (!RunAsDaemon || AddDebug)
+					printf("[%d] FG_TRACKER::TrackerLoop PING from server received\n",pid);
+				SWRITE (m_TrackerSocket,"PONG",4);
+				strcpy ( res, "" );
+			}
+			else
+			{
+				SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Responce " << res << " not OK! Send again...");
+			}
+		}
+		
 		if (sent)
 		{ 	// get message from queue
 			length = 0;
@@ -226,38 +255,10 @@ FG_TRACKER::TrackerLoop ()
 				}
 				waiting_reply=true;
 			}
-
-			// receive answer from server
-			if (SREAD (m_TrackerSocket,res,MAXLINE) > 0)
-			{	/*Data received from server*/
-				if ( strncmp( res, "OK", 2 ) == 0 )
-				{
-					time_out_counter_l=1;
-					time_out_counter_u=0;
-					sent = true;
-					waiting_reply=false;
-					strcpy ( res, "" );
-				}
-				else
-				{
-					SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Responce " << res << " not OK! Send again...");
-				}
-			}
 		}
 		#ifndef USE_TRACKER_PORT
 		else if (msgrcv_errno==ENOMSG)
-		{//check
-			if (SREAD (m_TrackerSocket,res,MAXLINE) > 0)
-			{
-				if ( strncmp( res, "PING", 4 ) == 0 )
-				{
-					time_out_counter_l=1;
-					time_out_counter_u=0;
-					printf("[%d] FG_TRACKER::TrackerLoop PING from server received\n",pid);
-					SWRITE (m_TrackerSocket,"PONG",4);
-					strcpy ( res, "" );
-				}
-			}
+		{/*No Message - This error Should be ignored*/
 		}
 		#endif
 		else
@@ -306,7 +307,7 @@ FG_TRACKER::Connect ()
 		else
 		{
 			SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::Connect: failed! sleep " << DEF_TRACKER_SLEEP << " secs");
-			sleep (DEF_TRACKER_SLEEP);  // sleep 10 minutes and try again
+			sleep (DEF_TRACKER_SLEEP);  // sleep DEF_TRACKER_SLEEP secconds and try again
 		}
 	}
 	sleep (5);

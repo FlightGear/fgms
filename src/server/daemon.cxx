@@ -45,8 +45,17 @@ void cDaemon::SigHandler ( int SigType )
 	if (SigType == SIGCHLD)
 	{
 		int stat;
-		while (waitpid (-1, &stat, WNOHANG) > 0);
-			signal (SigType,SigHandler);
+		pid_t childpid;
+		while ((childpid=waitpid (-1, &stat, WNOHANG)) > 0)
+			printf("Child stopped: %d\n",childpid);
+		return;
+	}
+	if (SigType == SIGPIPE)
+	{
+		int stat;
+		pid_t childpid;
+		childpid = getpid();
+		printf("[%d] SIGPIPE received. Connection error.\n",childpid);
 		return;
 	}
 	switch (SigType)
@@ -143,7 +152,6 @@ void cDaemon::SigHandler ( int SigType )
 			break;
 		default:cout << "killed by signal " << SigType << "!" << endl;
 	}
-	signal (SigType,SigHandler);
 	exit (0);
 }
 
@@ -220,6 +228,7 @@ cDaemon::cDaemon()
 	signal (SIGHUP,SigHandler);
 	signal (SIGTERM,SigHandler);
 	signal (SIGCHLD,SigHandler);
+	signal (SIGPIPE,SigHandler);
 	PidOfDaemon = getpid(); 
 }
 

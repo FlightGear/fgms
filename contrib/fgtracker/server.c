@@ -108,15 +108,127 @@ void sigchld_handler(int s)
 
     while( (childpid=waitpid(-1, NULL, WNOHANG)) > 0)
     {
-	sprintf(debugstr,"Child stopped: %d",childpid);
-	debug(2,debugstr);
+		sprintf(debugstr,"Child stopped: %d",childpid);
+		debug(1,debugstr);
     }
 #endif // !_MSC_VER
 }
 
-void sighup_handler(int s)
+void signal_handler(int s)
 {
-    exit(0);
+	#ifndef _MSC_VER
+    char debugstr[MAXLINE];
+	pid_t mypid;
+	mypid = getpid();
+	
+	switch (s)
+	{
+		case  1:
+			sprintf(debugstr,"[%d] SIGCHLD received, exiting...",mypid);
+			debug(1,debugstr);
+			exit(0);
+			break;
+		case  2:
+			sprintf(debugstr,"[%d] SIGINT received, exiting...",mypid);
+			debug(1,debugstr);
+			exit(0);
+			break;
+		case  3:
+			sprintf(debugstr,"[%d] SIGQUIT received, exiting...",mypid);
+			break;
+		case  4:
+			sprintf(debugstr,"[%d] SIGILL received",mypid);
+			break;
+		case  5:
+			sprintf(debugstr,"[%d] SIGTRAP received",mypid);
+			break;
+		case  6:
+			sprintf(debugstr,"[%d] SIGABRT received",mypid);
+			break;
+		case  7:
+			sprintf(debugstr,"[%d] SIGBUS received",mypid);
+			break;
+		case  8:
+			sprintf(debugstr,"[%d] SIGFPE received",mypid);
+			break;
+		case  9:
+			sprintf(debugstr,"[%d] SIGKILL received",mypid);
+			debug(1,debugstr);
+			exit(0);
+			break;
+		case 10:
+			sprintf(debugstr,"[%d] SIGUSR1 received",mypid);
+			break;
+		case 11:
+			sprintf(debugstr,"[%d] SIGSEGV received",mypid);
+			break;
+		case 12:
+			sprintf(debugstr,"[%d] SIGUSR2 received",mypid);
+			break;
+		case 13:
+			sprintf(debugstr,"[%d] SIGPIPE received. Connection Error. Exiting...",mypid);
+			debug(1,debugstr);
+			exit(0);
+			break;
+		case 14:
+			sprintf(debugstr,"[%d] SIGALRM received",mypid);
+			break;
+		case 15:
+			sprintf(debugstr,"[%d] SIGTERM received",mypid);
+			debug(2,debugstr);
+			exit(0);
+			break;
+		case 16:
+			sprintf(debugstr,"[%d] SIGSTKFLT received",mypid);
+			break;
+		case 17:
+			sprintf(debugstr,"[%d] SIGCHLD received",mypid);
+			break;
+		case 18:
+			sprintf(debugstr,"[%d] SIGCONT received",mypid);
+			break;
+		case 19:
+			sprintf(debugstr,"[%d] SIGSTOP received",mypid);
+			break;
+		case 20: 
+			sprintf(debugstr,"[%d] SIGTSTP received",mypid);
+			break;
+		case 21:
+			sprintf(debugstr,"[%d] SIGTTIN received",mypid);
+			break;
+		case 22:
+			sprintf(debugstr,"[%d] SIGTTOU received",mypid);
+			break;
+		case 23:
+			sprintf(debugstr,"[%d] SIGURG received",mypid);
+			break;
+		case 24:
+			sprintf(debugstr,"[%d] SIGXCPU received",mypid);
+			break;
+		case 25:
+			sprintf(debugstr,"[%d] SIGXFSZ received",mypid);
+			break;
+		case 26:
+			sprintf(debugstr,"[%d] SIGVTALRM received",mypid);
+			break;
+		case 27:
+			sprintf(debugstr,"[%d] SIGPROF received",mypid);
+			break;
+		case 28:
+			sprintf(debugstr,"[%d] SIGWINCH received",mypid);
+			break;
+		case 29: 
+			sprintf(debugstr,"[%d] SIGIO received",mypid);
+			break;
+		case 30:
+			sprintf(debugstr,"[%d] SIGPWR received",mypid);
+			break;
+		default:
+			sprintf(debugstr,"[%d] signal %d received",mypid,s);
+
+	}
+	debug(2,debugstr);
+	#endif // !_MSC_VER
 }
 
 #ifdef NO_POSTGRESQL
@@ -472,7 +584,10 @@ void doit(int fd)
 		sprintf(debugstr,"[%d] Socket is in blocking mode",mypid);
 		debug(2,debugstr);
 		if(fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) < 0)
-			sprintf(debugstr,"[%d] FAILED to set the socket to non-blocking mode",mypid);
+		{
+			sprintf(debugstr,"[%d] FAILED to set the socket to non-blocking mode. Exiting...",mypid);
+			exit (0);
+		}	
 		else
 			sprintf(debugstr,"[%d] Socket set to non-blocking mode. %d scans per second",mypid,time_out_fraction);
 
@@ -517,12 +632,17 @@ void doit(int fd)
 			if (time_out_counter_u%60==0 && time_out_counter_u >=300 && time_out_counter_l==0)
 			{	/*Print warning*/
 				snprintf(debugstr,MAXLINE,"[%d] %s:%d: Warning: No data receive from client for %d seconds",mypid,clientip,clientport,time_out_counter_u);
-				debug(3,debugstr);
+				debug(1,debugstr);
 			}
 			if (time_out_counter_u%120==0 && time_out_counter_l==0) 
 			{	/*Send PING*/
 				if (SWRITE(fd,"PING",5) != 5)
+				{
 					sprintf(debugstr,"[%d] %s:%d: Write PING failed! - %s", mypid, clientip,clientport,strerror(errno));
+					sprintf(debugstr,"[%d] %s:%d: Connection lost. Exiting...", mypid, clientip,clientport);
+					debug(1,debugstr);
+					exit(0);
+				}
 				else
 					sprintf(debugstr,"[%d] %s:%d: Wrote PING. Waiting reply", mypid, clientip,clientport);
 				debug(1,debugstr);
@@ -637,7 +757,9 @@ void doit(int fd)
         if (sendok && reply) {
             if (SWRITE(fd,"OK",2) != 2) {
                 sprintf(debugstr,"[%d] %s:%d: Write OK failed - %s", mypid, clientip,clientport,strerror(errno));
-                debug(1,debugstr);
+                sprintf(debugstr,"[%d] %s:%d: Connection lost. Exiting...", mypid, clientip,clientport);
+				debug(1,debugstr);
+				exit(0);
             } else {
                 sprintf(debugstr,"[%d] %s:%d: Reply sent.", mypid,clientip,clientport);
                 debug(3,debugstr);
@@ -1082,9 +1204,6 @@ void *func_child(void *vp)
 
 int main (int argc, char **argv)
 {
-#ifndef _MSC_VER
-	struct sigaction sig_child;
-#endif // !_MSC_VER
 	char debugstr[MAXLINE];
 	struct sockaddr_in serveraddr,clientaddr;
 	socklen_t clientaddrlen;
@@ -1147,14 +1266,26 @@ int main (int argc, char **argv)
 	Listen(listenfd,SERVER_LISTENQ);
 
 #ifndef _MSC_VER
-  	sig_child.sa_handler = sigchld_handler;
-  	sigemptyset(&sig_child.sa_mask);
-  	sig_child.sa_flags = SA_RESTART;
-  	if (sigaction(SIGCHLD, &sig_child, NULL) < 0 ) 
-	{
-		err_sys("sigaction error");
-      		exit(1);
-	}
+	/*Installing signal handler*/
+	signal(SIGCHLD, sigchld_handler);
+	signal(SIGHUP, signal_handler);
+	signal(SIGINT, signal_handler);
+	signal(SIGQUIT, signal_handler);
+	signal(SIGILL, signal_handler);
+	signal(SIGTRAP, signal_handler);
+	signal(SIGABRT, signal_handler);
+	signal(SIGBUS, signal_handler);
+	signal(SIGFPE, signal_handler);
+	signal(SIGKILL, signal_handler);
+	signal(SIGUSR1, signal_handler);
+	signal(SIGSEGV, signal_handler);
+	signal(SIGUSR2, signal_handler);
+	signal(SIGPIPE, signal_handler);
+	signal(SIGALRM, signal_handler);
+	signal(SIGTERM, signal_handler);
+	signal(SIGCONT, signal_handler);
+	signal(SIGSTOP, signal_handler);
+	signal(SIGTSTP, signal_handler);
 #endif // !_MSC_VER
 
 	debug(1,"FlightGear tracker initialized. Waiting connection...");

@@ -36,9 +36,9 @@
 #include "typcnvt.hxx"
 
 using namespace std;
-
+/*DEF_TRACKER_CHILDS (Was 3 but now set to 1 due to a bug on unproper handling of out-of-sequence messages)*/
 #ifndef DEF_TRACKER_CHILDS
-#define DEF_TRACKER_CHILDS 3
+#define DEF_TRACKER_CHILDS 1 
 #endif
 
 FG_SERVER       Servant;
@@ -268,12 +268,14 @@ ProcessConfig ( const string& ConfigName )
 			exit (1); // do NOT continue if a requested 'tracker' FAILED
         }
 		Val = Config.Get ("server.tracking_maxchilds");
+		/*(Cast to 1 due to a bug on unproper handling of out-of-sequence messages)*/
+		Val ="1";
 		if (Val != "")
 		{
-			Port = StrToNum<int> (Val.c_str (), E); // misuse of Port
+			Port = StrToNum<int> (Val.c_str (), E); // Type check
 			if (E)
 			{
-				SG_ALERT (SG_SYSTEMS, SG_ALERT, "invalid value for tracking_maxchilds: '" << Val << "'");
+				SG_ALERT (SG_SYSTEMS, SG_ALERT, "Invalid value for tracking_maxchilds: '" << Val << "'");
 				exit (1);
 			}
 			Servant.MaxTracker (Port);
@@ -281,7 +283,7 @@ ProcessConfig ( const string& ConfigName )
 			{
                 if (Port > MAX_TRACKER_CHILD)   // YEEK, will overrun the m_TrackerPIDS[] buffer
                 {
-                    SG_ALERT (SG_SYSTEMS, SG_ALERT, "got t.child cnt " << Port << " but max. is " << MAX_TRACKER_CHILD << 
+                    SG_ALERT (SG_SYSTEMS, SG_ALERT, "Got t.child cnt " << Port << " but max. is " << MAX_TRACKER_CHILD << 
                     "! Set lower value or recompile setting MAX_TRACKER_PORT.");
                     exit (1);
                 }
