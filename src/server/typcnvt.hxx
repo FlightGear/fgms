@@ -18,6 +18,19 @@ using namespace std;
 
 typedef long long t_longlong;
 
+#if __FreeBSD__
+	namespace std {
+		template < typename T >
+		T abs(T x) {
+			return x < 0 ? -x : x;
+		}
+		template < typename T >
+		T llabs(T x) {
+			return x < 0 ? -x : x;
+		}
+	}
+#endif
+
 enum NUMERIC_BASE_LIMITS
 {
 	MIN_BASE = 2,
