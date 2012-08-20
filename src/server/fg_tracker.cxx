@@ -155,7 +155,7 @@ FG_TRACKER::TrackerLoop ()
     pid_t pid = getpid();
     short int time_out_counter_l=0;
     unsigned int time_out_counter_u=0;
-    short int time_out_fraction=5; /* 1000000/time_out_fraction must be integer*/
+    short int time_out_fraction=20; /* 1000000/time_out_fraction must be integer*/
     int msgrcv_errno=0;
     waiting_reply= false;
     sent = true;

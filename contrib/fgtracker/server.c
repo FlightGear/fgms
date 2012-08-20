@@ -563,7 +563,7 @@ void doit(int fd)
 	int pg_reconn_counter;
 	short int time_out_counter_l=1;
 	unsigned int time_out_counter_u=0;
-	short int time_out_fraction=5; /* 1000000/time_out_fraction must be integer*/
+	short int time_out_fraction=20; /* 1000000/time_out_fraction must be integer*/
     int len;
     pid_t mypid;
     struct sockaddr_in clientaddr;
