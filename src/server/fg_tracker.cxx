@@ -99,10 +99,8 @@ void *func_Tracker(void *vp)
 //
 //////////////////////////////////////////////////////////////////////
 int
-FG_TRACKER::InitTracker ( const int MaxChildren, pid_t *pPIDS )
+FG_TRACKER::InitTracker ( pid_t *pPIDS )
 {
-    if (!RunAsDaemon || AddDebug)
-        printf("FG_TRACKER::InitTracker: %d children\n", MaxChildren);
 #ifndef NO_TRACKER_PORT
 #ifdef USE_TRACKER_PORT
     if (pthread_create( &thread, NULL, func_Tracker, (void*)this ))
@@ -111,27 +109,23 @@ FG_TRACKER::InitTracker ( const int MaxChildren, pid_t *pPIDS )
         return 1;
     }
 #else // !#ifdef USE_TRACKER_PORT
-    int i;
     pid_t ChildsPID;
-    for ( i=0 ; i<MaxChildren ; i++)
+    ChildsPID = fork ();
+    if (ChildsPID < 0)
     {
-        ChildsPID = fork ();
-        if (ChildsPID < 0)
-        {
-            SG_ALERT (SG_SYSTEMS, SG_ALERT, "# FG_TRACKER::InitTracker: fork(" << i << ") FAILED!");
-            return 1;
-        }
-        else if (ChildsPID == 0)
-        {
-            usleep(2500);
-            Connect ();
-            TrackerLoop ();
-            exit (0);
-        }
-        else
-        {
-            pPIDS[i] = ChildsPID; // parent - store child PID
-        }
+        SG_ALERT (SG_SYSTEMS, SG_ALERT, "# FG_TRACKER::InitTracker: fork() FAILED!");
+        return 1;
+    }
+    else if (ChildsPID == 0)
+    {
+        usleep(2500);
+        Connect ();
+        TrackerLoop ();
+        exit (0);
+    }
+    else
+    {
+        pPIDS[0] = ChildsPID; // parent - store child PID
     }
 #endif // #ifdef USE_TRACKER_PORT y/n
 #endif // NO_TRACKER_PORT

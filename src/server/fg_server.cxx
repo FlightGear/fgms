@@ -200,7 +200,6 @@ FG_SERVER::FG_SERVER
   m_BlackList           = map<uint32_t, bool>();
   m_RelayMap            = map<uint32_t, string>();
   m_IsTracked           = false; // off until config file read
-  m_MaxTracker          = 1; // set sensible default value (Was 3 but now set to 1 due to a bug on unproper handling of out-of-sequence messages)
   m_Tracker             = 0; // no tracker yet
   m_UpdateSecs          = DEF_UPDATE_SECS;
   // clear stats - should show what type of packet was received
@@ -360,7 +359,7 @@ FG_SERVER::Init
   }
   if (m_IsTracked)
   {
-    if ( m_Tracker->InitTracker(m_MaxTracker, &m_TrackerPIDS[0]) )
+    if ( m_Tracker->InitTracker(&m_TrackerPIDS[0]) )
     {
         SG_ALERT (SG_SYSTEMS, SG_ALERT, "# InitTracker FAILED! Disabling tracker!");
             m_IsTracked = false;
@@ -375,8 +374,7 @@ FG_SERVER::Init
 #else // #ifdef USE_TRACKER_PORT
       SG_ALERT (SG_SYSTEMS, SG_ALERT, "# tracked to "
         << m_Tracker->GetTrackerServer ()
-        << ":" << m_Tracker->GetTrackerPort ()
-        << ", using " << m_MaxTracker << " children." );
+        << ":" << m_Tracker->GetTrackerPort ());
 #endif // #ifdef USE_TRACKER_PORT y/n
     }
   }
@@ -859,21 +857,6 @@ FG_SERVER::AddTracker
 #endif // NO_TRACKER_PORT
   return (SUCCESS);
 } // FG_SERVER::AddTracker()
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-//
-//      set the maximum number of children for the tracker
-//
-//////////////////////////////////////////////////////////////////////
-void
-FG_SERVER::MaxTracker
-(
-  const int MaxTracker
-)
-{
-  m_MaxTracker = MaxTracker;
-} // FG_SERVER::MaxTracker()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -1912,19 +1895,15 @@ FG_SERVER::Done
     // using a thread - could kill it, but...
 #else // #ifdef USE_TRACKER_PORT
     // using fork() - must kill child processes
-    int i;
-    for (i = 0; i < m_MaxTracker; i++)
+    pid_t kid = m_TrackerPIDS[0];
+    if (kill(kid, SIGTERM))
     {
-      pid_t kid = m_TrackerPIDS[i];
-      if (kill(kid, SIGTERM))
-      {
-        SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Done() kill(" << kid << ", SIGKILL)!");
-        kill(kid, SIGKILL);
-      }
-      else
-      {
-        SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Done() kill(" << kid << ", SIGTERM) return ok.");
-      }
+      SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Done() kill(" << kid << ", SIGKILL)!");
+      kill(kid, SIGKILL);
+    }
+    else
+    {
+      SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Done() kill(" << kid << ", SIGTERM) return ok.");
     }
 #endif // #ifdef USE_TRACKER_PORT y/n
   }

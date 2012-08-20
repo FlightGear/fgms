@@ -267,33 +267,6 @@ ProcessConfig ( const string& ConfigName )
 			SG_ALERT (SG_SYSTEMS, SG_ALERT, "Failed to get IPC msg queue ID! error " << errno );
 			exit (1); // do NOT continue if a requested 'tracker' FAILED
     }
-		Val = Config.Get ("server.tracking_maxchilds");
-		/*(Cast to 1 due to a bug on unproper handling of out-of-sequence messages)*/
-		Val ="1";
-		if (Val != "")
-		{
-			Port = StrToNum<int> (Val.c_str (), E); // Type check
-			if (E)
-			{
-				SG_ALERT (SG_SYSTEMS, SG_ALERT, "Invalid value for tracking_maxchilds: '" << Val << "'");
-				exit (1);
-			}
-			Servant.MaxTracker (Port);
-			if (tracked) // value not used if not tracked, so no problem
-			{
-        if (Port > MAX_TRACKER_CHILD)
-        { // YEEK, will overrun the m_TrackerPIDS[] buffer
-          SG_ALERT (SG_SYSTEMS, SG_ALERT, "Got t.child cnt "
-            << Port << " but max. is " << MAX_TRACKER_CHILD
-            << "! Set lower value or recompile setting MAX_TRACKER_PORT.");
-          exit (1);
-        }
-			}
-		}
-    else
-    {
-			Servant.MaxTracker (DEF_TRACKER_CHILDS); // use a default if none defined - Hazuki Amamiya 20120623
-    }
 	}
 	Val = Config.Get ("server.is_hub");
 	if (Val != "")
