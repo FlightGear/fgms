@@ -52,7 +52,6 @@ void cDaemon::SigHandler ( int SigType )
 	}
 	if (SigType == SIGPIPE)
 	{
-		int stat;
 		pid_t childpid;
 		childpid = getpid();
 		printf("[%d] SIGPIPE received. Connection error.\n",childpid);

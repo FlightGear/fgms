@@ -27,7 +27,7 @@
 
 #include <cstdlib>
 #ifndef _MSC_VER
-#include <sys/wait.h>
+  #include <sys/wait.h>
 #endif
 #include <signal.h>
 #include "fg_server.hxx"
@@ -38,7 +38,7 @@
 using namespace std;
 /*DEF_TRACKER_CHILDS (Was 3 but now set to 1 due to a bug on unproper handling of out-of-sequence messages)*/
 #ifndef DEF_TRACKER_CHILDS
-#define DEF_TRACKER_CHILDS 1 
+  #define DEF_TRACKER_CHILDS 1 
 #endif
 
 FG_SERVER       Servant;
@@ -52,11 +52,11 @@ extern  bool    RunAsDaemon;
 static bool     bHadConfig = false; // must have a config file, with server name
 
 #ifndef DEF_CONF_FILE
-#define DEF_CONF_FILE "fgms.conf"
+  #define DEF_CONF_FILE "fgms.conf"
 #endif
 
 #ifndef SYSCONFDIR
-#define SYSCONFDIR "/usr/etc"
+  #define SYSCONFDIR "/usr/etc"
 #endif
 
 static int
@@ -262,11 +262,11 @@ ProcessConfig ( const string& ConfigName )
 			SG_ALERT (SG_SYSTEMS, SG_ALERT, "invalid value for tracking_port: '" << Val << "'");
 			exit (1);
 		}
-        if ( tracked && ( Servant.AddTracker (Server, Port, tracked) != FG_SERVER::SUCCESS ) ) // set master m_IsTracked
-        {
+    if ( tracked && ( Servant.AddTracker (Server, Port, tracked) != FG_SERVER::SUCCESS ) ) // set master m_IsTracked
+    {
 			SG_ALERT (SG_SYSTEMS, SG_ALERT, "Failed to get IPC msg queue ID! error " << errno );
 			exit (1); // do NOT continue if a requested 'tracker' FAILED
-        }
+    }
 		Val = Config.Get ("server.tracking_maxchilds");
 		/*(Cast to 1 due to a bug on unproper handling of out-of-sequence messages)*/
 		Val ="1";
@@ -281,18 +281,19 @@ ProcessConfig ( const string& ConfigName )
 			Servant.MaxTracker (Port);
 			if (tracked) // value not used if not tracked, so no problem
 			{
-                if (Port > MAX_TRACKER_CHILD)   // YEEK, will overrun the m_TrackerPIDS[] buffer
-                {
-                    SG_ALERT (SG_SYSTEMS, SG_ALERT, "Got t.child cnt " << Port << " but max. is " << MAX_TRACKER_CHILD << 
-                    "! Set lower value or recompile setting MAX_TRACKER_PORT.");
-                    exit (1);
-                }
+        if (Port > MAX_TRACKER_CHILD)
+        { // YEEK, will overrun the m_TrackerPIDS[] buffer
+          SG_ALERT (SG_SYSTEMS, SG_ALERT, "Got t.child cnt "
+            << Port << " but max. is " << MAX_TRACKER_CHILD
+            << "! Set lower value or recompile setting MAX_TRACKER_PORT.");
+          exit (1);
+        }
 			}
 		}
-        else
-        {
+    else
+    {
 			Servant.MaxTracker (DEF_TRACKER_CHILDS); // use a default if none defined - Hazuki Amamiya 20120623
-        }
+    }
 	}
 	Val = Config.Get ("server.is_hub");
 	if (Val != "")
@@ -314,7 +315,6 @@ ProcessConfig ( const string& ConfigName )
 	string  Var;
 	string  Server = "";
 	int     Port   = 0;
-
 	if (! Config.SetSection (Section))
 	{
 		MoreToRead = false;
@@ -585,9 +585,8 @@ SigCHLDHandler (int s)
 {
 	while (waitpid (-1, NULL, WNOHANG) > 0)
 		/* intentionally empty */ ;
-    SG_ALERT (SG_SYSTEMS, SG_ALERT, "SigCHLDHandler: PID " << getpid() <<
-        " reason " << s << " called!");
-
+  SG_ALERT (SG_SYSTEMS, SG_ALERT, "SigCHLDHandler: PID "
+    << getpid() << " reason " << s << " called!");
 } // SigCHLDHandler ()
 //////////////////////////////////////////////////////////////////////
 #endif // !_MSC_VER
@@ -616,7 +615,7 @@ main ( int argc, char* argv[] )
 	sig_child.sa_flags = SA_RESTART;
 	if (sigaction (SIGCHLD, &sig_child, NULL) == -1)
 	{
-        perror("sigaction reported SIGCHLD failed!");
+    perror("sigaction reported SIGCHLD failed!");
 		exit(1);
 	}
 #endif
