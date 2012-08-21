@@ -10,7 +10,21 @@ cmake_minimum_required( VERSION 2.6 )
 
 project( fgms )
 
-# The version number.
+##################################################
+#####       the version of the program
+#####
+#####       Increment AGE if source code
+#####       has changed at all (e.g. bugfix)
+#####
+#####       If fgms has new features but is still
+#####       protocol compatible increment MINOR
+#####       and set AGE to 0
+#####
+#####       If fgms gets incompatible with older
+#####       version increment MAJOR and set MINOR
+#####       and AGE to 0
+#####
+##################################################
 set( fgms_MAJOR 0 )
 set( fgms_MINOR 10 )
 set( fgms_AGE 21 )
@@ -18,6 +32,15 @@ set( fgms_AGE 21 )
 # change names if build server and tracker #2
 set( EXE_NAME fgms )
 set( TRK_NAME fgt_server )
+
+# directories
+if (NOT DEFINED SYSCONFDIR)
+    set ( SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/etc" )
+endif (NOT DEFINED SYSCONFDIR)
+if (NOT DEFINED SBINDIR)
+    set ( SBINDIR "${CMAKE_INSTALL_PREFIX}/sbin" )
+endif (NOT DEFINED SBINDIR)
+add_definitions( -DSYSCONFDIR="${SYSCONFDIR}" )
 
 # Allow developer to select is Dynamic or static library built
 set( LIB_TYPE STATIC )  # set default static
@@ -212,11 +235,9 @@ if(WIN32)
     set_target_properties( ${EXE_NAME} PROPERTIES DEBUG_POSTFIX "d" )
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 else(WIN32)
-    if(CMAKE_INSTALL_PREFIX STREQUAL "/usr/local")
-        set(CMAKE_INSTALL_PREFIX /usr)
-    endif(CMAKE_INSTALL_PREFIX STREQUAL "/usr/local")
-    message(STATUS "*** Will install to ${CMAKE_INSTALL_PREFIX}/sbin")
-    install(TARGETS ${EXE_NAME} DESTINATION sbin)
+    message(STATUS "*** Will install binary to ${SBINDIR}")
+    message(STATUS "*** Will read config from ${SYSCONFDIR}")
+    install(TARGETS ${EXE_NAME} DESTINATION ${SBINDIR})
 endif(WIN32)
 
 if(BUILD_TRACKER)

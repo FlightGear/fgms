@@ -227,12 +227,10 @@ ProcessConfig ( const string& ConfigName )
 	{
 		if ((Val == "on") || (Val == "true"))
 		{
-			cout << "config daemon = true" << endl;
 			RunAsDaemon = true;
 		}
 		else if ((Val == "off") || (Val == "false"))
 		{
-			cout << "config daemon = false" << endl;
 			RunAsDaemon = false;
 		}
 		else

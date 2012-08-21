@@ -105,7 +105,7 @@ FG_TRACKER::InitTracker ( pid_t *pPIDS )
 #ifdef USE_TRACKER_PORT
     if (pthread_create( &thread, NULL, func_Tracker, (void*)this ))
     {
-        SG_ALERT (SG_SYSTEMS, SG_ALERT, "# FG_TRACKER::InitTracker: can't create thread...");
+        SG_LOG (SG_SYSTEMS, SG_ALERT, "# FG_TRACKER::InitTracker: can't create thread...");
         return 1;
     }
 #else // !#ifdef USE_TRACKER_PORT
@@ -113,7 +113,7 @@ FG_TRACKER::InitTracker ( pid_t *pPIDS )
     ChildsPID = fork ();
     if (ChildsPID < 0)
     {
-        SG_ALERT (SG_SYSTEMS, SG_ALERT, "# FG_TRACKER::InitTracker: fork() FAILED!");
+        SG_LOG (SG_SYSTEMS, SG_ALERT, "# FG_TRACKER::InitTracker: fork() FAILED!");
         return 1;
     }
     else if (ChildsPID == 0)
@@ -305,7 +305,7 @@ FG_TRACKER::Connect ()
         }
         else
         {
-            SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::Connect: failed! sleep " << DEF_TRACKER_SLEEP << " secs");
+            SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::Connect: failed! sleep " << DEF_TRACKER_SLEEP << " secs");
             sleep (DEF_TRACKER_SLEEP);  // sleep DEF_TRACKER_SLEEP secconds and try again
         }
     }
@@ -368,7 +368,7 @@ FG_TRACKER::TcpConnect (char *server_address,int server_port)
     sockfd=socket(AF_INET, SOCK_STREAM, 0);
     if (SERROR(sockfd))
     {
-        SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: can't get socket...");
+        SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: can't get socket...");
         return -1;
     }
     bzero(&serveraddr,sizeof(serveraddr));
@@ -377,7 +377,7 @@ FG_TRACKER::TcpConnect (char *server_address,int server_port)
 #ifdef _MSC_VER
     if ( inet_pton(AF_INET, server_address, &serveraddr.sin_addr) == -1 )
     {
-        SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: inet_pton failed!");
+        SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: inet_pton failed!");
         if (!SERROR(sockfd))
             SCLOSE(sockfd);
         return -1;
@@ -389,7 +389,7 @@ FG_TRACKER::TcpConnect (char *server_address,int server_port)
     {
         if (!SERROR(sockfd))
             SCLOSE(sockfd); // close the socket
-        SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: connect failed!");
+        SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: connect failed!");
         return -1;
     }
     else
@@ -397,17 +397,17 @@ FG_TRACKER::TcpConnect (char *server_address,int server_port)
         if(fcntl(sockfd, F_GETFL) & O_NONBLOCK) 
         {
             // socket is non-blocking
-            SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: Socket is in non-blocking mode");
+            SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: Socket is in non-blocking mode");
         }
         else
         {
-            SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: Socket is in blocking mode");
+            SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: Socket is in blocking mode");
             if(fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL) | O_NONBLOCK) < 0)
             {
-                SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: FAILED to set the socket to non-blocking mode");
+                SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: FAILED to set the socket to non-blocking mode");
             }
             else
-                SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: Socket set to non-blocking mode");
+                SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: Socket set to non-blocking mode");
         }
         return (sockfd);
     }
