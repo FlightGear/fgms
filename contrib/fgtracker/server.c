@@ -124,7 +124,7 @@ void signal_handler(int s)
 	switch (s)
 	{
 		case  1:
-			sprintf(debugstr,"[%d] SIGCHLD received, exiting...",mypid);
+			sprintf(debugstr,"[%d] SIGHUP received, exiting...",mypid);
 			debug(1,debugstr);
 			exit(0);
 			break;

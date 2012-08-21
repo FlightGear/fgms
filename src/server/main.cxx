@@ -554,10 +554,12 @@ void SigHUPHandler ( int SigType )
 void
 SigCHLDHandler (int s)
 {
-	while (waitpid (-1, NULL, WNOHANG) > 0)
-		/* intentionally empty */ ;
-  SG_ALERT (SG_SYSTEMS, SG_ALERT, "SigCHLDHandler: PID "
-    << getpid() << " reason " << s << " called!");
+	pid_t child;
+	
+	while ((child = waitpid (-1, NULL, WNOHANG)) > 0)
+	{
+		SG_ALERT (SG_SYSTEMS, SG_ALERT, "["<< getpid() << "] SigCHLDHandler: CHILD " << child << " dead!");
+	}
 } // SigCHLDHandler ()
 //////////////////////////////////////////////////////////////////////
 #endif // !_MSC_VER
@@ -581,14 +583,7 @@ main ( int argc, char* argv[] )
 	// SIGHUP
 	signal (SIGHUP, SigHUPHandler);
 	// SIGCHLD
-	sig_child.sa_handler = SigCHLDHandler;
-	sigemptyset (&sig_child.sa_mask);
-	sig_child.sa_flags = SA_RESTART;
-	if (sigaction (SIGCHLD, &sig_child, NULL) == -1)
-	{
-    perror("sigaction reported SIGCHLD failed!");
-		exit(1);
-	}
+	signal (SIGHUP, SigCHLDHandler);
 #endif
 	ParseParams (argc, argv);
 	ReadConfigs ();
