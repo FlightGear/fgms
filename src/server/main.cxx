@@ -573,9 +573,6 @@ int
 main ( int argc, char* argv[] )
 {
 	int     I;
-#ifndef _MSC_VER
-	struct  sigaction sig_child;
-#endif
 #if defined ENABLE_DEBUG
 	//  logbuf::set_log_classes(SG_GENERAL);
 #endif

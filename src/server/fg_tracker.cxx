@@ -24,6 +24,7 @@
     #include <sys/ipc.h>
     #include <sys/msg.h>
     #include <sys/types.h>
+	#include <signal.h>
     #ifndef __FreeBSD__
         #include <endian.h>
     #endif
@@ -37,7 +38,7 @@
 
 #define MAXLINE 4096
 #ifndef DEF_TRACKER_SLEEP
-    #define DEF_TRACKER_SLEEP 600   // try to connect each ten minutes
+    #define DEF_TRACKER_SLEEP 300   // try to connect each Five minutes
 #endif // DEF_TRACKER_SLEEP
 
 #ifdef _MSC_VER
@@ -110,7 +111,7 @@ FG_TRACKER::InitTracker ( pid_t *pPIDS )
     }
 #else // !#ifdef USE_TRACKER_PORT
     pid_t ChildsPID;
-    ChildsPID = fork ();
+    ChildsPID = fork();
     if (ChildsPID < 0)
     {
         SG_LOG (SG_SYSTEMS, SG_ALERT, "# FG_TRACKER::InitTracker: fork() FAILED!");
@@ -119,6 +120,28 @@ FG_TRACKER::InitTracker ( pid_t *pPIDS )
     else if (ChildsPID == 0)
     {
         usleep(2500);
+		#ifndef _MSC_VER
+		/*Install signal handler*/
+		signal(SIGCHLD, signal_handler);
+		signal(SIGHUP, signal_handler);
+		signal(SIGINT, signal_handler);
+		signal(SIGQUIT, signal_handler);
+		signal(SIGILL, signal_handler);
+		signal(SIGTRAP, signal_handler);
+		signal(SIGABRT, signal_handler);
+		signal(SIGBUS, signal_handler);
+		signal(SIGFPE, signal_handler);
+		signal(SIGKILL, signal_handler);
+		signal(SIGUSR1, signal_handler);
+		signal(SIGSEGV, signal_handler);
+		signal(SIGUSR2, signal_handler);
+		signal(SIGPIPE, signal_handler);
+		signal(SIGALRM, signal_handler);
+		signal(SIGTERM, signal_handler);
+		signal(SIGCONT, signal_handler);
+		signal(SIGSTOP, signal_handler);
+		signal(SIGTSTP, signal_handler);
+		#endif // !_MSC_VER
         Connect ();
         TrackerLoop ();
         exit (0);
@@ -141,25 +164,41 @@ FG_TRACKER::InitTracker ( pid_t *pPIDS )
 int
 FG_TRACKER::TrackerLoop ()
 {
-    m_MsgBuffer buf;
-    bool  sent;
-    bool  waiting_reply;
-    int   length;
-    char  res[MAXLINE];
-    pid_t pid = getpid();
-    short int time_out_counter_l=0;
-    unsigned int time_out_counter_u=0;
-    short int time_out_fraction=20; /* 1000000/time_out_fraction must be integer*/
-    int msgrcv_errno=0;
-    waiting_reply= false;
-    sent = true;
+    m_MsgBuffer		buf;
+    int				length;
+	int				pkt_sent = 0;
+	int				max_msg_sent = 25; /*Maximun message sent before receiving reply.*/
+    char			res[MAXLINE];	/*Msg from server*/
+    pid_t			pid = getpid();
+    short int		time_out_counter_l=0;
+    unsigned int	time_out_counter_u=0;
+    short int		time_out_fraction=20; /* 1000000/time_out_fraction must be integer*/
+    int				msgrcv_errno=0;
+	bool			resentflg = false; /*If ture, resend all message in the msgbuf first*/
+	/*Msg structure*/
+	struct msg 
+	{
+		char msg[MAXLINE];
+		struct msg *next;
+	};
+	struct msg		*msgbuf_head,*msgbuf_tail,*msgbuf_new,*msgbuf_resend;
+
+	
+	/*Initalize value*/
     strcpy ( res, "" );
+	msgbuf_head = NULL;
+	msgbuf_tail = NULL;
+	msgbuf_new = NULL;
+	msgbuf_resend = NULL;
 
     if (!RunAsDaemon || AddDebug)
         printf("[%d] FG_TRACKER::TrackerLoop entered\n",pid);
-    for ( ; ; )
+    
+	/*Infinite loop*/
+	for ( ; ; )
     {
-        /*time-out issue*/
+        length = 0;
+		/*time-out issue*/
         usleep(1000000/time_out_fraction);
         time_out_counter_l++;
         if (time_out_counter_l==time_out_fraction)
@@ -177,7 +216,7 @@ FG_TRACKER::TrackerLoop ()
             printf("[%d] FG_TRACKER::TrackerLoop Connection timed out...\n",pid);
             SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Connection timed out...");
             Connect ();
-            waiting_reply=false;
+			resentflg = true;
             time_out_counter_l=1;
             time_out_counter_u=0;
             /*time-out issue End*/
@@ -189,8 +228,16 @@ FG_TRACKER::TrackerLoop ()
             {
                 time_out_counter_l=1;
                 time_out_counter_u=0;
-                sent = true;
-                waiting_reply=false;
+				if (msgbuf_head==NULL)
+					printf("[%d] FG_TRACKER::TrackerLoop Warning! Message count mismatch between fgms and fgtracker. Potential data loss!.\n",pid);
+				else
+				{
+					msgbuf_new=msgbuf_head;
+					msgbuf_head=msgbuf_head->next;
+					free(msgbuf_new);
+					msgbuf_new=NULL;
+					pkt_sent--;
+				}
                 strcpy ( res, "" );
             }
             else if ( strncmp( res, "PING", 4 ) == 0 )
@@ -208,65 +255,107 @@ FG_TRACKER::TrackerLoop ()
                 SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Responce " << res << " not OK! Send again...");
             }
         }
-        if (sent)
+        if (pkt_sent<max_msg_sent)
         {   // get message from queue
-            length = 0;
-#ifndef NO_TRACKER_PORT
-#ifdef USE_TRACKER_PORT
-            pthread_mutex_lock( &msg_mutex );   // acquire the lock
-            pthread_cond_wait( &condition_var, &msg_mutex );    // go wait for the condition
-            VI vi = msg_queue.begin(); // get first message
-            if (vi != msg_queue.end())
-            {
-                std::string s = *vi;
-                msg_queue.erase(vi);    // remove from queue
-                length = (int)s.size(); // should I worry about LENGTH???
-                strcpy( buf.mtext, s.c_str() ); // mtext is 1024 bytes!!!
-            }
-            pthread_mutex_unlock( &msg_mutex ); // unlock the mutex
-#else // !#ifdef USE_TRACKER_PORT
-            length = msgrcv (ipcid, &buf, MAXLINE, 0, MSG_NOERROR | IPC_NOWAIT);
-            msgrcv_errno=errno;
-#endif // #ifdef USE_TRACKER_PORT y/n
-#endif // NO_TRACKER_PORT
-            buf.mtext[length] = '\0';
-#ifdef ADD_TRACKER_LOG
-            if (length)
-                write_msg_log(&buf.mtext[0], length, (char *)"OUT: ");
-#endif // #ifdef ADD_TRACKER_LOG
+			
+			if (resentflg==true)
+			{/*msg from buffer*/
+				if (msgbuf_head==NULL)
+				{/*All msg sent and well received*/
+					printf("[%d] FG_TRACKER::TrackerLoop Resend data completed.\n",pid);
+					resentflg=false;
+					msgbuf_resend=NULL;
+					continue;
+				} else if (msgbuf_tail == msgbuf_resend)
+				{/*All msg sent, waiting ACK*/}
+				else if (msgbuf_resend==NULL)
+				{/*Need to send msg after the connect.*/
+					msgbuf_resend=msgbuf_head;
+					msgbuf_new=msgbuf_resend;
+					length=strlen(msgbuf_new->msg);
+				}else
+				{/*Need to send further message*/
+					msgbuf_resend=msgbuf_resend->next;
+					msgbuf_new=msgbuf_resend;
+					length=strlen(msgbuf_new->msg);
+				}
+			}	
+			else
+			{/*msg from queue*/
+				#ifndef NO_TRACKER_PORT
+				#ifdef USE_TRACKER_PORT
+				pthread_mutex_lock( &msg_mutex );   // acquire the lock
+				pthread_cond_wait( &condition_var, &msg_mutex );    // go wait for the condition
+				VI vi = msg_queue.begin(); // get first message
+				if (vi != msg_queue.end())
+				{
+					std::string s = *vi;
+					msg_queue.erase(vi);    // remove from queue
+					length = (int)s.size(); // should I worry about LENGTH???
+					strcpy( buf.mtext, s.c_str() ); // mtext is 1024 bytes!!!
+				}
+				pthread_mutex_unlock( &msg_mutex ); // unlock the mutex
+				#else // !#ifdef USE_TRACKER_PORT
+				length = msgrcv (ipcid, &buf, MAXLINE, 0, MSG_NOERROR | IPC_NOWAIT);
+				msgrcv_errno=errno;
+				#endif // #ifdef USE_TRACKER_PORT y/n
+				#endif // NO_TRACKER_PORT
+				buf.mtext[length] = '\0';
+				#ifdef ADD_TRACKER_LOG
+				if (length)
+					write_msg_log(&buf.mtext[0], length, (char *)"OUT: ");
+				#endif // #ifdef ADD_TRACKER_LOG
+			}
         }
-        if ( length > 0 )
+        if ( length > 0 ) /*confirm if the message length is > 0*/
         {
-            sent = false;
-            // send message via tcp
-            if (waiting_reply==false)
-            {
-                if (!RunAsDaemon || AddDebug) 
-                {
-                    printf("[%d] FG_TRACKER::TrackerLoop sending msg %d bytes\n",pid,length);
-                    printf("[%d] FG_TRACKER::TrackerLoop Msg: %s\n",pid,buf.mtext); 
-                }
-                while (SWRITE (m_TrackerSocket,buf.mtext,strlen(buf.mtext)) < 0)
-                {   // FIX20120812 - re-write the failed message now before wait reply!!!
-                    printf("[%d] FG_TRACKER::TrackerLoop Can't write to server...\n",pid);
-                    SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Can't write to server...");
-                    Connect ();
-                }
-                waiting_reply=true;
-            }
+			length++; /*including the '\0'*/
+			if (resentflg==false)
+			{
+				msgbuf_new = (struct msg *) malloc(sizeof(struct msg));
+				if (msgbuf_new==NULL)
+				{
+					printf("[%d] FG_TRACKER::TrackerLoop Cannot allocate memory. Force exit...\n",pid);
+					exit(0);
+				}
+				strcpy ( msgbuf_new->msg, buf.mtext);
+				msgbuf_new->next = NULL;
+				
+				if (msgbuf_head == NULL) /*No message waiting reply at all*/
+					msgbuf_head = msgbuf_new;
+				else
+					msgbuf_tail->next=msgbuf_new;
+				msgbuf_tail = msgbuf_new;
+			}
+			
+			/*Send message at msgbuf_new via tcp*/
+			if (!RunAsDaemon || AddDebug) 
+			{
+				printf("[%d] FG_TRACKER::TrackerLoop sending msg %d bytes, addr %p\n",pid,length,msgbuf_new);
+				printf("[%d] FG_TRACKER::TrackerLoop Msg: %s\n",pid,msgbuf_new->msg); 
+			}
+			if (SWRITE (m_TrackerSocket,msgbuf_new->msg,length) < 0)
+			{   // FIX20120812 - re-write the failed message now before wait reply!!!
+				printf("[%d] FG_TRACKER::TrackerLoop Can't write to server...\n",pid);
+				SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Can't write to server...");
+				Connect ();
+				resentflg = true;
+			}
+			if (resentflg==false)
+				pkt_sent++;
         }
 #ifndef USE_TRACKER_PORT
         else if (msgrcv_errno==ENOMSG)
-        {/*No Message - This error Should be ignored*/
-        }
+        {/*No Message - Not really "an error"*/}
 #endif
-        else
+		else if (pkt_sent>=max_msg_sent)
+		{}
+		else
         {
             // an error with the queue has occured
             // avoid an infinite loop
             // return (2);
             printf("[%d] FG_TRACKER::TrackerLoop: message queue error %d\n",pid,errno);
-            sent = true;
         }
     }
     return (0);
@@ -305,7 +394,8 @@ FG_TRACKER::Connect ()
         }
         else
         {
-            SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::Connect: failed! sleep " << DEF_TRACKER_SLEEP << " secs");
+            SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::Connect: Connection failed! sleep " << DEF_TRACKER_SLEEP << " seconds.");
+			printf("[%d] FG_TRACKER::Connect: Connection failed! sleep %d seconds.\n",pid, DEF_TRACKER_SLEEP);
             sleep (DEF_TRACKER_SLEEP);  // sleep DEF_TRACKER_SLEEP secconds and try again
         }
     }
@@ -365,10 +455,11 @@ FG_TRACKER::TcpConnect (char *server_address,int server_port)
     struct sockaddr_in serveraddr;
     int sockfd;
     pid_t pid = getpid();
-    sockfd=socket(AF_INET, SOCK_STREAM, 0);
+	
+	sockfd=socket(AF_INET, SOCK_STREAM, 0);
     if (SERROR(sockfd))
     {
-        SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: can't get socket...");
+		printf( "[%d] FG_TRACKER::TcpConnect: Can't get socket...\n",pid);
         return -1;
     }
     bzero(&serveraddr,sizeof(serveraddr));
@@ -377,7 +468,7 @@ FG_TRACKER::TcpConnect (char *server_address,int server_port)
 #ifdef _MSC_VER
     if ( inet_pton(AF_INET, server_address, &serveraddr.sin_addr) == -1 )
     {
-        SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: inet_pton failed!");
+        printf( "[%d] FG_TRACKER::TcpConnect: inet_pton failed!\n",pid);
         if (!SERROR(sockfd))
             SCLOSE(sockfd);
         return -1;
@@ -385,32 +476,151 @@ FG_TRACKER::TcpConnect (char *server_address,int server_port)
 #else
     inet_pton(AF_INET, server_address, &serveraddr.sin_addr);
 #endif
+
     if (connect(sockfd, (SA *) &serveraddr, sizeof(serveraddr))<0 )
     {
         if (!SERROR(sockfd))
-            SCLOSE(sockfd); // close the socket
-        SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: connect failed!");
+            SCLOSE(sockfd); /*close the socket*/
+		printf( "[%d] FG_TRACKER::TcpConnect: Connect failed!\n",pid);
         return -1;
     }
     else
-    {
-        if(fcntl(sockfd, F_GETFL) & O_NONBLOCK) 
-        {
-            // socket is non-blocking
-            SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: Socket is in non-blocking mode");
-        }
-        else
-        {
-            SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: Socket is in blocking mode");
-            if(fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL) | O_NONBLOCK) < 0)
-            {
-                SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: FAILED to set the socket to non-blocking mode");
-            }
-            else
-                SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: Socket set to non-blocking mode");
-        }
-        return (sockfd);
-    }
+    {	
+		if(fcntl(sockfd, F_GETFL) & O_NONBLOCK) 
+		{
+			// socket is non-blocking
+			SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: Socket is in non-blocking mode");
+			printf( "[%d] FG_TRACKER::TcpConnect: Socket is in non-blocking mode\n",pid);
+		}
+		else
+		{
+			SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TcpConnect: Socket is in blocking mode");
+			printf( "[%d] FG_TRACKER::TcpConnect: Socket is in blocking mode\n",pid);
+			if(fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL) | O_NONBLOCK) < 0)
+			{
+				printf( "[%d] FG_TRACKER::TcpConnect: FAILED to set the socket to non-blocking mode\n",pid);
+			}
+			else
+				printf( "[%d] FG_TRACKER::TcpConnect: Set the socket to non-blocking mode\n",pid);
+		}
+		return (sockfd);
+	}
 }  // TcpConnect  ()
+
+//////////////////////////////////////////////////////////////////////
+//
+//  Signal handling
+//
+//////////////////////////////////////////////////////////////////////
+void
+signal_handler(int s)
+{
+#ifndef _MSC_VER
+	pid_t mypid = getpid();
+	
+	switch (s)
+	{
+		case  1:
+			printf("[%d] SIGHUP received, exiting...\n",mypid);
+			exit(0);
+			break;
+		case  2:
+			printf("[%d] SIGINT received, exiting...\n",mypid);
+			exit(0);
+			break;
+		case  3:
+			printf("[%d] SIGQUIT received, exiting...\n",mypid);
+			break;
+		case  4:
+			printf("[%d] SIGILL received\n",mypid);
+			break;
+		case  5:
+			printf("[%d] SIGTRAP received\n",mypid);
+			break;
+		case  6:
+			printf("[%d] SIGABRT received\n",mypid);
+			break;
+		case  7:
+			printf("[%d] SIGBUS received\n",mypid);
+			break;
+		case  8:
+			printf("[%d] SIGFPE received\n",mypid);
+			break;
+		case  9:
+			printf("[%d] SIGKILL received\n",mypid);
+			exit(0);
+			break;
+		case 10:
+			printf("[%d] SIGUSR1 received\n",mypid);
+			break;
+		case 11:
+			printf("[%d] SIGSEGV received. Exiting...\n",mypid);
+			exit(1);
+			break;
+		case 12:
+			printf("[%d] SIGUSR2 received\n",mypid);
+			break;
+		case 13:
+			printf("[%d] SIGPIPE received. Connection Error.\n",mypid);
+			break;
+		case 14:
+			printf("[%d] SIGALRM received\n",mypid);
+			break;
+		case 15:
+			printf("[%d] SIGTERM received\n",mypid);
+			exit(0);
+			break;
+		case 16:
+			printf("[%d] SIGSTKFLT received\n",mypid);
+			break;
+		case 17:
+			printf("[%d] SIGCHLD received\n",mypid);
+			break;
+		case 18:
+			printf("[%d] SIGCONT received\n",mypid);
+			break;
+		case 19:
+			printf("[%d] SIGSTOP received\n",mypid);
+			break;
+		case 20: 
+			printf("[%d] SIGTSTP received\n",mypid);
+			break;
+		case 21:
+			printf("[%d] SIGTTIN received\n",mypid);
+			break;
+		case 22:
+			printf("[%d] SIGTTOU received\n",mypid);
+			break;
+		case 23:
+			printf("[%d] SIGURG received\n",mypid);
+			break;
+		case 24:
+			printf("[%d] SIGXCPU received\n",mypid);
+			break;
+		case 25:
+			printf("[%d] SIGXFSZ received\n",mypid);
+			break;
+		case 26:
+			printf("[%d] SIGVTALRM received\n",mypid);
+			break;
+		case 27:
+			printf("[%d] SIGPROF received\n",mypid);
+			break;
+		case 28:
+			printf("[%d] SIGWINCH received\n",mypid);
+			break;
+		case 29: 
+			printf("[%d] SIGIO received\n",mypid);
+			break;
+		case 30:
+			printf("[%d] SIGPWR received\n",mypid);
+			break;
+		default:
+			printf("[%d] signal %d received\n",mypid,s);
+
+	}
+#endif
+}
+
 //////////////////////////////////////////////////////////////////////
 // vim: ts=4:sw=4:sts=0

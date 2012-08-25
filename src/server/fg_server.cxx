@@ -359,7 +359,7 @@ FG_SERVER::Init
   }
   if (m_IsTracked)
   {
-    if ( m_Tracker->InitTracker(&m_TrackerPIDS[0]) )
+    if ( m_Tracker->InitTracker(&m_TrackerPID) )
     {
         SG_ALERT (SG_SYSTEMS, SG_ALERT, "# InitTracker FAILED! Disabling tracker!");
             m_IsTracked = false;
@@ -641,8 +641,8 @@ FG_SERVER::AddClient
 )
 {
   time_t          Timestamp;
-  uint32_t        MsgLen;
-  uint32_t        MsgId;
+  //uint32_t        MsgLen;
+  //uint32_t        MsgId;
   uint32_t        MsgMagic;
   string          Message;
   string          Origin;
@@ -654,8 +654,8 @@ FG_SERVER::AddClient
   Timestamp           = time(0);
   MsgHdr              = (T_MsgHdr *) Msg;
   PosMsg              = (T_PositionMsg *) (Msg + sizeof(T_MsgHdr));
-  MsgId               = XDR_decode<uint32_t> (MsgHdr->MsgId);
-  MsgLen              = XDR_decode<uint32_t> (MsgHdr->MsgLen);
+  //MsgId               = XDR_decode<uint32_t> (MsgHdr->MsgId);
+  //MsgLen              = XDR_decode<uint32_t> (MsgHdr->MsgLen);
   MsgMagic            = XDR_decode<uint32_t> (MsgHdr->Magic);
   IsLocal             = true;
   if (MsgMagic == RELAY_MAGIC) // not a local client
@@ -1110,7 +1110,6 @@ FG_SERVER::SendChatMessages
   mT_PlayerListIt& CurrentPlayer
 )
 {
-  T_ChatMsg*    ChatMsg;
   mT_MessageIt  CurrentMessage;
 
   if ((CurrentPlayer->IsLocal) && (m_MessageList.size()))
@@ -1121,7 +1120,6 @@ FG_SERVER::SendChatMessages
       if ((CurrentMessage->Target == 0)
       ||  (CurrentMessage->Target == CurrentPlayer->ClientID))
       {
-        ChatMsg =(T_ChatMsg*)(CurrentMessage->Msg+sizeof(T_MsgHdr));
         int len = sizeof(T_MsgHdr) + sizeof(T_ChatMsg);
         m_DataSocket->sendto (CurrentMessage->Msg, len, 0,
           &CurrentPlayer->Address);
@@ -1895,7 +1893,7 @@ FG_SERVER::Done
     // using a thread - could kill it, but...
 #else // #ifdef USE_TRACKER_PORT
     // using fork() - must kill child processes
-    pid_t kid = m_TrackerPIDS[0];
+    pid_t kid = m_TrackerPID;
     if (kill(kid, SIGTERM))
     {
       SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Done() kill(" << kid << ", SIGKILL)!");

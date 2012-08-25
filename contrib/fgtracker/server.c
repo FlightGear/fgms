@@ -118,8 +118,7 @@ void signal_handler(int s)
 {
 	#ifndef _MSC_VER
     char debugstr[MAXLINE];
-	pid_t mypid;
-	mypid = getpid();
+	pid_t mypid = getpid();
 	
 	switch (s)
 	{
@@ -545,7 +544,7 @@ int parse_message( char * msg, char *event,
 void doit(int fd)
 {
     // put these BIG buffers outside the function stack
-    static char debugstr[MAXLINE];
+	static char debugstr[MAXLINE];
     static char msg[MAXLINE];
     static char event[MAXLINE];
     static char callsign[MAXLINE];
@@ -558,6 +557,7 @@ void doit(int fd)
     static char lat[MAXLINE];
     static char alt[MAXLINE];
 	static char *clientip;
+	char b;
     uint16_t clientport =1;
 	int i=0;
 	int pg_reconn_counter;
@@ -620,7 +620,17 @@ void doit(int fd)
 
     while (1)
     {
-        if ((len = SREAD(fd, msg, MAXLINE)) <= 0)
+         len=i=0;
+		 
+		do
+		{
+			i = recv( fd, &b, sizeof( b ), 0 );
+			msg[len]=b;
+			if (b=='\0' || i<1)
+				break;
+		}while(++len && len<MAXLINE);
+		
+		if (i<1)
 		{
 			usleep(1000000/time_out_fraction);
 			time_out_counter_l++;
@@ -655,7 +665,7 @@ void doit(int fd)
 		time_out_counter_u=0;
 		no_of_line++;
 		msg[len]='\0';
-        snprintf(debugstr,MAXLINE,"[%d] %s:%d: Read %d bytes",mypid,clientip,clientport,len);
+        snprintf(debugstr,MAXLINE,"[%d] %s:%d: Read %d bytes",mypid,clientip,clientport,len+1);
         debug(3,debugstr);
 
         // no need to clear the WHOLE buffer - just first byte
