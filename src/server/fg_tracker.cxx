@@ -331,7 +331,6 @@ FG_TRACKER::TrackerLoop ()
                 if (!RunAsDaemon || AddDebug)
                     printf("[%d] FG_TRACKER::TrackerLoop PING from server received\n",pid);
                 SWRITE (m_TrackerSocket,"PONG",5);
-				//SWRITE (m_TrackerSocket,0,1);
                 strcpy ( res, "" );
             }
             else
@@ -452,9 +451,12 @@ FG_TRACKER::Connect()
 			return false;
         }
     }
-    SWRITE(m_TrackerSocket,"REPLY",sizeof("REPLY"));
+    SWRITE(m_TrackerSocket,"",1);
+	sleep(2);
+    SWRITE(m_TrackerSocket,"NOWAIT",7);
     if (!RunAsDaemon || AddDebug)
-        printf("[%d] FG_TRACKER::Connect: Written 'REPLY'\n",pid);
+        printf("[%d] FG_TRACKER::Connect: Written 'NOWAIT'\n",pid);
+	sleep(1);
     return true;
 } // Connect ()
 //////////////////////////////////////////////////////////////////////

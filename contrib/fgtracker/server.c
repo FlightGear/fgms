@@ -431,7 +431,8 @@ enum MsgType {
     MT_CONNECT,
     MT_DISCONNECT,
     MT_POSITION,
-	MT_PONG
+	MT_PONG,
+	MT_NOWAIT
 };
 
 // some easy very specific macros
@@ -473,6 +474,8 @@ int parse_message( char * msg, char *event,
     event[off] = 0; // zero terminate the string
 
     // deal with some short message types
+	if (strcmp(event,"NOWAIT") == 0)
+        return MT_NOWAIT;    // all done
     if (strcmp(event,"REPLY") == 0)
         return MT_REPLY;    // all done
     else if (strcmp(event,"PING") == 0)
@@ -570,6 +573,7 @@ void doit(int fd)
     socklen_t clientaddrlen;
     PGconn *conn = NULL;
     short int reply = 0;
+    short int nowait = 0;
 	short int sockect_read_completed =0;
     int res, sendok;
 	unsigned long no_of_line=0;
@@ -625,23 +629,33 @@ void doit(int fd)
         i=0;
 		len = strlen(msg);
 		
-		do
-		{	/*Maximun character in a line : MAXLINE-1. msg[MAXLINE] = '\0'*/
-			if (len==MAXLINE-1)
-			{
+		if (nowait==0)
+		{
+			len = SREAD(fd, msg, MAXLINE);
+			if (len>0)
 				sockect_read_completed=1;
-				break;
-			}
-			i = recv( fd, &b, sizeof( b ), 0 );
-			msg[len]=b;
-			if (b=='\0' && i>=1)
-			{
-				sockect_read_completed=1;
-				break;
-			}
-			if (i<1)
-				break;
-		}while(len++);i=0;
+		}
+		else
+		{
+			do
+			{	/*Maximun character in a line : MAXLINE-1. msg[MAXLINE] = '\0'*/
+				if (len==MAXLINE-1)
+				{
+					sockect_read_completed=1;
+					break;
+				}
+				i = recv( fd, &b, sizeof( b ), 0 );
+				msg[len]=b;
+				if (b=='\0' && i>=1)
+				{
+					sockect_read_completed=1;
+					break;
+				}
+				if (i<1)
+					break;
+			}while(len++);
+		}
+		i=0;
 		msg[len]='\0';
 		
 		if (sockect_read_completed==0)
@@ -732,8 +746,14 @@ void doit(int fd)
 
 		switch (res) 
 		{
-			case MT_REPLY:
-				reply = 1;  // server want REPLY to each message
+			case MT_NOWAIT: /*starting from 0.10.22 */
+				reply = 1;  // Client want REPLY to each message
+				nowait = 1;// Client will not wait ACK before sending another message
+				sprintf(debugstr,"[%d] %s:%d: NOWAIT mode is ON", mypid, clientip,clientport);
+				debug(1,debugstr);
+				break;
+			case MT_REPLY: /*0.10.21 and below*/
+				reply = 1;  // Client want REPLY to each message
 				sprintf(debugstr,"[%d] %s:%d: REPLY mode is ON", mypid, clientip,clientport);
 				debug(1,debugstr);
 				break;
