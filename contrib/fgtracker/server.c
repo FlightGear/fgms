@@ -569,9 +569,11 @@ void doit(int fd)
     struct sockaddr_in clientaddr;
     socklen_t clientaddrlen;
     PGconn *conn = NULL;
-    int reply = 0;
+    short int reply = 0;
+	short int sockect_read_completed =0;
     int res, sendok;
 	unsigned long no_of_line=0;
+	
 	
     mypid = getpid();
 	
@@ -620,17 +622,29 @@ void doit(int fd)
 
     while (1)
     {
-         len=i=0;
-		 
+        i=0;
+		len = strlen(msg);
+		
 		do
-		{
+		{	/*Maximun character in a line : MAXLINE-1. msg[MAXLINE] = '\0'*/
+			if (len==MAXLINE-1)
+			{
+				sockect_read_completed=1;
+				break;
+			}
 			i = recv( fd, &b, sizeof( b ), 0 );
 			msg[len]=b;
-			if (b=='\0' || i<1)
+			if (b=='\0' && i>=1)
+			{
+				sockect_read_completed=1;
 				break;
-		}while(++len && len<MAXLINE);
+			}
+			if (i<1)
+				break;
+		}while(len++);i=0;
+		msg[len]='\0';
 		
-		if (i<1)
+		if (sockect_read_completed==0)
 		{
 			usleep(1000000/time_out_fraction);
 			time_out_counter_l++;
@@ -661,10 +675,10 @@ void doit(int fd)
 				break;
 			continue;
 		}
+		sockect_read_completed=0;
 		time_out_counter_l=1;
 		time_out_counter_u=0;
 		no_of_line++;
-		msg[len]='\0';
         snprintf(debugstr,MAXLINE,"[%d] %s:%d: Read %d bytes",mypid,clientip,clientport,len+1);
         debug(3,debugstr);
 
@@ -765,7 +779,7 @@ void doit(int fd)
 				break;
         }
         if (sendok && reply) {
-            if (SWRITE(fd,"OK",2) != 2) {
+            if (SWRITE(fd,"OK",3) != 3) {
                 sprintf(debugstr,"[%d] %s:%d: Write OK failed - %s", mypid, clientip,clientport,strerror(errno));
                 sprintf(debugstr,"[%d] %s:%d: Connection lost. Exiting...", mypid, clientip,clientport);
 				debug(1,debugstr);
@@ -775,6 +789,7 @@ void doit(int fd)
                 debug(3,debugstr);
             }
         }
+		strcpy(msg,""); /*clear message*/
     }
     sprintf(debugstr,"[%d] %s:%d: Connection timeout after %d seconds. Exiting...", mypid, clientip,clientport,time_out_counter_u);
     debug(1,debugstr);
@@ -891,8 +906,8 @@ void doit2(int fd)
        			if (strncmp("mpdummy",callsign,7)!=0 && strncmp("obscam",callsign,6)!=0) logFlight(conn,callsign,model,time,1);
 			if (reply)
 			{
-				if (SWRITE(fd,"OK",2) != 2)
-                    debug(1,"write OK1 failed");
+				if (SWRITE(fd,"OK",3) != 3)
+                    debug(1,"write OK (CONNECT) failed");
                 else
                     debug(3,"reply sent");
 			}
@@ -904,8 +919,8 @@ void doit2(int fd)
        			if (strncmp("mpdummy",callsign,7)!=0 && strncmp("obscam",callsign,6)!=0) logFlight(conn,callsign,model,time,0);
 			if (reply)
 			{
-				if (SWRITE(fd,"OK",2) != 2)
-                    debug(1,"write OK2 failed");
+				if (SWRITE(fd,"OK",3) != 3)
+                    debug(1,"write OK (DISCONNECT) failed");
                 else
                     debug(3,"reply sent");
 			}
@@ -917,8 +932,8 @@ void doit2(int fd)
        			if (strncmp("mpdummy",callsign,7)!=0 && strncmp("obscam",callsign,6)!=0) logPosition(conn,callsign,time,lon,lat,alt);
 			if (reply)
 			{
-				if (SWRITE(fd,"OK",2) != 2)
-                    debug(1,"write OK2 failed");
+				if (SWRITE(fd,"OK",3) != 3)
+                    debug(1,"write OK (POSITION) failed");
                 else
                     debug(3,"reply sent");
 			}

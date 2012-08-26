@@ -36,7 +36,7 @@
 #include <simgear/debug/logstream.hxx>
 #include "daemon.hxx"
 
-#define MAXLINE 4096
+#define MAXLINE 4096 /*Maximun character in line: 4095. char in [4095] = '\0'*/
 #ifndef DEF_TRACKER_SLEEP
     #define DEF_TRACKER_SLEEP 300   // try to connect each Five minutes
 #endif // DEF_TRACKER_SLEEP
@@ -142,7 +142,7 @@ FG_TRACKER::InitTracker ( pid_t *pPIDS )
 		signal(SIGSTOP, signal_handler);
 		signal(SIGTSTP, signal_handler);
 		#endif // !_MSC_VER
-        Connect ();
+        
         TrackerLoop ();
         exit (0);
     }
@@ -165,39 +165,47 @@ int
 FG_TRACKER::TrackerLoop ()
 {
     m_MsgBuffer		buf;
+	int 			i=0;
     int				length;
 	int				pkt_sent = 0;
 	int				max_msg_sent = 25; /*Maximun message sent before receiving reply.*/
     char			res[MAXLINE];	/*Msg from server*/
+	char 			b;
     pid_t			pid = getpid();
     short int		time_out_counter_l=0;
     unsigned int	time_out_counter_u=0;
     short int		time_out_fraction=20; /* 1000000/time_out_fraction must be integer*/
-    int				msgrcv_errno=0;
 	bool			resentflg = false; /*If ture, resend all message in the msgbuf first*/
+	bool			connected = false; /*If connected to fgtracker*/
+	bool			sockect_read_completed = false;
 	/*Msg structure*/
 	struct msg 
 	{
 		char msg[MAXLINE];
 		struct msg *next;
 	};
-	struct msg		*msgbuf_head,*msgbuf_tail,*msgbuf_new,*msgbuf_resend;
+	struct msg		*msgque_head,*msgque_tail,*msgque_new,*msgbuf_head,*msgbuf_tail,*msgbuf_new,*msgbuf_resend;
 
 	
 	/*Initalize value*/
     strcpy ( res, "" );
+	msgque_head = NULL;
+	msgque_tail = NULL;
+	msgque_new = NULL;
 	msgbuf_head = NULL;
 	msgbuf_tail = NULL;
-	msgbuf_new = NULL;
 	msgbuf_resend = NULL;
 
     if (!RunAsDaemon || AddDebug)
         printf("[%d] FG_TRACKER::TrackerLoop entered\n",pid);
     
+	connected=Connect();
+	
 	/*Infinite loop*/
 	for ( ; ; )
     {
         length = 0;
+			
 		/*time-out issue*/
         usleep(1000000/time_out_fraction);
         time_out_counter_l++;
@@ -208,22 +216,97 @@ FG_TRACKER::TrackerLoop ()
         }
         if (time_out_counter_u%60==0 && time_out_counter_u >=180 && time_out_counter_l==0)
         {   /*Print warning*/
-            if (!RunAsDaemon || AddDebug)
+            if ((!RunAsDaemon || AddDebug) && connected==true)
                 printf("[%d] Warning: FG_TRACKER::TrackerLoop No data receive from server for %d seconds\n",pid,time_out_counter_u);
         }
-        if (time_out_counter_u%300==0 && time_out_counter_l==0)
-        {   /*Timed out - reconnect*/
-            printf("[%d] FG_TRACKER::TrackerLoop Connection timed out...\n",pid);
-            SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Connection timed out...");
-            Connect ();
+        if (time_out_counter_u%DEF_TRACKER_SLEEP==0 && time_out_counter_l==0)
+        {   /*Timed out/Need retry - reconnect*/
+			if (connected==true)
+			{
+				printf("[%d] FG_TRACKER::TrackerLoop Connection timed out...\n",pid);
+				SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Connection timed out...");
+			}
+            connected=Connect();
+			msgbuf_resend=NULL;
 			resentflg = true;
             time_out_counter_l=1;
             time_out_counter_u=0;
-            /*time-out issue End*/
         }
-        /*Read socket and see if anything arrived*/
-        if (SREAD (m_TrackerSocket,res,MAXLINE) > 0)
+		/*time-out issue End*/
+		
+		/*Read msg from IPC*/
+		#ifndef NO_TRACKER_PORT
+		#ifdef USE_TRACKER_PORT
+		pthread_mutex_lock( &msg_mutex );   // acquire the lock
+		pthread_cond_wait( &condition_var, &msg_mutex );    // go wait for the condition
+		VI vi = msg_queue.begin(); // get first message
+		if (vi != msg_queue.end())
+		{
+			std::string s = *vi;
+			msg_queue.erase(vi);    // remove from queue
+			length = (int)s.size(); // should I worry about LENGTH???
+			strcpy( buf.mtext, s.c_str() ); // mtext is 1024 bytes!!!
+		}
+		pthread_mutex_unlock( &msg_mutex ); // unlock the mutex
+		#else // !#ifdef USE_TRACKER_PORT
+		length = msgrcv (ipcid, &buf, MAXLINE, 0, MSG_NOERROR | IPC_NOWAIT);
+		#endif // #ifdef USE_TRACKER_PORT y/n
+		#endif // NO_TRACKER_PORT
+		buf.mtext[length] = '\0';
+		#ifdef ADD_TRACKER_LOG
+		if (length)
+			write_msg_log(&buf.mtext[0], length, (char *)"OUT: ");
+		#endif // #ifdef ADD_TRACKER_LOG
+        if (length>0)
+		{
+			msgque_new = (struct msg *) malloc(sizeof(struct msg));
+			if (msgque_new==NULL)
+			{
+				printf("[%d] FG_TRACKER::TrackerLoop Cannot allocate memory. Force exit...\n",pid);
+				exit(0);
+			}
+			strcpy ( msgque_new->msg, buf.mtext);
+			msgque_new->next = NULL;
+			
+			if (msgque_head == NULL) /*No message in queue at all*/
+				msgque_head = msgque_new;
+			else
+				msgque_tail->next=msgque_new;
+			msgque_tail = msgque_new;
+		}
+		
+		length = 0;
+		
+		/*DO NOT place any stream read/write above this line!*/
+		if (connected==false)
+			continue;
+		/*Place stream read/write below this line.*/
+		
+		/*Read socket and see if anything arrived*/
+		length = strlen(res);
+		do
+		{	/*Maximun character in a line : MAXLINE-1. res[MAXLINE] = '\0'*/
+			if (length==MAXLINE-1)
+			{
+				sockect_read_completed=true;
+				break;
+			}
+			i = recv( m_TrackerSocket, &b, sizeof( b ), 0 );
+			res[length]=b;
+			if (b=='\0' && i>=1)
+			{
+				sockect_read_completed=true;
+				break;
+			}
+			if (i<1)
+				break;
+		}while(length++);i=0;
+		res[length]='\0';
+		
+        if (length > 0 && sockect_read_completed==true)
         {   /*ACK from server*/
+			sockect_read_completed=false;
+			//printf("[%d] FG_TRACKER::TrackerLoop MsgR: %s.\n",pid,res);
             if ( strncmp( res, "OK", 2 ) == 0 )
             {
                 time_out_counter_l=1;
@@ -247,7 +330,8 @@ FG_TRACKER::TrackerLoop ()
                 time_out_counter_u=0;
                 if (!RunAsDaemon || AddDebug)
                     printf("[%d] FG_TRACKER::TrackerLoop PING from server received\n",pid);
-                SWRITE (m_TrackerSocket,"PONG",4);
+                SWRITE (m_TrackerSocket,"PONG",5);
+				//SWRITE (m_TrackerSocket,0,1);
                 strcpy ( res, "" );
             }
             else
@@ -255,6 +339,10 @@ FG_TRACKER::TrackerLoop ()
                 SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Responce " << res << " not OK! Send again...");
             }
         }
+		
+		length = 0;
+		
+		/*Send message if necessary*/
         if (pkt_sent<max_msg_sent)
         {   // get message from queue
 			
@@ -266,8 +354,8 @@ FG_TRACKER::TrackerLoop ()
 					resentflg=false;
 					msgbuf_resend=NULL;
 					continue;
-				} else if (msgbuf_tail == msgbuf_resend)
-				{/*All msg sent, waiting ACK*/}
+				} else if (msgbuf_tail == msgbuf_resend)/*All msg sent, waiting ACK*/
+					continue;
 				else if (msgbuf_resend==NULL)
 				{/*Need to send msg after the connect.*/
 					msgbuf_resend=msgbuf_head;
@@ -282,51 +370,22 @@ FG_TRACKER::TrackerLoop ()
 			}	
 			else
 			{/*msg from queue*/
-				#ifndef NO_TRACKER_PORT
-				#ifdef USE_TRACKER_PORT
-				pthread_mutex_lock( &msg_mutex );   // acquire the lock
-				pthread_cond_wait( &condition_var, &msg_mutex );    // go wait for the condition
-				VI vi = msg_queue.begin(); // get first message
-				if (vi != msg_queue.end())
-				{
-					std::string s = *vi;
-					msg_queue.erase(vi);    // remove from queue
-					length = (int)s.size(); // should I worry about LENGTH???
-					strcpy( buf.mtext, s.c_str() ); // mtext is 1024 bytes!!!
-				}
-				pthread_mutex_unlock( &msg_mutex ); // unlock the mutex
-				#else // !#ifdef USE_TRACKER_PORT
-				length = msgrcv (ipcid, &buf, MAXLINE, 0, MSG_NOERROR | IPC_NOWAIT);
-				msgrcv_errno=errno;
-				#endif // #ifdef USE_TRACKER_PORT y/n
-				#endif // NO_TRACKER_PORT
-				buf.mtext[length] = '\0';
-				#ifdef ADD_TRACKER_LOG
-				if (length)
-					write_msg_log(&buf.mtext[0], length, (char *)"OUT: ");
-				#endif // #ifdef ADD_TRACKER_LOG
-			}
-        }
-        if ( length > 0 ) /*confirm if the message length is > 0*/
-        {
-			length++; /*including the '\0'*/
-			if (resentflg==false)
-			{
-				msgbuf_new = (struct msg *) malloc(sizeof(struct msg));
-				if (msgbuf_new==NULL)
-				{
-					printf("[%d] FG_TRACKER::TrackerLoop Cannot allocate memory. Force exit...\n",pid);
-					exit(0);
-				}
-				strcpy ( msgbuf_new->msg, buf.mtext);
-				msgbuf_new->next = NULL;
+				if (msgque_head==NULL) /*No message pending to send at all*/
+					continue;
+				msgbuf_new=msgque_head;
+				msgque_head=msgque_head->next;
 				
-				if (msgbuf_head == NULL) /*No message waiting reply at all*/
+				if (msgbuf_head == NULL) /*No message in buffer at all*/
 					msgbuf_head = msgbuf_new;
 				else
 					msgbuf_tail->next=msgbuf_new;
 				msgbuf_tail = msgbuf_new;
+				length=strlen(msgbuf_new->msg);
 			}
+        } else continue; /*buffer full. Don't send msg*/
+        if ( length > 0 ) /*confirm if the message length is > 0*/
+        {
+			length++; /*including the '\0'*/
 			
 			/*Send message at msgbuf_new via tcp*/
 			if (!RunAsDaemon || AddDebug) 
@@ -335,27 +394,20 @@ FG_TRACKER::TrackerLoop ()
 				printf("[%d] FG_TRACKER::TrackerLoop Msg: %s\n",pid,msgbuf_new->msg); 
 			}
 			if (SWRITE (m_TrackerSocket,msgbuf_new->msg,length) < 0)
-			{   // FIX20120812 - re-write the failed message now before wait reply!!!
+			{
 				printf("[%d] FG_TRACKER::TrackerLoop Can't write to server...\n",pid);
 				SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Can't write to server...");
-				Connect ();
+				connected=Connect ();
+				msgbuf_resend=NULL;
 				resentflg = true;
 			}
 			if (resentflg==false)
 				pkt_sent++;
         }
-#ifndef USE_TRACKER_PORT
-        else if (msgrcv_errno==ENOMSG)
-        {/*No Message - Not really "an error"*/}
-#endif
-		else if (pkt_sent>=max_msg_sent)
-		{}
 		else
-        {
-            // an error with the queue has occured
-            // avoid an infinite loop
-            // return (2);
-            printf("[%d] FG_TRACKER::TrackerLoop: message queue error %d\n",pid,errno);
+        {	/*should not happen at all!*/
+            printf("[%d] FG_TRACKER::TrackerLoop: Internal Error (Msg size <= 0). Contact programmer to fix this issue.\n",pid);
+			SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Internal Error (Msg size <= 0). Contact programmer to fix this issue.");
         }
     }
     return (0);
@@ -364,11 +416,12 @@ FG_TRACKER::TrackerLoop ()
 
 //////////////////////////////////////////////////////////////////////
 //
-//  reconnect the tracker to its server
+//  (Re)connect the tracker to its server
+//	RETURN: true = success, false = failed
 //
 //////////////////////////////////////////////////////////////////////
-int
-FG_TRACKER::Connect ()
+bool
+FG_TRACKER::Connect()
 {
     bool connected = false;
     pid_t pid = getpid();
@@ -384,7 +437,7 @@ FG_TRACKER::Connect ()
         SCLOSE (m_TrackerSocket);
     if (!RunAsDaemon || AddDebug)
         printf("[%d] FG_TRACKER::Connect: Server: %s, Port: %d\n",pid, m_TrackerServer, m_TrackerPort);
-    while (connected == false)
+    if (connected == false)
     {
         m_TrackerSocket = TcpConnect (m_TrackerServer, m_TrackerPort);
         if (m_TrackerSocket >= 0)
@@ -394,17 +447,15 @@ FG_TRACKER::Connect ()
         }
         else
         {
-            SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::Connect: Connection failed! sleep " << DEF_TRACKER_SLEEP << " seconds.");
-			printf("[%d] FG_TRACKER::Connect: Connection failed! sleep %d seconds.\n",pid, DEF_TRACKER_SLEEP);
-            sleep (DEF_TRACKER_SLEEP);  // sleep DEF_TRACKER_SLEEP secconds and try again
+            SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::Connect: Failed to connect to fgtracker! Wait " << DEF_TRACKER_SLEEP << " seconds and retry.");
+			printf("[%d] FG_TRACKER::Connect: Failed to connect to fgtracker! Wait %d seconds and retry.\n",pid,DEF_TRACKER_SLEEP);
+			return false;
         }
     }
-    sleep (5);
     SWRITE(m_TrackerSocket,"REPLY",sizeof("REPLY"));
     if (!RunAsDaemon || AddDebug)
         printf("[%d] FG_TRACKER::Connect: Written 'REPLY'\n",pid);
-    sleep (2);
-    return (0);
+    return true;
 } // Connect ()
 //////////////////////////////////////////////////////////////////////
 
