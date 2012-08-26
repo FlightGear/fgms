@@ -36,7 +36,6 @@
 #include <simgear/debug/logstream.hxx>
 #include "daemon.hxx"
 
-#define MAXLINE 4096 /*Maximun character in line: 4095. char in [4095] = '\0'*/
 #ifndef DEF_TRACKER_SLEEP
     #define DEF_TRACKER_SLEEP 300   // try to connect each Five minutes
 #endif // DEF_TRACKER_SLEEP
@@ -169,7 +168,7 @@ FG_TRACKER::TrackerLoop ()
     int				length;
 	int				pkt_sent = 0;
 	int				max_msg_sent = 25; /*Maximun message sent before receiving reply.*/
-    char			res[MAXLINE];	/*Msg from server*/
+    char			res[MSGMAXLINE];	/*Msg from server*/
 	char 			b;
     pid_t			pid = getpid();
     short int		time_out_counter_l=0;
@@ -181,7 +180,7 @@ FG_TRACKER::TrackerLoop ()
 	/*Msg structure*/
 	struct msg 
 	{
-		char msg[MAXLINE];
+		char msg[MSGMAXLINE];
 		struct msg *next;
 	};
 	struct msg		*msgque_head,*msgque_tail,*msgque_new,*msgbuf_head,*msgbuf_tail,*msgbuf_new,*msgbuf_resend;
@@ -197,7 +196,7 @@ FG_TRACKER::TrackerLoop ()
 	msgbuf_resend = NULL;
 
     if (!RunAsDaemon || AddDebug)
-        printf("[%d] FG_TRACKER::TrackerLoop entered\n",pid);
+        printf("[%d] FG_TRACKER::TrackerLoop entered. Msg structure size: %d\n",pid, (int)sizeof(struct msg));
     
 	connected=Connect();
 	
@@ -285,8 +284,8 @@ FG_TRACKER::TrackerLoop ()
 		/*Read socket and see if anything arrived*/
 		length = strlen(res);
 		do
-		{	/*Maximun character in a line : MAXLINE-1. res[MAXLINE] = '\0'*/
-			if (length==MAXLINE-1)
+		{	/*Maximun character in a line : MSGMAXLINE-1. res[MSGMAXLINE] = '\0'*/
+			if (length==MSGMAXLINE-1)
 			{
 				sockect_read_completed=true;
 				break;

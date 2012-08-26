@@ -159,7 +159,8 @@ void signal_handler(int s)
 			sprintf(debugstr,"[%d] SIGUSR1 received",mypid);
 			break;
 		case 11:
-			sprintf(debugstr,"[%d] SIGSEGV received",mypid);
+			sprintf(debugstr,"[%d] SIGSEGV received. Exiting...",mypid);
+			exit(1);
 			break;
 		case 12:
 			sprintf(debugstr,"[%d] SIGUSR2 received",mypid);
@@ -548,7 +549,7 @@ void doit(int fd)
 {
     // put these BIG buffers outside the function stack
 	static char debugstr[MAXLINE];
-    static char msg[MAXLINE];
+    static char msg[MSGMAXLINE];
     static char event[MAXLINE];
     static char callsign[MAXLINE];
     static char passwd[MAXLINE];
@@ -631,15 +632,15 @@ void doit(int fd)
 		
 		if (nowait==0)
 		{
-			len = SREAD(fd, msg, MAXLINE);
+			len = SREAD(fd, msg, MSGMAXLINE-1);
 			if (len>0)
 				sockect_read_completed=1;
 		}
 		else
 		{
 			do
-			{	/*Maximun character in a line : MAXLINE-1. msg[MAXLINE] = '\0'*/
-				if (len==MAXLINE-1)
+			{	/*Maximun character in a line : MSGMAXLINE-1. msg[MSGMAXLINE] = '\0'*/
+				if (len==MSGMAXLINE-1)
 				{
 					sockect_read_completed=1;
 					break;
@@ -693,7 +694,7 @@ void doit(int fd)
 		time_out_counter_l=1;
 		time_out_counter_u=0;
 		no_of_line++;
-        snprintf(debugstr,MAXLINE,"[%d] %s:%d: Read %d bytes",mypid,clientip,clientport,len+1);
+        snprintf(debugstr,MAXLINE,"[%d] %s:%d: Read %d bytes",mypid,clientip,clientport,len);
         debug(3,debugstr);
 
         // no need to clear the WHOLE buffer - just first byte

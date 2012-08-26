@@ -170,8 +170,9 @@ struct unp_in_pktinfo {
 #define LISTENQ     1024         /* 2nd argument to listen () */ 
 
 /* Miscellaneous constants */ 
-#define MAXLINE     4096         /* max text line length */ 
-#define BUFFSIZE    8192         /* buffer size for reads and writes */ 
+#define MAXLINE     4096        /* max text line length */ 
+#define MSGMAXLINE	512 		/*Maximun character in msg: 511. char in [512] = '\0'*/
+#define BUFFSIZE    8192        /* buffer size for reads and writes */ 
 
 /* Define some port number that can be used for our examples */ 
 #define SERV_PORT        9877    /* TCP and UDP */ 
