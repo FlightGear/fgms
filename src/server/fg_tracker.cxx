@@ -16,6 +16,7 @@
 #include <list>
 #include <string>
 #include <string.h>
+#include <sstream>
 #ifndef _MSC_VER
     #include <errno.h>
     #include <time.h>
@@ -168,12 +169,14 @@ FG_TRACKER::TrackerLoop ()
     int				length;
 	int				pkt_sent = 0;
 	int				max_msg_sent = 25; /*Maximun message sent before receiving reply.*/
-    char			res[MSGMAXLINE];	/*Msg from server*/
+    char			res[MSGMAXLINE];	/*Msg from/to server*/
+	string 			PINGRPY;
+	stringstream out;
 	char 			b;
     pid_t			pid = getpid();
     short int		time_out_counter_l=0;
     unsigned int	time_out_counter_u=0;
-    short int		time_out_fraction=20; /* 1000000/time_out_fraction must be integer*/
+    short int		time_out_fraction=25; /* 1000000/time_out_fraction must be integer*/
 	bool			resentflg = false; /*If ture, resend all message in the msgbuf first*/
 	bool			connected = false; /*If connected to fgtracker*/
 	bool			sockect_read_completed = false;
@@ -227,6 +230,7 @@ FG_TRACKER::TrackerLoop ()
 			}
             connected=Connect();
 			msgbuf_resend=NULL;
+			pkt_sent=0;
 			resentflg = true;
             time_out_counter_l=1;
             time_out_counter_u=0;
@@ -327,9 +331,32 @@ FG_TRACKER::TrackerLoop ()
                 /*reply PONG*/
                 time_out_counter_l=1;
                 time_out_counter_u=0;
+				/*create status report for tracker server*/
+				PINGRPY.append("PONG STATUS: pkt_sent=");
+				out << pkt_sent;
+				PINGRPY.append(out.str());
+				if (resentflg==true)
+					PINGRPY.append(", resentflg=true, ");
+				else
+					PINGRPY.append(", resentflg=false, ");
+				
+				if (msgbuf_head==NULL)
+					PINGRPY.append( "msgbuf_head is null, " );
+				else
+					PINGRPY.append( "msgbuf_head is NOT null, " );
+				
+				if (msgque_head==NULL)
+					PINGRPY.append( "msgque_head is null. " );
+				else
+					PINGRPY.append( "msgque_head is NOT null. " );
+				
+				/*output status to tracker server*/
                 if (!RunAsDaemon || AddDebug)
                     printf("[%d] FG_TRACKER::TrackerLoop PING from server received\n",pid);
-                SWRITE (m_TrackerSocket,"PONG",5);
+                SWRITE (m_TrackerSocket,PINGRPY.c_str(),strlen(PINGRPY.c_str())+1);
+				PINGRPY.erase();
+				out.str("");
+				out.clear();
                 strcpy ( res, "" );
             }
             else
@@ -343,7 +370,7 @@ FG_TRACKER::TrackerLoop ()
 		/*Send message if necessary*/
         if (pkt_sent<max_msg_sent)
         {   // get message from queue
-			
+	
 			if (resentflg==true)
 			{/*msg from buffer*/
 				if (msgbuf_head==NULL)
@@ -395,12 +422,12 @@ FG_TRACKER::TrackerLoop ()
 			{
 				printf("[%d] FG_TRACKER::TrackerLoop Can't write to server...\n",pid);
 				SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Can't write to server...");
-				connected=Connect ();
+				connected=Connect();
 				msgbuf_resend=NULL;
+				pkt_sent=0;
 				resentflg = true;
 			}
-			if (resentflg==false)
-				pkt_sent++;
+			else	pkt_sent++;
         }
 		else
         {	/*should not happen at all!*/
