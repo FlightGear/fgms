@@ -335,7 +335,7 @@ FG_TRACKER::TrackerLoop ()
 				PINGRPY.append("PONG STATUS: pkt_sent=");
 				out << pkt_sent;
 				PINGRPY.append(out.str());
-				out.str("");
+
 				if (resentflg==true)
 					PINGRPY.append(", resentflg=true, ");
 				else
