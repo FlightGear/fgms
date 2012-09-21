@@ -335,20 +335,26 @@ FG_TRACKER::TrackerLoop ()
 				PINGRPY.append("PONG STATUS: pkt_sent=");
 				out << pkt_sent;
 				PINGRPY.append(out.str());
+				out.str("");
 				if (resentflg==true)
 					PINGRPY.append(", resentflg=true, ");
 				else
 					PINGRPY.append(", resentflg=false, ");
-				
-				if (msgbuf_head==NULL)
-					PINGRPY.append( "msgbuf_head is null, " );
-				else
-					PINGRPY.append( "msgbuf_head is NOT null, " );
-				
+
 				if (msgque_head==NULL)
-					PINGRPY.append( "msgque_head is null. " );
+					PINGRPY.append( "msgque_head is null, " );
 				else
-					PINGRPY.append( "msgque_head is NOT null. " );
+					PINGRPY.append( "msgque_head is NOT null, " );
+				
+				if (msgbuf_resend ==NULL)
+					PINGRPY.append( "msgbuf_resend is null, " );
+				else
+					PINGRPY.append( "msgbuf_resend is NOT null, " );
+				
+				if (msgbuf_tail ==NULL)
+					PINGRPY.append( "msgbuf_tail is null. " );
+				else
+					PINGRPY.append( "msgbuf_tail is NOT null. " );
 				
 				/*output status to tracker server*/
                 if (!RunAsDaemon || AddDebug)
@@ -356,12 +362,12 @@ FG_TRACKER::TrackerLoop ()
                 SWRITE (m_TrackerSocket,PINGRPY.c_str(),strlen(PINGRPY.c_str())+1);
 				PINGRPY.erase();
 				out.str("");
-				out.clear();
                 strcpy ( res, "" );
             }
             else
             {
-                SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Responce " << res << " not OK! Send again...");
+                SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Responce not recognized. Msg: " << res << "");
+                printf("[%d] FG_TRACKER::TrackerLoop: Responce not recognized. Msg: %s",pid,res);
             }
         }
 		

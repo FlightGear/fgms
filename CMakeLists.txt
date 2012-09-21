@@ -27,7 +27,7 @@ project( fgms )
 ##################################################
 set( fgms_MAJOR 0 )
 set( fgms_MINOR 10 )
-set( fgms_AGE 22 )
+set( fgms_AGE 23 )
 
 # change names if build server and tracker #2
 set( EXE_NAME fgms )
