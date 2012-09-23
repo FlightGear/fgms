@@ -232,6 +232,7 @@ FG_TRACKER::TrackerLoop ()
 			msgbuf_resend=NULL;
 			pkt_sent=0;
 			resentflg = true;
+			strcpy ( res, "" );
             time_out_counter_l=1;
             time_out_counter_u=0;
         }
@@ -309,7 +310,7 @@ FG_TRACKER::TrackerLoop ()
         if (length > 0 && sockect_read_completed==true)
         {   /*ACK from server*/
 			sockect_read_completed=false;
-			//printf("[%d] FG_TRACKER::TrackerLoop MsgR: %s.\n",pid,res);
+			//printf("[%d] FG_TRACKER::TrackerLoop pktsent=%d, msgbuf_head to kill %p MsgR: %s.\n",pid,pkt_sent,msgbuf_head,res);
             if ( strncmp( res, "OK", 2 ) == 0 )
             {
                 time_out_counter_l=1;
@@ -324,7 +325,6 @@ FG_TRACKER::TrackerLoop ()
 					msgbuf_new=NULL;
 					pkt_sent--;
 				}
-                strcpy ( res, "" );
             }
             else if ( strncmp( res, "PING", 4 ) == 0 )
             {
@@ -352,9 +352,19 @@ FG_TRACKER::TrackerLoop ()
 					PINGRPY.append( "msgbuf_resend is NOT null, " );
 				
 				if (msgbuf_tail ==NULL)
-					PINGRPY.append( "msgbuf_tail is null. " );
+					PINGRPY.append( "msgbuf_tail is null, " );
 				else
-					PINGRPY.append( "msgbuf_tail is NOT null. " );
+					PINGRPY.append( "msgbuf_tail is NOT null, " );
+					
+				if (msgbuf_tail == msgbuf_resend)
+					PINGRPY.append( "msgbuf_tail == msgbuf_resend, " );
+				else
+					PINGRPY.append( "msgbuf_tail != msgbuf_resend, " );
+					
+				if (msgbuf_head == NULL)
+					PINGRPY.append( "msgbuf_head is null. " );
+				else
+					PINGRPY.append( "msgbuf_head is NOT null. " );
 				
 				/*output status to tracker server*/
                 if (!RunAsDaemon || AddDebug)
@@ -362,13 +372,13 @@ FG_TRACKER::TrackerLoop ()
                 SWRITE (m_TrackerSocket,PINGRPY.c_str(),strlen(PINGRPY.c_str())+1);
 				PINGRPY.erase();
 				out.str("");
-                strcpy ( res, "" );
             }
             else
             {
                 SG_LOG (SG_SYSTEMS, SG_ALERT, "["<< pid <<"] FG_TRACKER::TrackerLoop: Responce not recognized. Msg: " << res << "");
                 printf("[%d] FG_TRACKER::TrackerLoop: Responce not recognized. Msg: %s",pid,res);
             }
+			strcpy ( res, "" );
         }
 		
 		length = 0;
@@ -384,6 +394,7 @@ FG_TRACKER::TrackerLoop ()
 					printf("[%d] FG_TRACKER::TrackerLoop Resend data completed.\n",pid);
 					resentflg=false;
 					msgbuf_resend=NULL;
+					msgbuf_tail=NULL;
 					continue;
 				} else if (msgbuf_tail == msgbuf_resend)/*All msg sent, waiting ACK*/
 					continue;
@@ -411,6 +422,7 @@ FG_TRACKER::TrackerLoop ()
 				else
 					msgbuf_tail->next=msgbuf_new;
 				msgbuf_tail = msgbuf_new;
+				msgbuf_tail->next = NULL;
 				length=strlen(msgbuf_new->msg);
 			}
         } else continue; /*buffer full. Don't send msg*/
@@ -421,7 +433,7 @@ FG_TRACKER::TrackerLoop ()
 			/*Send message at msgbuf_new via tcp*/
 			if (!RunAsDaemon || AddDebug) 
 			{
-				printf("[%d] FG_TRACKER::TrackerLoop sending msg %d bytes, addr %p\n",pid,length,msgbuf_new);
+				printf("[%d] FG_TRACKER::TrackerLoop sending msg %d bytes, addr %p, next addr %p\n",pid,length,msgbuf_new,msgbuf_new->next);
 				printf("[%d] FG_TRACKER::TrackerLoop Msg: %s\n",pid,msgbuf_new->msg); 
 			}
 			if (SWRITE (m_TrackerSocket,msgbuf_new->msg,length) < 0)
@@ -431,6 +443,7 @@ FG_TRACKER::TrackerLoop ()
 				connected=Connect();
 				msgbuf_resend=NULL;
 				pkt_sent=0;
+				strcpy ( res, "" );
 				resentflg = true;
 			}
 			else	pkt_sent++;
