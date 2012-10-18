@@ -1525,7 +1525,7 @@ void FG_SERVER::Show_Stats(void)
       mT_RelayMagic << " PD=" <<
       mT_PositionData << " NP=" <<
       mT_NotPosData <<  " CF=" <<
-      m_CrossFeedSent << "/" << m_CrossFeedFailed << " TN=" <<
+      mT_CrossFeedSent << "/" << mT_CrossFeedFailed << " TN=" <<
       mT_TelnetReceived << " TC/D/P=" <<
       m_TrackerConnect << "/" << m_TrackerDisconnect << "/" << m_TrackerPostion
     );
