@@ -1,5 +1,6 @@
 #
-# single CMakeLists.txt for fgms-0-x - hand crafted - commecned 2012/07/03
+# single CMakeLists.txt for fgms-0-x - hand crafted - commenced 2012/07/03
+# 20121018 - Try to get the unix install to /usr/sbin right, and bump age to 24
 # 20120815 - In Unix, install to /usr/sbin if CMAKE_INSTALL_PREFIX not given - default is /usr/local/sbin
 #            Bump AGE to 20, since a number of other commits done.
 # 20120808 - Change the IPCKEY value if building mp_server2 - bumped AGE to 19
@@ -27,13 +28,20 @@ project( fgms )
 ##################################################
 set( fgms_MAJOR 0 )
 set( fgms_MINOR 10 )
-set( fgms_AGE 23 )
+set( fgms_AGE 24 )
 
 # change names if build server and tracker #2
 set( EXE_NAME fgms )
 set( TRK_NAME fgt_server )
 
 # directories
+IF(NOT DEFINED USER_INSTALL_PREFIX)
+  SET(CMAKE_INSTALL_PREFIX "/usr")
+  message(STATUS "*** Set CMAKE_INSTALL_PREFIX to ${CMAKE_INSTALL_PREFIX}")
+ELSE(NOT DEFINED USER_INSTALL_PREFIX)
+  SET(CMAKE_INSTALL_PREFIX ${USER_INSTALL_PREFIX})
+  message(STATUS "*** Set CMAKE_INSTALL_PREFIX to user ${CMAKE_INSTALL_PREFIX}")
+ENDIF(NOT DEFINED USER_INSTALL_PREFIX)
 if (NOT DEFINED SYSCONFDIR)
     set ( SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/etc" )
 endif (NOT DEFINED SYSCONFDIR)
