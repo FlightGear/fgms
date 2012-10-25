@@ -134,6 +134,9 @@ extern "C" {
 extern int netInit () ;
 
 extern const char* netFormat ( const char* fmt, ... ) ;
+#if defined(UL_WIN32)
+extern void win_wsa_perror( char * msg );
+#endif
 
 #ifdef __cplusplus
 }

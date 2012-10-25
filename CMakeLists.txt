@@ -1,5 +1,6 @@
 #
 # single CMakeLists.txt for fgms-0-x - hand crafted - commenced 2012/07/03
+# 20121025 - Add a windows 'perror' macro PERROR, and minor changes in crossfeed code - age 25
 # 20121018 - Try to get the unix install to /usr/sbin right, and bump age to 24
 # 20120815 - In Unix, install to /usr/sbin if CMAKE_INSTALL_PREFIX not given - default is /usr/local/sbin
 #            Bump AGE to 20, since a number of other commits done.
@@ -28,7 +29,7 @@ project( fgms )
 ##################################################
 set( fgms_MAJOR 0 )
 set( fgms_MINOR 10 )
-set( fgms_AGE 24 )
+set( fgms_AGE 25 )
 
 # change names if build server and tracker #2
 set( EXE_NAME fgms )

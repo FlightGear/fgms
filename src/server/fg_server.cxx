@@ -1175,21 +1175,25 @@ FG_SERVER::SendToCrossfeed
   MsgHdr    = (T_MsgHdr *) Msg;
   MsgMagic  = MsgHdr->Magic;
   MsgHdr->Magic = XDR_encode<uint32_t> (RELAY_MAGIC);
+  // pass on senders address and port to crossfeed server
+  MsgHdr->ReplyAddress = XDR_encode<uint32_t> (SenderAddress.getIP());
+  MsgHdr->ReplyPort = XDR_encode<uint32_t> (SenderAddress.getPort());
   mT_RelayListIt CurrentCrossfeed = m_CrossfeedList.begin();
   while (CurrentCrossfeed != m_CrossfeedList.end())
   {
-    if (CurrentCrossfeed->Address.getIP() != SenderAddress.getIP())
-    {
+    //if (CurrentCrossfeed->Address.getIP() != SenderAddress.getIP())
+    //{
       sent = m_DataSocket->sendto(Msg, Bytes, 0, &CurrentCrossfeed->Address);
       if (SERROR(sent))
       {
+          PERROR("sendto crossfeed failed!");
         m_CrossFeedFailed++;
       }
       else
       {
         m_CrossFeedSent++;
       }
-    }
+    //}
     CurrentCrossfeed++;
   }
   MsgHdr->Magic = MsgMagic;  // restore the magic value
