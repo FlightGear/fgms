@@ -1495,6 +1495,7 @@ FG_SERVER::HandlePacket
 //////////////////////////////////////////////////////////////////////
 void FG_SERVER::Show_Stats(void)
 {
+    int pilot_cnt, local_cnt;
     // update totals since start
     mT_PacketsReceived += m_PacketsReceived;
     mT_BlackRejected   += m_BlackRejected;
@@ -1507,9 +1508,18 @@ void FG_SERVER::Show_Stats(void)
     mT_CrossFeedFailed += m_CrossFeedFailed;
     mT_CrossFeedSent   += m_CrossFeedSent;
     // output to LOG and cerr channels
-    SG_ALERT (SG_SYSTEMS, SG_ALERT, "## Pilots "
-      << m_PlayerList.size()
-    );
+    mT_PlayerListIt CurrentPlayer; // get LOCAL pilot count
+    pilot_cnt = local_cnt = 0;
+    for ( CurrentPlayer = m_PlayerList.begin();
+          CurrentPlayer != m_PlayerList.end();
+          CurrentPlayer++ )
+    {
+        pilot_cnt++;
+        if ( CurrentPlayer->IsLocal ) {
+            local_cnt++;
+        }
+    }
+    SG_ALERT (SG_SYSTEMS, SG_ALERT, "## Pilots: total " << pilot_cnt << ", local " << local_cnt );
     SG_ALERT (SG_SYSTEMS, SG_ALERT, "## Since: Packets " <<
       m_PacketsReceived << " BL=" <<
       m_BlackRejected << " INV=" <<
