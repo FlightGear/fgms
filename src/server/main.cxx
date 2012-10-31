@@ -81,7 +81,7 @@ is_file_or_directory ( char * path )
 void
 PrintHelp ()
 {
-	cout << endl;
+	cout << "fgms: version " << VERSION << ", compiled on " << __DATE__ << ", at " << __TIME__ << endl;
 	cout << "\n"
 	"options are:\n"
 	"-h            print this help screen\n"

@@ -47,6 +47,16 @@
     {
         return (int)GetCurrentThreadId();
     }
+#define usleep(a) uSleep(a)
+void uSleep(int waitTime) { 
+    __int64 time1 = 0, time2 = 0, freq = 0; 
+    QueryPerformanceCounter((LARGE_INTEGER *) &time1); 
+    QueryPerformanceFrequency((LARGE_INTEGER *)&freq); 
+ 
+    do { 
+        QueryPerformanceCounter((LARGE_INTEGER *) &time2); 
+    } while((time2-time1) < waitTime); 
+} 
 #else
     extern  cDaemon Myself;
 #endif // !_MSC_VER
@@ -181,12 +191,12 @@ FG_TRACKER::TrackerLoop ()
 	bool			connected = false; /*If connected to fgtracker*/
 	bool			sockect_read_completed = false;
 	/*Msg structure*/
-	struct msg 
+	struct MSG 
 	{
 		char msg[MSGMAXLINE];
-		struct msg *next;
+		struct MSG *next;
 	};
-	struct msg		*msgque_head,*msgque_tail,*msgque_new,*msgbuf_head,*msgbuf_tail,*msgbuf_new,*msgbuf_resend;
+	struct MSG		*msgque_head,*msgque_tail,*msgque_new,*msgbuf_head,*msgbuf_tail,*msgbuf_new,*msgbuf_resend;
 
 	
 	/*Initalize value*/
@@ -199,7 +209,7 @@ FG_TRACKER::TrackerLoop ()
 	msgbuf_resend = NULL;
 
     if (!RunAsDaemon || AddDebug)
-        printf("[%d] FG_TRACKER::TrackerLoop entered. Msg structure size: %d\n",pid, (int)sizeof(struct msg));
+        printf("[%d] FG_TRACKER::TrackerLoop entered. Msg structure size: %d\n",pid, (int)sizeof(struct MSG));
     
 	connected=Connect();
 	
@@ -263,7 +273,7 @@ FG_TRACKER::TrackerLoop ()
 		#endif // #ifdef ADD_TRACKER_LOG
         if (length>0)
 		{
-			msgque_new = (struct msg *) malloc(sizeof(struct msg));
+			msgque_new = (struct MSG *) malloc(sizeof(struct MSG));
 			if (msgque_new==NULL)
 			{
 				printf("[%d] FG_TRACKER::TrackerLoop Cannot allocate memory. Force exit...\n",pid);
@@ -584,6 +594,10 @@ FG_TRACKER::TcpConnect (char *server_address,int server_port)
     }
     else
     {	
+#ifdef _MSC_VER
+        u_long opt = 1;
+        ioctlsocket(sockfd,FIONBIO,&opt);
+#else // !_MSC_VER
 		if(fcntl(sockfd, F_GETFL) & O_NONBLOCK) 
 		{
 			// socket is non-blocking
@@ -601,6 +615,7 @@ FG_TRACKER::TcpConnect (char *server_address,int server_port)
 			else
 				printf( "[%d] FG_TRACKER::TcpConnect: Set the socket to non-blocking mode\n",pid);
 		}
+#endif // MSC_VER y/n
 		return (sockfd);
 	}
 }  // TcpConnect  ()

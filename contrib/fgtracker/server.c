@@ -73,7 +73,20 @@ int getpid(void) {
     return (int)GetCurrentThreadId();
 }
 #define snprintf _snprintf
-
+#define sleep(a) Sleep(a * 1000)
+#define usleep(a) uSleep(a)
+void uSleep(int waitTime) { 
+    LARGE_INTEGER _time1, _time2, _freq;
+    _time1.QuadPart = 0;
+    _time2.QuadPart = 0;
+    _freq.QuadPart  = 0;
+    QueryPerformanceCounter(&_time1); 
+    QueryPerformanceFrequency(&_freq); 
+ 
+    do { 
+        QueryPerformanceCounter(&_time2); 
+    } while ( (_time2.QuadPart - _time1.QuadPart) < waitTime ); 
+} 
 #endif // _MSC_VER
 
 
@@ -579,9 +592,18 @@ void doit(int fd)
     int res, sendok;
 	unsigned long no_of_line=0;
 	
-	
+#ifdef _MSC_VER
+    u_long opts = 1;
+    int status = ioctlsocket(fd, FIONBIO, &opts);
     mypid = getpid();
-	
+    if (SERROR(status)) {
+		sprintf(debugstr,"[%d] FAILED to set the socket to non-blocking mode. Exiting...",mypid);
+		exit (0);
+    } else {
+		sprintf(debugstr,"[%d] Socket set to non-blocking mode. %d scans per second",mypid,time_out_fraction);
+    }
+#else // !_MSC_VER
+    mypid = getpid();
 	if(fcntl(fd, F_GETFL) & O_NONBLOCK) 
 	{
 		// socket is non-blocking
@@ -599,6 +621,7 @@ void doit(int fd)
 			sprintf(debugstr,"[%d] Socket set to non-blocking mode. %d scans per second",mypid,time_out_fraction);
 
 	}
+#endif // _MSC_VER y/n
 	debug(2,debugstr);
 	
 	clientaddrlen = sizeof(struct sockaddr_in);

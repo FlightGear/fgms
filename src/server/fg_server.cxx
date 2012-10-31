@@ -1173,21 +1173,25 @@ FG_SERVER::SendToCrossfeed
   MsgHdr    = (T_MsgHdr *) Msg;
   MsgMagic  = MsgHdr->Magic;
   MsgHdr->Magic = XDR_encode<uint32_t> (RELAY_MAGIC);
+  // pass on senders address and port to crossfeed server
+  MsgHdr->ReplyAddress = XDR_encode<uint32_t> (SenderAddress.getIP());
+  MsgHdr->ReplyPort = XDR_encode<uint32_t> (SenderAddress.getPort());
   mT_RelayListIt CurrentCrossfeed = m_CrossfeedList.begin();
   while (CurrentCrossfeed != m_CrossfeedList.end())
   {
-    if (CurrentCrossfeed->Address.getIP() != SenderAddress.getIP())
-    {
+    //if (CurrentCrossfeed->Address.getIP() != SenderAddress.getIP())
+    //{
       sent = m_DataSocket->sendto(Msg, Bytes, 0, &CurrentCrossfeed->Address);
       if (SERROR(sent))
       {
+          PERROR("sendto crossfeed failed!");
         m_CrossFeedFailed++;
       }
       else
       {
         m_CrossFeedSent++;
       }
-    }
+    //}
     CurrentCrossfeed++;
   }
   MsgHdr->Magic = MsgMagic;  // restore the magic value
@@ -1489,6 +1493,7 @@ FG_SERVER::HandlePacket
 //////////////////////////////////////////////////////////////////////
 void FG_SERVER::Show_Stats(void)
 {
+    int pilot_cnt, local_cnt;
     // update totals since start
     mT_PacketsReceived += m_PacketsReceived;
     mT_BlackRejected   += m_BlackRejected;
@@ -1501,9 +1506,18 @@ void FG_SERVER::Show_Stats(void)
     mT_CrossFeedFailed += m_CrossFeedFailed;
     mT_CrossFeedSent   += m_CrossFeedSent;
     // output to LOG and cerr channels
-    SG_ALERT (SG_SYSTEMS, SG_ALERT, "## Pilots "
-      << m_PlayerList.size()
-    );
+    mT_PlayerListIt CurrentPlayer; // get LOCAL pilot count
+    pilot_cnt = local_cnt = 0;
+    for ( CurrentPlayer = m_PlayerList.begin();
+          CurrentPlayer != m_PlayerList.end();
+          CurrentPlayer++ )
+    {
+        pilot_cnt++;
+        if ( CurrentPlayer->IsLocal ) {
+            local_cnt++;
+        }
+    }
+    SG_ALERT (SG_SYSTEMS, SG_ALERT, "## Pilots: total " << pilot_cnt << ", local " << local_cnt );
     SG_ALERT (SG_SYSTEMS, SG_ALERT, "## Since: Packets " <<
       m_PacketsReceived << " BL=" <<
       m_BlackRejected << " INV=" <<
@@ -1523,7 +1537,7 @@ void FG_SERVER::Show_Stats(void)
       mT_RelayMagic << " PD=" <<
       mT_PositionData << " NP=" <<
       mT_NotPosData <<  " CF=" <<
-      m_CrossFeedSent << "/" << m_CrossFeedFailed << " TN=" <<
+      mT_CrossFeedSent << "/" << mT_CrossFeedFailed << " TN=" <<
       mT_TelnetReceived << " TC/D/P=" <<
       m_TrackerConnect << "/" << m_TrackerDisconnect << "/" << m_TrackerPostion
     );

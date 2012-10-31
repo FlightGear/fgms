@@ -1,3 +1,21 @@
+2012-10-16 00:00  geoff
+
+	* This file has NOT been kept up to date. Many months ago the 
+	  the build system was changed over to CMake - See CMakeLists.txt
+	- As part of this all the automake files have been removed, and 
+	  the INSTALL file si now way out of date.
+	- For quite some time now, a MSVC Windows version can be built
+	- pthreads has become a permanent prerequisite requirement
+	- Thanks to Hazuki Amamiya there have been LOTS of improvements 
+	  in the 'tracker' server, in contrib/fgtracker
+	- In the change over to CMake the 'make install' may be broken.
+	  CMake uses a 'default' install to /usr/local/bin instead of the 
+	  intended /usr/sbin, and the config file, fgms.conf has to be
+	  manually copied to /usr/etc/fgms.conf, but there is a command
+	  line override to place it anywhere.
+	- In general there have been a lot of bug fixes, too numerous to 
+	  mention. Read the gitorious commits logs for details.
+   
 2010-06-21 08:57  oliver
 
 	* Makefile.am, configure.ac, src/Makefile.am,

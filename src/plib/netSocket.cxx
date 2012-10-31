@@ -576,4 +576,39 @@ const char* netFormat ( const char* format, ... )
   return( buffer );
 }
 
+#if defined(UL_WIN32)
+#ifndef SPRTF
+#define SPRTF printf
+#endif
+// get a message from the system for this error value
+char *get_errmsg_text( int err )
+{
+    LPSTR ptr = 0;
+    DWORD fm = FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&ptr, 0, NULL );
+    if (ptr) {
+        size_t len = strlen(ptr);
+        while(len--) {
+            if (ptr[len] > ' ') break;
+            ptr[len] = 0;
+        }
+        if (len) return ptr;
+        LocalFree(ptr);
+    }
+    return NULL;
+}
 
+void win_wsa_perror( char * msg )
+{
+    int err = WSAGetLastError();
+    LPSTR ptr = get_errmsg_text(err);
+    if (ptr) {
+        SPRTF("%s = %s (%d)\n", msg, ptr, err);
+        LocalFree(ptr);
+    } else {
+        SPRTF("%s %d\n", msg, err);
+    }
+}
+
+#endif / * UL_WIN32 */
