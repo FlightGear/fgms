@@ -88,19 +88,18 @@ extern void SigHUPHandler ( int SigType );
 #endif // #ifdef ADD_TRACKER_LOG
 
 #if _MSC_VER
-  static char * exit_file = (char *)DEF_EXIT_FILE; // "fgms_exit"
-  static char * reset_file = (char *)DEF_RESET_FILE; // "fgms_reset"
-  static char * stat_file = (char *)DEF_STAT_FILE; // "fgms_stat"
+  static char * exit_file   = (char *)DEF_EXIT_FILE;  // "fgms_exit"
+  static char * reset_file  = (char *)DEF_RESET_FILE; // "fgms_reset"
+  static char * stat_file   = (char *)DEF_STAT_FILE;  // "fgms_stat"
 #else // !_MSC_VER
-  static char * exit_file = (char *)"/tmp/" DEF_EXIT_FILE;
-  static char * reset_file = (char *)"/tmp/" DEF_RESET_FILE;
-  static char * stat_file = (char *)"/tmp/" DEF_STAT_FILE;
+  static char * exit_file   = (char *)"/tmp/" DEF_EXIT_FILE;
+  static char * reset_file  = (char *)"/tmp/" DEF_RESET_FILE;
+  static char * stat_file   = (char *)"/tmp/" DEF_STAT_FILE;
 #endif // _MSC_VER y/n
-
 
 #ifdef USE_TRACKER_PORT
   pthread_mutex_t msg_mutex     = PTHREAD_MUTEX_INITIALIZER;
-  pthread_cond_t  condition_var   = PTHREAD_COND_INITIALIZER;
+  pthread_cond_t  condition_var = PTHREAD_COND_INITIALIZER;
   vMSG msg_queue; // queue for messages
 #endif // #ifdef USE_TRACKER_PORT
 
@@ -159,7 +158,6 @@ void write_msg_log(const char *msg, int len, char *src)
   }
 }
 #endif // #ifdef ADD_TRACKER_LOG
-
 
 //////////////////////////////////////////////////////////////////////
 //

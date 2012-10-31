@@ -577,10 +577,8 @@ main ( int argc, char* argv[] )
 	//  logbuf::set_log_classes(SG_GENERAL);
 #endif
 #ifndef _MSC_VER
-	// SIGHUP
 	signal (SIGHUP, SigHUPHandler);
-	// SIGCHLD
-	signal (SIGHUP, SigCHLDHandler);
+	signal (SIGCHLD, SigCHLDHandler);
 #endif
 	ParseParams (argc, argv);
 	ReadConfigs ();
