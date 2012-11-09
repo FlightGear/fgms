@@ -29,7 +29,7 @@ project( fgms )
 ##################################################
 set( fgms_MAJOR 0 )
 set( fgms_MINOR 10 )
-set( fgms_AGE 25 )
+set( fgms_AGE 26 )
 
 # change names if build server and tracker #2
 set( EXE_NAME fgms )
@@ -129,7 +129,9 @@ if(ENABLE_DEBUG_OUTPUT)
 endif(ENABLE_DEBUG_OUTPUT)
 
 # to distinguish between debug and release lib
+if (WIN32)
 set( CMAKE_DEBUG_POSTFIX "d" )
+endif (WIN32)
 
 if(BUILD_SHARED_LIB)
    set(LIB_TYPE SHARED)
@@ -276,12 +278,16 @@ if(BUILD_TRACKER)
     set( server_SRCS contrib/fgtracker/server.c )
     add_executable( ${TRK_NAME} ${server_SRCS} )
     target_link_libraries( ${TRK_NAME} ${add_LIBS} )
-    set_target_properties( ${TRK_NAME} PROPERTIES DEBUG_POSTFIX "d" )
+    if (WIN32)
+        set_target_properties( ${TRK_NAME} PROPERTIES DEBUG_POSTFIX "d" )
+    endif (WIN32)
 
     set( client_SRCS contrib/fgtracker/client.c )
     add_executable( fgt_client ${client_SRCS} )
     target_link_libraries( fgt_client ${add_LIBS} )
-    set_target_properties( fgt_client PROPERTIES DEBUG_POSTFIX "d" )
+    if (WIN32)
+        set_target_properties( fgt_client PROPERTIES DEBUG_POSTFIX "d" )
+    endif (WIN32)
 
     # deal with INSTALL
     install(TARGETS ${TRK_NAME} fgt_client DESTINATION bin)

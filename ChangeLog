@@ -1,9 +1,21 @@
+2012-11-08 17:16  geoff
+
+    * Small fix in CMakeLists.txt to allow -DCMAKE_BUILD_TYPE=DEBUG 
+      to function in unix. Seems CMake uses the set(CMAKE_DEBUG_POSTFIX d)
+      to append a 'd' to the libraries when this is on, but does NOT 
+      automatically then use that library name in the link, like it 
+      does in WIN32, so removed CMAKE_DEBUG_POSTFIX for other than WIN32.
+      The CMakeLists.txt also has an option ENABLED_DEBUG_SYMBOLS:BOOL=TRUE
+      to add -g to the compile flags, to include DEBUG sysmbols in the 
+      Unix binaries.
+    * Bumped AGE to 26
+
 2012-10-16 00:00  geoff
 
 	* This file has NOT been kept up to date. Many months ago the 
 	  the build system was changed over to CMake - See CMakeLists.txt
 	- As part of this all the automake files have been removed, and 
-	  the INSTALL file si now way out of date.
+	  the INSTALL file is now way out of date.
 	- For quite some time now, a MSVC Windows version can be built
 	- pthreads has become a permanent prerequisite requirement
 	- Thanks to Hazuki Amamiya there have been LOTS of improvements 
