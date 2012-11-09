@@ -6,13 +6,13 @@
  *
  *   $Log: server.c,v $
  *   Revision 1.2  2006/05/10 21:22:34  koversrac
- *   Comment with author and license has been added.
- *   Revision 1.4 2012/08/06 geoff (reports _at_ geoffair _dot_ info)
- *      Fix missing -D y|n options, and chop PostgreSQL help if not compiled
- *
+ *   	Comment with author and license has been added.
  *   Revision 1.3 2012/07/04 geoff (reports _at_ geoffair _dot_ info)
  *      Add user configuration and help
- *
+ *   Revision 1.4 2012/08/06 geoff (reports _at_ geoffair _dot_ info)
+ *      Fix missing -D y|n options, and chop PostgreSQL help if not compiled
+ *   Revision 1.5 2012/11/09 hazuki (hstsuki_a-ie _at_ yahoo _dot_ com _dot_ hk)
+ *      Better resistance on DoS attack. (Still a lot to be done though)
  */
 
 #include "fgt_common.h"
@@ -602,8 +602,8 @@ void doit(int fd)
     } else {
 		sprintf(debugstr,"[%d] Socket set to non-blocking mode. %d scans per second",mypid,time_out_fraction);
     }
-#else // !_MSC_VER
-    mypid = getpid();
+#else // !_MSC_VE
+    mypid = getpid()
 	if(fcntl(fd, F_GETFL) & O_NONBLOCK) 
 	{
 		// socket is non-blocking
@@ -691,7 +691,7 @@ void doit(int fd)
 				time_out_counter_u++;
 				time_out_counter_l=0;
 			}
-			if (time_out_counter_u%60==0 && time_out_counter_u >=300 && time_out_counter_l==0)
+			if (time_out_counter_u%60==0 && time_out_counter_u >=120 && time_out_counter_l==0)
 			{	/*Print warning*/
 				snprintf(debugstr,MAXLINE,"[%d] %s:%d: Warning: No data receive from client for %d seconds",mypid,clientip,clientport,time_out_counter_u);
 				debug(1,debugstr);
@@ -709,7 +709,7 @@ void doit(int fd)
 					sprintf(debugstr,"[%d] %s:%d: Wrote PING. Waiting reply", mypid, clientip,clientport);
 				debug(1,debugstr);
 			}
-			if (time_out_counter_u%86400==0 && time_out_counter_l==0) /*Exit - timeout. TRANSISTIONAL - timeout should be set to around 300 after PONG function of fgms is implemented.*/
+			if (time_out_counter_u%300==0 && time_out_counter_l==0)/*Exit*/
 				break;
 			continue;
 		}
