@@ -602,7 +602,7 @@ void doit(int fd)
     } else {
 		sprintf(debugstr,"[%d] Socket set to non-blocking mode. %d scans per second",mypid,time_out_fraction);
     }
-#else // !_MSC_VE
+#else // !_MSC_VER
     mypid = getpid()
 	if(fcntl(fd, F_GETFL) & O_NONBLOCK) 
 	{
