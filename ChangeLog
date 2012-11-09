@@ -5,7 +5,7 @@
       to append a 'd' to the libraries when this is on, but does NOT 
       automatically then use that library name in the link, like it 
       does in WIN32, so removed CMAKE_DEBUG_POSTFIX for other than WIN32.
-      The CMakeLists.txt also has an option ENABLED_DEBUG_SYMBOLS:BOOL=TRUE
+      The CMakeLists.txt also has an option -DENABLED_DEBUG_SYMBOLS:BOOL=TRUE
       to add -g to the compile flags, to include DEBUG sysmbols in the 
       Unix binaries.
     * Bumped AGE to 26
