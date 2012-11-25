@@ -364,9 +364,10 @@ int logFlight(PGconn *conn,char *callsign,char *model, char *date, int connect)
   res = PQexec(conn, statement);
   if (PQresultStatus(res) != PGRES_COMMAND_OK)
   {
-    sprintf(debugstr, "Command failed: %s", PQerrorMessage(conn));
+    sprintf(debugstr, "Command failed: %s. Force exit.", PQerrorMessage(conn));
     debug(1,debugstr);
     PQclear(res);
+	exit (1);
   }
 
   if (connect)
@@ -375,10 +376,10 @@ int logFlight(PGconn *conn,char *callsign,char *model, char *date, int connect)
     res = PQexec(conn, statement);
     if (PQresultStatus(res) != PGRES_COMMAND_OK)
     {
-      sprintf(debugstr, "Command failed: %s", PQerrorMessage(conn));
+      sprintf(debugstr, "Command failed: %s. Force exit.", PQerrorMessage(conn));
       debug(1,debugstr);
       PQclear(res);
-      return(1);
+      exit (1);
     }
   }
 
@@ -415,9 +416,10 @@ int logPosition(PGconn *conn, char *callsign, char *date, char *lon, char *lat, 
   res = PQexec(conn, statement);
   if (PQresultStatus(res) != PGRES_COMMAND_OK)
   {
-    sprintf(debugstr, "Command failed: %s", PQerrorMessage(conn));
+    sprintf(debugstr, "Command failed: %s. Force exit.", PQerrorMessage(conn));
     debug(1,debugstr);
     PQclear(res);
+	exit (1);
   }
 
   return(0);
