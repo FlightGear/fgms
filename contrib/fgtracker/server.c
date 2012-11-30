@@ -343,49 +343,59 @@ int ConnectDB(PGconn **conn)
   	return iret;
 }
 
+#ifdef NO_POSTGRESQL
+#else // !#ifdef NO_POSTGRESQL
+void SQL_Error(PGconn *conn)
+{
+	char debugstr[MAXLINE];
+	char *SQLErrorMsg = (char*) calloc(20,1);
+	strncpy(SQLErrorMsg, PQerrorMessage(conn), 20);
+	sprintf(debugstr, "Command failed: %s.", PQerrorMessage(conn));
+	debug(1,debugstr);
+	
+	if (strcmp ( SQLErrorMsg, "ERROR:  syntax error")!=0)
+	{
+		sprintf(debugstr, "Force exit due to unrecoverable error.");
+		debug(1,debugstr);
+		exit (1);
+	}
+	free(SQLErrorMsg);
+	
+}
+#endif // #ifdef NO_POSTGRESQL y/n
+
 int logFlight(PGconn *conn,char *callsign,char *model, char *date, int connect)
 {
-#ifdef NO_POSTGRESQL
-    return 0;
-#else // !#ifdef NO_POSTGRESQL
-  PGresult		*res;
-  char			statement[MAXLINE];
-  char			date2[MAXLINE];
-  char			callsign2[MAXLINE];
-  char			model2[MAXLINE];
-  int			error;
-  char			debugstr[MAXLINE];
+	#ifdef NO_POSTGRESQL
+	return 0;
+	#else // !#ifdef NO_POSTGRESQL
+	PGresult *res;
+	char statement[MAXLINE];
+	char date2[MAXLINE];
+	char callsign2[MAXLINE];
+	char model2[MAXLINE];
+	int	error;
 
-  PQescapeStringConn (conn, date2, date, MAXLINE, &error);
-  PQescapeStringConn (conn, callsign2, callsign, MAXLINE, &error);
-  PQescapeStringConn (conn, model2, model, MAXLINE, &error);
+	PQescapeStringConn (conn, date2, date, MAXLINE, &error);
+	PQescapeStringConn (conn, callsign2, callsign, MAXLINE, &error);
+	PQescapeStringConn (conn, model2, model, MAXLINE, &error);
 
-  sprintf(statement,"UPDATE flights SET status='CLOSED',end_time='%s' WHERE callsign='%s' AND status='OPEN';",date2,callsign2);
-  res = PQexec(conn, statement);
-  if (PQresultStatus(res) != PGRES_COMMAND_OK)
-  {
-    sprintf(debugstr, "Command failed: %s. Force exit.", PQerrorMessage(conn));
-    debug(1,debugstr);
-    PQclear(res);
-	exit (1);
-  }
+	sprintf(statement,"UPDATE flights SET status='CLOSED',end_time='%s' WHERE callsign='%s' AND status='OPEN';",date2,callsign2);
+	res = PQexec(conn, statement);
+	if (PQresultStatus(res) != PGRES_COMMAND_OK)
+		SQL_Error(conn);
+	PQclear(res);
 
-  if (connect)
-  {
-    sprintf(statement,"INSERT INTO flights (callsign,status,model,start_time) VALUES ('%s','OPEN','%s','%s');",callsign2,model2,date2);
-    res = PQexec(conn, statement);
-    if (PQresultStatus(res) != PGRES_COMMAND_OK)
-    {
-      sprintf(debugstr, "Command failed: %s. Force exit.", PQerrorMessage(conn));
-      debug(1,debugstr);
-      PQclear(res);
-      exit (1);
-    }
-  }
-
-  return(0);
-#endif // #ifdef NO_POSTGRESQL y/n
- 
+	if (connect)
+	{
+		sprintf(statement,"INSERT INTO flights (callsign,status,model,start_time) VALUES ('%s','OPEN','%s','%s');",callsign2,model2,date2);
+		res = PQexec(conn, statement);
+		if (PQresultStatus(res) != PGRES_COMMAND_OK)
+			SQL_Error(conn);
+		PQclear(res);
+	}
+		return(0);
+	#endif // #ifdef NO_POSTGRESQL y/n
 }
 
 int logPosition(PGconn *conn, char *callsign, char *date, char *lon, char *lat, char *alt)
@@ -401,7 +411,6 @@ int logPosition(PGconn *conn, char *callsign, char *date, char *lon, char *lat, 
   char			lat2[MAXLINE];
   char			alt2[MAXLINE];
   int			error;
-  char			debugstr[MAXLINE];
 
   PQescapeStringConn (conn, date2, date, MAXLINE, &error);
   PQescapeStringConn (conn, callsign2, callsign, MAXLINE, &error);
@@ -415,12 +424,8 @@ int logPosition(PGconn *conn, char *callsign, char *date, char *lon, char *lat, 
 
   res = PQexec(conn, statement);
   if (PQresultStatus(res) != PGRES_COMMAND_OK)
-  {
-    sprintf(debugstr, "Command failed: %s. Force exit.", PQerrorMessage(conn));
-    debug(1,debugstr);
+	SQL_Error(conn);
     PQclear(res);
-	exit (1);
-  }
 
   return(0);
 #endif // #ifdef NO_POSTGRESQL y/n
