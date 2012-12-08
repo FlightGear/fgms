@@ -353,7 +353,14 @@ void SQL_Error(PGconn *conn)
 	sprintf(debugstr, "Command failed: %s.", PQerrorMessage(conn));
 	debug(1,debugstr);
 	
-	if (strcmp ( SQLErrorMsg, "ERROR:  syntax error")!=0)
+	/*Sometimes the fgms sends invalid packets. Below is a workaround to prevent unnessary forced exit. 
+	Example of Invalid messgae are:
+	POSITION * Bad Client *  0 0 . 2012-12-03 21:03:53
+	DISCONNECT * Bad Client *  * unknown * 2012-12-03 20:56:32
+	POSITION franck test  . . . 2012-12-08 14:28:42
+	*/
+	
+	if (strcmp ( SQLErrorMsg, "ERROR:  syntax error")!=0 && strcmp ( SQLErrorMsg, "ERROR:  invalid inpu")!=0)
 	{
 		sprintf(debugstr, "Force exit due to unrecoverable error.");
 		debug(1,debugstr);
