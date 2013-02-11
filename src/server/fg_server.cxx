@@ -450,9 +450,9 @@ FG_SERVER::HandleTelnet
   errno = 0;
   string          Message;
   Point3D         PlayerPosGeod;  // Geodetic Coordinates
-  FG_Player CurrentPlayer;
+  FG_Player       CurrentPlayer;
   netSocket       NewTelnet;
-  unsigned int  it;
+  unsigned int    it;
   NewTelnet.setHandle (Fd);
   errno = 0;
   //////////////////////////////////////////////////
@@ -1718,9 +1718,9 @@ FG_SERVER::Loop
       {
         if ((errno != EAGAIN) && (errno != EPIPE))
         {
-          SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror (errno));
+          SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_SERVER::Loop() - " << strerror (errno));
         }
-        return 0;
+        continue;
       }
       st_telnet* t = new st_telnet;
       t->Instance = this;
