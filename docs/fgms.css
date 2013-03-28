@@ -1017,9 +1017,10 @@ dl.section dd {
     
 #projectbrief
 {
-	font: 120% Tahoma, Arial,sans-serif;
+	font: 100% sans-serif;
 	margin: 0px;
 	padding: 0px;
+	font-weight: bold;
 }
 
 #projectnumber
