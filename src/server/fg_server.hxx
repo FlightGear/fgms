@@ -49,18 +49,16 @@
 using namespace std;
 
 //////////////////////////////////////////////////////////////////////
-//
-//  the server class
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @class FG_SERVER
+ * @brief The server class
+ */
 class FG_SERVER
 {
 public:
-	//////////////////////////////////////////////////
-	//
-	//  internal constants
-	//  
-	//////////////////////////////////////////////////
+	
+	
+	/** @brief Internal Constants */
 	enum FG_SERVER_CONSTANTS
 	{
 		// return values
@@ -70,6 +68,7 @@ public:
 		ERROR_COULDNT_BIND      = 3,
 		ERROR_NOT_LISTENING     = 4,
 		ERROR_COULDNT_LISTEN    = 5,
+		
 		// other constants
 		MAX_PACKET_SIZE         = 1024,
 		UPDATE_INACTIVE_PERIOD  = 1,
@@ -117,27 +116,40 @@ public:
 	pid_t m_TrackerPID; // tracker child pid
 
 private:
+
 	//////////////////////////////////////////////////
-	//
-	//  type of list of relays
-	//  
-	//////////////////////////////////////////////////
+	/**
+	 * @class mT_Relay
+	 * @brief Type of list of relays
+	 */
 	class mT_Relay
 	{
 		public:
 		string      Name;
 		netAddress  Address;
 	};
+ 
 	//////////////////////////////////////////////////
-	//
-	//  chat messages from server to clients
-	//  
-	//////////////////////////////////////////////////
+	/**
+	 * @class mT_ChatMsg
+	 * @brief Chat messages from server to clients
+	 * @todo Document the vars
+	 */
 	class mT_ChatMsg
 	{
 	public:
+		
+		/** 
+		 * @brief -- todo -- 
+		 * @param I int 
+		 * @param M char
+		 */
 		mT_ChatMsg (int I, char* M) { Target=I; Msg=M; };
+		
+		/** @brief 0 = all */
 		int   Target; // 0 = all
+		
+		/** @brief Pointer to the message */
 		char* Msg;
 	};
 	//////////////////////////////////////////////////

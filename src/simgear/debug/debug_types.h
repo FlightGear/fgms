@@ -1,9 +1,9 @@
-/** \file debug_types.h
- *  Define the various logging classes and prioritiess
+/** @file debug_types.h
+ *  @brief Define the various logging classes and prioritiess
  */
 
 /** 
- * Define the possible classes/categories of logging messages
+ * @brief Define the possible classes/categories of logging messages
  */
 typedef enum {
     SG_NONE      = 0x00000000,
@@ -34,14 +34,24 @@ typedef enum {
 
 
 /**
- * Define the possible logging priorities (and their order).
+ * @brief Define the possible logging priorities (and their order).
  */
 typedef enum {
-    SG_BULK = 1,       // For frequent messages
-    SG_DEBUG,          // Less frequent debug type messages
-    SG_INFO,           // Informatory messages
-    SG_WARN,           // Possible impending problem
-    SG_ALERT           // Very possible impending problem
+	
+	/** @brief For frequent messages */
+    SG_BULK = 1,      
+	
+	/** @brief Less frequent debug type messages */
+    SG_DEBUG,         
+	
+	/** @brief Informatory messages */
+    SG_INFO,
+	
+	/** @brief Possible impending problem */
+    SG_WARN, 
+	
+	/** @brief  Very possible impending problem */
+    SG_ALERT           // 
     // SG_EXIT,        // Problem (no core)
     // SG_ABORT        // Abandon ship (core)
 } sgDebugPriority;

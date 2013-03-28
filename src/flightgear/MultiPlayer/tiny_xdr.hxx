@@ -1,3 +1,8 @@
+/**
+ * @author Oliver Schroeder
+ * @brief Tiny XDR implementation for flightgear
+ */
+
 //////////////////////////////////////////////////////////////////////
 //
 //      Tiny XDR implementation for flightgear
@@ -35,7 +40,7 @@ typedef uint64_t    xdr_data2_t;     /* 8 Bytes */
 #define FG_NDEBUG
 
 /**
- * xdr encode 8, 16 and 32 Bit values
+ * @brief xdr encode 8, 16 and 32 Bit values
  */
 template<typename TYPE>
 xdr_data_t XDR_encode ( TYPE Val )
@@ -62,7 +67,7 @@ xdr_data_t XDR_encode ( TYPE Val )
 }
 
 /**
- * xdr decode 8, 16 and 32 Bit values
+ * @brief xdr decode 8, 16 and 32 Bit values
  */
 template<typename TYPE>
 TYPE XDR_decode ( xdr_data_t Val )
@@ -88,7 +93,8 @@ TYPE XDR_decode ( xdr_data_t Val )
 }
 
 /**
- * xdr encode 64 Bit values
+ * @brief xdr encode 64 Bit values
+ * @param Val ::TYPE
  */
 template<typename TYPE>
 xdr_data2_t XDR_encode64 ( TYPE Val )
@@ -107,7 +113,8 @@ xdr_data2_t XDR_encode64 ( TYPE Val )
 }
 
 /**
- * xdr decode 64 Bit values
+ * @brief xdr decode 64 Bit values
+ * 
  */
 template<typename TYPE>
 TYPE XDR_decode64 ( xdr_data2_t Val )
@@ -152,8 +159,8 @@ NET_encode8 ( TYPE Val )
 }
 
 /**
- * decode 8-Bit values from network byte order
- * (actually decodes nothing, just to satisfy the templates)
+ * @brief  Decode 8-Bit values from network byte order
+ *         (actually decodes nothing, just to satisfy the templates)
  */
 template<typename TYPE>
 TYPE
@@ -172,7 +179,7 @@ NET_decode8 ( uint8_t Val )
 }
 
 /**
- * encode 16-Bit values to network byte order
+ * @brief  Encode 16-Bit values to network byte order
  */
 template<typename TYPE>
 uint16_t
@@ -192,7 +199,7 @@ NET_encode16 ( TYPE Val )
 }
 
 /**
- * decode 16-Bit values from network byte order
+ * @brief  Decode 16-Bit values from network byte order
  */
 template<typename TYPE>
 TYPE
@@ -211,7 +218,7 @@ NET_decode16 ( uint16_t Val )
 }
 
 /**
- * encode 32-Bit values to network byte order
+ * @brief  Encode 32-Bit values to network byte order
  */
 template<typename TYPE>
 uint32_t
@@ -231,7 +238,7 @@ NET_encode32 ( TYPE Val )
 }
 
 /**
- * decode 32-Bit values from network byte order
+ * @brief  Decode 32-Bit values from network byte order
  */
 template<typename TYPE>
 TYPE
@@ -250,7 +257,7 @@ NET_decode32 ( uint32_t Val )
 }
 
 /**
- * encode 64-Bit values to network byte order
+ * @brief  Encode 64-Bit values to network byte order
  */
 template<typename TYPE>
 uint64_t
@@ -270,7 +277,7 @@ NET_encode64 ( TYPE Val )
 }
 
 /**
- * decode 64-Bit values from network byte order
+ * @brief  Decode 64-Bit values from network byte order
  */
 template<typename TYPE>
 TYPE

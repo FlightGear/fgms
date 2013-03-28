@@ -1,3 +1,12 @@
+/**
+ * @file main.cxx
+ * @author Oliver Schroeder
+ * @brief Main Program
+ * 
+ */
+
+
+
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -41,24 +50,41 @@ using namespace std;
   #define DEF_TRACKER_CHILDS 1 
 #endif
 
+/** @brief The running  ::FG_SERVER server process */
 FG_SERVER       Servant;
+
+/** @brief Flag whether instance is a Daemon  */
 extern  bool    RunAsDaemon;
 #ifdef _MSC_VER
 	#define M_IS_DIR _S_IFDIR
 #else // !_MSC_VER
 	#define M_IS_DIR S_IFDIR
+	/** @brief An instance of ::cDaemon */
 	extern  cDaemon Myself;
 #endif
-static bool     bHadConfig = false; // must have a config file, with server name
+	
+/** @brief Must have a config file, with server name */
+static bool     bHadConfig = false;  
 
+/** @def DEF_CONF_FILE
+ *  @brief The default config file to load unless overriden on \ref command_line 
+ */
 #ifndef DEF_CONF_FILE
   #define DEF_CONF_FILE "fgms.conf"
 #endif
 
+/** @def SYSCONFDIR
+ *  @brief The default config directory
+ */
 #ifndef SYSCONFDIR
   #define SYSCONFDIR "/usr/etc"
 #endif
 
+/**
+ * @brief Checks is path is a file or directory
+ * @param path Path to check
+ * @retval int 0, 1, 2 -- todo --
+ */
 static int
 is_file_or_directory ( char * path )
 {
@@ -73,11 +99,11 @@ is_file_or_directory ( char * path )
 	return 0;
 }
 
+
 //////////////////////////////////////////////////////////////////////
-//
-//      print a help screen for command line parameters
-//
-//////////////////////////////////////////////////////////////////////
+/** 
+ * @brief Print a help screen for command line parameters, see \ref command_line
+ */
 void
 PrintHelp ()
 {
@@ -101,6 +127,7 @@ PrintHelp ()
 	exit (0);
 } // PrintHelp ()
 //////////////////////////////////////////////////////////////////////
+
 
 #ifdef _MSC_VER
 // kludge for getopt() for WIN32
@@ -147,11 +174,14 @@ int getopt ( int argcount, char* argvars[], char * args )
 }
 #endif // _MSC_VER
 
+
+
 //////////////////////////////////////////////////////////////////////
-//
-//      read a config file and set internal variables accordingly
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Read a config file and set internal variables accordingly
+ * @param ConfigName Path of config file to load
+ * @retval int  -- todo--
+ */
 bool
 ProcessConfig ( const string& ConfigName )
 {
@@ -385,13 +415,16 @@ ProcessConfig ( const string& ConfigName )
 	//////////////////////////////////////////////////
 	return (true);
 } // ProcessConfig ( const string& ConfigName )
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      parse commandline parameters
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Parse commandline parameters
+ * @param argcount 
+ * @param argvars
+ * @retval int 1 on success
+ */
 int
 ParseParams ( int argcount, char* argvars[] )
 {
@@ -481,13 +514,14 @@ ParseParams ( int argcount, char* argvars[] )
 	} // while ()
 	return (1); // success
 } // ParseParams()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      read config files
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief  (re)Read config files
+ * @param ReInit True to reinitialize
+ */
 int
 ReadConfigs ( bool ReInit = false )
 {
@@ -519,13 +553,14 @@ ReadConfigs ( bool ReInit = false )
 		return 1;
 	return 0;
 } // ReadConfigs ()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//  if we receive a SIGHUP, reinit application
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief If we receive a SIGHUP, reinit application
+ * @param SigType int with signal type
+ */
 void SigHUPHandler ( int SigType )
 {
 	Servant.PrepareInit();
@@ -545,12 +580,14 @@ void SigHUPHandler ( int SigType )
 } // SigHUPHandler ()
 //////////////////////////////////////////////////////////////////////
 
+
+
 #ifndef _MSC_VER
 //////////////////////////////////////////////////////////////////////
-//
-//  add the pid of the child to the main exit pon receiving SIGCHLD
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Add the pid of the child to the main exit pon receiving SIGCHLD
+ * @param s int with pid
+ */
 void
 SigCHLDHandler (int s)
 {
@@ -564,11 +601,14 @@ SigCHLDHandler (int s)
 //////////////////////////////////////////////////////////////////////
 #endif // !_MSC_VER
 
+
+
 //////////////////////////////////////////////////////////////////////
-//
-//      MAIN routine
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief MAIN routine 
+ * @param argc
+ * @param argv*[]
+ */
 int
 main ( int argc, char* argv[] )
 {

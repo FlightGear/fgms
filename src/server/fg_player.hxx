@@ -1,3 +1,6 @@
+/**
+ * @file fg_player.cxx
+ */
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -17,10 +20,11 @@
 //
 
 //////////////////////////////////////////////////////////////////////
-//
-//  a player object
-//
-//////////////////////////////////////////////////////////////////////
+/** 
+ * @class FG_Player
+ * @brief A Player Object
+ * @author Oliver Schroeder
+ */
 
 #if !defined FG_PLAYER_HXX
 #define FG_PLAYER_HXX
@@ -50,9 +54,15 @@ public:
 	bool          HasErrors;
 	int           ClientID;
 	time_t        LastRelayedToInactive;
-	unsigned int  PktsReceivedFrom;  // From client
-	unsigned int  PktsSentTo;        // Sent to client
-	unsigned int  PktsForwarded;     // From client sent to other players/relays
+	
+	/** @brief Packets recieved from client */
+	unsigned int  PktsReceivedFrom;  
+	
+	/** @brief Packets sent to client */
+	unsigned int  PktsSentTo;        
+	
+	/** @brief Packets from client sent to other players/relays */
+	unsigned int  PktsForwarded;    
 
 	FG_Player ();
 	FG_Player ( const FG_Player& P);

@@ -1,3 +1,12 @@
+/**
+ * @file fg_tracker.cxx
+ * @author (c) 2006 Julien Pierru
+ * @author (c) 2012 Rob Dosogne ( FreeBSD friendly )
+ *  
+ * @todo Pete To make a links here to the config and explain a bit
+ * 
+ */
+
 //////////////////////////////////////////////////////////////////////
 //
 //  server tracker for FlightGear
@@ -69,10 +78,12 @@ extern bool RunAsDaemon;
 static bool AddDebug = DEF_DEBUG_OUTPUT;
 
 //////////////////////////////////////////////////////////////////////
-//
-//      Initilize to standard values
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Initialize to standard values
+ * @param port 
+ * @param server ip or domain
+ * @param id  what is id? -- todo --
+ */
 FG_TRACKER::FG_TRACKER (int port, string server, int id)
 {
     ipcid         = id;
@@ -81,17 +92,19 @@ FG_TRACKER::FG_TRACKER (int port, string server, int id)
     if (!RunAsDaemon || AddDebug) 
         printf("FG_TRACKER::FG_TRACKER: Server: %s, Port: %d\n", m_TrackerServer, m_TrackerPort);
 } // FG_TRACKER()
-//////////////////////////////////////////////////////////////////////
+
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      terminate the tracker
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief xTerminate the tracker
+ */
 FG_TRACKER::~FG_TRACKER ()
 {
 } // ~FG_TRACKER()
-//////////////////////////////////////////////////////////////////////
+
+
 
 #ifdef USE_TRACKER_PORT
 void *func_Tracker(void *vp)
@@ -104,11 +117,12 @@ void *func_Tracker(void *vp)
 
 #endif // #ifdef USE_TRACKER_PORT
 
+
 //////////////////////////////////////////////////////////////////////
-//
-//      Initilize the tracker
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief  Initialize the tracker as a new process
+ * @param pPIDS -- to do --
+ */
 int
 FG_TRACKER::InitTracker ( pid_t *pPIDS )
 {
@@ -164,13 +178,12 @@ FG_TRACKER::InitTracker ( pid_t *pPIDS )
 #endif // NO_TRACKER_PORT
     return (0);
 } // InitTracker (int port, string server, int id, int pid)
-//////////////////////////////////////////////////////////////////////
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//  send the messages to the tracker server
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Send the messages to the tracker server
+ */
 int
 FG_TRACKER::TrackerLoop ()
 {
@@ -514,13 +527,13 @@ FG_TRACKER::Connect()
 	sleep(1);
     return true;
 } // Connect ()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//  disconnect the tracker from its server
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Disconnect the tracker from its server
+ */
 void
 FG_TRACKER::Disconnect ()
 {
@@ -529,6 +542,7 @@ FG_TRACKER::Disconnect ()
     m_TrackerSocket = 0;
 } // Disconnect ()
 //////////////////////////////////////////////////////////////////////
+
 
 #ifdef _MSC_VER
 #if !defined(NTDDI_VERSION) || !defined(NTDDI_VISTA) || (NTDDI_VERSION < NTDDI_VISTA)   // if less than VISTA, provide alternative
@@ -552,11 +566,15 @@ int inet_pton(int af, const char *src, void *dst)
 #endif // #if (NTDDI_VERSION < NTDDI_VISTA)
 #endif // _MSC_VER
 
+
+
 //////////////////////////////////////////////////////////////////////
-//
-//  creates a TCP connection
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Creates a TCP connection
+ * @param server_address string with server address
+ * @param server_port int with Port No
+ * @retval int -1 for error or sockfd
+ */
 int
 FG_TRACKER::TcpConnect (char *server_address,int server_port)
 {
@@ -620,11 +638,13 @@ FG_TRACKER::TcpConnect (char *server_address,int server_port)
 	}
 }  // TcpConnect  ()
 
+
+
 //////////////////////////////////////////////////////////////////////
-//
-//  Signal handling
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Signal handling
+ * @param s int with the signal
+ */
 void
 signal_handler(int s)
 {

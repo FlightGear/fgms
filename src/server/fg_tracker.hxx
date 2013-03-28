@@ -1,3 +1,9 @@
+/**
+ * @file fg_tracker.hxx
+ * @author (c) 2006 Julien Pierru
+ *
+ */
+
 //////////////////////////////////////////////////////////////////////
 //
 //  server tracker for FlightGear
@@ -33,11 +39,13 @@ using namespace std;
 #endif
 
 void signal_handler(int s);
+
+
 //////////////////////////////////////////////////////////////////////
-//
-//  the tracker class
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @class FG_TRACKER
+ * @brief The tracker class
+ */
 class FG_TRACKER
 {
 public:
@@ -57,14 +65,37 @@ public:
 	int       InitTracker ( pid_t *pPid );
 	int       TcpConnect (char *server_address, int server_port);
 	int       TrackerLoop ();
+	
+	/** 
+	 * @brief Return the server of the tracker
+	 * @retval string Return tracker server as string 
+	 */
 	string    GetTrackerServer () { return m_TrackerServer; };
+	
+	/** 
+	 * @brief Return the port no of the tracker 
+	 * @retval int Port Number
+	 */
 	int       GetTrackerPort () { return m_TrackerPort; };
+	
 	void      Disconnect ();
 
+	
+	/** 
+	 * @class m_MsgBuffer
+	 * @brief Message Buffer Class
+	 */
 	class  m_MsgBuffer
 	{
 	public:
+		/** 
+		 * @brief Message Type
+		 */
 		long mtype; 
+		
+		/** 
+		 * @brief Message contents 
+		 */
 		char mtext[1024];
 	};
 

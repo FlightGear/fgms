@@ -1,5 +1,8 @@
-/** \file logstream.hxx
- * Stream based logging mechanism.
+/** 
+ * @file logstream.hxx
+ * @author  Bernie Bright, 1998
+ * @brief Stream based logging mechanism.
+ * 
  */
 
 // Written by Bernie Bright, 1998
@@ -62,11 +65,14 @@ SG_USING_STD(iostream);
 //
 
 /**
- * the user can provide a function which returns a date as a string
+ * @brief The user can provide a function which returns a date as a string
  */
 typedef string (*DATEFUNC)(void);
 
 /**
+ * @class logbuf
+ * @brief logbuf is an output-only streambuf 
+ * 
  * logbuf is an output-only streambuf with the ability to disable sets of
  * messages at runtime. Only messages with priority >= logbuf::logPriority
  * and debugClass == logbuf::logClass are output.
@@ -86,26 +92,26 @@ public:
     // typedef char_traits<char>::off_type off_type;
 #endif
     // logbuf( streambuf* sb ) : sbuf(sb) {}
-    /** Constructor */
+    /** @brief Constructor */
     logbuf();
 
-    /** Destructor */
+    /** @brief  Destructor */
     ~logbuf();
 
     /**
-     * Is logging enabled?
+     * @brief Is logging enabled?
      * @return true or false*/
     bool enabled() { return logging_enabled; }
 
     /**
-     * Set the logging level of subsequent messages.
+     * @brief Set the logging level of subsequent messages.
      * @param c debug class
      * @param p priority
      */
     void set_log_state( sgDebugClass c, sgDebugPriority p );
 
     /**
-     * Set the global logging level.
+     * @brief Set the global logging level.
      * @param c debug class
      * @param p priority
      */
@@ -113,35 +119,35 @@ public:
 
 
     /**
-     * Set the allowed logging classes.
+     * @brief Set the allowed logging classes.
      * @param c All enabled logging classes anded together.
      */
     static void set_log_classes (sgDebugClass c);
 
 
     /**
-     * Get the logging classes currently enabled.
+     * @brief Get the logging classes currently enabled.
      * @return All enabled debug logging anded together.
      */
     static sgDebugClass get_log_classes ();
 
 
     /**
-     * Set the logging priority.
-     * @param c The priority cutoff for logging messages.
+     * @brief Set the logging priority.
+     * @param  p The priority cutoff for logging messages.
      */
     static void set_log_priority (sgDebugPriority p);
 
 
     /**
-     * Get the current logging priority.
+     * @brief Get the current logging priority.
      * @return The priority cutoff for logging messages.
      */
     static sgDebugPriority get_log_priority ();
 
 
     /**
-     * Set the stream buffer
+     * @brief Set the stream buffer
      * @param sb stream buffer
      */
     void set_sb( streambuf* sb );
@@ -152,16 +158,16 @@ public:
 
 protected:
 
-    /** sync/flush */
+    /** @brief sync/flush */
     inline virtual int sync();
 
-    /** overflow */
+    /** @brief  overflow */
     int_type overflow( int ch );
     // int xsputn( const char* s, istreamsize n );
 
 private:
 
-    // The streambuf used for actual output. Defaults to cerr.rdbuf().
+    /** @brief  The streambuf used for actual output. Defaults to cerr.rdbuf(). */
     static streambuf* sbuf;
 
     static bool logging_enabled;
@@ -216,7 +222,8 @@ logbuf::overflow( int c )
 }
 
 /**
- * logstream manipulator for setting the log level of a message.
+ * @struct loglevel
+ * @brief logstream manipulator for setting the log level of a message.
  */
 struct loglevel
 {
@@ -228,7 +235,10 @@ struct loglevel
 };
 
 /**
- * A helper class that ensures a streambuf and ostream are constructed and
+ * @struct logstream_base 
+ * @brief A helper class 
+ * 
+ * Ensures a streambuf and ostream are constructed and
  * destroyed in the correct order.  The streambuf must be created before the
  * ostream but bases are constructed before members.  Thus, making this class
  * a private base of logstream, declared to the left of ostream, we ensure the
@@ -243,13 +253,14 @@ struct logstream_base
 };
 
 /**
- * Class to manage the debug logging stream.
+ * @class logstream
+ * @brief Class to manage the debug logging stream.
  */
 class logstream : private logstream_base, public ostream
 {
 public:
     /**
-     * The default is to send messages to cerr.
+     * @brief The default is to send messages to cerr.
      * @param out output stream
      */
     logstream( ostream& out )
@@ -262,33 +273,36 @@ public:
     }
 
     /**
-     * Set the output stream
+     * @brief Set the output stream
      * @param out output stream
      */
     void set_output( ostream& out ) { lbuf.set_sb( out.rdbuf() ); }
 
     /**
-     * Set the global log class and priority level.
+     * @brief Set the global log class and priority level.
      * @param c debug class
      * @param p priority
      */
     void setLogLevels( sgDebugClass c, sgDebugPriority p );
 
     /**
-     * Output operator to capture the debug level and priority of a message.
+     * @brief Output operator to capture the debug level and priority of a message.
      * @param l log level
      */
     inline ostream& operator<< ( const loglevel& l );
+	
     /**
-     * Set a user provided function, which returns a date as a string
+     * @brief Set a user provided function, which returns a date as a string
      */
     inline void setuserdatestr ( DATEFUNC udsf ) { userdatestr=udsf; };
+	
     /**
-     * return a date as a string, standard format
+     * @brief Return a date as a string, standard format
      */
     string datestr ( void );
+	
     /**
-     * enable output of date
+     * @brief Enable output of date
      */
     inline void enable_with_date ( bool enable ) { with_date = enable; };
     bool        with_date;
@@ -306,8 +320,9 @@ logstream::operator<< ( const loglevel& l )
 extern logstream *global_logstream;
 
 /**
- * \relates logstream
- * Return the one and only logstream instance.
+ * @relates logstream
+ * @brief Return the one and only logstream instance.
+ * 
  * We use a function instead of a global object so we are assured that cerr
  * has been initialised.
  * @return current logstream
