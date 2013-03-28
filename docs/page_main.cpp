@@ -1,5 +1,5 @@
 
-/*! \mainpage FlightGear MultiPlayer Server 0.x Production/Stable 
+/*! \mainpage About fgms
  *
  * \b FGMS is a standalone network server for the <a href="../../flightgear/html">FlightGear</a> flight simulator and licenced under the GPL. 
  * With \b FGMS you can fly with other pilots scattered around the world. So you can assemble experiences in
