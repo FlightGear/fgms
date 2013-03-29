@@ -1,6 +1,11 @@
 /**
  * \page fgms_conf Configuration
  * 
+ * \ref fgms is configured via a config file
+ * 
+
+ * * File is
+ * 
  * @note 
  * To comment out a line in the config, use \b # at the start
  * \code 
@@ -9,8 +14,9 @@
  * \endcode
  * 
  * @see \ref fgms_example_conf
+ * @see FG_CONFIG class - used to load and query
  * 
- * \section conf_details Main Config
+ * \section conf_details Server Config
  * 
  * 
  *  \subsection servername server.name
@@ -29,7 +35,7 @@
  *  just comment out the line (prepend it with a '#' character)
  * - If you have several IPs configured, set this to the IP your server should listen and send data on.
  * - If you only want to handle local traffic, set this to <code>server.address = 127.0.0.1</code>
- * 
+ * \note If you are part of the \ref mp_network then this IP must match the \ref dns entry.
  * \subsection serverport server.port
  * \code 
  * # listening port for FlightGear Sim client
@@ -47,24 +53,18 @@
  * \code 
  * server.is_hub = false
  * \endcode
- * - If set to \b true, fgms will act as a \b HUB server
- * - a HUB server will resend packets received from relays to all other relays.
- * - @note<b>Only set to true if you know what you are doing</b>
+ * - If set to \b true, fgms will act as a \b hub server
+ * - a HUB server will <b>resend packets received from relays to all other relays</b>.
+ * @warning<b>Only set to true if you know what you are doing!!</b>
  * 
- * @see \ref ServerModes
+ * @see FG_SERVER::SetHub and \ref mp_network
  * 
- * \subsection server_out_of_reach server.out_of_reach
+* 
+ * \subsection server_logfile server.logfile
  * \code 
- * sserver.out_of_reach = 100
+ * server.logfile = fgms.log
  * \endcode
- * - Only forward data to clients which are really nearby the sender. 
- * - Distance is in nautical miles
- * 
- * \subsection server_playerexpires server.playerexpires
- * \code 
- * server.playerexpires = 10
- * \endcode
- * - Time to keep client information in list without updates in seconds
+ * - Write logs to this file
  * 
  * 
  * \subsection telnetport server.telnet_port
@@ -75,12 +75,22 @@
  * - set to 0 (zero) to disable telnet
  * - note however, for public servers this should be \b 5001
  * 
- * 
- * \subsection server_logfile server.logfile
+ * \section conf_player Player/Client Config
+ * \subsection server_out_of_reach server.out_of_reach
  * \code 
- * server.logfile = fgms.log
+ * sserver.out_of_reach = 100
  * \endcode
- * - Write logs to this file
+ * - Distance in nautical miles 
+ * - Only forward data to clients which are really nearby the sender (in virtual space)
+ * @see FG_SERVER::SetOutOfReach and FG_SERVER::IsInRange
+ * 
+ * \subsection server_playerexpires server.playerexpires
+ * \code 
+ * server.playerexpires = 10
+ * \endcode
+ * - Time to keep client information in list without updates in seconds
+ * @see FG_SERVER::SetPlayerExpires
+ * 
  * 
  * 
  * \section tracker_conf Tracker Config
@@ -105,12 +115,8 @@
  * server.tracking_port = 8000
  * \endcode
  * - Enter the port number of the tracking server
+ * @see ::FG_SERVER::AddBlacklist
  * 
- * 
- * \subsection serveris_hub server.is_hub
- * - If you interconnect several servers \b FGMS supports two modes of operation. 
- *   - If your server should be a HUB-Server, set this option to 'true'. 
- *   - All other should set this option to 'false'. See below for further information.
  * 
  * \section server_replays Relays
  * Here you configure to which servers you want your server

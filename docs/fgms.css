@@ -156,7 +156,7 @@ a {
 .contents ul{
 	list-style-type: square;
 	font-size: 11pt;
-	margin: 5px 0px 5px 30px;
+	margin: 5px 20% 5px 30px;
 	padding: 0px;
 	line-height: 140%;
 }
@@ -241,13 +241,12 @@ pre.fragment {
 }
 
 div.fragment {
-        padding: 4px;
-    margin: 5px 20% 5px 30px;;
-	background-color: #efefef;
-	box-shadow: 5px 2px #dddddd;
+    padding: 10px;
+    margin: 10px 20% 10px 30px;
+	background-color: #dddddd;
 	border: 1px solid #dddddd;
 	font-family: monospace;
-	
+	border-radius: 5px;
 }
 
 
@@ -1023,10 +1022,12 @@ dl.note
 
 dl.warning, dl.attention
 {
-        margin-left:-7px;
-        padding-left: 3px;
-        border-left:4px solid;
-        border-color: #FF0000;
+        margin: 5px 20% 5px 30px;
+        padding: 10px;
+        border-left: 4px solid;
+        border-color: #FF909F;
+		background-color: #FBBFC7;
+		border-radius: 10px;
 }
 
 dl.pre, dl.post, dl.invariant

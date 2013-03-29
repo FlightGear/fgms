@@ -5,10 +5,11 @@
  * * These servers are public internet facing.
  * * Public servers are meant to run permanently on a host, and let players connect to them for free.
  * 
- * \section dns DNS and Server naming
- * - The mpservers are subdomains of flightgear.org - eg: mpserver14.flightgear.org
+ * \section dns DNS
+ * - The mpservers are subdomains of <b>flightgear.org</b> 
+ *   * eg: mpserver14.flightgear.org
  * - The DNS entries are maintained by the flightgear-developers
- * - There is no "official" list at present, but the latest data is expected to be on the wiki page 
+ * - There is no automated or "official" list at present, but the latest servers are expected to be on the FlightGear wiki page 
  *   * http://wiki.flightgear.org/Howto:Multiplayer
  * 
  * \section HUB Hub 

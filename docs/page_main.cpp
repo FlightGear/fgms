@@ -10,20 +10,18 @@
  * 	   * <b>How To Multiplayer</b> > http://wiki.flightgear.org/Howto:Multiplayer
  * 
  * 
- * \section home_into The Project
- * \ref fgms is an UDP packet relay server that powers the FlightGear's \ref mp_network. The network currently consists
- * of around 20 servers (circa 2013) and counting.
- *  - its written in c++ 
- *  - is licensed under the <a href="COPYING.html">GPL</a>
- *  - the current production version is the <b>0.x</b> series which is considered stable
  * 
  * The project was started last decade, with Oliver Schroeder as the lead developer and help from others 
  * 
  * \subsection main_toc Contents
- * * \ref mp_network
+ * 
+ * * \ref the_project
+ *  -  \ref mp_network
  * * \ref install_guide
- * * \ref fgms_conf
+ *  - \ref fgms_conf
  * * \ref developers_guide
+ *  - \ref TODO
+ *  - \ref Depreceated
  * 
  * \subsection source_files Essential Files
  *
