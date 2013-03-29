@@ -1,8 +1,15 @@
 
 /*! \page install_guide Installation Guide
  *
+ * \warning 
+ * 		There are currently no "pre build binary packages" for \ref fgms. Its expected that
+ *      you have a server that you are in control of, can install packages and compile
+ *      with root permissions if necessary. Also the install is more focused 
+ *      on *nix style systems which is the primary development platform.
+ * 
  * This page is provides a short overview about installing the 
- * <b>FlightGear Multiplayer Server (fgms)</b>. The reader is assumed to be reasonably familiar with working in a Unix/Linux shell environment.
+ * \ref fgms. The reader is assumed to be reasonably familiar with working in a Unix/Linux shell environment.
+ * \todo Include windows install (geoff)
  * 
  * \section preq Pre-Requisites
  * - A computer running a variant of *nix to compile and host the server. Speed of the machine isn't of great consequence as the protocol is a multiplexer which doesn't require much processing grunt.
@@ -95,32 +102,11 @@
  * \code 
  * ./fgms --help
  * \endcode
- * Which should present you with help output.
+ * Which will present you with help output.
  * 
  * @see \ref command_line
  *  
- * \page command_line Command Line Options
  * 
- * To show help run
- * \code 
- * ./fgms --help
- * \endcode
- * 
- * \section options Options
- * \code
- * -h            print this help screen
- * -a PORT       listen to PORT for telnet
- * -c config     read 'config' as configuration file
- * -p PORT       listen to PORT
- * -t TTL        Time a client is active while not sending packets
- * -o OOR        nautical miles two players must be apart to be out of reach
- * -l LOGFILE    Log to LOGFILE
- * -v LEVEL      verbosity (loglevel) in range 1 (few) and 5 (much)
- * -d            do _not_ run as a daemon (stay in foreground)
- * -D            do run as a daemon
- * \endcode
- * 
- * @see \ref fgms_conf
  * 
  */
 

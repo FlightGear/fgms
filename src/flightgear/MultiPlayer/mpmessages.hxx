@@ -3,12 +3,13 @@
  * @author  Duncan McCreanor
  * 
  * @brief Message definitions for multiplayer communications
- *        within a multiplayer Flightgear
+ *        within multiplayer Flightgear
  * 
- * @note
- *      Each message used for multiplayer communications
- *      consists of a header and optionally a block of data. The combined
- *      header and data is sent as one IP packet.
+ * - Each message used for multiplayer communications consists of a header and optionally a block of data. 
+ * - The combined header and data is sent as one IP packet, \ref xdr encoded.
+ *  @note 
+ * 		XDR demands 4 byte alignment, but some compilers use 8 byte alignment,
+ * 		so it's safe to let the overall size of a network message be a multiple of 8! 
  */
 
 //
@@ -38,39 +39,50 @@
 #define MPMESSAGES_HID "$Id: mpmessages.hxx,v 1.1.1.1 2007/06/12 10:10:24 oliver Exp $"
 
 
-
-
-
 #include <vector>
 #include <simgear/compiler.h>
 #include <simgear/math/SGMath.hxx>
 #include "tiny_xdr.hxx"
 
-/** @brief magic value for messages */
+/** @brief The `Magic` value for message (currently FGFS). The magic is at the start of every packet and is used for packet validaation. */
 const uint32_t MSG_MAGIC = 0x46474653;  // "FGFS"
 
 
-/** @brief  protocol version */
+/** @brief  The MP protocol version that is send with each packet (currently 1.1). */
 const uint32_t PROTO_VER = 0x00010001;  // 1.1
 
-
+/** @brief  ID is of a "chat" message
+ * @warning  The CHAT_MSG_ID is not used in the current implentation
+ */
 #define CHAT_MSG_ID             1
+
+/** @brief  ID is of a "reset" message */
 #define RESET_DATA_ID           6
+
+
+/** @brief  ID  of a "position" message, and the most trafficked */
 #define POS_DATA_ID             7
 
-/** @brief XDR demands 4 byte alignment, but some compilers use8 byte alignment
- *         so it's safe to let the overall size of a network message be a 
- *         multiple of 8!
- */
+
+/** @brief  Maximum length of a callsign */
 #define MAX_CALLSIGN_LEN        8
+
+/** @brief  Maximum length of a chat message 
+ */
 #define MAX_CHAT_MSG_LEN        256
+
+/** @brief  Maximum length of a model name, eg /model/x17/aero-123.xml */
 #define MAX_MODEL_NAME_LEN      96
+
+/** @brief  Maximum length of property */
 #define MAX_PROPERTY_LEN        52
 
 
 /** 
  * @struct T_MsgHdr
- * @brief Header for use with all messages sent 
+ * @brief The header sent as the first part of all mp message packets.
+ * 
+ * The header is expected to have the correct ::MSG_MAGIC and ::PROTO_VER and this checked upon in FG_SERVER::PacketIsValid
  */
 struct T_MsgHdr {
 	
@@ -86,10 +98,14 @@ struct T_MsgHdr {
     /** @brief Absolute length of message */
     xdr_data_t  MsgLen;    
     
-    /** @brief Player's receiver address */
+    /** @brief Player's receiver address 
+		@deprecated Not used in current implementation
+	 */
     xdr_data_t  ReplyAddress;   
     
-    /** @brief Player's receiver port */
+    /** @brief Player's receiver port 
+		@deprecated Not used in current implementation
+	*/
     xdr_data_t  ReplyPort;   
     
     /** @brief Callsign used by the player */
@@ -99,7 +115,8 @@ struct T_MsgHdr {
 
 /** 
  * @struct T_ChatMsg
- * @brief Chat message 
+ * @brief A Chat message 
+ * \warning This is used ??
  */
 struct T_ChatMsg {
 	
@@ -110,7 +127,7 @@ struct T_ChatMsg {
 
 /** 
  * @struct T_PositionMsg
- * @brief Position Message
+ * @brief A Position Message
  */
 struct T_PositionMsg {
 	
@@ -173,7 +190,7 @@ struct FGFloatPropertyData {
   float value;
 };
 
-/** @brief Position Message */
+/** @brief Motion Message */
 struct FGExternalMotionData {
 	
   /** 

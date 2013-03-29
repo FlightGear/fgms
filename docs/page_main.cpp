@@ -1,41 +1,32 @@
 
 /*! \mainpage About fgms
  *
- * The <b>FlightGear MultiPlayer Server</b> (<b>fgms</b>) is a standalone network server for the <a href="../../flightgear/html">FlightGear flight simulator</a> and <a href="COPYING.html">licenced under the GPL</a>. 
- * It allows flying with other pilots over a network inside the FlightGear simulator. With an \b fgms connection you can fly and communicate with other pilots and atc around the sim world. 
+ * The <b>FlightGear MultiPlayer Server</b> (<b>fgms</b>) is a standalone network server for the \ref FlightGear flight simulator. 
  * 
  * \section for_pilots For Pilots
- * This site is for the development project, 
- * please visit instead the FlightGear wiki
- * * How to fly
- * * how to that
+ * \note 
+ *     This site is to do with the server project itself, its development, deployment, code, etc.<br>
+ *     For flying please visit the link below to the \ref FlightGear wiki
+ * 	   * <b>How To Multiplayer</b> > http://wiki.flightgear.org/Howto:Multiplayer
  * 
  * 
- * Note that you don't need to setup your own server in order to participate to flightgears online world. 
- * Just use one of the available public servers.
+ * \section home_into Intro
+ * \ref fgms is an UDP packet relay server that powers the FlightGear's mp network. The network currently consists
+ * of around 20 servers (circa 2013) and counting.
+ *  - its written in c++ 
+ *  - is licensed under the <a href="COPYING.html">GPL</a>
+ *  - the current production version is the <b>0.x</b> series which is considered stable
  * 
- * If you intend to set up your own server, you should use this \b fgms-0 stable series
- *
- * Users interested in \b fgms development can either help to improve the stable version 
- * or help to take the <a href="../../fgms-1/html"><b>fgms-1.x Developer Version</b></a> a step ahead. 
- *
+ * * \ref the_network
+ * * \ref developers_guide
  * 
- * 
- * \section Guides Server Guides
- * 
+ * \section install_run Install and Run
  *  - \ref install_guide
  *  - \ref ServerOperation
  *  - \ref command_line
- *  - \ref ServerModes
  *  - \ref fgms_conf
  * 
- * \section Essential Essential Docs
- * 
- *  - \ref README_cmake
- *  - \ref INSTALL
- *  - \ref COPYING
- *  - \ref AUTHORS
- *  - \ref fgms_example_conf
+ * \ref essentials
  *
  * \section ExtermalLinks Links
  * 

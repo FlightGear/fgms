@@ -1,7 +1,7 @@
 /* The standard CSS for doxygen */
 
 body, table, div, p, dl {
-	font: 400 14px/19px Roboto,sans-serif;
+	font: 400 14px/19px sans-serif;
 	
 }
 
@@ -11,6 +11,10 @@ h1.groupheader {
 	font-size: 150%;
 }
 
+h2 {
+		border-top: 1px solid black;
+}
+
 .title {
 	font-size: 150%;
 	font-weight: bold;
@@ -18,7 +22,7 @@ h1.groupheader {
 }
 
 h2.groupheader {
-	border-bottom: 1px solid #879ECB;
+	border-bottom: 1px solid black;
 	color: #354C7B;
 	font-size: 150%;
 	font-weight: normal;
@@ -115,6 +119,12 @@ a {
 	color: #4665A2;
 }
 
+
+.contents h2{
+	background-color: #eeeeee;	
+	border: 1px dotted #dddddd;
+	padding: 2px;
+}
 a:hover {
 	text-decoration: underline;
 }

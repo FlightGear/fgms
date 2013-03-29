@@ -1,6 +1,10 @@
 /**
+ * @file tiny_xdr.hxx
  * @author Oliver Schroeder
  * @brief Tiny XDR implementation for flightgear
+ * 
+ * - This implementation is not complete, but implements everything we need.
+ * - For further reading on XDR read RFC 1832 - http://www.ietf.org/rfc/rfc1832.txt
  */
 
 //////////////////////////////////////////////////////////////////////
@@ -9,10 +13,10 @@
 //      written by Oliver Schroeder
 //      released to the puiblic domain
 //
-//      This implementation is not complete, but implements
-//      everything we need.
+//      
+//      
 //
-//      For further reading on XDR read RFC 1832.
+//      
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -30,7 +34,10 @@
 #define SWAP64(arg) sgIsLittleEndian() ? sg_bswap_64(arg) : arg
 #define XDR_BYTES_PER_UNIT  4
 
+/** @brief 4 Bytes */
 typedef uint32_t    xdr_data_t;      /* 4 Bytes */
+
+/** @brief 8 Bytes */
 typedef uint64_t    xdr_data2_t;     /* 8 Bytes */
 
 #ifdef FG_NDEBUG
@@ -94,7 +101,6 @@ TYPE XDR_decode ( xdr_data_t Val )
 
 /**
  * @brief xdr encode 64 Bit values
- * @param Val ::TYPE
  */
 template<typename TYPE>
 xdr_data2_t XDR_encode64 ( TYPE Val )
@@ -114,7 +120,6 @@ xdr_data2_t XDR_encode64 ( TYPE Val )
 
 /**
  * @brief xdr decode 64 Bit values
- * 
  */
 template<typename TYPE>
 TYPE XDR_decode64 ( xdr_data2_t Val )
@@ -139,8 +144,8 @@ TYPE XDR_decode64 ( xdr_data2_t Val )
 /////////////////////////////////////////////////////////////////////
 
 /**
- * encode 8-Bit values to network byte order
- * (actually encodes nothing, just to satisfy the templates)
+ * @brief encode 8-Bit values to network byte order
+ *        (actually encodes nothing, just to satisfy the templates)
  */
 template<typename TYPE>
 uint8_t
