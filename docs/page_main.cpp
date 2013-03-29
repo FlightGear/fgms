@@ -6,28 +6,33 @@
  * \section for_pilots For Pilots
  * \note 
  *     This site is to do with the server project itself, its development, deployment, code, etc.<br>
- *     For flying please visit the link below to the \ref FlightGear wiki
+ *     For flying please visit the link below on the FlightGear wiki
  * 	   * <b>How To Multiplayer</b> > http://wiki.flightgear.org/Howto:Multiplayer
  * 
  * 
- * \section home_into Intro
- * \ref fgms is an UDP packet relay server that powers the FlightGear's mp network. The network currently consists
+ * \section home_into The Project
+ * \ref fgms is an UDP packet relay server that powers the FlightGear's \ref mp_network. The network currently consists
  * of around 20 servers (circa 2013) and counting.
  *  - its written in c++ 
  *  - is licensed under the <a href="COPYING.html">GPL</a>
  *  - the current production version is the <b>0.x</b> series which is considered stable
  * 
- * * \ref the_network
+ * The project was started last decade, with Oliver Schroeder as the lead developer and help from others 
+ * 
+ * \subsection main_toc Contents
+ * * \ref mp_network
+ * * \ref install_guide
+ * * \ref fgms_conf
  * * \ref developers_guide
  * 
- * \section install_run Install and Run
- *  - \ref install_guide
- *  - \ref ServerOperation
- *  - \ref command_line
- *  - \ref fgms_conf
- * 
- * \ref essentials
+ * \subsection source_files Essential Files
  *
+ *  - \ref README_cmake
+ *  - \ref INSTALL
+ *  - \ref COPYING - The GPL License
+ *  - \ref AUTHORS
+ *  - \ref fgms_example_conf
+ *  - \ref ChangeLog
  * \section ExtermalLinks Links
  * 
  * - \b Source:  <a href="https://gitorious.org/fgms/fgms-0-x">gitorious.org/fgms/fgms-0-x</a>
@@ -71,6 +76,9 @@
  * 
  * \page fgms_example_conf fgms_example.conf
  *  \include ./src/server/fgms_example.conf
+ * 
+ * \page ChangeLog ChangeLog
+ *  \include ./ChangeLog
  */
 
 

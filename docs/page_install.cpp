@@ -46,10 +46,8 @@
  * * For basic calculations: 
  * 		* inbound traffic is 25 Kilobit per second 
  * 		* outbound is 25 Kbits per second for each plane/client that can 'see' another. (see \ref server_out_of_reach)
- * 
- * 
- * By default, assuming a 10hz update interval, each active \ref fgfs client will currently 
- * cause I/O traffic of approximately 5 kbytes/sec (one update consuming ~500 bytes).
+ * 		* By default, assuming a 10hz update interval, each active \ref fgfs client will currently 
+ * 			cause I/O traffic of approximately 5 kbytes/sec with one update consuming ~500 bytes.
  * 
  * 
  * As client updates have to be propagated to all other active clients by the server, 
@@ -73,7 +71,7 @@
  * Total network traffic is mainly determined by the number of active clients that 
  * 'see eachother' and configured mirrors. If traffic considerations are relevant, 
  * the following options exist to reduce overall server/network load:
- * - Configure a relatively low "server.out_of_reach" value, so that clients 
+ * - Configure a relatively low \ref server_out_of_reach value, so that clients 
  *   outside a certain range are not provided with updates (usually about 100 nm on the main server network)
  * - For virtual gatherings (i.e. fly-ins), have clients use airports and places that do not 
  *   have lots of other traffic (i.e. in other words, avoid places like standard airports such as KSFO)
