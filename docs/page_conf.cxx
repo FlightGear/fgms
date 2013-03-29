@@ -1,5 +1,5 @@
 /**
- * \page fgms_conf Configuration - fgms.conf 
+ * \page fgms_conf Configuration
  * 
  * @note 
  * To comment out a line in the config, use \b # at the start

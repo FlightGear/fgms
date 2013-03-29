@@ -120,10 +120,22 @@ a {
 }
 
 
-.contents h2{
-	background-color: #eeeeee;	
-	border: 1px dotted #dddddd;
-	padding: 2px;
+.contents h2 {
+	font-size: 12pt;
+	color: #555555;
+	background-color: #efefef;
+	font-weight: bold;
+	border-left: 8px solid #cccccc;
+	border-top: 2px solid #cccccc;
+	border-bottom: 2px solid #cccccc;
+	border-right: 100px solid #cccccc;
+	margin: 40px 100px 20px 30px;
+	padding: 5px 0 5px 10px;
+	swidth: 90%;
+	border-top-right-radius: 20px;
+	border-bottom-right-radius: 20px;
+	border-top-left-radius: 2px;
+	border-bottom-left-radius: 2px;
 }
 a:hover {
 	text-decoration: underline;
