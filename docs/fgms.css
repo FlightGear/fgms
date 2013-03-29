@@ -1010,24 +1010,33 @@ dl.section dd {
  
 #projectname
 {
-	font: 300% Tahoma, Arial,sans-serif;
-	margin: 0px;
+	font-family: monospace;
+	font-size: 10pt; 
+	margin: 0 0 0 0;
 	padding: 2px 0px;
+	color: #48486B;
 }
     
 #projectbrief
 {
-	font: 100% sans-serif;
-	margin: 0px;
-	padding: 0px;
-	font-weight: bold;
+	font-family: sans-serif;
+	font-size: 10pt;
+	margin: 0;
+	padding: 0;
+	color: #666666;
 }
-
+#projectbrief b
+{
+	font-family: sans-serif;
+	font-size: 12pt;
+	margin: 0;
+	padding: 0;
+	color: #48486B;
+}
 #projectnumber
 {
-	font: 50% Tahoma, Arial,sans-serif;
-	margin: 0px;
-	padding: 0px;
+	margin: 0;
+	padding: 0;
 }
 
 #titlearea
@@ -1035,7 +1044,15 @@ dl.section dd {
 	padding: 0px;
 	margin: 0px;
 	width: 100%;
-	border-bottom: 1px solid #5373B4;
+	border-bottom: 1px solid #cccccc;
+	background: #eeeeee;
+	background: -moz-linear-gradient(left, #eeeeee 0%, #cccccc 100%);
+	background: -webkit-gradient(linear, left top, right top, color-stop(0%,#eeeeee), color-stop(100%,#cccccc));
+	background: -webkit-linear-gradient(left, #eeeeee 0%,#cccccc 100%);
+	background: -o-linear-gradient(left, #eeeeee 0%,#cccccc 100%);
+	background: -ms-linear-gradient(left, #eeeeee 0%,#cccccc 100%);
+	background: linear-gradient(to right, #eeeeee 0%,#cccccc 100%);
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#eeeeee', endColorstr='#cccccc',GradientType=1 );
 }
 
 .image

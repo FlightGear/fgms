@@ -1,9 +1,15 @@
 
 /*! \mainpage About fgms
  *
- * \b FGMS is a standalone network server for the <a href="../../flightgear/html">FlightGear</a> flight simulator and licenced under the GPL. 
- * With \b FGMS you can fly with other pilots scattered around the world. So you can assemble experiences in
- *  formation flight and/or build virtual airlines etc.
+ * The <b>FlightGear MultiPlayer Server</b> (<b>fgms</b>) is a standalone network server for the <a href="../../flightgear/html">FlightGear flight simulator</a> and <a href="COPYING.html">licenced under the GPL</a>. 
+ * It allows flying with other pilots over a network inside the FlightGear simulator. With an \b fgms connection you can fly and communicate with other pilots and atc around the sim world. 
+ * 
+ * \section for_pilots For Pilots
+ * This site is for the development project, 
+ * please visit instead the FlightGear wiki
+ * * How to fly
+ * * how to that
+ * 
  * 
  * Note that you don't need to setup your own server in order to participate to flightgears online world. 
  * Just use one of the available public servers.
