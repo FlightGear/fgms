@@ -6,7 +6,10 @@
  *  - is licensed under the <a href="COPYING.html">GPL</a>
  *  - the current production version is the <b>0.x</b> series which is considered stable
  * 
- * \ref fgms_overview Overview
+ * \section fgms_overview Overview
+ * 
+ * \image html fgms.1.png 
+ * 
  * * The server runs and UDP port, that listens on 5000
  * * The \ref fgfs server startups on the machine
  * * Loads the config file from config
@@ -16,7 +19,7 @@
  * The telnet port is a simple way to query the server and get some data including list of pilots.
  * \code 
  * > telnet mpserver14.flightgear.org 5000
- * 
+ * \endcode
  * * Setting: \ref telnetport
  * 
  *

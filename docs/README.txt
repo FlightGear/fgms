@@ -10,11 +10,6 @@ Goto the root dir and run
 =============================================
 The MainPage and other pages are in docx/DoxyMain.cpp
 
-
-
-
-
-
 --- Links ---
 
 http://www.stack.nl/~dimitri/doxygen/commands.html

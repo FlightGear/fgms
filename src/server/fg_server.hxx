@@ -13,6 +13,9 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
 //
+/** @namespace fmgs
+ * 
+ */
 // Copyright (C) 2005-2010  Oliver Schroeder
 //
 
@@ -51,7 +54,7 @@ using namespace std;
 //////////////////////////////////////////////////////////////////////
 /**
  * @class FG_SERVER
- * @brief The server class
+ * @brief The Main fgms Class
  */
 class FG_SERVER
 {

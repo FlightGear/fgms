@@ -11,8 +11,6 @@
  * 
  * 
  * 
- * The project was started last decade, with Oliver Schroeder as the lead developer and help from others 
- * 
  * \subsection main_toc Contents
  * 
  * * \ref the_project
