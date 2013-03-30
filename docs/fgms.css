@@ -119,6 +119,17 @@ a {
 	color: #4665A2;
 }
 
+/* THIS is the header title */
+.title {
+	font-size: 14pt;
+	font-weight: bold;
+	margin-top: 10px;
+	padding: 0;
+	margin: 0;
+	color: #666666;
+}
+
+
 .contents h1 {
 	font-size: 15pt;
 	font-family: monospace;
@@ -1098,7 +1109,7 @@ dl.section dd {
     
 #projectbrief
 {
-	font-family: sans-serif;
+	font-family: monospace;
 	font-size: 10pt;
 	margin: 0;
 	padding: 0;
@@ -1106,11 +1117,12 @@ dl.section dd {
 }
 #projectbrief b
 {
-	font-family: sans-serif;
-	font-size: 12pt;
+	font-family: monospace;
+	font-size: 14pt;
 	margin: 0;
 	padding: 0;
 	color: #48486B;
+	text-shadow: 3px 3px 3px white;
 }
 #projectnumber
 {

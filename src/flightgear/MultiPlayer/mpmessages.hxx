@@ -53,6 +53,7 @@ const uint32_t PROTO_VER = 0x00010001;  // 1.1
 
 /** @brief  ID is of a "chat" message
  * @warning  The CHAT_MSG_ID is not used in the current implentation
+ * @deprecated Not used in current implementation
  */
 #define CHAT_MSG_ID             1
 

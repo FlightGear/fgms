@@ -1,9 +1,10 @@
  /**
  * \page mp_network MP Network
  * 
- * The \ref FlightGear MultiPlayer network of around twenty and counting (circa 2013) server. 
- * * These servers are public internet facing.
- * * Public servers are meant to run permanently on a host, and let players connect to them for free.
+ * The \ref FlightGear MultiPlayer network are around 20++ (circa 2013) server running. 
+ * * These servers are public internet facing
+ * * Public servers are meant to run permanently on a host, and let players connect to them for free
+ * * Typically there are around 10 to 60 players on the network circa 2013
  * 
  * \section dns DNS
  * - The mpservers are subdomains of <b>flightgear.org</b> 

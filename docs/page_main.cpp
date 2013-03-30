@@ -16,12 +16,15 @@
  * \subsection main_toc Contents
  * 
  * * \ref the_project
+ *  - \ref FlightGear
  *  -  \ref mp_network
  * * \ref install_guide
- *  - \ref fgms_conf
+ * * \ref fgms_conf
+ * * \ref fgms
+ * * \ref tracker
  * * \ref developers_guide
- *  - \ref TODO
- *  - \ref Depreceated
+ *  - \ref todo
+ *  - \ref deprecated
  * 
  * \subsection source_files Essential Files
  *
@@ -31,23 +34,18 @@
  *  - \ref AUTHORS
  *  - \ref fgms_example_conf
  *  - \ref ChangeLog
+ * 
  * \section ExtermalLinks Links
  * 
  * - \b Source:  <a href="https://gitorious.org/fgms/fgms-0-x">gitorious.org/fgms/fgms-0-x</a>
- * 
  * - \b Wiki:   <a href="http://wiki.flightgear.org/Fgms">wiki.flightgear.org/Fgms</a>
- * 
- * - \b Home:    <a href="http://fgms.sourceforge.net/index.php">fgms.sourceforge.net</a>
+ * - \b Home:    <a href="fgms.freeflightsim.org">fgms.freeflightsim.org</a>
  * 
  * - <b>Chat & Help</b>
- *    - irc.flightgear.org
- *    - /join  \#fgms_example
+ *    - <a href="irc::/irc.flightgear.org#fgms">irc.flightgear.org#fgms</a>
+ *    - See \ref the_team for nicks
  * 
  * 
- * \section LinkInfo Info
- * 
- *    @author Oliver Schroeder and Others (see \ref AUTHORS)
- *    @author  Docs Maintainer - pete at freeflightsim.org
  * 
  *  \b License:
  *    -   GNU GENERAL PUBLIC LICENSE
