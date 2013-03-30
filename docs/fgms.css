@@ -159,6 +159,8 @@ a {
 	padding: 2px 0 2px 10px;
 }
 
+
+
 .contents p {
 	line-height: 130%;
 	font-size: 11pt;
@@ -836,12 +838,13 @@ address {
 
 table.doxtable {
 	border-collapse:collapse;
-        margin-top: 4px;
-        margin-bottom: 4px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+		margin-left: 40px;
 }
 
 table.doxtable td, table.doxtable th {
-	border: 1px solid #2D4068;
+	border: 1px solid #aaaaaa;
 	padding: 3px 7px 2px;
 }
 
@@ -1333,3 +1336,8 @@ tr.heading h2 {
   }
 }
 
+.contents .image{
+	padding: 0;
+	margin: 30px 0 30px 30px;
+	text-align: left;
+}

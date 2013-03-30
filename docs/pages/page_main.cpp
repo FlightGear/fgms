@@ -13,7 +13,7 @@
  * 
  * \subsection main_toc Contents
  * 
- * * \ref the_project
+ * * \ref overview
  *  - \ref FlightGear
  *  -  \ref mp_network
  * * \ref install_guide

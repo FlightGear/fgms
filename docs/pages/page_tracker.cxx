@@ -48,6 +48,7 @@
  * \subsection tracker_server_install Install
  * - A postgres database and its header files need to be installed (currently
  *   postgres is the only database supported)
+ * - See 
  * \todo (pete) Complete tracker server install
  * 
  * \subsection tracket_server_dev Dev Info

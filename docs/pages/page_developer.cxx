@@ -83,4 +83,7 @@
  *  
  * fgms uses a small subset of xdr necessary for multiplayer. This is defined in tiny_xdr.hxx
  * 
+ * 
+ * 
+ * \image html favicon.png
  */
