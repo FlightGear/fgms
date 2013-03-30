@@ -1,5 +1,5 @@
 
-/*! \mainpage About fgms
+/*! \mainpage Home
  *
  * The <b>FlightGear MultiPlayer Server</b> (<b>fgms</b>) is a standalone network server for the \ref FlightGear flight simulator. 
  * 

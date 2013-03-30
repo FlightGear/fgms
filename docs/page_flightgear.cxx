@@ -1,16 +1,17 @@
 /**
  * \page FlightGear FlightGear
  * 
- * \section fgfs_intro FlightGear Project
+ * \section fg_intro The FlightGear Project
  * 
  *  - <b>FlightGear</b> is the project as a whole
+ *    * The FlightGear project is made of many parts, and \ref fgms is one of them
  * 		- Wiki:  http://wiki.flightgear.org
- * 	- \ref fgfs  below is the "command line" used to launch the simulator
+ * 	- \ref fgfs  below is the "command" used to launch the simulator
  * 
  * \section fgfs fgfs
- * This is the command line used to launch a sim eg 
+ * This is an example command line used to launch a sim
  * \code 
- * > fgms --callsign=cba963 --multiplay=out,10,mpserver14.flightgear.org,5000 --multiplay=in,10,localhost,5000
+ * > fgms --callsign=test1 --multiplay=out,10,mpserver14.flightgear.org,5000 --multiplay=in,10,localhost,5000
  * \endcode
  * The important command line vars for us in \ref fgms land are:
  * \code 
