@@ -61,6 +61,6 @@
  * these are simply relayed.
  *  - properties: https://gitorious.org/fg/flightgear/blobs/next/src/MultiPlayer/multiplaymgr.cxx#line69
  *  - A ::CHAT_MSG_ID is depreceated, instead its a property
- *    - 10002 sim/multiplayer/chat property
+ *    - <b>{10002, "sim/multiplay/chat", simgear::props::STRING}</b>
  * 
  */

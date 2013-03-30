@@ -54,7 +54,7 @@ const uint32_t PROTO_VER = 0x00010001;  // 1.1
 /** @brief  ID is of a "chat" message
  * @warning  The CHAT_MSG_ID is not used in the current implentation, 
  *           Instead chat messages are added to a ::POS_DATA_ID message, in the 'properties' part,
- *            under a 10002 sim/multiplayer/chat property.
+ *            under a <b>10002 sim/multiplayer/chat property<b> (see fgms_for_fgms).
  * @deprecated Not used in current implementation
  */
 #define CHAT_MSG_ID             1

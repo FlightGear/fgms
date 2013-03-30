@@ -10,14 +10,14 @@
  * 
  * \image html fgms.1.png 
  * 
- * A typical \ref fgms servver running will: 
+ * A typical \ref fgms server running will: 
  * * Listen for UDP traffic on port 5000 which are either
  *    - An  \ref fgfs client with a pilot
- *    - Or other fgms servers being relayed to
+ *    - Or other fgms servers in a relay relationship
  *    - Traffic from local pilots is forwarded to the other fgms servers ie \ref conf_relays.
  *    - Traffic from other pilots/relays is forwarded to local pilots, if within range.
  * * UDP packets are forwarded to the \ref conf_crossfeed port
- * * If the tracking is enabled (see \ref tracker_conf)
+ * * If the tracking is enabled (see \ref tracker)
  *    - A tracker client is started as a a process thread. This forwards information via tcp
  *      to the tracker server
  *    - The tracker server can be either local, or at another location on the internet. It
