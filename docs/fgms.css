@@ -1085,12 +1085,26 @@ dl.section dd {
 	margin-bottom: 6px;
 }
 
+#fgms_ver{
+	float: right;
+	color: #999999;
+	font-family: monospace;
+	font-size: 20pt;
+	padding: 10px;
+}
 
 #projectlogo
 {
 	text-align: center;
 	vertical-align: bottom;
 	border-collapse: separate;
+	background-color: white;
+	border-radius: 5px;
+	border: 1px solid #efefef;
+	padding: 5px;
+	margin: 5px 20px 5px 10px;
+	box-shadow: 3px 3px 3px #dddddd;
+	
 }
  
 #projectlogo img
@@ -1114,6 +1128,7 @@ dl.section dd {
 	margin: 0;
 	padding: 0;
 	color: #666666;
+	float: right;
 }
 #projectbrief b
 {
@@ -1121,8 +1136,8 @@ dl.section dd {
 	font-size: 14pt;
 	margin: 0;
 	padding: 0;
-	color: #48486B;
-	text-shadow: 3px 3px 3px white;
+	color: #427EBF;
+	text-shadow: 1px 1px white;
 }
 #projectnumber
 {
@@ -1132,18 +1147,19 @@ dl.section dd {
 
 #titlearea
 {
+	height: 80px;
 	padding: 0px;
 	margin: 0px;
 	width: 100%;
 	border-bottom: 1px solid #cccccc;
-	background: #eeeeee;
-	background: -moz-linear-gradient(left, #eeeeee 0%, #cccccc 100%);
-	background: -webkit-gradient(linear, left top, right top, color-stop(0%,#eeeeee), color-stop(100%,#cccccc));
-	background: -webkit-linear-gradient(left, #eeeeee 0%,#cccccc 100%);
-	background: -o-linear-gradient(left, #eeeeee 0%,#cccccc 100%);
-	background: -ms-linear-gradient(left, #eeeeee 0%,#cccccc 100%);
-	background: linear-gradient(to right, #eeeeee 0%,#cccccc 100%);
-	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#eeeeee', endColorstr='#cccccc',GradientType=1 );
+	background: #f4faff;
+	background: -moz-linear-gradient(left,  #f4faff 0%, #ededed 51%, #45484d 89%, #000000 100%);
+	background: -webkit-gradient(linear, left top, right top, color-stop(0%,#f4faff), color-stop(51%,#ededed), color-stop(89%,#45484d), color-stop(100%,#000000));
+	background: -webkit-linear-gradient(left,  #f4faff 0%,#ededed 51%,#45484d 89%,#000000 100%);
+	background: -o-linear-gradient(left,  #f4faff 0%,#ededed 51%,#45484d 89%,#000000 100%);
+	background: -ms-linear-gradient(left,  #f4faff 0%,#ededed 51%,#45484d 89%,#000000 100%);
+	background: linear-gradient(to right,  #f4faff 0%,#ededed 51%,#45484d 89%,#000000 100%);
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f4faff', endColorstr='#000000',GradientType=1 );
 }
 
 .image
