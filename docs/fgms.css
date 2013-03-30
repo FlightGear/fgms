@@ -14,11 +14,15 @@ h1.groupheader {
 h2 {
 		border-top: 1px solid black;
 }
-
+/* THIS is the header title */
 .title {
-	font-size: 150%;
+	font-size: 24pt;
 	font-weight: bold;
-	margin: 10px 2px;
+	font-family: monospace;
+	margin: 0;
+	padding: 20px;
+	ssbackground-color: pink;
+	color: #444444;
 }
 
 h2.groupheader {
@@ -997,16 +1001,26 @@ div.ingroups a
 
 div.header
 {
-        background-image:url('nav_h.png');
-        background-repeat:repeat-x;
-	background-color: #F9FAFC;
+        ssbackground-image:url('nav_h.png');
+        ssbackground-repeat:repeat-x;
+	background-color: blue;
 	margin:  0px;
-	border-bottom: 1px solid #C4CFE5;
+	border: none
 }
 
 div.headertitle
 {
-	padding: 5px 5px 5px 10px;
+	padding: 10px;
+	margin: 0;
+	background: #eeeeee;
+	background: -moz-linear-gradient(left,  #eeeeee 0%, #cccccc 100%);
+	background: -webkit-gradient(linear, left top, right top, color-stop(0%,#eeeeee), color-stop(100%,#cccccc));
+	background: -webkit-linear-gradient(left,  #eeeeee 0%,#cccccc 100%);
+	background: -o-linear-gradient(left,  #eeeeee 0%,#cccccc 100%);
+	background: -ms-linear-gradient(left,  #eeeeee 0%,#cccccc 100%);
+	background: linear-gradient(to right,  #eeeeee 0%,#cccccc 100%);
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#eeeeee', endColorstr='#cccccc',GradientType=1 );
+	border-bottom: 1px solid #cccccc;
 }
 
 dl
@@ -1084,13 +1098,14 @@ dl.bug
 dl.section dd {
 	margin-bottom: 6px;
 }
-
+/******************************/
 #fgms_ver{
 	float: right;
 	color: #999999;
 	font-family: monospace;
-	font-size: 20pt;
+	font-size: 14pt;
 	padding: 10px;
+	margin: 10px;
 }
 
 #projectlogo
@@ -1118,7 +1133,7 @@ dl.section dd {
 	font-size: 10pt; 
 	margin: 0 0 0 0;
 	padding: 2px 0px;
-	color: #48486B;
+	color: #3DDB46;
 }
     
 #projectbrief
@@ -1127,8 +1142,8 @@ dl.section dd {
 	font-size: 10pt;
 	margin: 0;
 	padding: 0;
-	color: #666666;
-	float: right;
+	color: #999999;
+	ssfloat: right;
 }
 #projectbrief b
 {
@@ -1136,13 +1151,15 @@ dl.section dd {
 	font-size: 14pt;
 	margin: 0;
 	padding: 0;
-	color: #427EBF;
+	color: #666666;
 	text-shadow: 1px 1px white;
 }
+
 #projectnumber
 {
 	margin: 0;
 	padding: 0;
+	color: #999999;
 }
 
 #titlearea
@@ -1161,6 +1178,7 @@ dl.section dd {
 	background: linear-gradient(to right,  #f4faff 0%,#ededed 51%,#45484d 89%,#000000 100%);
 	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f4faff', endColorstr='#000000',GradientType=1 );
 }
+
 
 .image
 {
