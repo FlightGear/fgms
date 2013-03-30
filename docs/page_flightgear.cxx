@@ -6,7 +6,9 @@
  *  - <b>FlightGear</b> is the project as a whole
  *    * The FlightGear project is made of many parts, and \ref fgms is one of them
  * 		- Wiki:  http://wiki.flightgear.org
- * 	- \ref fgfs  below is the "command" used to launch the simulator
+ * 
+ * * \ref fgfs  below is the "command" used to launch the simulator
+ * * \ref fgms_for_fgms
  * 
  * \section fgfs fgfs
  * This is an example command line used to launch a sim
@@ -48,4 +50,17 @@
  * \note 	
  * 		Command line options: 
  * 			- http://wiki.flightgear.org/Command_line_options#MultiPlayer_Options
+ * 
+ * 
+ * \section fgms_for_fgms Info for fgms developers
+ * 
+ * Bits of the multiplayer code from flightgear is copied as needed
+ *  - See https://gitorious.org/fg/flightgear/trees/next/src/MultiPlayer
+ * 
+ * Of interest also is the list of "properties" that are sent. Although
+ * these are simply relayed.
+ *  - properties: https://gitorious.org/fg/flightgear/blobs/next/src/MultiPlayer/multiplaymgr.cxx#line69
+ *  - A ::CHAT_MSG_ID is depreceated, instead its a property
+ *    - 10002 sim/multiplayer/chat property
+ * 
  */

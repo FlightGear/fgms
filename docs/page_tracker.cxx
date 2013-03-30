@@ -33,7 +33,7 @@
  * 
  * 
  * \section tracker_client Tracker Client
- * This client is embedded in the \ref fgms itelf (see FG_TRACKER by Julien Pierru)
- * The tracker actually forks iteslf as another application:
+ * * The client is embedded in \ref fgms itelf (see FG_TRACKER by Julien Pierru)
+ * * The tracker actually forks iteslf as another thread:
  * 
  */

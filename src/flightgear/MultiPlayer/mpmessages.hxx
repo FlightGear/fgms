@@ -52,7 +52,9 @@ const uint32_t MSG_MAGIC = 0x46474653;  // "FGFS"
 const uint32_t PROTO_VER = 0x00010001;  // 1.1
 
 /** @brief  ID is of a "chat" message
- * @warning  The CHAT_MSG_ID is not used in the current implentation
+ * @warning  The CHAT_MSG_ID is not used in the current implentation, 
+ *           Instead chat messages are added to a ::POS_DATA_ID message, in the 'properties' part,
+ *            under a 10002 sim/multiplayer/chat property.
  * @deprecated Not used in current implementation
  */
 #define CHAT_MSG_ID             1
@@ -117,7 +119,7 @@ struct T_MsgHdr {
 /** 
  * @struct T_ChatMsg
  * @brief A Chat message 
- * \warning This is used ??
+ * @deprecated Not used in current implementation, see ::CHAT_MSG_ID for more info.
  */
 struct T_ChatMsg {
 	
