@@ -1,19 +1,17 @@
 /**
  * \page fgms_conf Configuration
  * 
- * \ref fgms is configured via a config file
+ * \ref fgms is configured via a config file, see \ref fgms_example_conf
+ * - by default on *nix systems the file is located at:
+ *   - <b>/usr/local/etc/fgms.conf</b>
+ * - Parts of the configuration can be ovverriden with the startup command line - see \ref fgms
  * 
-
- * * File is
- * 
- * @note 
- * To comment out a line in the config, use \b # at the start
+ * TIP: Add a # to comment out a line in a config file
  * \code 
- * # server.port = 5000 # this line has been commented out
- * server.port = 3000
+ * #foo = 5000  < this line has been commented out
+ * foo = 5001
  * \endcode
  * 
- * @see \ref fgms_example_conf
  * @see FG_CONFIG class - used to load and query
  * 
  * \section conf_details Server Config
@@ -21,7 +19,7 @@
  * 
  *  \subsection servername server.name
  * \code 
- * server.name = example.com
+ * server.name = albert
  * \endcode
  *  - This name is used in server chat messages and when queried via telnet
  * 
@@ -71,7 +69,7 @@
  * \code 
  * server.telnet_port = 5001
  * \endcode
- * - port for telnet, default port+1
+ * - port for telnet server
  * - set to 0 (zero) to disable telnet
  * - note however, for public servers this should be \b 5001
  * 
@@ -90,6 +88,58 @@
  * \endcode
  * - Time to keep client information in list without updates in seconds
  * @see FG_SERVER::SetPlayerExpires
+ * 
+ * 
+ * 
+ * 
+ * \section conf_relays Relays
+ * Here you configure to which servers you want your server
+ * to send data of local clients to. Remember that those 
+ * servers should be configured so that those will sent their client data to your server, too!
+ * 
+ * \subsection relays relay.host / relay.port
+ * \code
+ * relay.host = mpserver14.flightgear.org
+ * relay.port = 5000
+ * # relay.host = mpserver99.flightgear.org
+ * # relay.port = 5000
+ * \endcode
+ * - If you want to interconnect several servers, this option is for you. All other should leave these
+ * options out of the configuration. If you want to connect servers, you should add all 
+ * servers to the configuration you want to send traffic to.
+ * 
+ * \note The relay servers you send traffic to must be configured accordingly to relay to you, or your traffic will be ignored!
+ * 
+ * @see ::FG_SERVER::AddRelay
+ * 
+ * 
+ * 
+ * 
+ * \section conf_crossfeed Crossfeed 
+ * 
+ * \subsection crossfeed_set crossfeed.host / crossfeed.port
+ * A list of one or more host/port to forward UDP packets to. 
+ * \code
+ * crossfeed.host = localhost
+ * crossfeed.port = 5002
+ * # crossfeed.host = other.server.com
+ * # crossfeed.port = 5444
+ * \endcode
+ * - These servers will received all <b>locally received packets</b> without any condition
+ * - i.e. all local packets are mirrored to them
+ * 
+ * 
+ * \section client_blacklistsss Client BlackList
+ * 
+ * \subsection blacklist_conf blacklist
+ * List of blacklisted client IPs. Set these to <b>block specific client IPs</b>.
+ * \code
+ * blacklist = 123.123.123.123
+ * blacklist = 12.12.12.12
+ * \endcode
+ * - Blacklisted IPs will ignore all traffic comming from the given IP.
+ * 
+ * @see ::FG_SERVER::AddBlacklist
  * 
  * 
  * 
@@ -115,38 +165,7 @@
  * server.tracking_port = 8000
  * \endcode
  * - Enter the port number of the tracking server
- * @see ::FG_SERVER::AddBlacklist
- * 
- * 
- * \section server_replays Relays
- * Here you configure to which servers you want your server
- * to send data of local clients to. Remember that those 
- * servers should be configured so that those will sent their client data to your server, too!
- * 
- * \subsection relays relay.host/relay.port
- * \code
- * relay.host = mpserver123.flightgear.org
- * relay.port = 5000
- * \endcode
- * - If you want to interconnect several servers, this option is for you. All other should leave these
- * options out of the configuration. If you want to connect servers, you should add all 
- * servers to the configuration you want to send traffic to.
- * 
- * \note The relay servers you send traffic to must be configured accordingly to relay to you, or your traffic will be ignored!
- * 
- * @see ::FG_SERVER::AddRelay
- * 
- * \section client_blacklistsss Client BlackList
- * 
- * \subsection blacklist_conf blacklist
- * List of blacklisted client IPs. Set these to <b>block specific client IPs</b>.
- * \code
- * blacklist = 123.123.123.123
- * blacklist = 12.12.12.12
- * \endcode
- * - Blacklisted IPs will ignore all traffic comming from the given IP.
- * 
- * @see ::FG_SERVER::AddBlacklist
+ * @see ::FG_SERVER::AddTracker
  * 
  * 
  */
