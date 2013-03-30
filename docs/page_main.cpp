@@ -23,15 +23,7 @@
  * * \ref developers_guide
  *  - \ref todo
  *  - \ref deprecated
- * 
- * \subsection source_files Essential Files
- *
- *  - \ref README_cmake
- *  - \ref INSTALL
- *  - \ref COPYING - The GPL License
- *  - \ref AUTHORS
- *  - \ref fgms_example_conf
- *  - \ref ChangeLog
+ * * \ref source_docs
  * 
  * \section ExtermalLinks Links
  * 
@@ -55,6 +47,15 @@
 
 /////////////////////////////////////////////////////////////////////////////////////
 /*! 
+ * \page source_docs Source Docs
+ * 
+ * * \subpage INSTALL
+ * * \subpage README_cmake
+ * * \subpage COPYING
+ * * \subpage AUTHORS
+ * * \subpage fgms_example_conf
+ * * \subpage ChangeLog
+ * 
  * 
  * \page INSTALL INSTALL
  *  \include ./INSTALL
