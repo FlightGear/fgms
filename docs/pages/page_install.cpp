@@ -4,20 +4,19 @@
  * This is a short overview about installing the \ref fgms. 
  * The reader is assumed to be reasonably familiar with working in a Unix/Linux shell environment.
  * 
- * \note Make sure to read about pre-requisutes and bandwidth etc first in \ref hosting
+ * \note First, make sure to read about pre-requisutes and bandwidth etc in \ref hosting
  * 
- * <b>Example Structure</b><br>
- * The examples below use the following directory structure by way of example:
+ * The examples below use the following directory structure:
  * \code
  * /home/my/stuff              < working directory
-*  /home/my/stuff/fgms         < the git checkout fo the source
+*  /home/my/stuff/fgms         < the git checkout of the source code
 *  /home/my/stuff/build_fgms   < the temp build directory
  * \endcode
  * 
  * \section get_bui Getting & Building fgms
  * 
  * \note 
- *      There are currently no "pre build binary packages" for \ref fgms. Its expected that
+ *      There are currently no 'pre built binary packages' for \ref fgms. Its expected that
  *      you have a server that you are in control of, can install packages and compile
  *      with root permissions if necessary. Also the install is more focused 
  *      on *nix style systems which is the primary development platform.
