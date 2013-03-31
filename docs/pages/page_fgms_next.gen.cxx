@@ -43,18 +43,32 @@
  * All packets will be transmitted as UDP datagrams and will have a well defined header which looks like this:
  * 
  * <table>
- * <tr><td>SIZE</td><td>Magic</td><td>ProtoVersion</td><td>Flags</td><td>MsgCounter</td><td>Timestamp</td><td>[Data]</td></tr>
+ * <tr><td>SIZE</td>
+ * <td>\ref ng_Magic</td>
+ * <td>\ref ng_ProtoVersion</td>
+ * <td>\ref ng_Flags</td>
+ * <td>\ref ng_MsgCounter</td>
+ * <td>\ref ng_Timestamp</td>
+ * <td>[\ref ng_Data]</td></tr>
  * </table>
  * 
- * \subsection ng_magic Magic 
- *  would be 
+ * \subsection ng_Magic Magic 
+ *  would be one of
  * - \b FGNC - FlightGear Network Client
  * - \b FGNS - FlightGear Network Server (needed or at least usefull for relaying data between servers.
  * - \b FGNO - FlightGear Network Observer 
  *    - ie a client which sends no data, eg a radar station 
  * 
+ * @see Current ::MSG_MAGIC
+ * 
+ * 
+ * 
  * \subsection ng_ProtoVersion ProtoVersion 
  *  - a number representing the protocol version
+ * 
+ * @see Current ::PROTO_VER
+ * 
+ * 
  * 
  * \subsection ng_Flags Flags 
  * - \b RELIABLE - the sender repeats resending the packet until a confirmation is 
@@ -66,13 +80,19 @@
  * \subsection ng_MsgCounter MsgCounter
  * - Every packet send to one client has its unique packet count number
  * 
+ * 
+ * 
  * \subsection ng_Timestamp Timestamp
  * - Timestamp representing the simulation time at which the packet was sent
+ * 
+ * 
  * 
  * \subsection ng_Data Data
  *  - \b PROPERTY-ID / \b VALUE pair
  *  - Property/Value pairs are not only meant to represent properties of \ref FlightFear, but 
  *    eg. CHAT|MSG or ACK|MsgID too.
+ * 
+ * 
  * 
  * \section ng_config Configuration
  * The mapping of property-id to properties within flightgear should be configurable via xml-files. 
@@ -117,10 +137,11 @@
     </prop>
     \endcode
  *
-* Although the protocol can handle unknown properties (see comment
+ * Although the protocol can handle unknown properties (see comment
  * of IDs below), you should generally include all properties which
  * can be sent in this list.
  *
+ * \section ng_ids ID's
  * The IDs of the properties are not coincidental. The value encodes
  * the type (and length) of the corresponding data!
  *
@@ -153,7 +174,7 @@
     \endcode
  *  
  * 
- * \section ng_prop_map Property Map
+ * \section ng_prop_types Property Types
  * 
  * The data types in the property map fall into the following types:
  * 
@@ -170,11 +191,19 @@
  * * see https://gitorious.org/fgms/fgms-1-x/blobs/master/mp-proto-spec.xml#line94
  * 
  * 
+ * \subsection ngp_bool BOOL
+ * * 32-bit properties (4 byte)
+ * * sent as ID | DATA
+ * * ID is 1300000 + id
+ * * see https://gitorious.org/fgms/fgms-1-x/blobs/master/mp-proto-spec.xml#line511
+ * 
+ * 
  * \subsection ngp_uint UNSIGNED INTEGERS
  * * 32-bit properties (4 byte)
  * * sent as ID | DATA
  * * ID is 600000 + id
  * * see https://gitorious.org/fgms/fgms-1-x/blobs/master/mp-proto-spec.xml#line154
+ * 
  * 
  * \subsection ngp_float FLOAT 
  * * 32-bit properties (4 byte)
@@ -182,11 +211,6 @@
  * * ID is 900000 + id
  * * see https://gitorious.org/fgms/fgms-1-x/blobs/master/mp-proto-spec.xml#line202
  * 
- * \subsection ngp_bool BOOL
- * * 32-bit properties (4 byte)
- * * sent as ID | DATA
- * * ID is 1300000 + id
- * * see https://gitorious.org/fgms/fgms-1-x/blobs/master/mp-proto-spec.xml#line511
  * 
  * \subsection ngp_double DOUBLE
  * * 64-bit properties (8 byte)

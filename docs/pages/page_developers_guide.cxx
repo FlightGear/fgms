@@ -32,7 +32,7 @@
  * The fgms repository contains all the libs required to install. However some parts were
  * copied, borrowed etc from other sources:
  * 
- * \subsection simgear Simgear
+ * \subsection simgear simgear
  *   -  Low level maths, geospatial calculations, etc
  *   - fgms used the constants, logging and some structures
  *   - simgear and flightear source are very closely related
