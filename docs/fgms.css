@@ -257,14 +257,7 @@ pre.fragment {
         font-size: 105%;
 }
 
-div.fragment {
-    padding: 10px;
-    margin: 10px 20% 10px 30px;
-	background-color: #dddddd;
-	border: 1px solid #dddddd;
-	font-family: monospace;
-	border-radius: 5px;
-}
+
 
 
 div.line {
@@ -1014,7 +1007,7 @@ div.header
 div.headertitle
 {
 	padding: 10px;
-	margin: 0;
+	margin: 0 0 25px 0;
 	background: #eeeeee;
 
 	background: -moz-linear-gradient(left,  #eeeeee 0%, #cccccc 100%);
@@ -1031,7 +1024,9 @@ div.headertitle
 
 	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#eeeeee', endColorstr='#cccccc',GradientType=1 );
 
-	border-bottom: 1px solid #cccccc;
+	ssborder-bottom: 1px solid #dddddd;
+	
+	box-shadow: 0 4px 4px #dddddd;
 }
 
 dl
@@ -1353,3 +1348,17 @@ dl.see dt{
 	color: #444444;
 	font-family: monospace;
 }
+
+div.fragment {
+    padding: 10px;
+    margin: 10px 20% 10px 30px;
+	background-color: #dddddd;
+	border: 1px solid #cccccc;
+	font-family: monospace;
+	border-radius: 2px;
+	line-height: 140%;
+}
+div.fragment .line{
+	line-height: 140%;
+}
+

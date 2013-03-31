@@ -1,6 +1,8 @@
  /**
  * \page developers_guide Developers Guide
  * 
+ * 
+ * 
  * \section the_code Source Code
  * * The source for the project is versioned using git
  * * The repository is hosted at gitorious.org
@@ -11,14 +13,12 @@
  * 		git clone git://gitorious.org/fgms/fgms-0-x.git 
  * \endcode
  * 
- * \subsection build_tools Build Tools
- * * cmake, make, g++
- * * Also git is used for version control
+ * 
  * 
  * \section code_layout Code Layout
  * * <b>src/</b>
  *   - <b>server/</b> - the source code for \ref fgms
- *   - <b>flightgear/</b>  - see \ref flight_gear_in below
+ *   - <b>flightgear/</b>  - see \ref flightgear_inc below
  *   - <b>plib/</b>  - see \ref plib below
  *   - <b>simgear/</b>  - see \ref simgear below
  * * <b>contrib/</b>

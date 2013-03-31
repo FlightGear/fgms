@@ -7,6 +7,7 @@
  *      - There is a huge thanks for those contributions not listed here.
  *      - Please look at the source code of the file for acurrate credits.
  * 
+ * \section core_devss Credits
  *  \subsection oliver Oliver
  *  * <b>Oliver Schroder</b> 
  *   - Our <a href="http://en.wikipedia.org/wiki/Benevolent_Dictator_for_Life">BDFL</a>
