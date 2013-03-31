@@ -1,5 +1,5 @@
  /**
- * \page tracker The Tracker
+ * \page tracker FG Tracker
  * 
  * The \ref FlightGear Tracker tracks flights performed on multiplayer server.
  * 

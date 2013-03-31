@@ -14,13 +14,13 @@
  * \section main_toc Contents
  * 
  * * \ref overview
- *  - \ref FlightGear
  *  -  \ref mp_network
  *  -  \ref hosting
  * * \ref install_guide
  * * \ref fgms_conf
  * * \ref fgms
  * * \ref tracker
+ * * \ref FlightGear
  * * \ref developers_guide
  *  - \ref todo
  *  - \ref deprecated

@@ -12,6 +12,7 @@
  * foo = 5001
  * \endcode
  * 
+ * @see \ref reduce_bandwidth - optimizing the configuration
  * @see FG_CONFIG class - used to load and query
  * 
  * \section conf_details Server Config
