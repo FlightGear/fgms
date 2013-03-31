@@ -3,7 +3,7 @@
  * 
  * The \ref FlightGear Tracker tracks flights performed on multiplayer server.
  * 
- *  * \note 
+ *  \note 
  *      - Currently there is only one tracking server, hosted by \ref hazuki
  *      - Click here > http://fgtracker.ahven.eu/modules/fgtracker/
  * 
