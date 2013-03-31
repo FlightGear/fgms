@@ -75,4 +75,5 @@
  * For windows, a FG_TRACKER thread, was introduced by \ref geoff since there is no fork() in windows;
  * a simple vector msg_queue, protected by a mutex is used to pass
  * these messages internally from FG_SERVER to FG_TRACKER.
+ * 
  */

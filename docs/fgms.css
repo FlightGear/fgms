@@ -1051,6 +1051,9 @@ dl.note
 		border-radius: 10px;
 }
 
+ul dl.note{
+	margin-right: 0;
+}
 
 dl.warning, dl.attention
 {
@@ -1351,7 +1354,7 @@ dl.see dt{
 
 div.fragment {
     padding: 10px;
-    margin: 10px 20% 10px 30px;
+    margin: 10px 10% 10px 30px;
 	background-color: #dddddd;
 	border: 1px solid #cccccc;
 	font-family: monospace;
@@ -1362,3 +1365,6 @@ div.fragment .line{
 	line-height: 140%;
 }
 
+ul div.fragment {
+	margin-right: 0;
+}

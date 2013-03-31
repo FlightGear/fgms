@@ -88,9 +88,10 @@
  * * There are other options that can be used during the build process.
  * * For all the options, see the \ref README_cmake file
  * 
- * \subsection server_2 Server #2:
- * Normally, the requirement is for one production server; however there is a situation
- * to run both a production and test, ie a second server.
+ * \subsection server_2 Server #2
+ * Normally, the requirement is for one production server, however there is a situation
+ * to run both a production and test, ie a second server. To build a second server
+ * configuration, use:
  * \code 
  * cmake ../fgms-0-x -DBUILD_SERVER2:BOOL=TRUE
  * \endcode
