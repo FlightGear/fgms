@@ -161,9 +161,10 @@ void cDaemon::SigHandler ( int SigType )
 }
 
 //////////////////////////////////////////////////////////////////////
-// Daemonize ()
-// installs the signal-handler and makes ourself a daemon
-//////////////////////////////////////////////////////////////////////
+/** 
+ * @brief Installs the signal-handler and makes ourself a daemon
+ * @retval int -1 or error, 0 for success
+ */
 int cDaemon::Daemonize () // make us a daemon
 {
 	pid_t pid;
@@ -249,9 +250,6 @@ cDaemon::cDaemon()
 }
 
 //////////////////////////////////////////////////////////////////////
-/** @brief Kills this deamon ?
- * @todo KillAllChildren() ? 
- */
 cDaemon::~cDaemon ()
 {
 	// KillAllChildren ();

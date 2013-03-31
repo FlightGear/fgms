@@ -136,5 +136,11 @@
  * 
  * 
  * 
- * \image html favicon.png
+ * \section Documentation
+ * The documentation is created using doxygen and is generated from source.
+ * * Here for some formating info 
+ *   - http://www.stack.nl/~dimitri/doxygen/manual/commands.html
+ * * Private variables are documented
+ * * Pages, ie stuff not related to source such as this page are in <b>/doc/pages/</b>
+ * * The doxygen tag file is located at <b>fgms.tag</b>
  */

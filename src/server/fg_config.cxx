@@ -29,19 +29,14 @@
 #include <cctype>
 #include "fg_config.hxx"
 
-/**
- * @class FG_CONFIG 
- * @brief Simple config file parser
- * 
- * @todo Pete To make a links here to the config and explain a bit
+
+
+
+//////////////////////////////////////////////////////////////////////
+/** @brief  Read in the config file 
+ * @param ConfigName - the file to read
+ * @retval int 1 for error, 0 for success
  */
-
-
-//////////////////////////////////////////////////////////////////////
-//
-//      read in the config file named 'ConfigName'
-//
-//////////////////////////////////////////////////////////////////////
 int
 FG_CONFIG::Read
 (
@@ -76,11 +71,11 @@ FG_CONFIG::Read
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-//
-//      find a variable with name 'VarName' in the internal
-//      list and return its value
-//
-//////////////////////////////////////////////////////////////////////
+
+/** @brief Find a variable in the internal list and return its value
+ * @param VarName - the variable to find
+ * @retval string - with contents of variable, or blank string if not found
+*/
 std::string
 FG_CONFIG::Get
 (

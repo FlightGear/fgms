@@ -1,10 +1,12 @@
  /**
  * \page mp_network MP Network
  * 
- * The \ref FlightGear MultiPlayer network are around 20++ (circa 2013) server running. 
- * * These servers are public internet facing
+ * The \ref FlightGear MultiPlayer network consists of around 20++ (circa 2013) running servers. 
+ * * These servers are public internet facing contributed by various parties.
  * * Public servers are meant to run permanently on a host, and let players connect to them for free
- * * Typically there are around 10 to 60 players on the network circa 2013
+ * * Typically there are around 10 to 60 players on the network circa 2013.
+ * 
+ * The main Hub Server (\ref server_is_hub ) is currently <b>mpserver01</b>, hosted by \ref oliver
  * 
  * \section dns DNS
  * - The mpservers are subdomains of <b>flightgear.org</b> 
@@ -12,6 +14,9 @@
  * - The DNS entries are maintained by the flightgear-developers
  * - There is no automated or "official" list at present, but the latest servers are expected to be on the FlightGear wiki page 
  *   * http://wiki.flightgear.org/Howto:Multiplayer
+ * 
+ * \note To make any changes, or to be added to DNS contact the \ref FlightGear developers
+ *      on the \ref fg_mailing_list
  * 
  * \section HUB Hub 
  * - On the FlightGear Mp network operates the servers in a \b HUB environment. 
@@ -25,10 +30,7 @@
  * 
  * 
  * 
- * \section hosting_info Hosting and Mp Server
- * If your are interested in hosting a server and joining the network then please read the following guidelines. 
- * However its assumed you are familiar with *nix style systems and can compile code.
- * 
- * * Read the \ref pre_requisites 
+ * \subsection next_dd Next >
+ * *  \ref hosting
  * 
  */

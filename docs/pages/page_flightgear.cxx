@@ -1,7 +1,7 @@
 /**
  * \page FlightGear FlightGear
  * 
- * \section fg_intro The FlightGear Project
+ * \section fg_intro The FlightGear Project (fg)
  * 
  *  - <b>FlightGear</b> is the project as a whole
  *    * The FlightGear project is made of many parts, and \ref fgms is one of them
@@ -11,8 +11,14 @@
  *      - Bugs:  http://flightgear-bugs.googlecode.com/
  *      - Build: http://flightgear.simpits.org:8080/ 
  * 
+ * \subsection fg_mailing_list FG Mailing List
+ * Most developer cummunications is though the mailing list and IRC
+ * - http://wiki.flightgear.org/index.php/Mailing_list
+ * - http://wiki.flightgear.org/IRC
+ * 
+ * \subsection fg_contents On this page
  * * \ref fgfs  below is the "command" used to launch the simulator
- * * \ref fgms_for_fgms
+ * * \ref fgms_for_fgms - at bottom is some extra dev information
  * 
  * \section fgfs fgfs
  * This is an example command line used to launch a sim

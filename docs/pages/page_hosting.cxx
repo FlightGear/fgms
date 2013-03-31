@@ -1,6 +1,14 @@
 /*! \page hosting Hosting
  *
- * \section pre_req Pre-Requisites
+ * 
+ * \section hosting_info Hosting an Mp Server
+ * If your are interested in hosting a server and joining the network then 
+ *  - Please read the guidelines below.
+ *  - Use the \ref install_guide to setup and configure the server 
+ *    - Contact \ref support or one of the \ref developers if you are stuck.
+ *  - Send and email to the \ref fg_mailing_list with details for \ref dns.
+ * 
+ * \subsection pre_req Pre-Requisites
  * - <b>A computer running a variant of *nix to compile and host the server</b> 
  *   * Speed of the machine isn't of great consequence as the protocol is a multiplexer which doesn't require much processing grunt.
  * - <b>Direct/physical or remote access to the server i.e. SSH/telnet</b> 
@@ -25,7 +33,7 @@
  * - <b>git</b> to aqquire the fgms source code, 
  
  * 
- * \section traffic Traffic & Bandwidth Considerations
+ * \subsection traffic Traffic & Bandwidth Considerations
  * \note
  * 		Currently (May 2008), the server code basically boils down to a packet multiplexer 
  * 		(i.e. most data is -unconditionally- transmitted to all 'active' clients), which may thus 
@@ -56,9 +64,9 @@
  * 
  * 
  * 
- * \section reduce_band Reducing bandwidth requirements
+ * \subsection reduce_band Reducing bandwidth requirements
  * Total network traffic is mainly determined by the number of active clients that 
- * 'see eachother' and configured mirrors. If traffic considerations are relevant, 
+ * 'see each other' and configured mirrors. If traffic considerations are relevant, 
  * the following options exist to reduce overall server/network load:
  * - Configure a relatively low \ref server_out_of_reach value, so that clients 
  *   outside a certain range are not provided with updates (usually about 100 nm on the main server network)
@@ -69,5 +77,6 @@
  *   only share its address with your friends privately
  * - For local testing/development purposes, you may want to run only a private fgms session, 
  *   that may be specific to your LAN or even computer.
+ * 
  * 
  */

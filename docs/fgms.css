@@ -171,9 +171,9 @@ a {
 }
 
 .contents ul{
-	list-style-type: square;
+	list-style-type: disc;
 	font-size: 11pt;
-	margin: 5px 20% 5px 30px;
+	margin: 5px 20% 5px 40px;
 	padding: 0px;
 	line-height: 140%;
 }
@@ -1109,6 +1109,8 @@ dl.bug
         border-color: #C08050;
 }
 
+
+
 dl.section dd {
 	margin-bottom: 6px;
 }
@@ -1162,11 +1164,11 @@ dl.section dd {
 #projectbrief b
 {
 	font-family: monospace;
-	font-size: 14pt;
+	font-size: 16pt;
 	margin: 0;
 	padding: 0;
 	color: #666666;
-	text-shadow: 1px 1px white;
+	text-shadow: 3px 3px 3px #cccccc;
 }
 
 #projectnumber
@@ -1340,4 +1342,14 @@ tr.heading h2 {
 	padding: 0;
 	margin: 30px 0 30px 30px;
 	text-align: left;
+}
+
+dl.see{
+	margin-left: 30px;
+	DEbackground-color: pink;
+}
+dl.see dt{
+	font-size: 10pt;
+	color: #444444;
+	font-family: monospace;
 }

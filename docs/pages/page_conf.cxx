@@ -128,6 +128,7 @@
  * - These servers will received all <b>locally received packets</b> without any condition
  * - i.e. all local packets are mirrored to them
  * 
+ * @see FG_SERVER::AddCrossfeed and FG_SERVER::SendToCrossfeed
  * 
  * \section client_blacklistsss Client BlackList
  * 

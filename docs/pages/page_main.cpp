@@ -1,7 +1,7 @@
 
 /*! \mainpage Home
  *
- * The <b>FlightGear MultiPlayer Server</b> (<b>fgms</b>) is a standalone network server for the \ref FlightGear flight simulator. 
+ * <b>FlightGear MultiPlayer Server</b> (<b>fgms</b>) is a standalone network server for the \ref FlightGear flight simulator. 
  * 
  * \note 
  *     <b>NOTAM: Attention all Pilots</b><br>
@@ -25,15 +25,18 @@
  *  - \ref todo
  *  - \ref deprecated
  * * \ref source_docs
+ * * \ref developers
  * 
- * \section ExtermalLinks Links
+ * \subsection ExtermalLinks Links
  * 
  * - \b Source:  <a href="https://gitorious.org/fgms/fgms-0-x">gitorious.org/fgms/fgms-0-x</a>
  * - \b Wiki:   <a href="http://wiki.flightgear.org/Fgms">wiki.flightgear.org/Fgms</a>
  * - \b Home:    <a href="fgms.freeflightsim.org">fgms.freeflightsim.org</a>
+ * 
+ * \subsection support Support
  * - <b>Chat & Help</b>
  *    - <a href="irc://irc.flightgear.org#fgms">irc.flightgear.org#fgms</a>
- *    - See \ref the_team for nicks
+ *    - See \ref developers for more detail and IRC  nicks
  * 
  * 
  * 
