@@ -77,7 +77,7 @@
  * \section conf_player Player/Client Config
  * \subsection server_out_of_reach server.out_of_reach
  * \code 
- * sserver.out_of_reach = 100
+ * server.out_of_reach = 100
  * \endcode
  * - Distance in nautical miles 
  * - Only forward data to clients which are really nearby the sender (in virtual space)

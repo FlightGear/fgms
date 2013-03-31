@@ -15,13 +15,19 @@
  *    - Or other fgms servers in a relay relationship
  *    - Traffic from local pilots is forwarded to the other fgms servers ie \ref conf_relays.
  *    - Traffic from other pilots/relays is forwarded to local pilots, if within range.
- * * If configured, <b>all</a> UDP packets are forwarded to the \ref conf_crossfeed port
+ * * If configured, <b>all</b> UDP packets are forwarded to the \ref conf_crossfeed port
  * * If the tracking is enabled (see \ref tracker)
  *    - A \ref tracker_client is started as a a process thread. This forwards information via tcp
  *      to the \ref tracker_server
  *    - The \ref tracker_server can be either local, or at another location on the internet. It
  *      is a seperate application that has to be run.
  * * Port 5001 is a tcp \ref telnet_port for getting status information
+ * \note 
+ *       And important aspect is missing from the above.
+ *        - Packets are only forwarded to players who are within range of each other in the simulator
+ *        - eg A pilot physically in London and another in Tokyo are flying above Paris and see each other
+ *        - This substantially reduces traffic, see \ref server_out_of_reach
+ * 
  * 
  * \section telnet_port Telnet Port
  * The telnet port is a simple way to query the server and get some data including list of pilots. eg
