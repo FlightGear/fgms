@@ -6,7 +6,7 @@
  * 
  * \note First, make sure to read about pre-requisites and bandwidth etc in \ref hosting
  * 
- * The examples below use the following directory structure of two directories:
+ * The examples below use the following directory structure:
  * \code
  * /home/my/stuff              < working directory
 *  /home/my/stuff/fgms-0-x     < the git checkout of the source code
