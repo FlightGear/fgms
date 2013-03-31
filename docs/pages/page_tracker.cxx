@@ -39,7 +39,7 @@
  * The way it was written originally meant messages would be lost. So \ref hazuki introduced the 
  * PING/PONG messages at the same time he added a save so no messages would be lost.
  * 
- * 
+ * \todo (pete) Expalin messages more
  * 
  * \section tracker_server Tracker Server
  *  - The Tracker server is run as a standalone application, seperate from \ref fgms
@@ -62,8 +62,15 @@
  * 
  * 
  * \section tracker_client Tracker Client
- * * The client is embedded in \ref fgms itelf (see FG_TRACKER by Julien Pierru)
+ * * The client is embedded in \ref fgms itelf (see FG_TRACKER by \ref julien)
+ * * The tracker client is configured in \ref tracker_config section of the \ref fgms_conf file
  * 
+ * \note
+ *     - Only locally attached clients are forwarded to the tracker.
+ *     - Pilots connected to fgms with \ref servertracked disabled will
+ *      never appear on the tracker.
+ * 
+ * \subsection tracker_client_dev Dev Info
  *  Internally \ref fgms prepares the messages, and sends them 
  *  - first to an IPC msgsnd (m_ipcid, &buf, ... )
  *  - and are received by FG_TRACKER, msgrcv (ipcid, &buf, ...) 

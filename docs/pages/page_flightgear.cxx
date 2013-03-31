@@ -5,7 +5,11 @@
  * 
  *  - <b>FlightGear</b> is the project as a whole
  *    * The FlightGear project is made of many parts, and \ref fgms is one of them
- * 		- Wiki:  http://wiki.flightgear.org
+ *      - Wiki:  http://wiki.flightgear.org
+ *      - Home:  http://www.flightgear.org
+ *      - Code:  https://gitorious.org/fg
+ *      - Bugs:  http://flightgear-bugs.googlecode.com/
+ *      - Build: http://flightgear.simpits.org:8080/ 
  * 
  * * \ref fgfs  below is the "command" used to launch the simulator
  * * \ref fgms_for_fgms
@@ -56,6 +60,7 @@
  * 
  * Bits of the multiplayer code from flightgear is copied as needed
  *  - See https://gitorious.org/fg/flightgear/trees/next/src/MultiPlayer
+ *  - and \ref flightgear_inc
  * 
  * Of interest also is the list of "properties" that are sent. Although
  * these are simply relayed.

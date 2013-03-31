@@ -11,6 +11,9 @@
  * 		git clone git://gitorious.org/fgms/fgms-0-x.git 
  * \endcode
  * 
+ * \subsection build_tools Build Tools
+ * * cmake, make, g++
+ * * Also git is used for version control
  * 
  * \section code_layout Code Layout
  * * <b>src/</b>
@@ -43,7 +46,7 @@
  *   - Info: http://plib.sourceforge.net
  *   - parts of plib have been copied into <b>src/plib/</b>
  * 
- * \subsection flight_gear_in flightgear 
+ * \subsection flightgear_inc flightgear 
  *   - fgms uses parts of the mpmessages and \ref xdr code. (see mpmessages.hxx and tiny_xdr.hxx)
  *   - Info: \ref FlightGear page
  *   - parts of flightgear have been copied into <b>src/flightgear/</b>

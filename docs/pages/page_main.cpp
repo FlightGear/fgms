@@ -16,6 +16,7 @@
  * * \ref overview
  *  - \ref FlightGear
  *  -  \ref mp_network
+ *  -  \ref hosting
  * * \ref install_guide
  * * \ref fgms_conf
  * * \ref fgms
@@ -30,15 +31,15 @@
  * - \b Source:  <a href="https://gitorious.org/fgms/fgms-0-x">gitorious.org/fgms/fgms-0-x</a>
  * - \b Wiki:   <a href="http://wiki.flightgear.org/Fgms">wiki.flightgear.org/Fgms</a>
  * - \b Home:    <a href="fgms.freeflightsim.org">fgms.freeflightsim.org</a>
- * 
  * - <b>Chat & Help</b>
- *    - <a href="irc::/irc.flightgear.org#fgms">irc.flightgear.org#fgms</a>
+ *    - <a href="irc://irc.flightgear.org#fgms">irc.flightgear.org#fgms</a>
  *    - See \ref the_team for nicks
  * 
  * 
  * 
- *  \b License:
- *    -   GNU GENERAL PUBLIC LICENSE
+ *  \subsection lic_shot Licence:
+ *    - GNU GENERAL PUBLIC LICENSE
+ *    - see \ref COPYING
  * 
  * 
  */
