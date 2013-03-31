@@ -8,7 +8,7 @@
  *      - Wiki:  http://wiki.flightgear.org
  *      - Home:  http://www.flightgear.org
  *      - Code:  https://gitorious.org/fg
- *      - Bugs:  http://flightgear-bugs.googlecode.com/
+ *      - Bugs:  https://code.google.com/p/flightgear-bugs/issues/list
  *      - Build: http://flightgear.simpits.org:8080/ 
  * 
  * \subsection fg_mailing_list FG Mailing List

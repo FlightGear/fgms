@@ -22,4 +22,5 @@
  * \endcode
  * 
  * @see \ref fgms_conf
+ * @see \ref ParseParams
  */
