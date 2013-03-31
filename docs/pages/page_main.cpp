@@ -30,8 +30,9 @@
  * \subsection ExtermalLinks Links
  * 
  * - \b Source:  <a href="https://gitorious.org/fgms/fgms-0-x">gitorious.org/fgms/fgms-0-x</a>
+ * - \b Bugs: <a href="https://code.google.com/p/flightgear-bugs/issues/list?q=label:fgms">https://code.google.com/p/flightgear-bugs</a>
  * - \b Wiki:   <a href="http://wiki.flightgear.org/Fgms">wiki.flightgear.org/Fgms</a>
- * - \b Home:    <a href="fgms.freeflightsim.org">fgms.freeflightsim.org</a>
+ * - \b Home:    <a href="http://fgms.sourceforge.net/">fgms.sourceforge.net/</a>
  * 
  * \subsection support Support
  * - <b>Chat & Help</b>

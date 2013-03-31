@@ -15,7 +15,7 @@
  *    - Or other fgms servers in a relay relationship
  *    - Traffic from local pilots is forwarded to the other fgms servers ie \ref conf_relays.
  *    - Traffic from other pilots/relays is forwarded to local pilots, if within range.
- * * UDP packets are forwarded to the \ref conf_crossfeed port
+ * * If configured, <b>all</a> UDP packets are forwarded to the \ref conf_crossfeed port
  * * If the tracking is enabled (see \ref tracker)
  *    - A \ref tracker_client is started as a a process thread. This forwards information via tcp
  *      to the \ref tracker_server
@@ -26,7 +26,7 @@
  * \section telnet_port Telnet Port
  * The telnet port is a simple way to query the server and get some data including list of pilots. eg
  * \code 
- * > telnet mpserver14.flightgear.org 5000
+ * > telnet mpserver14.flightgear.org 5001
  * \endcode
  * @see \ref telnetport setting, FG_SERVER::SetTelnetPort, FG_SERVER::HandleTelnet
  * 

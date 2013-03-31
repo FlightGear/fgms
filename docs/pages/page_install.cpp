@@ -4,7 +4,7 @@
  * This is a short overview about installing the \ref fgms. 
  * The reader is assumed to be reasonably familiar with working in a Unix/Linux shell environment.
  * 
- * \note First, make sure to read about pre-requisutes and bandwidth etc in \ref hosting
+ * \note First, make sure to read about pre-requisites and bandwidth etc in \ref hosting
  * 
  * The examples below use the following directory structure:
  * \code
@@ -40,27 +40,35 @@
  *  cd build_fgms
  *  cmake ../fgms
  *  \endcode
- * - At this point you should have a working \b fgms binary in the build_fgms directory.
+ * - At this point you should have a working \b fgms binary in the build_fgms/ directory.
  * 
- * \section set_config Setting up the config file
- * - Edit the \ref fgms_conf  file according to the instructions found in example.
+ * \subsection set_config Setting up the config file
+ * - Create and edit a  \ref fgms_conf  file according to the instructions found in example.
+ * \code 
+ * cp ../fgms/src/server/fgms_example.conf ./my-test.conf
+ * > edit ./my-test,conf
+ * \endcode
  * @note  If the server will be offline or for private use (i.e. LAN-only, 
  *        please comment out the relay servers section. This will save bandwidth 
  *        from the server being consumed.)
  *   
  * 
- * \section run_fgms Running fgms for the first time
+ * \subsection run_fgms_first Run fgms for the first time
  * 
+ * \code 
+ * ./fgms -c ./my-test.conf
+ * \endcode
  * In addition to its configuration file, \b fgms supports a number of configuration parameters that can be
  * passed at startup (and that will by default override any configuration file settings), 
  * to get a summary of supported parameters, you may want to run:
  * \code 
  * ./fgms --help
  * \endcode
- * Which will present you with help output.
+ * 
+ * 
+ * 
  * 
  *  
- * \todo Include windows install (geoff)
  * 
  */
 

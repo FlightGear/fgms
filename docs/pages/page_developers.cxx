@@ -28,7 +28,7 @@
  *  \subsection geoff Geoff
  * * <b>Geoff McLane</b>
  *  - Created the windows port, and also generally fixes bugs etc. Hosts mpserver14
- *  - Based near LFPG
+ *  - Based near LFPO
  * 
  *   \subsection rob Rob
  * * <b>Rob Dosogne</b>
@@ -37,8 +37,8 @@
  * 
  *   \subsection hazuki Hazuki
  * * <b>Hazuki Amamiya</b>
- *  - Created the FG_TRACKER module, and also hosts the \ref tracker.
- *  - Based near ?
+ *  - Updates to the FG_TRACKER module, and also hosts the \ref tracker.
+ *  - Based near VHHH
  *  - irc nick: Hazuki
  * 
  *   \subsection pete Pete
