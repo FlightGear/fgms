@@ -45,15 +45,7 @@
  *  - The Tracker server is run as a standalone application, seperate from \ref fgms
  *  - It could be located on another machine on the internet
  *  - It can track more than one mpserver
- * 
- * \subsection tracker_server_install Install
- * - A postgres database and its header files need to be installed (currently
- *   postgres is the only database supported)
- * - The ::DEF_IP_ADDRESS, ::DEF_PORT, ::DEF_USER_LOGIN, 
- *   ::DEF_USER_PWD and ::DEF_DATABASE macros need to be set
- * - For for information see the \ref README_tracker file
- * - and \ref create_db_sql
- * \todo (pete) Complete tracker server install
+ *  - The tracker is created as part of the install process, see \ref install_tracker
  * 
  * \subsection tracket_server_dev Dev Info
  * The source code for the tracker server is in the <b>contrib/fgtracker/</b> directory and

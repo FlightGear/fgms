@@ -6,10 +6,10 @@
  * 
  * \note First, make sure to read about pre-requisites and bandwidth etc in \ref hosting
  * 
- * The examples below use the following directory structure:
+ * The examples below use the following directory structure of two directories:
  * \code
  * /home/my/stuff              < working directory
-*  /home/my/stuff/fgms         < the git checkout of the source code
+*  /home/my/stuff/fgms-0-x     < the git checkout of the source code
 *  /home/my/stuff/build_fgms   < the temp build directory
  * \endcode
  * 
@@ -38,14 +38,14 @@
  * \code
  *  mkdir build_fgms
  *  cd build_fgms
- *  cmake ../fgms
+ *  cmake ../fgms-0-x
  *  \endcode
  * - At this point you should have a working \b fgms binary in the build_fgms/ directory.
  * 
  * \subsection set_config Setting up the config file
  * - Create and edit a  \ref fgms_conf  file according to the instructions found in example.
  * \code 
- * cp ../fgms/src/server/fgms_example.conf ./my-test.conf
+ * cp ../fgms-0-x/src/server/fgms_example.conf ./my-test.conf
  * > edit ./my-test,conf
  * \endcode
  * @note  If the server will be offline or for private use (i.e. LAN-only, 
@@ -65,9 +65,38 @@
  * ./fgms --help
  * \endcode
  * 
+ * \note By default the file names and options are:
+ *      \b fgms.conf - for config
+ *      \b fgms-exit, \b fgms-stat - as the file interface files
+ *      \b fg_server.log - as the log file
  * 
+ * \section install_options Install Options
+ * * There are other options that can be used during the build process.
+ * * For all the options, see the \ref README_cmake file
  * 
+ * \subsection server_2 Server #2:
+ * Normally, the requirement is for one production server; however there is a situation
+ * to run both a production and test, ie a second server.
+ * \code 
+ * cmake ../fgms-0-x -DBUILD_SERVER2:BOOL=TRUE
+ * \endcode
+ * * The defaults are: - fgms2.conf, fgms-exit2, fgms-stat2, and fg_server2.log 
+ * * Traditionally
+ *   - ports 5000 / 5001 - used for production udp and telnet
+ *   - ports 5002 / 5003 - used for test udp and telnet
  * 
+ * \subsection install_tracker Tracker Install
+ * By default, the \ref tracker_server is not build.
+ * - A postgres database and its header files need to be installed (currently
+ *   postgres is the only database supported)
+ * - The ::DEF_IP_ADDRESS, ::DEF_PORT, ::DEF_USER_LOGIN, 
+ *   ::DEF_USER_PWD and ::DEF_DATABASE macros need to be set* 
+ * -  To enable this option use:
+ * \code 
+ * cmake ../fgms-0-x -DBUILD_TRACKER=ON
+ * \endcode
+ * 
+ * \see  \ref README_tracker file and  \ref create_db_sql
  *  
  * 
  */
