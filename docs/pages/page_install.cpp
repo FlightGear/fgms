@@ -70,6 +70,18 @@
  *      \b fgms-exit, \b fgms-stat - as the file interface files
  *      \b fg_server.log - as the log file
  * 
+ * 
+ * \section install Installing and Running
+ * For a system wide install you will need root (sudo) permissions
+ * \code 
+ * cmake ../fgms-0-x
+ * make
+ * su make install
+ * \endcode
+ * By default the files are:
+ *    - <b>/usr/etc/fgms.conf</b> - the config file (::SYSCONFDIR, ::DEF_CONF_FILE)
+ *    - <b>/var/log?</b> - the log file 
+ *
  * \section install_options Install Options
  * * There are other options that can be used during the build process.
  * * For all the options, see the \ref README_cmake file
