@@ -1,6 +1,54 @@
  /**
  * \page developers_guide Developers Guide
  * 
+ * \section the_code Source Code
+ * * The source for the project is versioned using git
+ * * The repository is hosted at gitorious.org
+ * 	- https://gitorious.org/fgms/fgms-0-x
+ * 
+ * To checkout the source code run
+ * \code 
+ * 		git clone git://gitorious.org/fgms/fgms-0-x.git 
+ * \endcode
+ * 
+ * 
+ * \section code_layout Code Layout
+ * * <b>src/</b>
+ *   - <b>server/</b> - the source code for \ref fgms
+ *   - <b>flightgear/</b>  - see \ref flight_gear_in below
+ *   - <b>plib/</b>  - see \ref plib below
+ *   - <b>simgear/</b>  - see \ref simgear below
+ * * <b>contrib/</b>
+ *   - <b>fgracker/</b> - the \ref tracker_server
+ *   - <b>mpstatus/</b>  - a www page and perl script to query mp statuses
+ *   - <b>plib/</b>  - see \ref plib below
+ *   - <b>tools/</b>  - contains check_fgms.sh, a script to check fgms status
+ * * <b>docs/</b> - stuff to do with documentation in this page
+ * 
+ * \section other_libs Other Libs
+ * The fgms repository contains all the libs required to install. However some parts were
+ * copied, borrowed etc from other sources:
+ * 
+ * \subsection simgear Simgear
+ *   -  Low level maths, geospatial calculations, etc
+ *   - fgms used the constants, logging and some structures
+ *   - simgear and flightear source are very closely related
+ *   - Info: http://wiki.flightgear.org/SimGear
+ *   - Code: https://gitorious.org/fg/simgear
+ *   - parts of simgear  have been copied into <b>src/simgear</b>
+ * 
+ * \subsection plib plib
+ *   -  PLIB - A Suite of Portable Game Libraries
+ *   - fgms used the network sockets (see netSocket.hxx and netSocket.cxx)
+ *   - Info: http://plib.sourceforge.net
+ *   - parts of plib have been copied into <b>src/plib/</b>
+ * 
+ * \subsection flight_gear_in flightgear 
+ *   - fgms uses parts of the mpmessages and \ref xdr code. (see mpmessages.hxx and tiny_xdr.hxx)
+ *   - Info: \ref FlightGear page
+ *   - parts of flightgear have been copied into <b>src/flightgear/</b>
+ * 
+ * 
  * \section mp_overview MultiPlayer Overview
  * This is an overview about how the communicatinons works between \ref fgfs instances via an \ref fgms. 
  * * The table below shows communications with three players over a network

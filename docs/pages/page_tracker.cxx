@@ -3,6 +3,10 @@
  * 
  * The \ref FlightGear Tracker tracks flights performed on multiplayer server.
  * 
+ *  * \note 
+ *      - Currently there is only one tracking server, hosted by \ref hazuki
+ *      - Click here > http://fgtracker.ahven.eu/modules/fgtracker/
+ * 
  * - Flights are indexed and stored by their Callsign
  * - The following data is logged
  *     - Start Time
@@ -14,9 +18,6 @@
  *     - Max ground speed
  *     - Max Mach
  * 
- * \note 
- *      - Currently there is only one tracking server, hosted by \ref hazuki
- *      - Click here > http://fgtracker.ahven.eu/modules/fgtracker/
  * 
  * The Tracker comprises:
  * * <b>\ref tracker_server</b> - a standalone application
@@ -35,7 +36,7 @@
  * occurred when there was a message to send. This meant it was unknown if the
  * \ref tracker_server was connected until it actually came time to send the message.
  * 
- * The way it was written originally meant messages would be lost. So Hazuki introduced the 
+ * The way it was written originally meant messages would be lost. So \ref hazuki introduced the 
  * PING/PONG messages at the same time he added a save so no messages would be lost.
  * 
  * 
@@ -48,7 +49,10 @@
  * \subsection tracker_server_install Install
  * - A postgres database and its header files need to be installed (currently
  *   postgres is the only database supported)
- * - See 
+ * - The ::DEF_IP_ADDRESS, ::DEF_PORT, ::DEF_USER_LOGIN, 
+ *   ::DEF_USER_PWD and ::DEF_DATABASE macros need to be set
+ * - For for information see the \ref README_tracker file
+ * - and \ref create_db_sql
  * \todo (pete) Complete tracker server install
  * 
  * \subsection tracket_server_dev Dev Info
@@ -69,7 +73,7 @@
  * the FG_TRACKER being run in a fork() process, thus does not have 
  * shared memory. Hence the unix msgsnd/msgrcv IPC.
  * 
- * For windows, a FG_TRACKER thread, was introduced since there is no fork() in windows;
+ * For windows, a FG_TRACKER thread, was introduced by \ref geoff since there is no fork() in windows;
  * a simple vector msg_queue, protected by a mutex is used to pass
  * these messages internally from FG_SERVER to FG_TRACKER.
  */
