@@ -72,13 +72,15 @@
  * 
  * 
  * \section install Installing and Running
+ * 
  * For a system wide install you will need root (sudo) permissions
  * \code 
  * cmake ../fgms-0-x
  * make
  * su make install
  * \endcode
- * By default the files are:
+ * By default fgms installs to:
+ *    - <b>/usr/bin/fgms</b> - the executable
  *    - <b>/usr/etc/fgms.conf</b> - the config file (::SYSCONFDIR, ::DEF_CONF_FILE)
  *    - <b>/var/log?</b> - the log file 
  *
