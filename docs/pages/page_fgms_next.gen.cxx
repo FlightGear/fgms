@@ -146,9 +146,9 @@
  * the type (and length) of the corresponding data!
  *
  * For example:
- * -  \b 000000 + id - is reserved for internal networking layer
- * - \b 1100000 + id - is for length encoded properties (mainly strings)
- * -  \b 900000 + id - is for FLOAT -> 32-bit properties (4 byte)
+ * -  \b 000000 + \b ID - is reserved for internal networking layer 
+ * -  \b 1100000 + \b ID - is for length encoded properties (mainly strings)
+ * -  \b 900000 + \b ID - is for FLOAT -> 32-bit properties (4 byte)
  *
  * These are summarised in this table below:
  * \code
