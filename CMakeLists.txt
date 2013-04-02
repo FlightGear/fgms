@@ -27,9 +27,19 @@ project( fgms )
 #####       and AGE to 0
 #####
 ##################################################
-set( fgms_MAJOR 0 )
-set( fgms_MINOR 10 )
-set( fgms_AGE 26 )
+
+## Now uses the 'version' file
+#set( fgms_MAJOR 0 )
+#set( fgms_MINOR 10 )
+#set( fgms_AGE 26 )
+
+# read 'version' file into a variable (stripping any newlines or spaces)
+file(READ version versionFile)
+if (NOT versionFile)
+    message(FATAL_ERROR "Unable to determine FGMS version. Version file is missing.")
+endif()
+string(STRIP "${versionFile}" FGMS_VERSION)
+
 
 # change names if build server and tracker #2
 set( EXE_NAME fgms )
@@ -122,7 +132,7 @@ set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS} ${EXTRA_FLAGS} -D_REEN
 set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EXTRA_LD_FLAGS}" )
 message(STATUS "*** set CXX FLAGS [${CMAKE_CXX_FLAGS}] C FLAGS [${CMAKE_C_FLAGS}]")
 
-add_definitions( -DVERSION="${fgms_MAJOR}.${fgms_MINOR}.${fgms_AGE}" )
+add_definitions( -DVERSION="${FGMS_VERSION}" )
 
 if(ENABLE_DEBUG_OUTPUT)
    add_definitions( -DDEF_DEBUG_OUTPUT=true )
