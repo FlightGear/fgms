@@ -46,7 +46,16 @@
  * 		* By default, assuming a 10hz update interval, each active \ref fgfs client will currently 
  * 			cause I/O traffic of approximately 5 kbytes/sec with one update consuming ~500 bytes.
  * 
- * 
+ * \warning \ref fgms uses exorbitant much bandwidth. The reason for this is the client
+ * side configuration: We tell all our users to send 10 packets per second,
+ * but I do believe that this is much more than acutally needed. This
+ * number comes from the time when \ref fgfs was not able to "emulate" a remote
+ * aircraft while no data is received. The first multiplayer versions just
+ * updated a remote aircrafts position on data reception and the aircraft
+ * stayed where it was until the next position arrived. Since then a lot of
+ * things have changed, but we never tried to reduce the number of packets.
+ * I guess that 2 to 4 pps are enough.
+
  * As client updates have to be propagated to all other active clients by the server, 
  * this number has to be multiplied by the number of active clients -1 
  * (i.e. clients within a configurable range, minus the originating client).

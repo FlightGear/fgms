@@ -23,17 +23,17 @@
  * \section fgfs fgfs
  * This is an example command line used to launch a sim
  * \code 
- * > fgms --callsign=test1 --multiplay=out,10,mpserver14.flightgear.org,5000 --multiplay=in,10,localhost,5000
+ * > fgms --callsign=test1 --multiplay=out,4,mpserver14.flightgear.org,5000 --multiplay=in,4,localhost,5000
  * \endcode
  * The important command line vars for us in \ref fgms land are:
  * \code 
- * --multiplay=out,10,mpserverXX.flightgear.org,5000
- * --multiplay=in,10,server.ip.address,5000
+ * --multiplay=out,4,mpserverXX.flightgear.org,5000
+ * --multiplay=in,4,server.ip.address,5000
  * \endcode
  * \warning 
  * 		There <b>must be no spaces</b> eg 
  * 		\code 
-        --multiplay=in,10, my.server.address ,5000
+        --multiplay=in,4, my.server.address ,5000
                      oops ^           oops2 ^
  * 		\endcode
  * 
@@ -48,17 +48,23 @@
  *     - <b>in</b> for recieving from a connection
  *  - <b>freq_hz</b> 
  *     - the number of times a second udp packets are sent
- *     - a high number eg 50 will be bombarding the network
- *     - around 15 frames a second is cool enough
- *     - even lower eg 5 frames a second for atc and alike
+ *     - a high number eg +10 will be bombarding the network
+ *     - around 4 frames a second is cool enough
+ *     - even lower eg 2 frames a second 
  *  - <b>host</b> 
  *     - for <b>out</b> - this needs to be the server address eg mpserverNN.flightgear.org
  *     - for <b>in</b> - this needs to be your host name or ip eg localhost
  *  - <b>port</b> 
  *     - by default this is 5000
  * 
- * \note 	
- * 		Command line options: 
+ * \warning Users were previously encouraged to use 10 hz. This consumes a lot of bandwidth. 
+ * This number comes from the time when fgfs was not able to <i>'emulate'</i> a remote aircraft while no data is received. 
+ * The first multiplayer versions just updated a remote aircraft's position on data reception 
+ * and the aircraft stayed where it was until the next position arrived. 
+ * Since then a lot of things have changed, but we never tried to reduce the number of packets. 
+ * Its recommended that <b>2 to 4 pps are enough</b>.
+ * 
+ * @see fgfs Command line options the the FlightGear wiki
  * 			- http://wiki.flightgear.org/Command_line_options#MultiPlayer_Options
  * 
  * 

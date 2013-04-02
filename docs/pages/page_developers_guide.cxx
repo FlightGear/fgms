@@ -138,7 +138,6 @@
  * You are more than welcome to contribute to the project. 
  *  * If you have a patch, or a bug then contact one of the \ref developers or the \ref fg_mailing_list
  *  * Looks at the \ref bugs
- *  * \ref fgms_next_gen - proposal and dev code for new version ( see \ref fgms_1_x )
  * 
  * 
  * 

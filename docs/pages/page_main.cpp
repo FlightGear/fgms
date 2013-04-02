@@ -1,12 +1,13 @@
 
 /*! \mainpage Home
  *
- * <b>FlightGear MultiPlayer Server</b> (<b>fgms</b>) is a standalone network server for the \ref FlightGear flight simulator. 
+ * The <i>FlightGear MultiPlayer Server</i> (\ref fgms) is a standalone network server 
+ * that powers the \ref FlightGear \ref mp_network 
  * 
  * \note 
  *     <b>NOTAM: Attention all Pilots</b><br>
  *     This site is to do with the server project itself, its development, installation, code, etc.<br>
- *     For flying please visit the link below on the FlightGear wiki
+ *     For flying please visit the link below on the \ref FlightGear wiki
  * 	   * <b>How To Multiplayer</b> > http://wiki.flightgear.org/Howto:Multiplayer
  * 
  * 
@@ -24,35 +25,12 @@
  * * \ref developers_guide
  *  - \ref todo and \ref TODO
  *  - \ref deprecated
- *  - \ref fgms_next_gen
  * * \ref source_docs
  * * \ref developers
  * 
- * \subsection ExtermalLinks Links
- * 
- * - \b Source:  <a href="https://gitorious.org/fgms/fgms-0-x">gitorious.org/fgms/fgms-0-x</a>
- * - \b Home:    <a href="http://fgms.sourceforge.net/">fgms.sourceforge.net/</a>
- * - \b Wiki:   <a href="http://wiki.flightgear.org/Fgms">wiki.flightgear.org/Fgms</a>
- * 
- * \subsection bugs Bugs
- * At present fgms does not have its own bug tracker, instead were using:
- * * Using the \ref fg_mailing_list 
- * * and the \ref FlightGear bug tracker
- *   - Visit > <a href="https://code.google.com/p/flightgear-bugs/issues/list?q=label:fgms">code.google.com/p/flightgear-bugs</a>
- *   - use the <b>fgms</b> tag
- * 
- * \subsection support Support
- * - <b>IRC</b>
- *    - <b>#fgms</b> on <b>irc.flightgear.org</b>
- *    - Link > <a href="irc://irc.flightgear.org#fgms">irc.flightgear.org#fgms</a>
- *    - See \ref developers for more detail and IRC nicks
- * 
- * 
- * 
- *  \subsection lic_shot Licence:
+ *  \subsection lic_shot Licence
  *    - GNU GENERAL PUBLIC LICENSE
  *    - see \ref COPYING
- * 
  * 
  */
 
