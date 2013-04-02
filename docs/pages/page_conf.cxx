@@ -1,24 +1,29 @@
 /**
  * \page fgms_conf Configuration
  * 
+ * \section config_overview Configuring fgms
  * \ref fgms is configured via a config file, see \ref fgms_example_conf
  * - by default on *nix systems the file is located at:
  *   - <b>/usr/local/etc/fgms.conf</b>
- * - Parts of the configuration can be overriden with the startup command line - see \ref fgms
+ * - Parts of the configuration can be overriden with the startup command line eg port, log
+ *   - see \ref fgms for the command line options
  * 
- * <b>TIP</b>: Add a # to comment out a line in a config file
- * \code 
- * #foo = 5000  < this line has been commented out
- * foo = 5001
- * \endcode
+
  * 
  * \subsection fgms_example_conf Example fgms.conf
- * The following files are included in contrib/etc/
+ * The following files are included in <b>contrib/etc/</b>
  * - \ref fgms_prod_skel_conf - example for production
- * - \ref fgms_local_skel_conf - example with no relays etc
+ * - \ref fgms_local_skel_conf - example for local usage and test with no relays etc
+ * 
+ * 
+ * <b>TIP</b>: Add a <b>#</b> to comment out a line , or anything after in a config file
+ * \code 
+ * #foo = 5000  # < this line has been commented out
+ * foo = 5001  # < this line is "live'
+ * \endcode
  * 
  * @see \ref reduce_bandwidth - optimizing the configuration
- * @see FG_CONFIG class - used to load and query
+ * @see FG_CONFIG class - used to load, parse and query  from ::ProcessConfig()
  * 
  * \section conf_details Server Config
  * 
@@ -68,7 +73,8 @@
  * \code 
  * server.logfile = fgms.log
  * \endcode
- * - Write logs to this file
+ * - Write logs to this file name
+ * @see FG_SERVER::SetLogfile
  * 
  * 
  * \subsection telnetport server.telnet_port

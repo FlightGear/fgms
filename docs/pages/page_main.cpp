@@ -1,8 +1,8 @@
 
 /*! \mainpage Home
  *
- * The <i>FlightGear MultiPlayer Server</i> (\ref fgms) is a standalone network server 
- * that powers the \ref FlightGear \ref mp_network 
+ * The <b>F</b>light<b>G</b>ear <b>M</b>ulti<b>P</b>layer Server ( \ref fgms ) 
+ * - is a standalone network server that powers the \ref FlightGear \ref mp_network 
  * 
  * \note 
  *     <b>NOTAM: Attention all Pilots</b><br>
@@ -50,6 +50,16 @@
  * * \subpage ChangeLog
  * * \subpage TODO
  * 
+ * \section CC_donfig Confguration
+ * * \subpage fgms_prod_skel_conf
+ * * \subpage fgms_local_skel_conf
+ * * \subpage fgms_init_d
+ * * \subpage supervisor_conf
+ * 
+ * \section tracker_c Tracker Server
+ * * \subpage README_tracker
+ * * \subpage create_db_sql
+ * 
  * \section tracker_c Tracker Server
  * * \subpage README_tracker
  * * \subpage create_db_sql
@@ -71,12 +81,6 @@
  *  \include ./TODO
  * 
  * 
- * \page fgms_prod_skel_conf fgms_production.skel.conf
- *  \include ./contrib/etc/fgms_production.skel.conf
- * 
- * \page fgms_local_skel_conf fgms_local.skel.conf
- *  \include ./contrib/etc/fgms_local.skel.conf
- * 
  * \page ChangeLog ChangeLog
  *  \include ./ChangeLog
  * 
@@ -85,6 +89,21 @@
  * 
  * \page create_db_sql create_db.sql
  *  \include ./contrib/fgtracker/create_db.sql
+ * 
+ * 
+ * 
+ * 
+ * \page fgms_prod_skel_conf fgms_production.skel.conf
+ *  \include ./contrib/etc/fgms_production.skel.conf
+ * 
+ * \page fgms_local_skel_conf fgms_local.skel.conf
+ *  \include ./contrib/etc/fgms_local.skel.conf
+ * 
+ * \page fgms_init_d init_d.fgms-skel
+ *  \include ./contrib/etc/init_d.fgms-skel
+ * 
+  * \page supervisor_conf supervisor.fgms.conf
+ *  \include ./contrib/etc/supervisor.fgms.conf
  * 
  */
 
