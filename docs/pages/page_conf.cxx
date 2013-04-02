@@ -4,13 +4,18 @@
  * \ref fgms is configured via a config file, see \ref fgms_example_conf
  * - by default on *nix systems the file is located at:
  *   - <b>/usr/local/etc/fgms.conf</b>
- * - Parts of the configuration can be ovverriden with the startup command line - see \ref fgms
+ * - Parts of the configuration can be overriden with the startup command line - see \ref fgms
  * 
- * TIP: Add a # to comment out a line in a config file
+ * <b>TIP</b>: Add a # to comment out a line in a config file
  * \code 
  * #foo = 5000  < this line has been commented out
  * foo = 5001
  * \endcode
+ * 
+ * \subsection fgms_example_conf Example fgms.conf
+ * The following files are included in contrib/etc/
+ * - \ref fgms_prod_skel_conf - example for production
+ * - \ref fgms_local_skel_conf - example with no relays etc
  * 
  * @see \ref reduce_bandwidth - optimizing the configuration
  * @see FG_CONFIG class - used to load and query

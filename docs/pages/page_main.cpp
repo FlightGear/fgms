@@ -71,8 +71,11 @@
  *  \include ./TODO
  * 
  * 
- * \page fgms_example_conf fgms_example.conf
- *  \include ./src/server/fgms_example.conf
+ * \page fgms_prod_skel_conf fgms_production.skel.conf
+ *  \include ./contrib/etc/fgms_production.skel.conf
+ * 
+ * \page fgms_local_skel_conf fgms_local.skel.conf
+ *  \include ./contrib/etc/fgms_local.skel.conf
  * 
  * \page ChangeLog ChangeLog
  *  \include ./ChangeLog

@@ -113,7 +113,16 @@
  * 
  * \see  \ref README_tracker file and  \ref create_db_sql
  *  
+ * \section runtime_startup RunTime and Startup
  * 
+ * 
+ * \subsection supervisor Supervisord
+ * 
+ * \note Do not run as deamon as supervisor will deamonize
+ * 
+ * \link contrib/etc/supervisor.fgms.conf
+ * 
+ * - http://supervisord.org/configuration.html#program-x-section-settings
  */
 
 
