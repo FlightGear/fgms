@@ -125,7 +125,7 @@
  * <tr><td>angularAccel</td><td>float[3]</td></tr>
  * </table>
  * 
- * \section xdr 
+ * \section xdr XDR
  *  * External Data Representation 
  * 		- Info: http://en.wikipedia.org/wiki/External_Data_Representation
  * 		- Spec: http://www.ietf.org/rfc/rfc1832.txt

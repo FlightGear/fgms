@@ -94,7 +94,7 @@
  * - Only forward data to clients which are really nearby the sender (in virtual space)
  * @see FG_SERVER::SetOutOfReach and FG_SERVER::IsInRange
  * 
- * \subsection server_playerexpires server.playerexpires
+ * \subsection server_playerexfpires server.playerexpires
  * \code 
  * server.playerexpires = 10
  * \endcode
