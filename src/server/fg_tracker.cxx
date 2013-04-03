@@ -8,7 +8,7 @@
 //
 //////////////////////////////////////////////////////////////////////
 #ifdef HAVE_CONFIG_H
-  #include "config.h"
+	#include "config.h"
 #endif
 
 #include <iostream>
@@ -18,17 +18,17 @@
 #include <string.h>
 #include <sstream>
 #ifndef _MSC_VER
-    #include <errno.h>
-    #include <time.h>
-    #include <stdint.h>
-    #include <unistd.h>
-    #include <sys/ipc.h>
-    #include <sys/msg.h>
-    #include <sys/types.h>
+	#include <errno.h>
+	#include <time.h>
+	#include <stdint.h>
+	#include <unistd.h>
+	#include <sys/ipc.h>
+	#include <sys/msg.h>
+	#include <sys/types.h>
 	#include <signal.h>
-    #ifndef __FreeBSD__
-        #include <endian.h>
-    #endif
+	#ifndef __FreeBSD__
+		#include <endian.h>
+	#endif
 #endif
 #include <unistd.h>
 #include "common.h"
@@ -38,31 +38,34 @@
 #include "daemon.hxx"
 
 #ifndef DEF_TRACKER_SLEEP
-    #define DEF_TRACKER_SLEEP 300   // try to connect each Five minutes
+	#define DEF_TRACKER_SLEEP 300   // try to connect each Five minutes
 #endif // DEF_TRACKER_SLEEP
 
 #ifdef _MSC_VER
-    typedef int pid_t;
-    int getpid(void)
-    {
-        return (int)GetCurrentThreadId();
-    }
+	typedef int pid_t;
+	int getpid(void)
+	{
+		return (int)GetCurrentThreadId();
+	}
 #define usleep(a) uSleep(a)
-void uSleep(int waitTime) { 
-    __int64 time1 = 0, time2 = 0, freq = 0; 
-    QueryPerformanceCounter((LARGE_INTEGER *) &time1); 
-    QueryPerformanceFrequency((LARGE_INTEGER *)&freq); 
- 
-    do { 
-        QueryPerformanceCounter((LARGE_INTEGER *) &time2); 
-    } while((time2-time1) < waitTime); 
-} 
+	void uSleep(int waitTime)
+	{ 
+		__int64 time1 = 0;
+		time2 = 0;
+		freq = 0; 
+		QueryPerformanceCounter((LARGE_INTEGER *) &time1); 
+		QueryPerformanceFrequency((LARGE_INTEGER *)&freq); 
+		do
+		{ 
+			QueryPerformanceCounter((LARGE_INTEGER *) &time2); 
+		} while((time2-time1) < waitTime); 
+	} 
 #else
-    extern  cDaemon Myself;
+	extern  cDaemon Myself;
 #endif // !_MSC_VER
 
 #ifndef DEF_DEBUG_OUTPUT
-    #define DEF_DEBUG_OUTPUT false
+	#define DEF_DEBUG_OUTPUT false
 #endif
 
 extern bool RunAsDaemon;
@@ -735,5 +738,3 @@ signal_handler(int s)
 #endif
 }
 
-//////////////////////////////////////////////////////////////////////
-// vim: ts=4:sw=4:sts=0

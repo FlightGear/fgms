@@ -24,12 +24,12 @@ using namespace std;
 #include "daemon.hxx"
 #include "fg_geometry.hxx"
 
-#define CONNECT     0
-#define DISCONNECT  1
-#define UPDATE    2
+#define CONNECT		0
+#define DISCONNECT	1
+#define UPDATE		2
 
 #ifndef IPCPERMS
-#define IPCPERMS    0600
+#define IPCPERMS	0600
 #endif
 
 void signal_handler(int s);
