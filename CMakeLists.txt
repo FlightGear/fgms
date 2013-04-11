@@ -1,6 +1,7 @@
 #
 # single CMakeLists.txt for fgms-0-x - hand crafted - commenced 2012/07/03
 # 20130411 - Change to use external version file
+# 20121130 - Add link_directories ( ${PostgreSQL_LIBRARY_DIR} ) at least for WIN32 - AGE 26
 # 20121025 - Add a windows 'perror' macro PERROR, and minor changes in crossfeed code - age 25
 # 20121018 - Try to get the unix install to /usr/sbin right, and bump age to 24
 # 20120815 - In Unix, install to /usr/sbin if CMAKE_INSTALL_PREFIX not given - default is /usr/local/sbin
@@ -263,9 +264,13 @@ if(BUILD_TRACKER)
         # =====================================
         find_package(PostgreSQL REQUIRED)
         if(PostgreSQL_FOUND)
-            set( add_LIBS ${PostgreSQL_LIBRARIES} )
+            list( APPEND add_LIBS ${PostgreSQL_LIBRARIES} )
             include_directories( "${PostgreSQL_INCLUDE_DIR}" )
-            message(STATUS "*** Found PosgreSQL_INCLUDE_DIR ${PostgreSQL_INCLUDE_DIR} LIBS ${PostgreSQL_LIBRARIES}")
+            message(STATUS "*** Found PosgreSQL_INCLUDE_DIR=${PostgreSQL_INCLUDE_DIR}")
+            message(STATUS "*** Found PostgreSQL_LIBRARY_DIR=${PostgreSQL_LIBRARY_DIR} LIBS ${PostgreSQL_LIBRARIES}")
+            if (WIN32)
+                link_directories( ${PostgreSQL_LIBRARY_DIR} )
+            endif (WIN32)
         else(PostgreSQL_FOUND)
             message(FATAL_ERROR "*** PosgreSQL NOT FOUND! Run cmake with -DBUILD_TRACKER:BOOL=FALSE")
         endif(PostgreSQL_FOUND)
@@ -294,9 +299,10 @@ if(BUILD_TRACKER)
     if (WIN32)
         set_target_properties( fgt_client PROPERTIES DEBUG_POSTFIX "d" )
     endif (WIN32)
-
     # deal with INSTALL
     install(TARGETS ${TRK_NAME} fgt_client DESTINATION bin)
+else(BUILD_TRACKER)
+    message( STATUS "*** Tracker NOT being built. Use -DBUILD_TRACKER:BOOL=TRUE to enable it." )
 endif(BUILD_TRACKER)
 
 # eof - CMakeLists.txt
