@@ -613,4 +613,6 @@ void win_wsa_perror( char * msg )
     }
 }
 
-#endif / * UL_WIN32 */
+#endif /* UL_WIN32 */
+// eof - netSocket.cxx
+
