@@ -1,5 +1,6 @@
 #
 # single CMakeLists.txt for fgms-0-x - hand crafted - commenced 2012/07/03
+# 20130411 - Change to use external version file
 # 20121025 - Add a windows 'perror' macro PERROR, and minor changes in crossfeed code - age 25
 # 20121018 - Try to get the unix install to /usr/sbin right, and bump age to 24
 # 20120815 - In Unix, install to /usr/sbin if CMAKE_INSTALL_PREFIX not given - default is /usr/local/sbin
@@ -26,17 +27,12 @@ project( fgms )
 #####       version increment MAJOR and set MINOR
 #####       and AGE to 0
 #####
+#####       See the 'version' file
 ##################################################
-
-## Now uses the 'version' file
-#set( fgms_MAJOR 0 )
-#set( fgms_MINOR 10 )
-#set( fgms_AGE 26 )
-
 # read 'version' file into a variable (stripping any newlines or spaces)
 file(READ version versionFile)
 if (NOT versionFile)
-    message(FATAL_ERROR "Unable to determine FGMS version. Version file is missing.")
+    message(FATAL_ERROR "Unable to determine FGMS version. 'version' file is missing.")
 endif()
 string(STRIP "${versionFile}" FGMS_VERSION)
 

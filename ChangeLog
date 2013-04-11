@@ -1,3 +1,14 @@
+2013-04-11 13:38:43 geoff
+
+	* Thanks to the BIG effort by Pete Morgan, now able to generate the site 
+	  web pages using doxygen. There is a build_docs.sh to do this, and if 
+	  you have doxygen installed in windows, then a build_docs.bat. These 
+	  will generate the html pages in a new folder - build_docs
+	* Versioning is now external in a 'version' file, used both by cmake 
+	  and build_docs to set the version.
+	* Bumped version to AGE 27
+
+
 2012-11-08 17:16  geoff
 
     * Small fix in CMakeLists.txt to allow -DCMAKE_BUILD_TYPE=DEBUG 
