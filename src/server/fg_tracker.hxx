@@ -96,7 +96,7 @@ public:
 		/** 
 		 * @brief Message contents 
 		 */
-		char mtext[1024];
+		char mtext[1200];
 	};
 
 #ifdef USE_TRACKER_PORT    // leave all members PUBLIC!
@@ -121,3 +121,5 @@ private:
 	int   m_TrackerSocket;
 };
 #endif
+
+// eof -fg_tracker.hxx

@@ -272,7 +272,7 @@ FG_TRACKER::TrackerLoop ()
 			std::string s = *vi;
 			msg_queue.erase(vi);    // remove from queue
 			length = (int)s.size(); // should I worry about LENGTH???
-			strcpy( buf.mtext, s.c_str() ); // mtext is 1024 bytes!!!
+			strcpy( buf.mtext, s.c_str() ); // mtext is 1200 bytes!!!
 		}
 		pthread_mutex_unlock( &msg_mutex ); // unlock the mutex
 		#else // !#ifdef USE_TRACKER_PORT
@@ -755,5 +755,6 @@ signal_handler(int s)
 #endif
 }
 
+// eof - fg_tracker.cxx
 //////////////////////////////////////////////////////////////////////
 // vim: ts=4:sw=4:sts=0
