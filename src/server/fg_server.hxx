@@ -71,7 +71,7 @@ public:
 		ERROR_COULDNT_LISTEN    = 5,
 		
 		// other constants
-		MAX_PACKET_SIZE         = 1024,
+		MAX_PACKET_SIZE         = 1200, // to agree with FG multiplayermgr.cxx (since before  2008)
 		UPDATE_INACTIVE_PERIOD  = 1,
 		MAX_TELNETS             = 5,
 		RELAY_MAGIC             = 0x53464746    // GSGF
