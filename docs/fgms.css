@@ -1368,3 +1368,7 @@ div.fragment .line{
 ul div.fragment {
 	margin-right: 0;
 }
+
+table.screenshots{
+	border: none;
+}
