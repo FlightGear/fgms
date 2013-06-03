@@ -1,3 +1,7 @@
+/**
+ * @file fg_config.hxx
+ * @author Oliver Schroeder
+ */
 //                                                                              
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -15,6 +19,14 @@
 //
 // Copyright (C) 2005  Oliver Schroeder
 //
+
+/**
+ * @class FG_CONFIG 
+ * @brief Simple config file parser
+ * 
+ * * The FG_CONFIG class, loads and parses, if it can,  the \ref fgms_conf file.
+ * * An instance is created the ::ProcessConfig  function if  main.cxx 
+ */
 
 //////////////////////////////////////////////////////////////////////
 //

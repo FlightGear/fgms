@@ -1,8 +1,10 @@
-//////////////////////////////////////////////////////////////////////
-//
-// $Id: typcnvt.hxx,v 1.2 2010/02/15 08:04:15 oliver Exp $
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @file typcnvt.hxx
+ * @author Oliver Schroeder
+ * 
+ */
+
+
 #ifndef TYPCNVTHDR
 #define TYPCNVTHDR 1
 
@@ -37,17 +39,16 @@ enum NUMERIC_BASE_LIMITS
 	MAX_BASE = 36		// 0-9, a-z
 };
 
+
 //////////////////////////////////////////////////////////////////////
-//
-//      StrToNum ()
-//      Convert string into a number
-//
-//      return:
-//              n_Error -1:     empty string
-//              n_Error -2:     overflow
-//              n_Error -3:     base out of range
-//              n_Error >0:     index of non-numeric
-//////////////////////////////////////////////////////////////////////
+/** 
+ * @brief  Convert string into a number
+ * @return 
+ *        - n_Error -1:     empty string
+ *        - n_Error -2:     overflow
+ *        - n_Error -3:     base out of range
+ *        - n_Error >0:     index of non-numeric
+ */
 template < class T >
 T StrToNum (string str_Number, int &n_Error, int n_Base = 10)
 {
@@ -172,6 +173,9 @@ T StrToNum (string str_Number, int &n_Error, int n_Base = 10)
 	return (T_Result);
 }
 
+/**
+ * @brief Convert a number to string
+ */
 template < typename T >
 string NumToStr ( T n_Number, int n_Precision = 2, int n_Base = 10 )
 {

@@ -1,3 +1,7 @@
+/**
+ * @file daemon.cxx
+ * @author Oliver Schroeder
+ */
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -38,8 +42,10 @@ pid_t cDaemon::PidOfDaemon; // remember who we are
 list <pid_t> cDaemon::Children; // keep track of our children
 
 //////////////////////////////////////////////////////////////////////
-// SigHandler ()
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Signal Handler connected in constructor
+ * @param SigType The type of signal
+ */
 void cDaemon::SigHandler ( int SigType )
 {
 	if (SigType == SIGCHLD)
@@ -155,9 +161,10 @@ void cDaemon::SigHandler ( int SigType )
 }
 
 //////////////////////////////////////////////////////////////////////
-// Daemonize ()
-// installs the signal-handler and makes ourself a daemon
-//////////////////////////////////////////////////////////////////////
+/** 
+ * @brief Installs the signal-handler and makes ourself a daemon
+ * @retval int -1 or error, 0 for success
+ */
 int cDaemon::Daemonize () // make us a daemon
 {
 	pid_t pid;
@@ -184,9 +191,9 @@ int cDaemon::Daemonize () // make us a daemon
 }
 
 //////////////////////////////////////////////////////////////////////
-//
-//////////////////////////////////////////////////////////////////////
-void cDaemon::KillAllChildren ()  // kill our children and ourself
+/** @brief Kill our children and ourself
+ */
+void cDaemon::KillAllChildren () 
 {
 	list <pid_t>::iterator aChild;
 
@@ -202,22 +209,33 @@ void cDaemon::KillAllChildren ()  // kill our children and ourself
 	// exit (0);
 }
 
+
 //////////////////////////////////////////////////////////////////////
-// AddChild ()
-// inserts the ChildsPid in the list of our Children.
-// So we can keep track of them and kill them if necessary,
-// e.g. the daemon dies.
-//////////////////////////////////////////////////////////////////////
+/** @brief Inserts the ChildsPid in the list of our Children.
+ *         So we can keep track of them and kill them if necessary,
+ *          e.g. the daemon dies.
+ * @param ChildsPid int with pid
+ */
 void cDaemon::AddChild ( pid_t ChildsPid )
 {
 	Children.push_back (ChildsPid);
 }
 
+
+//////////////////////////////////////////////////////////////////////
+/** @brief Get the count of child processes
+ * @retval int No of child processes
+ */
 int cDaemon::NumChildren ()
 {
 	return (Children.size ());
 }
 
+
+
+//////////////////////////////////////////////////////////////////////
+/** @brief Connect some signals at startup. These are connected to ::cDaemon::SigHandler
+ */
 cDaemon::cDaemon()
 {
 	//
@@ -231,6 +249,7 @@ cDaemon::cDaemon()
 	PidOfDaemon = getpid(); 
 }
 
+//////////////////////////////////////////////////////////////////////
 cDaemon::~cDaemon ()
 {
 	// KillAllChildren ();

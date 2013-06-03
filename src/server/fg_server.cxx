@@ -1,3 +1,6 @@
+/**
+ * @file fg_server.cxx
+ */
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -58,6 +61,7 @@
 #else
   cDaemon Myself;
 #endif
+
 
 bool    RunAsDaemon = false;
 #ifndef DEF_SERVER_LOG
@@ -159,11 +163,14 @@ void write_msg_log(const char *msg, int len, char *src)
 }
 #endif // #ifdef ADD_TRACKER_LOG
 
+
+
 //////////////////////////////////////////////////////////////////////
-//
-//      Initilize to standard values
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @class FG_SERVER
+ */
+
+/** @brief Constructor */
 FG_SERVER::FG_SERVER
 ()
 {
@@ -227,25 +234,28 @@ FG_SERVER::FG_SERVER
   m_TrackerPostion      = 0; // Tracker messages queued
   pthread_mutex_init( &m_PlayerMutex, 0 );
 } // FG_SERVER::FG_SERVER()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      standard destructor
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Standard destructor
+ */
 FG_SERVER::~FG_SERVER
 ()
 {
   Done();
 } // FG_SERVER::~FG_SERVER()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      basic initialization
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Basic initialization
+ * 
+ *  If we are already initialized, close
+ *  all connections and re-init all variables
+ */
 int
 FG_SERVER::Init
 ()
@@ -400,14 +410,13 @@ FG_SERVER::Init
   m_Listening = true;
   return (SUCCESS);
 } // FG_SERVER::Init()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      do anything necessary to (re-) init the server
-//      used to handle kill -HUP
-//
-//////////////////////////////////////////////////////////////////////
+/** 
+ * @brief Do anything necessary to (re-) init the server  used to handle kill -HUP
+ */
 void
 FG_SERVER::PrepareInit
 ()
@@ -435,12 +444,11 @@ telnet_helper
 }
 
 //////////////////////////////////////////////////////////////////////
-//
-//      handle a telnet session
-//      if a telnet connection is opened, this method outputs a list
-//      of all known clients.
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Handle a telnet session. if a telnet connection is opened, this 
+ *         method outputs a list  of all known clients.
+ * @param Fd -- docs todo --
+ */
 void*
 FG_SERVER::HandleTelnet
 (
@@ -449,8 +457,10 @@ FG_SERVER::HandleTelnet
 {
   errno = 0;
   string          Message;
-  Point3D         PlayerPosGeod;  // Geodetic Coordinates
-  FG_Player       CurrentPlayer;
+  
+  /** @brief  Geodetic Coordinates */
+  Point3D         PlayerPosGeod;  
+  FG_Player CurrentPlayer;
   netSocket       NewTelnet;
   unsigned int    it;
   NewTelnet.setHandle (Fd);
@@ -561,16 +571,19 @@ FG_SERVER::HandleTelnet
   NewTelnet.close ();
   return (0);
 } // FG_SERVER::HandleTelnet ()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      if we receive bad data from a client, we add the client to
-//      the internal list anyway, but mark them as bad. But first 
-//      we look if it isn't already there.
-//      Send an error message to the bad client.
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief  If we receive bad data from a client, we add the client to
+ *         the internal list anyway, but mark them as bad. But first 
+ *          we look if it isn't already there.
+ *          Send an error message to the bad client.
+ * @param Sender
+ * @param ErrorMsg
+ * @param IsLocal
+ */
 void
 FG_SERVER::AddBadClient
 (
@@ -624,13 +637,16 @@ FG_SERVER::AddBadClient
   m_NumCurrentClients++;
   pthread_mutex_unlock (& m_PlayerMutex);
 } // FG_SERVER::AddBadClient ()
-//////////////////////////////////////////////////////////////////////
+
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      insert a new client into internal list
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Insert a new client to internal list
+ * @param Sender
+ * @param Msg
+ */
 void
 FG_SERVER::AddClient
 (
@@ -742,13 +758,15 @@ FG_SERVER::AddClient
     << m_NumCurrentClients << " max: " << m_NumMaxClients
   );
 } // FG_SERVER::AddClient()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      insert a new relay server into internal list
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Insert a new relay server into internal list
+ * @param Server
+ * @param Port 
+ */
 void
 FG_SERVER::AddRelay
 (
@@ -778,13 +796,15 @@ FG_SERVER::AddRelay
     m_RelayMap[NewRelay.Address.getIP()] = S;
   }
 } // FG_SERVER::AddRelay()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      insert a new crossfeed server into internal list
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Insert a new crossfeed server into internal list
+ * @param Server char with server
+ * @param Port int with port number
+ */
 void
 FG_SERVER::AddCrossfeed
 (
@@ -813,13 +833,17 @@ FG_SERVER::AddCrossfeed
     SG_ALERT (SG_SYSTEMS, SG_ALERT, "AddCrossfeed: FAILED on " << Server << ", port " << Port);
   }
 } // FG_SERVER::AddCrossfeed()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      adds a tracking server
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Add a tracking server
+ * @param Server String with server
+ * @param Port The port number
+ * @param IsTracked Is Stracked
+ * @retval int -1 for fail or SUCCESS
+ */
 int
 FG_SERVER::AddTracker
 (
@@ -855,13 +879,13 @@ FG_SERVER::AddTracker
 #endif // NO_TRACKER_PORT
   return (SUCCESS);
 } // FG_SERVER::AddTracker()
-//////////////////////////////////////////////////////////////////////
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      Add an IP to the blacklist
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Add an IP to the blacklist
+ * @param FourDottedIP IP to add to blacklist
+ */
 void
 FG_SERVER::AddBlacklist
 (
@@ -871,13 +895,14 @@ FG_SERVER::AddBlacklist
   SG_ALERT (SG_SYSTEMS, SG_ALERT, "Adding to blacklist: " << FourDottedIP);
   m_BlackList[netAddress(FourDottedIP.c_str(), 0).getIP()] = true;
 } // FG_SERVER::AddBlacklist()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      Remove player from list
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Remove player from list
+ * @param CurrentPlayer Remove player instance from list
+ */
 void
 FG_SERVER::DropClient
 (
@@ -927,11 +952,13 @@ FG_SERVER::DropClient
 } // FG_SERVER::DropClient ()
 //////////////////////////////////////////////////////////////////////
 
+
 //////////////////////////////////////////////////////////////////////
-//
-//  create a chat message and put it into the internal message queue
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Create a chat message and put it into the internal message queue
+ * @param ID int with the ?
+ * @param Msg String with the message
+ */
 void
 FG_SERVER::CreateChatMessage
 (
@@ -967,13 +994,16 @@ FG_SERVER::CreateChatMessage
     NextBlockPosition += MAX_CHAT_MSG_LEN - 1;
   }
 } // FG_SERVER::CreateChatMessage ()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      check if the user is black listed.
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Check if the user is black listed.
+ * @see \ref blacklist_conf config
+ * @param SenderAddress
+ * @retval bool true if blacklisted
+ */
 bool
 FG_SERVER::IsBlackListed
 (
@@ -986,13 +1016,14 @@ FG_SERVER::IsBlackListed
   }
   return (false);
 } // FG_SERVER::IsBlackListed ()
-//////////////////////////////////////////////////////////////////////
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      check if the sender is a known relay
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Check if the sender is a known relay
+ * @param SenderAddress
+ * @retval bool true if known relay
+ */
 bool
 FG_SERVER::IsKnownRelay
 (
@@ -1022,6 +1053,9 @@ FG_SERVER::IsKnownRelay
 //      check if the packet is valid
 //
 //////////////////////////////////////////////////////////////////////
+/**
+ * @brief
+ */
 bool
 FG_SERVER::PacketIsValid
 (
@@ -1097,11 +1131,12 @@ FG_SERVER::PacketIsValid
 } // FG_SERVER::PacketIsValid ()
 //////////////////////////////////////////////////////////////////////
 
+
 //////////////////////////////////////////////////////////////////////
-//
-//      send any message in m_MessageList to client
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Send any message in m_MessageList to client
+ * @param CurrentPlayer Player to send message to
+ */
 void
 FG_SERVER::SendChatMessages
 (
@@ -1126,13 +1161,13 @@ FG_SERVER::SendChatMessages
     }
   }
 } // FG_SERVER::SendChatMessages ()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      delete internal chat message queue
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief  Delete internal chat message queue
+ */
 void
 FG_SERVER::DeleteMessageQueue
 ()
@@ -1149,15 +1184,14 @@ FG_SERVER::DeleteMessageQueue
     CurrentMessage = m_MessageList.erase (CurrentMessage);
   }
 } // FG_SERVER::DeleteMessageQueue ()
-//////////////////////////////////////////////////////////////////////
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      Send message to all crossfeed servers
-//  Crossfeed servers receive all traffic without condition,
-//  mainly used for testing and debugging
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief  Send message to all crossfeed servers.
+ *         Crossfeed servers receive all traffic without condition,
+ *         mainly used for testing and debugging
+ */
 void
 FG_SERVER::SendToCrossfeed
 (
@@ -1199,10 +1233,9 @@ FG_SERVER::SendToCrossfeed
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-//
-//      Send message to all relay servers
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief  Send message to all relay servers
+ */
 void
 FG_SERVER::SendToRelays
 (
@@ -1249,14 +1282,13 @@ FG_SERVER::SendToRelays
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-//
-//      look if we know the sending client
-//      return:
-//       0: Sender is unknown
-//       1: Sender is known
-//       2: Sender is known, but has a different IP
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Look if we know the sending client
+ * @return 
+ *       - 0: Sender is unknown
+ *       - 1: Sender is known
+ *       - 2: Sender is known, but has a different IP
+ */
 int
 FG_SERVER::SenderIsKnown
 (
@@ -1283,13 +1315,16 @@ FG_SERVER::SenderIsKnown
   // Sender is unkown
   return (0);
 } // FG_SERVER::SenderIsKnown ()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      handle client connections
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Handle client connections
+ * @param Msg
+ * @param Bytes
+ * @param SenderAddress
+ */
 void
 FG_SERVER::HandlePacket
 (
@@ -1491,6 +1526,10 @@ FG_SERVER::HandlePacket
   SendToRelays (Msg, Bytes, SendingPlayer);
 } // FG_SERVER::HandlePacket ( char* sMsg[MAX_PACKET_SIZE] )
 //////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief Show Stats
+ */
 void FG_SERVER::Show_Stats(void)
 {
     int pilot_cnt, local_cnt;
@@ -1548,6 +1587,9 @@ void FG_SERVER::Show_Stats(void)
     m_CrossFeedFailed = m_CrossFeedSent = 0;
 }
 
+/**
+ * @brief Check Keyboard ?
+ */
 int
 FG_SERVER::check_keyboard
 ()
@@ -1623,11 +1665,11 @@ FG_SERVER::check_keyboard
   return 0;
 }
 
+
 //////////////////////////////////////////////////////////////////////
-//
-//      main loop of the server
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Main loop of the server
+ */
 int
 FG_SERVER::Loop
 ()
@@ -1731,13 +1773,13 @@ FG_SERVER::Loop
   }
   return (0);
 } // FG_SERVER::Loop()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      set listening port for incoming clients
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief  Set listening port for incoming clients
+ */
 void
 FG_SERVER::SetDataPort
 (
@@ -1750,13 +1792,13 @@ FG_SERVER::SetDataPort
     m_ReinitData = true;
   }
 } // FG_SERVER::SetPort ( unsigned int iPort )
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      set listening port for telnets
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set listening port for telnets
+ */
 void
 FG_SERVER::SetTelnetPort
 (
@@ -1769,14 +1811,14 @@ FG_SERVER::SetTelnetPort
     m_ReinitTelnet = true;
   }
 } // FG_SERVER::SetPort ( unsigned int iPort )
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      set time in seconds. if no packet arrives from a client
-//      within this time, the connection is dropped.
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set time in seconds. if no packet arrives from a client
+ *        within this time, the connection is dropped.  
+ */
 void    
 FG_SERVER::SetPlayerExpires
 (
@@ -1785,14 +1827,13 @@ FG_SERVER::SetPlayerExpires
 {
   m_PlayerExpires = Seconds;
 } // FG_SERVER::SetPlayerExpires ( int iSeconds )
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      set nautical miles two players must be apart to be
-//      out of reach
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set nautical miles two players must be apart to be out of reach
+ */
 void    
 FG_SERVER::SetOutOfReach
 (
@@ -1801,13 +1842,12 @@ FG_SERVER::SetOutOfReach
 {
   m_PlayerIsOutOfReach = OutOfReach;
 } // FG_SERVER::SetOutOfReach ( int iOutOfReach )
-//////////////////////////////////////////////////////////////////////
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      set the default loglevel
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set the default loglevel
+ */
 void
 FG_SERVER::SetLoglevel
 (
@@ -1817,13 +1857,13 @@ FG_SERVER::SetLoglevel
   m_Loglevel = (sgDebugPriority) Loglevel;
   sglog().setLogLevels (SG_ALL, m_Loglevel);
 } // FG_SERVER::SetLoglevel ( int iLoglevel )
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      set the logfile
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief  Set the logfile
+ */
 void
 FG_SERVER::SetLogfile
 (
@@ -1839,13 +1879,12 @@ FG_SERVER::SetLogfile
   sglog().enable_with_date (true);
   sglog().set_output (m_LogFile);
 } // FG_SERVER::SetLogfile ( const std::string &LogfileName )
-//////////////////////////////////////////////////////////////////////
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      set if we are running as a Hubserver
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set if we are running as a Hubserver
+ */
 void
 FG_SERVER::SetHub
 (
@@ -1854,13 +1893,13 @@ FG_SERVER::SetHub
 {
   m_IamHUB = IamHUB;
 } // FG_SERVER::SetLoglevel ( int iLoglevel )
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      set the server name
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief  Set the server name
+ */
 void
 FG_SERVER::SetServerName
 (
@@ -1869,13 +1908,13 @@ FG_SERVER::SetServerName
 {
   m_ServerName = ServerName;
 } // FG_SERVER::SetLogfile ( const std::string &LogfileName )
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      set the address this server listens on
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set the address this server listens on
+ */
 void
 FG_SERVER::SetBindAddress
 (
@@ -1884,13 +1923,13 @@ FG_SERVER::SetBindAddress
 {
   m_BindAddress = BindAddress;
 } // FG_SERVER::SetLogfile ( const std::string &LogfileName )
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      close sockets, logfile etc.
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief  Close sockets, logfile etc.
+ */
 void
 FG_SERVER::Done
 ()
@@ -1945,13 +1984,12 @@ FG_SERVER::Done
   m_BlackList.clear ();
   m_Listening = false;
 } // FG_SERVER::Done()
-//////////////////////////////////////////////////////////////////////
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      updates the remote tracker web server
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Updates the remote tracker web server
+ */
 int
 FG_SERVER::UpdateTracker
 (
@@ -2092,13 +2130,13 @@ FG_SERVER::UpdateTracker
 #endif // !NO_TRACKER_PORT
   return (0);
 } // UpdateTracker (...)
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      cleanly closes the tracker
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Cleanly closes the tracker
+ */
 void
 FG_SERVER::CloseTracker
 ()
@@ -2112,13 +2150,16 @@ FG_SERVER::CloseTracker
     m_Tracker = 0;
   }
 } // CloseTracker ( )
-//////////////////////////////////////////////////////////////////////
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      Decides whether the relay is interested in full rate updates
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Decide whether the relay is interested in full rate updates. 
+ * @see \ref server_out_of_reach config.
+ * @param Relay
+ * @param SendingPlayer
+ * @retval true is within range
+ */
 bool
 FG_SERVER::IsInRange
 (

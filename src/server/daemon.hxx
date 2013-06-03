@@ -1,3 +1,7 @@
+/**
+ * @file daemon.hxx
+ * @author Oliver Schroeder
+ */
 //                                                                              
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -22,6 +26,7 @@
 //
 //////////////////////////////////////////////////////////////////////
 
+
 #ifndef CDAEMON_HDR
 #define CDAEMON_HDR
 
@@ -34,10 +39,14 @@
 
 using namespace std;
 
+/** @brief Implement everything necessary to become a daemon */
 class cDaemon
 {
-	static pid_t PidOfDaemon;       // remember who we are
-	static list <pid_t> Children; // keep track of our children
+	/** @brief remember who we are */
+	static pid_t PidOfDaemon;     
+	
+	/** @brief keep track of our children */
+	static list <pid_t> Children; 
 
 public:
 	cDaemon();
@@ -47,6 +56,8 @@ public:
 	static void KillAllChildren (); // kill our children and ourself
 	static void AddChild ( pid_t ChildsPid );
 	static int  NumChildren ();
+	
+	/** @brief Return pid of deamon */
 	static int  GetPid() { return PidOfDaemon; };
 };
 

@@ -1,4 +1,6 @@
-//                                                                              
+/**
+ * @file fg_geometry.cxx
+ */                                                                           
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -28,17 +30,26 @@
 #include <assert.h>
 #include "fg_geometry.hxx"
 
-// High-precision versions of the above produced with an arbitrary
-// precision calculator (the compiler might lose a few bits in the FPU
-// operations).  These are specified to 81 bits of mantissa, which is
-// higher than any FPU known to me:
+/**
+ *  High-precision versions of the above produced with an arbitrary
+ * precision calculator (the compiler might lose a few bits in the FPU
+ * operations).  These are specified to 81 bits of mantissa, which is
+ * higher than any FPU known to me:
+ */
 static const double SQUASH  = 0.9966471893352525192801545;
 static const double STRETCH = 1.0033640898209764189003079;
 static const double POLRAD  = 6356752.3142451794975639668;
 
+/** @brief Radians To Nautical Miles */
 static const double SG_RAD_TO_NM  = 3437.7467707849392526;
+
+/** @brief Nautical Miles in a Meter */
 static const double SG_NM_TO_METER  = 1852.0000;
+
+/** @brief Meters to Feet */
 static const double SG_METER_TO_FEET  = 3.28083989501312335958;
+
+/** @brief PI2 */
 static const double SGD_PI_2    = 1.57079632679489661923;
 
 Point3D::Point3D()
@@ -307,13 +318,13 @@ t_Point3D sqr ( const Point3D& P )
 	   (P.m_Z * P.m_Z)
 	);
 }
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//  normalize P
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Normalize P
+ */
 Point3D
 normalize ( const Point3D& P )
 {
@@ -326,13 +337,13 @@ normalize ( const Point3D& P )
 	    (P.m_Z / len)
 	));
 } // normalize ( const Point3D& P )
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//  return the length of P
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Return the length of P
+ */
 t_Point3D
 length ( const Point3D& P )
 {
@@ -342,13 +353,14 @@ length ( const Point3D& P )
 	    (P.m_Z * P.m_Z)
 	));
 } // length ( const Point3D& P )
-//////////////////////////////////////////////////////////////////////
+
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//  calculate distance of clients
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Calculate distance of clients
+ */
 float
 Distance ( const Point3D & P1, const Point3D & P2 )
 {
@@ -357,15 +369,15 @@ Distance ( const Point3D & P1, const Point3D & P2 )
 	P = P1 - P2;
 	return (float)(P.length() / SG_NM_TO_METER);
 } // Distance ( const Point3D & P1, const Point3D & P2 )
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//  This is the inverse of the algorithm in localLat().  It
-//  returns the (cylindrical) coordinates of a surface latitude
-//  expressed as an "up" unit vector.
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief This is the inverse of the algorithm in localLat().  It
+ *        returns the (cylindrical) coordinates of a surface latitude
+ *        expressed as an "up" unit vector.
+ */
 static void
 surfRZ (double upr, double upz, double* r, double* z)
 {
@@ -387,7 +399,8 @@ surfRZ (double upr, double upz, double* r, double* z)
 	*r = R;
 	*z = Z;
 } // surfRZ()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -403,6 +416,11 @@ static double ra2 = 1/(_EQURAD*_EQURAD);
 static double e2 = E2;
 static double e4 = E2*E2;
 
+/**
+ * @brief Convert a cartexian XYZ coordinate to a geodetic lat/lon/alt.
+ *        This function is a copy of what's in SimGear,
+ *        simgear/math/SGGeodesy.cxx
+ */
 void
 sgCartToGeod ( const Point3D& CartPoint , Point3D& GeodPoint )
 {
@@ -430,13 +448,13 @@ sgCartToGeod ( const Point3D& CartPoint , Point3D& GeodPoint )
 	GeodPoint[Lat] = (2*atan2(z, D+sqrtDDpZZ)) * SG_RADIANS_TO_DEGREES;
 	GeodPoint[Alt] = ((k+e2-1)*sqrtDDpZZ/k) * SG_METER_TO_FEET;
 } // sgCartToGeod()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-// opposite of sgCartToGeod
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Opposite of sgCartToGeod
+ */
 void sgGeodToCart ( double lat, double lon, double alt, double* xyz )
 {
 	// This is the inverse of the algorithm in localLat().  We are

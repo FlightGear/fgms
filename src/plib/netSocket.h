@@ -1,3 +1,12 @@
+/**
+ * @file netSocket.h
+ * @author  Dave McClurg <dpm@efn.org>
+ * @brief netSocket is a thin C++ wrapper over bsd sockets to
+ *        facilitate porting to other platforms.
+ *        Part of <a href="../../plib/html">PLIB</a> - A Suite of Portable Game Libraries
+ */
+
+
 /*
      PLIB - A Suite of Portable Game Libraries
      Copyright (C) 1998,2002  Steve Baker
@@ -54,8 +63,9 @@
 #include <string>
 #include "../server/typcnvt.hxx"
 
-/*
- * Socket address, internet style.
+/**
+ * @class netAddress
+ * @brief Socket address, internet style.
  */
 class netAddress
 {
@@ -90,8 +100,9 @@ public:
 };
 
 
-/*
- * Socket type
+/**
+ * @class netSocket
+ * @brief Socket type
  */
 class netSocket
 {

@@ -1,5 +1,7 @@
 #
 # single CMakeLists.txt for fgms-0-x - hand crafted - commenced 2012/07/03
+# 20130411 - Change to use external version file
+# 20121130 - Add link_directories ( ${PostgreSQL_LIBRARY_DIR} ) at least for WIN32 - AGE 26
 # 20121025 - Add a windows 'perror' macro PERROR, and minor changes in crossfeed code - age 25
 # 20121018 - Try to get the unix install to /usr/sbin right, and bump age to 24
 # 20120815 - In Unix, install to /usr/sbin if CMAKE_INSTALL_PREFIX not given - default is /usr/local/sbin
@@ -26,10 +28,15 @@ project( fgms )
 #####       version increment MAJOR and set MINOR
 #####       and AGE to 0
 #####
+#####       See the 'version' file
 ##################################################
-set( fgms_MAJOR 0 )
-set( fgms_MINOR 10 )
-set( fgms_AGE 26 )
+# read 'version' file into a variable (stripping any newlines or spaces)
+file(READ version versionFile)
+if (NOT versionFile)
+    message(FATAL_ERROR "Unable to determine FGMS version. 'version' file is missing.")
+endif()
+string(STRIP "${versionFile}" FGMS_VERSION)
+
 
 # change names if build server and tracker #2
 set( EXE_NAME fgms )
@@ -122,7 +129,7 @@ set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS} ${EXTRA_FLAGS} -D_REEN
 set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EXTRA_LD_FLAGS}" )
 message(STATUS "*** set CXX FLAGS [${CMAKE_CXX_FLAGS}] C FLAGS [${CMAKE_C_FLAGS}]")
 
-add_definitions( -DVERSION="${fgms_MAJOR}.${fgms_MINOR}.${fgms_AGE}" )
+add_definitions( -DVERSION="${FGMS_VERSION}" )
 
 if(ENABLE_DEBUG_OUTPUT)
    add_definitions( -DDEF_DEBUG_OUTPUT=true )
@@ -257,9 +264,13 @@ if(BUILD_TRACKER)
         # =====================================
         find_package(PostgreSQL REQUIRED)
         if(PostgreSQL_FOUND)
-            set( add_LIBS ${PostgreSQL_LIBRARIES} )
+            list( APPEND add_LIBS ${PostgreSQL_LIBRARIES} )
             include_directories( "${PostgreSQL_INCLUDE_DIR}" )
-            message(STATUS "*** Found PosgreSQL_INCLUDE_DIR ${PostgreSQL_INCLUDE_DIR} LIBS ${PostgreSQL_LIBRARIES}")
+            message(STATUS "*** Found PosgreSQL_INCLUDE_DIR=${PostgreSQL_INCLUDE_DIR}")
+            message(STATUS "*** Found PostgreSQL_LIBRARY_DIR=${PostgreSQL_LIBRARY_DIR} LIBS ${PostgreSQL_LIBRARIES}")
+            if (WIN32)
+                link_directories( ${PostgreSQL_LIBRARY_DIR} )
+            endif (WIN32)
         else(PostgreSQL_FOUND)
             message(FATAL_ERROR "*** PosgreSQL NOT FOUND! Run cmake with -DBUILD_TRACKER:BOOL=FALSE")
         endif(PostgreSQL_FOUND)
@@ -288,9 +299,10 @@ if(BUILD_TRACKER)
     if (WIN32)
         set_target_properties( fgt_client PROPERTIES DEBUG_POSTFIX "d" )
     endif (WIN32)
-
     # deal with INSTALL
     install(TARGETS ${TRK_NAME} fgt_client DESTINATION bin)
+else(BUILD_TRACKER)
+    message( STATUS "*** Tracker NOT being built. Use -DBUILD_TRACKER:BOOL=TRUE to enable it." )
 endif(BUILD_TRACKER)
 
 # eof - CMakeLists.txt

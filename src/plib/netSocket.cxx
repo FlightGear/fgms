@@ -1,4 +1,4 @@
-/*
+/**
      PLIB - A Suite of Portable Game Libraries
      Copyright (C) 1998,2002  Steve Baker
  
@@ -111,10 +111,11 @@ void netAddress::set ( const char* host, int port )
 }
 
 
-/* Create a string object representing an IP address.
-   This is always a string of the form 'dd.dd.dd.dd' (with variable
-   size numbers). */
-
+/**
+ * @brief Create a string object representing an IP address.
+ *        This is always a string of the form 'dd.dd.dd.dd' (with variable
+ *        size numbers). 
+ */
 const string netAddress::getHost () const
 {
 	long x = ntohl(sin_addr);
@@ -130,7 +131,8 @@ netAddress::getIP () const
 { 
 	return sin_addr; 
 }
-
+/**
+ * @brief Return the port no as int */
 unsigned int netAddress::getPort() const
 {
   return ntohs(sin_port);

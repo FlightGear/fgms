@@ -1,7 +1,19 @@
-// mpmessages.hxx -- Message definitions for multiplayer communications
-// within a multiplayer Flightgear
+/**
+ * @file mpmessages.hxx 
+ * @author  Duncan McCreanor
+ * 
+ * @brief Message definitions for multiplayer communications
+ *        within multiplayer Flightgear
+ * 
+ * - Each message used for multiplayer communications consists of a header and optionally a block of data. 
+ * - The combined header and data is sent as one IP packet, \ref xdr encoded.
+ *  @note 
+ * 		XDR demands 4 byte alignment, but some compilers use 8 byte alignment,
+ * 		so it's safe to let the overall size of a network message be a multiple of 8! 
+ */
+
 //
-// Written by Duncan McCreanor, started February 2003.
+//  Written by Duncan McCreanor, started February 2003.
 // duncan.mccreanor@airservicesaustralia.com
 //
 // Copyright (C) 2003  Airservices Australia
@@ -26,123 +38,202 @@
 
 #define MPMESSAGES_HID "$Id: mpmessages.hxx,v 1.1.1.1 2007/06/12 10:10:24 oliver Exp $"
 
-/****************************************************************
-* @version $Id: mpmessages.hxx,v 1.1.1.1 2007/06/12 10:10:24 oliver Exp $
-*
-* Description: Each message used for multiplayer communications
-* consists of a header and optionally a block of data. The combined
-* header and data is sent as one IP packet.
-*
-******************************************************************/
 
 #include <vector>
 #include <simgear/compiler.h>
 #include <simgear/math/SGMath.hxx>
 #include "tiny_xdr.hxx"
 
-// magic value for messages
+/** @brief The `Magic` value for message (currently FGFS). The magic is at the start of every packet and is used for packet validaation. */
 const uint32_t MSG_MAGIC = 0x46474653;  // "FGFS"
-// protocoll version
+
+
+/** @brief  The MP protocol version that is send with each packet (currently 1.1). */
 const uint32_t PROTO_VER = 0x00010001;  // 1.1
 
-// Message identifiers
+/** @brief  ID is of a "chat" message
+ * @warning  The CHAT_MSG_ID is not used in the current implentation, 
+ *           Instead chat messages are added to a ::POS_DATA_ID message, in the 'properties' part,
+ *            under a <b>10002 sim/multiplayer/chat property<b> (see fgms_for_fgms).
+ * @deprecated Not used in current implementation
+ */
 #define CHAT_MSG_ID             1
+
+/** @brief  ID is of a "reset" message */
 #define RESET_DATA_ID           6
+
+
+/** @brief  ID  of a "position" message, and the most trafficked */
 #define POS_DATA_ID             7
 
-// XDR demands 4 byte alignment, but some compilers use8 byte alignment
-// so it's safe to let the overall size of a network message be a 
-// multiple of 8!
+
+/** @brief  Maximum length of a callsign */
 #define MAX_CALLSIGN_LEN        8
+
+/** @brief  Maximum length of a chat message 
+ */
 #define MAX_CHAT_MSG_LEN        256
+
+/** @brief  Maximum length of a model name, eg /model/x17/aero-123.xml */
 #define MAX_MODEL_NAME_LEN      96
+
+/** @brief  Maximum length of property */
 #define MAX_PROPERTY_LEN        52
 
-// Header for use with all messages sent 
+
+/** 
+ * @struct T_MsgHdr
+ * @brief The header sent as the first part of all mp message packets.
+ * 
+ * The header is expected to have the correct ::MSG_MAGIC and ::PROTO_VER and this checked upon in FG_SERVER::PacketIsValid
+ */
 struct T_MsgHdr {
-    xdr_data_t  Magic;                  // Magic Value
-    xdr_data_t  Version;                // Protocoll version
-    xdr_data_t  MsgId;                  // Message identifier 
-    xdr_data_t  MsgLen;                 // absolute length of message
-    xdr_data_t  ReplyAddress;           // (player's receiver address
-    xdr_data_t  ReplyPort;              // player's receiver port
-    char Callsign[MAX_CALLSIGN_LEN];    // Callsign used by the player
+	
+	/** @brief Magic Value */
+    xdr_data_t  Magic;   
+    
+    /** @brief Protocol version */
+    xdr_data_t  Version;           
+    
+    /** @brief Message identifier  */
+    xdr_data_t  MsgId;     
+    
+    /** @brief Absolute length of message */
+    xdr_data_t  MsgLen;    
+    
+    /** @brief Player's receiver address 
+		@deprecated Not used in current implementation
+	 */
+    xdr_data_t  ReplyAddress;   
+    
+    /** @brief Player's receiver port 
+		@deprecated Not used in current implementation
+	*/
+    xdr_data_t  ReplyPort;   
+    
+    /** @brief Callsign used by the player */
+    char Callsign[MAX_CALLSIGN_LEN]; 
 };
 
-// Chat message 
+
+/** 
+ * @struct T_ChatMsg
+ * @brief A Chat message 
+ * @deprecated Not used in current implementation, see ::CHAT_MSG_ID for more info.
+ */
 struct T_ChatMsg {
-    char Text[MAX_CHAT_MSG_LEN];       // Text of chat message
+	
+	/** @brief Text of chat message */
+    char Text[MAX_CHAT_MSG_LEN];  
 };
 
-// Position message
-struct T_PositionMsg {
-    char Model[MAX_MODEL_NAME_LEN];    // Name of the aircraft model
 
-    // Time when this packet was generated
+/** 
+ * @struct T_PositionMsg
+ * @brief A Position Message
+ */
+struct T_PositionMsg {
+	
+	/** @brief  Name of the aircraft model */
+    char Model[MAX_MODEL_NAME_LEN]; 
+
+    /** @brief Time when this packet was generated */
     xdr_data2_t time;
+	
+	/** @brief Time when this packet was generated */
     xdr_data2_t lag;
 
-    // position wrt the earth centered frame
+    /** @brief Position wrt the earth centered frame */
     xdr_data2_t position[3];
-    // orientation wrt the earth centered frame, stored in the angle axis
-    // representation where the angle is coded into the axis length
+	
+	
+    /** @brief Orientation wrt the earth centered frame, stored in the angle axis
+     *         representation where the angle is coded into the axis length
+	 */
     xdr_data_t orientation[3];
 
-    // linear velocity wrt the earth centered frame measured in
-    // the earth centered frame
+	/** @brief Linear velocity wrt the earth centered frame measured in
+     *         the earth centered frame
+	 */
     xdr_data_t linearVel[3];
-    // angular velocity wrt the earth centered frame measured in
-    // the earth centered frame
+	
+    /** @brief Angular velocity wrt the earth centered frame measured in
+     *          the earth centered frame
+	 */
     xdr_data_t angularVel[3];
 
-    // linear acceleration wrt the earth centered frame measured in
-    // the earth centered frame
+	/** @brief Linear acceleration wrt the earth centered frame measured in
+     *         the earth centered frame
+	 */
     xdr_data_t linearAccel[3];
-    // angular acceleration wrt the earth centered frame measured in
-    // the earth centered frame
+	
+    /** @brief Angular acceleration wrt the earth centered frame measured in
+     *         the earth centered frame
+	 */
     xdr_data_t angularAccel[3];
 };
 
-// Property message
+
+/** 
+ * @struct T_PropertyMsg 
+ *  @brief Property Message 
+ */
 struct T_PropertyMsg {
     xdr_data_t id;
     xdr_data_t value;
 };
 
+
+/**
+ * @struct FGFloatPropertyData  
+ * @brief Property Data 
+ */
 struct FGFloatPropertyData {
   unsigned id;
   float value;
 };
 
-// Position message
+/** @brief Motion Message */
 struct FGExternalMotionData {
-  // simulation time when this packet was generated
+	
+  /** 
+   * @brief Simulation time when this packet was generated 
+   */
   double time;
   // the artificial lag the client should stay behind the average
   // simulation time to arrival time diference
   // FIXME: should be some 'per model' instead of 'per packet' property
   double lag;
   
-  // position wrt the earth centered frame
+  /** 
+   * @brief The artificial lag the client should stay behind the average
+   *        simulation time to arrival time diference
+   * @todo  should be some 'per model' instead of 'per packet' property  double lag;
+   *        Position wrt the earth centered frame  
+   */
   SGVec3d position;
-  // orientation wrt the earth centered frame
+  
+  /** @brief Orientation wrt the earth centered frame */
   SGQuatf orientation;
   
-  // linear velocity wrt the earth centered frame measured in
-  // the earth centered frame
+  /**
+   * @brief Linear velocity wrt the earth centered frame measured in
+   *        the earth centered frame
+   */
   SGVec3f linearVel;
-  // angular velocity wrt the earth centered frame measured in
-  // the earth centered frame
+  
+  /** 
+   * @brief Angular velocity wrt the earth centered frame measured in the earth centered frame
+   */
   SGVec3f angularVel;
   
-  // linear acceleration wrt the earth centered frame measured in
-  // the earth centered frame
+  /** @brief Linear acceleration wrt the earth centered frame measured in the earth centered frame */
   SGVec3f linearAccel;
-  // angular acceleration wrt the earth centered frame measured in
-  // the earth centered frame
+  
+  /** @brief Angular acceleration wrt the earth centered frame measured in the earth centered frame */
   SGVec3f angularAccel;
   
-  // The set of properties recieved for this timeslot
+  /** @brief The set of properties recieved for this timeslot */
   std::vector<FGFloatPropertyData> properties;
 };
 

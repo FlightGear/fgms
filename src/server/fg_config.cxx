@@ -1,3 +1,7 @@
+/**
+ * @file fg_config.cxx
+ * @author Oliver Schroeder
+ */
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -25,11 +29,14 @@
 #include <cctype>
 #include "fg_config.hxx"
 
+
+
+
 //////////////////////////////////////////////////////////////////////
-//
-//      read in the config file named 'ConfigName'
-//
-//////////////////////////////////////////////////////////////////////
+/** @brief  Read in the config file 
+ * @param ConfigName - the file to read
+ * @retval int 1 for error, 0 for success
+ */
 int
 FG_CONFIG::Read
 (
@@ -64,11 +71,11 @@ FG_CONFIG::Read
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-//
-//      find a variable with name 'VarName' in the internal
-//      list and return its value
-//
-//////////////////////////////////////////////////////////////////////
+
+/** @brief Find a variable in the internal list and return its value
+ * @param VarName - the variable to find
+ * @retval string - with contents of variable, or blank string if not found
+*/
 std::string
 FG_CONFIG::Get
 (
@@ -86,13 +93,13 @@ FG_CONFIG::Get
 	}
 	return ("");
 } // FG_SERVER::Get ()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      set internal pointer to the first variable in list
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set internal pointer to the first variable in list
+ */
 void
 FG_CONFIG::SetStart
 ()
@@ -102,11 +109,10 @@ FG_CONFIG::SetStart
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-//
-//      set internal pointer to the next var.
-//      return 1 for success, 0 else
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set internal pointer to the next var.
+ * @retval int 1 for success, else 0
+ */
 int
 FG_CONFIG::Next
 ()
@@ -122,13 +128,14 @@ FG_CONFIG::Next
 	}
 	return (1);
 } // FG_CONFIG::Next()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      return the complete name of the current variable
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Returns the complete name of the current variable.
+ * @retval string The variable name, or empty string if not found.
+ */
 std::string
 FG_CONFIG::GetName
 ()
@@ -139,13 +146,14 @@ FG_CONFIG::GetName
 	}
 	return ("");
 } // FG_CONFIG::GetName ()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      return the value of the current variable
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * \brief Returns the current variable's value
+ * \retval string The variable name, or empty string if not found.
+ */
 std::string
 FG_CONFIG::GetValue
 ()
@@ -156,16 +164,16 @@ FG_CONFIG::GetValue
 	}
 	return ("");
 } // FG_CONFIG::GetValue ()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      set internal pointer to the first variable of
-//      section 'SecName'.
-//      TODO: sort the variable list
-//      return 1 on success, 0 else
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set internal pointer to the first variable of a section 
+ * @todo Sort the variable list
+ * @param SecName  String with section name
+ * @retval int 1 on success, else 0
+ */
 int
 FG_CONFIG::SetSection
 (
@@ -184,14 +192,14 @@ FG_CONFIG::SetSection
 	}
 	return (0);
 } // FG_CONFIG::SetSection ( const std::string &SecName )
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      set internal pointer to next variable in section.
-//      return 1 on success, 0 else
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set internal pointer to next variable in a section.
+ * @retval int 1 on success, 0 else
+ */
 int
 FG_CONFIG::SecNext
 ()
@@ -207,13 +215,13 @@ FG_CONFIG::SecNext
 	}
 	return (1);
 } // FG_CONFIG::GetSecNextVar ()
-//////////////////////////////////////////////////////////////////////
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      return variable name of next variable in section
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Get the next variable name in current section
+ * @retval string The variable name, or empty string if not found
+ */
 std::string
 FG_CONFIG::GetSecNextVar
 ()
@@ -229,13 +237,14 @@ FG_CONFIG::GetSecNextVar
 	}
 	return (m_CurrentVar->first);
 } // FG_CONFIG::GetSecNextVar ()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      return variable value of next variable in section
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Return variable value of next variable in section
+ * @retval string The value or empty string if not found
+ */
 std::string
 FG_CONFIG::GetSecNextVal
 ()
@@ -251,13 +260,14 @@ FG_CONFIG::GetSecNextVal
 	}
 	return (m_CurrentVar->second);
 } // FG_CONFIG::GetSecNextVal ()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      get the value of the next variable in list
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Get the value of the next variable in list
+ * @retval string The value or empty string if not found
+ */
 std::string
 FG_CONFIG::GetNext
 ()
@@ -268,13 +278,13 @@ FG_CONFIG::GetNext
 	}
 	return (m_CurrentVar->second);
 } // FG_CONFIG::GetNext ()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      just for debugging
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Just for debugging to cout
+ */
 void
 FG_CONFIG::Dump
 ()
@@ -293,14 +303,16 @@ FG_CONFIG::Dump
 	std::cout << "done." << std::endl;
 	std::cout << std::endl;
 } // FG_SERVER::Dump ()
-//////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////
-//
-//      parse the given line, split it into name/value pairs
-//      and put in the internal list
-//
-//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Parse the given line, split it into name/value pairs
+ *        and put in the internal list
+ * @param ConfigLine The line to parse
+ * @retval int
+ */
 int
 FG_CONFIG::ParseLine
 (
