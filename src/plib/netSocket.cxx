@@ -75,6 +75,7 @@ void netAddress::set ( const char* host, int port )
 #endif
   sin_family = AF_INET ;
   sin_port = htons (port);
+  sin_addr = INADDR_ANY;
 
   /* Convert a string specifying a host name or one of a few symbolic
   ** names to a numeric IP address.  This usually calls gethostbyname()
