@@ -40,7 +40,7 @@
     #endif
 #endif
 #include <unistd.h>
-#include "common.h"
+#include "fg_common.hxx"
 #include "fg_tracker.hxx"
 #include "typcnvt.hxx"
 #include <simgear/debug/logstream.hxx>

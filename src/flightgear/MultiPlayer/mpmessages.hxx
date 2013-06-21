@@ -112,7 +112,7 @@ struct T_MsgHdr {
     xdr_data_t  ReplyPort;   
     
     /** @brief Callsign used by the player */
-    char Callsign[MAX_CALLSIGN_LEN]; 
+    char Name[MAX_CALLSIGN_LEN]; 
 };
 
 

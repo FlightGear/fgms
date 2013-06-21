@@ -1,5 +1,5 @@
-#ifndef __common_h
-#define __common_h
+#ifndef __common_hxx
+#define __common_hxx
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -78,6 +78,7 @@
 #include     <netinet/sctp.h> 
 #endif 
 
+#include <string>
 
 /* OSF/1 actually disables recv() and send() in <sys/socket.h> */ 
 #ifdef  __osf__ 
@@ -261,6 +262,17 @@ extern void write_msg_log(const char *msg, int len, char *src = 0); // write to 
     #define PERROR(a) perror(a) 
 #endif
 
+#ifndef _MSC_VER
+	typedef long long uint64;
+#else
+	typedef INT64 uint64;
+#endif
 
-#endif // #ifndef __common_h
-/* eof - common.h */
+//////////////////////////////////////////////////
+//  utility functions
+//////////////////////////////////////////////////
+std::string timestamp_to_datestr ( time_t date );
+std::string timestamp_to_days ( time_t date );
+std::string byte_counter ( uint64 bytes );
+
+#endif // #ifndef __common_hxx

@@ -147,7 +147,8 @@ else(BUILD_SHARED_LIB)
    message(STATUS "*** Building static library ${LIB_TYPE}")
 endif(BUILD_SHARED_LIB)
 
-include_directories( SYSTEM "${PROJECT_BINARY_DIR}" src src/flightgear/MultiPlayer src/plib src/simgear/debug src/server )
+include_directories( SYSTEM "${PROJECT_BINARY_DIR}" src src/flightgear/MultiPlayer src/plib src/simgear/debug src/server
+src/libcli )
 
 ### add_subdirectory( src/server )
 # Project [fg_server] [Static Library] [noinst_LIBRARIES], with 6 sources. 12 hdrs.
@@ -155,13 +156,16 @@ set( fg_server_SRCS
     src/server/fg_server.cxx 
     src/server/fg_tracker.cxx 
     src/server/fg_config.cxx 
-    src/server/fg_player.cxx 
+    src/server/fg_common.cxx 
+    src/server/fg_list.cxx 
+    src/server/fg_cli.cxx 
     src/server/daemon.cxx 
     src/server/fg_geometry.cxx )
 set( fg_server_HDRS  src/server/fg_server.hxx src/server/fg_tracker.hxx 
-    src/server/fg_config.hxx src/server/fg_player.hxx 
+    src/server/fg_config.hxx src/server/fg_list.hxx 
+    src/server/fg_cli.hxx
     src/server/daemon.hxx src/server/typcnvt.hxx 
-    src/server/common.h )
+    src/server/fg_common.hxx )
 add_library( fg_server ${LIB_TYPE} ${fg_server_SRCS} ${fg_server_HDRS} )
 # NO INSTALL [noinst_LIBRARIES]
 if(WIN32)
@@ -193,6 +197,27 @@ if(WIN32)
     list(APPEND add_LIBS Plib)
 else(WIN32)
     list(APPEND add_LIBS -lPlib)
+endif(WIN32)
+
+#### add_subdirectory( src/libcli )
+# Project [plib] [Static Library] [noinst_LIBRARIES], with 1 sources. 1 hdrs.
+set( libcli_SRCS
+    src/libcli/debug.cxx
+    src/libcli/filter.cxx
+    src/libcli/libcli.cxx
+    )
+set( libcli_HDRS
+    src/libcli/common.hxx
+    src/libcli/command.hxx
+    src/libcli/debug.hxx
+    src/libcli/filter.hxx
+    src/libcli/libcli.hxx
+    )
+add_library( LibCLI ${LIB_TYPE} ${libcli_SRCS} ${libcli_HDRS} )
+if(WIN32)
+    list(APPEND add_LIBS LibCLI)
+else(WIN32)
+    list(APPEND add_LIBS -lLibCLI -lcrypt)
 endif(WIN32)
 
 ### add_subdirectory( src/simgear/debug )

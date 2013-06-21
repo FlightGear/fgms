@@ -99,11 +99,6 @@ void netAddress::set ( const char* host, int port )
       }
       else
       {
-#ifdef _MSC_VER
-        printf( "netAddress::set to INADDR_ANY\n" );
-#else
-        herror ( "netAddress::set" ) ;
-#endif
         sin_addr = INADDR_ANY ;
       }
     }
