@@ -138,7 +138,7 @@ public:
 	FG_List	( const string& Name );
 	~FG_List ();
 	size_t Size ();
-	void Add	( FG_ListElement& Element, time_t TTL );
+	size_t Add	( FG_ListElement& Element, time_t TTL );
 	ItList Delete	( const ItList& Element );
 	void Clear	();
 	ItList Find	( const netAddress& Address, const string& Name );

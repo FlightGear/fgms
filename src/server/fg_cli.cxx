@@ -70,6 +70,15 @@ FG_CLI::setup ()
 	//////////////////////////////////////////////////
 	// general commands
 	//////////////////////////////////////////////////
+	c = new Command<CLI> (
+		this,
+		"show",
+		LIBCLI::UNPRIVILEGED,
+		LIBCLI::MODE_ANY,
+		"show system information"
+	);
+	register_command (c);
+
 	register_command ( new Command<CLI> (
 		this,
 		"version",
@@ -77,7 +86,17 @@ FG_CLI::setup ()
 		LIBCLI::UNPRIVILEGED,
 		LIBCLI::MODE_ANY,
 		"Show running version information"
-	));
+	), c);
+
+	register_command ( new Command<CLI> (
+		this,
+		"stats",
+		static_cast<callback_ptr> (&FG_CLI::cmd_NOT_IMPLEMENTED),
+		LIBCLI::UNPRIVILEGED,
+		LIBCLI::MODE_ANY,
+		"Show statistical information"
+	), c);
+
 	//////////////////////////////////////////////////
 	// show/modify blacklist
 	//////////////////////////////////////////////////
@@ -103,6 +122,15 @@ FG_CLI::setup ()
 		this,
 		"delete",
 		static_cast<callback_ptr> (&FG_CLI::cmd_blacklist_delete),
+		LIBCLI::UNPRIVILEGED,
+		LIBCLI::MODE_ANY,
+		"Show entries in the blacklist"
+	), c);
+
+	register_command (new Command<CLI> (
+		this,
+		"add",
+		static_cast<callback_ptr> (&FG_CLI::cmd_blacklist_add),
 		LIBCLI::UNPRIVILEGED,
 		LIBCLI::MODE_ANY,
 		"Show entries in the blacklist"
@@ -186,7 +214,7 @@ FG_CLI::cmd_blacklist_show
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	netAddress	Address;
+	netAddress	Address ("0.0.0.0", 0);
 	bool		Brief = false;
 	size_t		EntriesFound = 0;
 
@@ -198,6 +226,7 @@ FG_CLI::cmd_blacklist_show
 		switch (i)
 		{
 		case 0: // ID or IP or 'brief' or '?'
+			error ("argv 0: '%s'", argv[0]);
 			if (strcmp (argv[i], "?") == 0)
 			{
 				print (
@@ -224,6 +253,7 @@ FG_CLI::cmd_blacklist_show
 			}
 			break;
 		case 1: // 'brief' or '?'
+			error ("argv 1: '%s'", argv[1]);
 			if (strcmp (argv[1], "?") == 0)
 			{
 				print (
@@ -245,8 +275,6 @@ FG_CLI::cmd_blacklist_show
 	}
 	int Count = fgms->m_BlackList.Size ();
 	FG_ListElement Entry("");
-	print ("ID: %lu", ID);
-	print ("IP: %u", Address.getIP());
 	print (" ");
 	for (int i = 0; i < Count; i++)
 	{
@@ -374,5 +402,113 @@ FG_CLI::cmd_blacklist_delete
 	}
 	error ("deleted");
 	return 0;
+}
+
+//////////////////////////////////////////////////
+/**
+ *  @brief Show Blacklist
+ *
+ *  ONLY in config mode
+ *
+ *  possible arguments:
+ *  blacklist add ?
+ *  blacklist add TTL IP-Address [reason]
+ *  blacklist add [...] <cr>
+ */
+int
+FG_CLI::cmd_blacklist_add
+(
+	char *command,
+	char *argv[],
+	int argc
+)
+{
+	time_t		TTL = -1;
+	int		I;
+	netAddress	Address;
+	string		Reason;
+	ItList		Entry;
+
+	for (int i=0; i < argc; i++)
+	{
+		switch (i)
+		{
+		case 0: // must be TTL or '?'
+			if (strcmp (argv[i], "?") == 0)
+			{
+				print (
+					"  TTL    Timeout of the new entry in seconds\n"
+				);
+				return (0);
+			}
+			TTL  = StrToNum<size_t> ( argv[0], I );
+			if (I)
+			{
+				error ("%% invalid TTL");
+				return (1);
+			}
+			break;
+		case 1: // IP or '?'
+			if (strcmp (argv[i], "?") == 0)
+			{
+				print (
+					"  IP     IP address which should be blacklisted\n"
+				);
+				return (0);
+			}
+			Address.set (argv[i], 0);
+			if (Address.getIP() == 0)
+			{
+				error ("%% invalid IP address");
+				return (1);
+			}
+			break;
+		default:
+			if ( (i == 2) && (strcmp (argv[i], "?") == 0 ) )
+			{
+				print (
+					"  string a reason for blacklisting this IP"
+				);
+				return 0;
+			}
+			Reason += argv[i];
+			if (i+1 < argc)
+				Reason += " ";
+			break;
+		}
+	}
+	FG_ListElement E (Reason);
+	E.Address = Address;
+	size_t NewID;
+	ItList CurrentEntry = fgms->m_BlackList.Find ( E.Address, "" );
+	if ( CurrentEntry == fgms->m_BlackList.End() )
+	{       
+		NewID = fgms->m_BlackList.Add (E, TTL);
+	}
+	else
+	{
+		error ("entry already exists (ID %lu)!", CurrentEntry->ID);
+		return 1;
+	}
+	error ("added with ID %lu", NewID);
+	return (0);
+}
+
+int
+FG_CLI::cmd_NOT_IMPLEMENTED
+(
+	char *command,
+	char *argv[],
+	int argc
+)
+{
+	print ("Command '%s' NOT IMPLEMENTED yet!", command);
+	if (argc > 0)
+	{
+		print ("  args:");
+		for (int i=0; i<argc; i++)
+			print ("  '%s'", argv[i]);
+	}
+	return (0);
 }
 

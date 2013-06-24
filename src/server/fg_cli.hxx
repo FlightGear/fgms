@@ -55,11 +55,13 @@ private:
 	// show/modify blacklist
 	//////////////////////////////////////////////////
 	int cmd_blacklist_show   (  char *command, char *argv[], int argc );
+	int cmd_blacklist_add    (  char *command, char *argv[], int argc );
 	int cmd_blacklist_delete (  char *command, char *argv[], int argc );
 private:
 	FG_SERVER* fgms;
 	int  check_auth (const string& username, const string& password);
 	int  check_enable(const string& password);
+	int cmd_NOT_IMPLEMENTED (  char *command, char *argv[], int argc );
 };
 
 #endif
