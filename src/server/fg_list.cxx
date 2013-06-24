@@ -212,6 +212,7 @@ FG_Player::assign
 	//
 	// using str.c_str() here to prevent copy-on-write in std::string!
 	//
+	FG_ListElement::assign (P);
         Origin          = P.Origin.c_str();
         Passwd          = P.Passwd.c_str();
         ModelName       = P.ModelName.c_str();

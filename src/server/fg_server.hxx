@@ -170,8 +170,6 @@ protected:
 	typedef mT_PlayerList::iterator           mT_PlayerListIt;
 	typedef std::list<mT_Relay>               mT_RelayList;
 	typedef mT_RelayList::iterator            mT_RelayListIt;
-	typedef std::list<mT_ChatMsg>             mT_MessageList;
-	typedef std::list<mT_ChatMsg>::iterator   mT_MessageIt;
 	typedef std::map<uint32_t,string>         mT_IP2RelayNames;
 	typedef std::map<uint32_t,string>::iterator mT_RelayMapIt;
 	bool              m_Initialized;
@@ -208,7 +206,6 @@ protected:
 	mT_RelayList      m_RelayList;
 	mT_IP2RelayNames  m_RelayMap;
 	mT_RelayList      m_CrossfeedList;
-	mT_MessageList    m_MessageList;
 	int               m_ipcid;
 	int               m_childpid;
 	FG_TRACKER*       m_Tracker;

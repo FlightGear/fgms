@@ -675,10 +675,6 @@ FG_SERVER::AddBadClient
 	NewPlayer.ClientID      = m_MaxClientID;
 	NewPlayer.LastRelayedToInactive = 0;
 	SG_LOG ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddBadClient() - " << ErrorMsg );
-	Message = "bad client connected: ";
-	Message += Sender.getHost() + string ( ": " );
-	Message += ErrorMsg;
-	CreateChatMessage ( NewPlayer.ClientID, Message );
 	pthread_mutex_lock ( & m_PlayerMutex );
 	m_PlayerList.push_back ( NewPlayer );
 	m_NumCurrentClients++;
@@ -757,28 +753,9 @@ FG_SERVER::AddClient
 	}
 	if ( IsLocal )
 	{
-		Message  = "Welcome to ";
-		Message += m_ServerName;
-		CreateChatMessage ( NewPlayer.ClientID , Message );
-		Message = "this is version v" + string ( VERSION );
-		Message += " (LazyRelay enabled)";
-		CreateChatMessage ( NewPlayer.ClientID , Message );
-		Message  ="using protocol version v";
-		Message += NumToStr ( m_ProtoMajorVersion, 0 );
-		Message += "." + NumToStr ( m_ProtoMinorVersion, 0 );
-		if ( m_IsTracked )
-		{
-			Message += "This server is tracked.";
-		}
-		CreateChatMessage ( NewPlayer.ClientID , Message );
 		UpdateTracker ( NewPlayer.Name, NewPlayer.Passwd,
 		                NewPlayer.ModelName, NewPlayer.LastSeen, CONNECT );
 	}
-	Message  = NewPlayer.Name;
-	Message += " is now online, using ";
-	CreateChatMessage ( 0, Message );
-	Message  = NewPlayer.ModelName;
-	CreateChatMessage ( 0, Message );
 	Origin  = NewPlayer.Origin;
 	if ( IsLocal )
 	{
@@ -979,59 +956,11 @@ FG_SERVER::DropClient
 	         << ". Current clients: "
 	         << m_NumCurrentClients << " max: " << m_NumMaxClients
 	       );
-	if ( m_NumCurrentClients > 0 )
-	{
-		string Message = "client '";
-		Message += CurrentPlayer->Name;
-		Message += "' has left";
-		CreateChatMessage ( 0, Message );
-	}
 	pthread_mutex_lock ( & m_PlayerMutex );
 	CurrentPlayer = m_PlayerList.erase ( CurrentPlayer );
 	pthread_mutex_unlock ( & m_PlayerMutex );
 } // FG_SERVER::DropClient ()
 //////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-/**
- * @brief Create a chat message and put it into the internal message queue
- * @param ID int with the ?
- * @param Msg String with the message
- */
-void
-FG_SERVER::CreateChatMessage
-(
-        int ID,
-        string Msg
-)
-{
-	T_MsgHdr        MsgHdr;
-	T_ChatMsg       ChatMsg;
-	unsigned int    NextBlockPosition = 0;
-	char*           Message;
-	int             len =  sizeof ( T_MsgHdr ) + sizeof ( T_ChatMsg );
-	MsgHdr.Magic            = XDR_encode<uint32_t> ( MSG_MAGIC );
-	MsgHdr.Version          = XDR_encode<uint32_t> ( PROTO_VER );
-	MsgHdr.MsgId            = XDR_encode<uint32_t> ( CHAT_MSG_ID );
-	MsgHdr.MsgLen           = XDR_encode<uint32_t> ( len );
-	MsgHdr.ReplyAddress     = 0;
-	MsgHdr.ReplyPort        = XDR_encode<uint32_t> ( m_ListenPort );
-	strncpy ( MsgHdr.Name, "*FGMS*", MAX_CALLSIGN_LEN );
-	MsgHdr.Name[MAX_CALLSIGN_LEN - 1] = '\0';
-	while ( NextBlockPosition < Msg.length() )
-	{
-		strncpy ( ChatMsg.Text,
-		          Msg.substr ( NextBlockPosition, MAX_CHAT_MSG_LEN - 1 ).c_str(),
-		          MAX_CHAT_MSG_LEN );
-		ChatMsg.Text[MAX_CHAT_MSG_LEN - 1] = '\0';
-		Message = new char[len];
-		memcpy ( Message, &MsgHdr, sizeof ( T_MsgHdr ) );
-		memcpy ( Message + sizeof ( T_MsgHdr ), &ChatMsg,
-		         sizeof ( T_ChatMsg ) );
-		m_MessageList.push_back ( mT_ChatMsg ( ID,Message ) );
-		NextBlockPosition += MAX_CHAT_MSG_LEN - 1;
-	}
-} // FG_SERVER::CreateChatMessage ()
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -1144,56 +1073,6 @@ FG_SERVER::PacketIsValid
 	return ( true );
 } // FG_SERVER::PacketIsValid ()
 //////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-/**
- * @brief Send any message in m_MessageList to client
- * @param CurrentPlayer Player to send message to
- */
-void
-FG_SERVER::SendChatMessages
-(
-        mT_PlayerListIt& CurrentPlayer
-)
-{
-	mT_MessageIt  CurrentMessage;
-	if ( ( CurrentPlayer->IsLocal ) && ( m_MessageList.size() ) )
-	{
-		CurrentMessage = m_MessageList.begin();
-		while ( CurrentMessage != m_MessageList.end() )
-		{
-			if ( ( CurrentMessage->Target == 0 )
-			                ||  ( CurrentMessage->Target == CurrentPlayer->ClientID ) )
-			{
-				int len = sizeof ( T_MsgHdr ) + sizeof ( T_ChatMsg );
-				m_DataSocket->sendto ( CurrentMessage->Msg, len, 0,
-				                       &CurrentPlayer->Address );
-			}
-			CurrentMessage++;
-		}
-	}
-} // FG_SERVER::SendChatMessages ()
-
-//////////////////////////////////////////////////////////////////////
-/**
- * @brief  Delete internal chat message queue
- */
-void
-FG_SERVER::DeleteMessageQueue
-()
-{
-	mT_MessageIt    CurrentMessage;
-	if ( ! m_MessageList.size() )
-	{
-		return;
-	}
-	CurrentMessage = m_MessageList.begin();
-	while ( CurrentMessage != m_MessageList.end() )
-	{
-		delete[] CurrentMessage->Msg;
-		CurrentMessage = m_MessageList.erase ( CurrentMessage );
-	}
-} // FG_SERVER::DeleteMessageQueue ()
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -1518,11 +1397,11 @@ FG_SERVER::HandlePacket
 		//////////////////////////////////////////////////
 		if ( CurrentPlayer->IsLocal )
 		{
-			SendChatMessages ( CurrentPlayer );
 			m_DataSocket->sendto ( Msg, Bytes, 0, &CurrentPlayer->Address );
 			CurrentPlayer->PktsSentTo++;
 			PktsForwarded++;
 		}
+
 		CurrentPlayer++;
 	}
 	if ( SendingPlayer == m_PlayerList.end() )
@@ -1535,7 +1414,6 @@ FG_SERVER::HandlePacket
 		       );
 		return;
 	}
-	DeleteMessageQueue ();
 	SendToRelays ( Msg, Bytes, SendingPlayer );
 } // FG_SERVER::HandlePacket ();
 //////////////////////////////////////////////////////////////////////
@@ -1710,7 +1588,6 @@ FG_SERVER::Loop
 	//      infinite listening loop
 	//
 	//////////////////////////////////////////////////
-	CreateChatMessage ( 0, string ( "server " ) +m_ServerName+string ( " is online" ) );
 	for ( ;; )
 	{
 		CurrentTime = time ( 0 );
