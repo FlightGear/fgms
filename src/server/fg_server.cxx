@@ -195,7 +195,6 @@ FG_SERVER::FG_SERVER
 	m_AdminPort           = m_ListenPort+2;
 	m_NumMaxClients       = 0;
 	m_PlayerIsOutOfReach  = 100;  // standard 100 nm
-	m_NumCurrentClients   = 0;
 	m_IsParent            = false;
 	m_ServerName          = "* Server *";
 	m_BindAddress         = "";
@@ -288,7 +287,6 @@ FG_SERVER::Init
 		m_Listening         = false;
 		m_DataSocket        = 0;
 		m_NumMaxClients     = 0;
-		m_NumCurrentClients = 0;
 	}
 	if ( m_ReinitData || m_ReinitTelnet )
 	{
@@ -701,7 +699,6 @@ FG_SERVER::AddBadClient
 	NewPlayer.LastRelayedToInactive = 0;
 	SG_LOG ( SG_FGMS, SG_WARN, "FG_SERVER::AddBadClient() - " << ErrorMsg );
 	m_PlayerList.Add (NewPlayer, 0);
-	m_NumCurrentClients++;
 } // FG_SERVER::AddBadClient ()
 
 //////////////////////////////////////////////////////////////////////
@@ -736,14 +733,8 @@ FG_SERVER::AddClient
 	NewPlayer.Passwd    = "test"; //MsgHdr->Passwd;
 	NewPlayer.ModelName = "* unknown *";
 	NewPlayer.Origin    = Sender.getHost ();
-	NewPlayer.HasErrors = false;
 	NewPlayer.Address   = Sender;
 	NewPlayer.IsLocal   = IsLocal;
-	NewPlayer.PktsRcvd = 0;
-	NewPlayer.PktsSent = 0;
-	NewPlayer.LastRelayedToInactive = 0;
-	NewPlayer.LastPos.clear();
-	NewPlayer.LastOrientation.clear();
 	NewPlayer.LastPos.Set (
 	        XDR_decode64<double> ( PosMsg->position[X] ),
 	        XDR_decode64<double> ( PosMsg->position[Y] ),
@@ -756,10 +747,10 @@ FG_SERVER::AddClient
 	);
 	NewPlayer.ModelName = PosMsg->Model;
 	m_PlayerList.Add ( NewPlayer, m_PlayerExpires );
-	m_NumCurrentClients++;
-	if ( m_NumCurrentClients > m_NumMaxClients )
+	size_t NumClients = m_PlayerList.Size ();
+	if ( NumClients > m_NumMaxClients )
 	{
-		m_NumMaxClients = m_NumCurrentClients;
+		m_NumMaxClients = NumClients;
 	}
 	if ( IsLocal )
 	{
@@ -785,7 +776,7 @@ FG_SERVER::AddClient
 	         << Origin << ":" << Sender.getPort()
 	         << " (" << NewPlayer.ModelName << ")"
 	         << " current clients: "
-	         << m_NumCurrentClients << " max: " << m_NumMaxClients
+	         << NumClients << " max: " << m_NumMaxClients
 	       );
 } // FG_SERVER::AddClient()
 
@@ -947,49 +938,6 @@ FG_SERVER::AddBlacklist
 		m_BlackList.Add (B, Timeout);
 	}
 } // FG_SERVER::AddBlacklist()
-
-//////////////////////////////////////////////////////////////////////
-/**
- * @brief Remove player from list
- * @param CurrentPlayer Remove player instance from list
- */
-void
-FG_SERVER::DropClient
-(
-        PlayerIt& CurrentPlayer
-)
-{
-	string Origin;
-	if ( CurrentPlayer->IsLocal )
-	{
-		UpdateTracker ( CurrentPlayer->Name,
-		                CurrentPlayer->Passwd,
-		                CurrentPlayer->ModelName,
-		                CurrentPlayer->LastSeen,
-		                DISCONNECT
-		              );
-	}
-	mT_RelayMapIt Relay = m_RelayMap.find ( CurrentPlayer->Address.getIP() );
-	if ( Relay != m_RelayMap.end() )
-	{
-		Origin = Relay->second;
-	}
-	else
-	{
-		Origin = "LOCAL";
-	}
-	m_NumCurrentClients--;
-	SG_LOG ( SG_FGMS, SG_INFO, "TTL exceeded, dropping pilot "
-	         << CurrentPlayer->Name << "@" << Origin
-	         << "  after " << time ( 0 )-CurrentPlayer->JoinTime << " seconds."
-	         << "  Usage #packets in: " << CurrentPlayer->PktsRcvd
-	         << " out: " << CurrentPlayer->PktsSent
-	         << ". Current clients: "
-	         << m_NumCurrentClients << " max: " << m_NumMaxClients
-	       );
-	CurrentPlayer = m_PlayerList.Delete ( CurrentPlayer );
-} // FG_SERVER::DropClient ()
-//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 /**
