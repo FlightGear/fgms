@@ -1328,6 +1328,7 @@ FG_CLI::cmd_user_show
 					print ("  %-20s %s", "brief", "show brief listing");
 					print ("  %-20s %s", "ID",    "show entry with ID");
 					print ("  %-20s %s", "IP",    "show entry with IP-Address");
+					print ("  %-20s %s", "NAME",  "show entry with IP-Address");
 					print ("  %-20s %s", "<cr>",  "show long listing");
 					print ("  %-20s %s", "|",     "output modifier");
 					return (0);
