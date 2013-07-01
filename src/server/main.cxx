@@ -219,7 +219,7 @@ ProcessConfig ( const string& ConfigName )
 		Servant.SetDataPort ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
-			SG_ALERT ( SG_SYSTEMS, SG_ALERT, "invalid value for DataPort: '" << optarg << "'" );
+			SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for DataPort: '" << optarg << "'" );
 			exit ( 1 );
 		}
 	}
@@ -229,7 +229,7 @@ ProcessConfig ( const string& ConfigName )
 		Servant.SetTelnetPort ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
-			SG_ALERT ( SG_SYSTEMS, SG_ALERT, "invalid value for TelnetPort: '" << optarg << "'" );
+			SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for TelnetPort: '" << optarg << "'" );
 			exit ( 1 );
 		}
 	}
@@ -239,7 +239,7 @@ ProcessConfig ( const string& ConfigName )
 		Servant.SetAdminPort ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
-			SG_ALERT ( SG_SYSTEMS, SG_ALERT, "invalid value for AdminPort: '" << optarg << "'" );
+			SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for AdminPort: '" << optarg << "'" );
 			exit ( 1 );
 		}
 	}
@@ -264,7 +264,7 @@ ProcessConfig ( const string& ConfigName )
 		Servant.SetOutOfReach ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
-			SG_ALERT ( SG_SYSTEMS, SG_ALERT, "invalid value for OutOfReach: '" << optarg << "'" );
+			SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for OutOfReach: '" << optarg << "'" );
 			exit ( 1 );
 		}
 	}
@@ -274,7 +274,7 @@ ProcessConfig ( const string& ConfigName )
 		Servant.SetPlayerExpires ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
-			SG_ALERT ( SG_SYSTEMS, SG_ALERT, "invalid value for Expire: '" << optarg << "'" );
+			SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for Expire: '" << optarg << "'" );
 			exit ( 1 );
 		}
 	}
@@ -296,7 +296,7 @@ ProcessConfig ( const string& ConfigName )
 		}
 		else
 		{
-			SG_ALERT ( SG_SYSTEMS, SG_ALERT, "unknown value for 'server.daemon'!" << " in file " << ConfigName );
+			SG_LOG ( SG_SYSTEMS, SG_ALERT, "unknown value for 'server.daemon'!" << " in file " << ConfigName );
 		}
 	}
 	Val = Config.Get ( "server.tracked" );
@@ -318,12 +318,12 @@ ProcessConfig ( const string& ConfigName )
 		Port = StrToNum<int> ( Val.c_str (), E );
 		if ( E )
 		{
-			SG_ALERT ( SG_SYSTEMS, SG_ALERT, "invalid value for tracking_port: '" << Val << "'" );
+			SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for tracking_port: '" << Val << "'" );
 			exit ( 1 );
 		}
 		if ( tracked && ( Servant.AddTracker ( Server, Port, tracked ) != FG_SERVER::SUCCESS ) ) // set master m_IsTracked
 		{
-			SG_ALERT ( SG_SYSTEMS, SG_ALERT, "Failed to get IPC msg queue ID! error " << errno );
+			SG_LOG ( SG_SYSTEMS, SG_ALERT, "Failed to get IPC msg queue ID! error " << errno );
 			exit ( 1 ); // do NOT continue if a requested 'tracker' FAILED
 		}
 	}
@@ -364,7 +364,7 @@ ProcessConfig ( const string& ConfigName )
 			Port = StrToNum<int> ( Val.c_str(), E );
 			if ( E )
 			{
-				SG_ALERT ( SG_SYSTEMS, SG_ALERT, "invalid value for RelayPort: '" << Val << "'" );
+				SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for RelayPort: '" << Val << "'" );
 				exit ( 1 );
 			}
 		}
@@ -404,7 +404,7 @@ ProcessConfig ( const string& ConfigName )
 			Port = StrToNum<int> ( Val.c_str(), E );
 			if ( E )
 			{
-				SG_ALERT ( SG_SYSTEMS, SG_ALERT, "invalid value for crossfeed.port: '" << Val << "'" );
+				SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for crossfeed.port: '" << Val << "'" );
 				exit ( 1 );
 			}
 		}
@@ -516,7 +516,7 @@ ParseParams ( int argcount, char* argvars[] )
 			}
 			break;
 		case 'v':
-			Servant.SetLoglevel ( StrToNum<int>  ( optarg, E ) );
+			Servant.SetLog ( SG_FGMS, StrToNum<int>  ( optarg, E ) );
 			if ( E )
 			{
 				cerr << "invalid value for Loglevel: '"
@@ -614,12 +614,12 @@ void SigHUPHandler ( int SigType )
 	Servant.PrepareInit();
 	if ( !ReadConfigs ( true ) )
 	{
-		SG_ALERT ( SG_SYSTEMS, SG_ALERT, "received HUP signal, but read config file failed!" );
+		SG_LOG ( SG_SYSTEMS, SG_ALERT, "received HUP signal, but read config file failed!" );
 		exit ( 1 );
 	}
 	if ( Servant.Init () != 0 )
 	{
-		SG_ALERT ( SG_SYSTEMS, SG_ALERT, "received HUP signal, but reinit failed!" );
+		SG_LOG ( SG_SYSTEMS, SG_ALERT, "received HUP signal, but reinit failed!" );
 		exit ( 1 );
 	}
 #ifndef _MSC_VER
@@ -642,7 +642,7 @@ SigCHLDHandler ( int s )
 	pid_t child;
 	while ( ( child = waitpid ( -1, NULL, WNOHANG ) ) > 0 )
 	{
-		SG_ALERT ( SG_SYSTEMS, SG_ALERT, "["<< getpid() << "] SigCHLDHandler: CHILD " << child << " dead!" );
+		SG_LOG ( SG_SYSTEMS, SG_ALERT, "["<< getpid() << "] SigCHLDHandler: CHILD " << child << " dead!" );
 	}
 } // SigCHLDHandler ()
 //////////////////////////////////////////////////////////////////////
@@ -671,11 +671,9 @@ main ( int argc, char* argv[] )
 	ReadConfigs ();
 	if ( !bHadConfig )
 	{
-		SG_ALERT ( SG_SYSTEMS, SG_ALERT, "No configuration file '" << DEF_CONF_FILE << "' found!" );
+		SG_LOG ( SG_SYSTEMS, SG_ALERT, "No configuration file '" << DEF_CONF_FILE << "' found!" );
 		exit ( 1 );
 	}
-	sglog().setLogLevels ( SG_ALL, SG_INFO );
-	sglog().enable_with_date ( true );
 	I = Servant.Init ();
 	if ( I != 0 )
 	{
@@ -686,7 +684,7 @@ main ( int argc, char* argv[] )
 	if ( RunAsDaemon )
 	{
 		Myself.Daemonize ();
-		SG_ALERT ( SG_SYSTEMS, SG_ALERT, "Main server started!" );
+		SG_LOG ( SG_SYSTEMS, SG_ALERT, "Main server started!" );
 	}
 #endif
 	I = Servant.Loop();
@@ -699,6 +697,4 @@ main ( int argc, char* argv[] )
 	return ( 0 );
 } // main()
 //////////////////////////////////////////////////////////////////////
-
-// vim: ts=2:sw=2:sts=0
 

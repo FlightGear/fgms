@@ -268,11 +268,4 @@ extern void write_msg_log(const char *msg, int len, char *src = 0); // write to 
 	typedef INT64 uint64;
 #endif
 
-//////////////////////////////////////////////////
-//  utility functions
-//////////////////////////////////////////////////
-std::string timestamp_to_datestr ( time_t date );
-std::string timestamp_to_days ( time_t date );
-std::string byte_counter ( uint64 bytes );
-
 #endif // #ifndef __common_hxx

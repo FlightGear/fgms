@@ -50,18 +50,44 @@ private:
 	//////////////////////////////////////////////////
 	// general  commands
 	//////////////////////////////////////////////////
+	int cmd_show_stats (  UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
 	int cmd_show_version (  UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
+	int cmd_fgms_die ( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
 	//////////////////////////////////////////////////
 	// show/modify blacklist
 	//////////////////////////////////////////////////
 	int cmd_blacklist_show   (  char *command, char *argv[], int argc );
 	int cmd_blacklist_add    (  char *command, char *argv[], int argc );
 	int cmd_blacklist_delete (  char *command, char *argv[], int argc );
+	//////////////////////////////////////////////////
+	// show/modify list of crossfeeds
+	//////////////////////////////////////////////////
+	int cmd_crossfeed_show   (  char *command, char *argv[], int argc );
+	int cmd_crossfeed_add    (  char *command, char *argv[], int argc );
+	int cmd_crossfeed_delete (  char *command, char *argv[], int argc );
+	//////////////////////////////////////////////////
+	// show/modify list of relays
+	//////////////////////////////////////////////////
+	int cmd_relay_show   (  char *command, char *argv[], int argc );
+	int cmd_relay_add    (  char *command, char *argv[], int argc );
+	int cmd_relay_delete (  char *command, char *argv[], int argc );
+	//////////////////////////////////////////////////
+	// show list of players
+	//////////////////////////////////////////////////
+	int cmd_user_show   (  char *command, char *argv[], int argc );
 private:
 	FG_SERVER* fgms;
 	int  check_auth (const string& username, const string& password);
 	int  check_enable(const string& password);
 	int cmd_NOT_IMPLEMENTED (  char *command, char *argv[], int argc );
+	//////////////////////////////////////////////////
+	//  utility functions
+	//////////////////////////////////////////////////
+	bool need_help (char* argv);
+	std::string timestamp_to_datestr ( time_t date );
+	std::string timestamp_to_days ( time_t date );
+	std::string byte_counter ( uint64 bytes );
+
 };
 
 #endif

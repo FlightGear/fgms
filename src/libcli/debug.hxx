@@ -3,6 +3,13 @@
 
 #define CLI_TRACE __FUNCTION__,__FILE__,__LINE__
 
+//  #define DEBUG_OUTPUT
+#ifdef DEBUG_OUTPUT
+	define DEBUG_OUT(X) printf(X)
+#else
+	#define DEBUG_OUT(X)
+#endif
+
 class DEBUG
 {
 public:

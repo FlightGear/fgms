@@ -38,6 +38,9 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <pthread.h>
+#ifndef _MSC_VER
+        #include <termios.h>
+#endif
 #include <plib/netSocket.h>
 #include <flightgear/MultiPlayer/mpmessages.hxx>
 #include <flightgear/MultiPlayer/tiny_xdr.hxx>
@@ -105,7 +108,7 @@ public:
 	void  SetPlayerExpires ( int Seconds );
 	void  SetOutOfReach ( int OutOfReach );
 	void  SetHub ( bool IamHUB );
-	void  SetLoglevel ( int Loglevel );
+	void  SetLog ( int Facility, int Priority );
 	void  SetLogfile ( const std::string& LogfileName );
 	void  SetServerName ( const std::string& ServerName );
 	void  SetBindAddress ( const std::string& BindAddress );
@@ -123,53 +126,10 @@ public:
 protected:
 
 	//////////////////////////////////////////////////
-	/**
-	 * @class mT_Relay
-	 * @brief Type of list of relays
-	 */
-	class mT_Relay
-	{
-	public:
-		string      Name;
-		netAddress  Address;
-	};
-
-	//////////////////////////////////////////////////
-	/**
-	 * @class mT_ChatMsg
-	 * @brief Chat messages from server to clients
-	 * @todo Document the vars
-	 */
-	class mT_ChatMsg
-	{
-	public:
-
-		/**
-		 * @brief -- todo --
-		 * @param I int
-		 * @param M char
-		 */
-		mT_ChatMsg ( int I, char* M )
-		{
-			Target=I;
-			Msg=M;
-		};
-
-		/** @brief 0 = all */
-		int   Target; // 0 = all
-
-		/** @brief Pointer to the message */
-		char* Msg;
-	};
-	//////////////////////////////////////////////////
 	//
 	//  private variables
 	//
 	//////////////////////////////////////////////////
-	typedef std::vector<FG_Player>            mT_PlayerList;
-	typedef mT_PlayerList::iterator           mT_PlayerListIt;
-	typedef std::list<mT_Relay>               mT_RelayList;
-	typedef mT_RelayList::iterator            mT_RelayListIt;
 	typedef std::map<uint32_t,string>         mT_IP2RelayNames;
 	typedef std::map<uint32_t,string>::iterator mT_RelayMapIt;
 	bool              m_Initialized;
@@ -186,7 +146,6 @@ protected:
 	string            m_AdminUser;
 	string            m_AdminPass;
 	string            m_AdminEnable;
-	sgDebugPriority   m_Loglevel;
 	ofstream          m_LogFile;
 	string            m_LogFileName;
 	string            m_BindAddress;
@@ -196,42 +155,46 @@ protected:
 	int16_t           m_ProtoMajorVersion;
 	bool              m_IsParent;
 	bool              m_IsTracked;
-	int               m_MaxClientID;
 	string            m_ServerName;
 	string            m_TrackerServer;
 	netSocket*        m_DataSocket;
 	netSocket*        m_TelnetSocket;
 	netSocket*        m_AdminSocket;
-	mT_PlayerList     m_PlayerList;
-	mT_RelayList      m_RelayList;
 	mT_IP2RelayNames  m_RelayMap;
-	mT_RelayList      m_CrossfeedList;
+	FG_List           m_CrossfeedList;
+	FG_List           m_BlackList;
+	FG_List           m_RelayList;
+	PlayerList        m_PlayerList;
 	int               m_ipcid;
 	int               m_childpid;
 	FG_TRACKER*       m_Tracker;
-	FG_List           m_BlackList;
 	bool              m_IamHUB;
-	pthread_mutex_t   m_PlayerMutex;
 	time_t            m_UpdateSecs;
+	bool              m_WantExit;
 	//////////////////////////////////////////////////
 	//
 	//  statistics
 	//
 	//////////////////////////////////////////////////
-	int               m_PacketsReceived; // rw data packet received
-	int               m_BlackRejected;  // in black list
-	int               m_PacketsInvalid; // invalid packet
-	int               m_UnknownRelay; // unknown relay
-	int               m_RelayMagic; // known relay packet
-	int               m_PositionData;   // position data packet
-	int               m_NotPosData;     // packet NOT pos data
-	int               m_TelnetReceived;
-	int               mT_PacketsReceived, mT_BlackRejected, mT_PacketsInvalid;
-	int               mT_UnknownRelay, mT_PositionData, mT_TelnetReceived;
-	int               mT_RelayMagic, mT_NotPosData;
-	int               m_CrossFeedFailed, m_CrossFeedSent;
-	int               mT_CrossFeedFailed, mT_CrossFeedSent;
-	int               m_TrackerConnect, m_TrackerDisconnect,m_TrackerPostion;
+	size_t               m_PacketsReceived; // rw data packet received
+	size_t               m_BlackRejected;  // in black list
+	size_t               m_PacketsInvalid; // invalid packet
+	size_t               m_UnknownRelay; // unknown relay
+	size_t               m_RelayMagic; // known relay packet
+	size_t               m_PositionData;   // position data packet
+	size_t               m_NotPosData;     // packet NOT pos data
+	size_t               m_TelnetReceived;
+	size_t               m_AdminReceived;
+	size_t               mT_PacketsReceived, mT_BlackRejected, mT_PacketsInvalid;
+	size_t               mT_UnknownRelay, mT_PositionData, mT_TelnetReceived;
+	size_t               mT_RelayMagic, mT_NotPosData;
+	size_t               m_CrossFeedFailed, m_CrossFeedSent;
+	size_t               mT_CrossFeedFailed, mT_CrossFeedSent;
+	size_t               m_TrackerConnect, m_TrackerDisconnect,m_TrackerPostion;
+	time_t		m_Uptime;
+#ifndef _MSC_VER
+	struct termios	OldModes;
+#endif
 
 	//////////////////////////////////////////////////
 	//
@@ -241,21 +204,19 @@ protected:
 	void  AddClient     ( const netAddress& Sender, char* Msg );
 	void  AddBadClient  ( const netAddress& Sender, string& ErrorMsg,
 	                      bool IsLocal );
-	bool  IsKnownRelay ( const netAddress& SenderAddress );
+	bool  IsKnownRelay ( const netAddress& SenderAddress, size_t Bytes );
 	bool  PacketIsValid ( int Bytes, T_MsgHdr* MsgHdr,
 	                      const netAddress& SenderAddress );
 	void  HandlePacket  ( char* sMsg, int Bytes,
 	                      const netAddress& SenderAdress );
 	int   UpdateTracker ( string callsign, string passwd, string modelname,
 	                      time_t time, int type );
-	void  DropClient ( mT_PlayerListIt& CurrentPlayer );
-	void  CreateChatMessage ( int ID, string Msg );
-	void  SendChatMessages ( mT_PlayerListIt& CurrentPlayer );
-	void  DeleteMessageQueue ();
-	bool  IsInRange ( mT_Relay& Relay,  FG_Player& SendingPlayer );
+	void  DropClient ( PlayerIt& CurrentPlayer );
+	bool  IsInRange ( FG_ListElement& Relay,  FG_Player& SendingPlayer );
 	void  SendToCrossfeed ( char* Msg, int Bytes, const netAddress& SenderAddress );
-	void  SendToRelays ( char* Msg, int Bytes, mT_PlayerListIt& SendingPlayer );
+	void  SendToRelays ( char* Msg, int Bytes, FG_Player& SendingPlayer );
 	int   SenderIsKnown ( const string& SenderName, const netAddress& SenderAddress );
+	void  WantExit ();
 }; // FG_SERVER
 
 typedef struct st_telnet

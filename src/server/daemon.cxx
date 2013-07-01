@@ -183,7 +183,7 @@ int cDaemon::Daemonize () // make us a daemon
 	// well, my child, do well!
 	//
 	PidOfDaemon = getpid();
-	SG_ALERT (SG_SYSTEMS, SG_ALERT, "# My PID is " << PidOfDaemon);
+	SG_LOG (SG_SYSTEMS, SG_ALERT, "# My PID is " << PidOfDaemon);
 	setsid ();	// become a session leader
 	// chdir ("/");	// make sure, we're not on a mounted fs
 	umask (0);	// clear the file creation mode
@@ -256,4 +256,3 @@ cDaemon::~cDaemon ()
 }
 #endif // !_MSC_VER
 
-// vim: ts=2:sw=2:sts=0

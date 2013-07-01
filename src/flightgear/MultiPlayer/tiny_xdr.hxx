@@ -60,16 +60,6 @@ xdr_data_t XDR_encode ( TYPE Val )
 
         tmp.raw = Val;
         tmp.encoded = SWAP32(tmp.encoded);
-        if (sizeof (TYPE) < 4)
-        {
-                SG_LOG (SG_IO, SG_DEBUG, "XDR_encode ("
-                  << (int32_t) Val << ") -> " << (int32_t) tmp.encoded);
-        }
-        else
-        {
-                SG_LOG (SG_IO, SG_DEBUG, "XDR_encode ("
-                  << (int32_t) Val << ") -> " << tmp.encoded);
-        }
         return (tmp.encoded);
 }
 
@@ -86,16 +76,6 @@ TYPE XDR_decode ( xdr_data_t Val )
         } tmp;
 
         tmp.encoded = SWAP32(Val);
-        if (sizeof (TYPE) < 4)
-        {
-                SG_LOG (SG_IO, SG_DEBUG, "XDR_decode (" << (int32_t) Val
-                  << ") -> " << (int32_t) tmp.raw);
-        }
-        else
-        {
-                SG_LOG (SG_IO, SG_DEBUG, "XDR_decode (" << (int32_t) Val
-                  << ") -> " << tmp.raw);
-        }
         return (tmp.raw);
 }
 
@@ -113,8 +93,6 @@ xdr_data2_t XDR_encode64 ( TYPE Val )
 
         tmp.raw = Val;
         tmp.encoded = SWAP64(tmp.encoded);
-        SG_LOG (SG_IO, SG_DEBUG, "XDR_encode64 (" << (int32_t) Val << ") -> "
-          << tmp.encoded);
         return (tmp.encoded);
 }
 
@@ -131,8 +109,6 @@ TYPE XDR_decode64 ( xdr_data2_t Val )
         } tmp;
 
         tmp.encoded = SWAP64 (Val);
-        SG_LOG (SG_IO, SG_DEBUG, "XDR_decode64 (" << (int32_t) Val << ") -> "
-          << tmp.raw);
         return (tmp.raw);
 }
 
@@ -158,8 +134,6 @@ NET_encode8 ( TYPE Val )
         } tmp;
 
         tmp.raw = Val;
-        SG_LOG (SG_IO, SG_DEBUG, "NET_encode8 (" << (int32_t) Val << ") -> "
-          << (int32_t) tmp.netbyte);
         return (tmp.netbyte);
 }
 
@@ -178,8 +152,6 @@ NET_decode8 ( uint8_t Val )
         } tmp;
 
         tmp.netbyte = Val;
-        SG_LOG (SG_IO, SG_DEBUG, "NET_decode8 (" << (int32_t) Val << ") -> "
-          << (int32_t) tmp.raw);
         return (tmp.raw);
 }
 
@@ -198,8 +170,6 @@ NET_encode16 ( TYPE Val )
 
         tmp.raw = Val;
         tmp.netbyte = SWAP16(tmp.netbyte);
-        SG_LOG (SG_IO, SG_DEBUG, "NET_encode16 (" << Val << ") -> "
-          << tmp.netbyte);
         return (tmp.netbyte);
 }
 
@@ -217,8 +187,6 @@ NET_decode16 ( uint16_t Val )
         } tmp;
 
         tmp.netbyte = SWAP16(Val);
-        SG_LOG (SG_IO, SG_DEBUG, "NET_decode16 (" << Val << ") -> "
-          << tmp.raw);
         return (tmp.raw);
 }
 
@@ -237,8 +205,6 @@ NET_encode32 ( TYPE Val )
 
         tmp.raw = Val;
         tmp.netbyte = SWAP32(tmp.netbyte);
-        SG_LOG (SG_IO, SG_DEBUG, "NET_encode32 (" << Val << ") -> "
-          << tmp.netbyte);
         return (tmp.netbyte);
 }
 
@@ -256,8 +222,6 @@ NET_decode32 ( uint32_t Val )
         } tmp;
 
         tmp.netbyte = SWAP32(Val);
-        SG_LOG (SG_IO, SG_DEBUG, "NET_decode32 (" << Val << ") -> "
-          << tmp.raw);
         return (tmp.raw);
 }
 
@@ -276,8 +240,6 @@ NET_encode64 ( TYPE Val )
 
         tmp.raw = Val;
         tmp.netbyte = SWAP64(tmp.netbyte);
-        SG_LOG (SG_IO, SG_DEBUG, "NET_encode64 (" << Val << ") -> "
-          << tmp.netbyte);
         return (tmp.netbyte);
 }
 
@@ -295,8 +257,6 @@ NET_decode64 ( uint64_t Val )
         } tmp;
 
         tmp.netbyte = SWAP64(Val);
-        SG_LOG (SG_IO, SG_DEBUG, "NET_decode64 (" << Val << ") -> "
-          << tmp.raw);
         return (tmp.raw);
 }
 

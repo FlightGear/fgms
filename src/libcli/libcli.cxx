@@ -642,6 +642,7 @@ CLI::CLI
 	this->cpp_enable_callback	= 0;
 	this->print_callback	= 0;
 	this->from_socket = false;
+	this->lines_out = 0;
 	int i;
 	for ( i = 0; i < MAX_HISTORY; i++ )
 	{
@@ -725,12 +726,6 @@ void
 CLI::destroy
 ()
 {
-	if ( this->from_socket == false )  // read from stdin
-	{
-#ifndef _MSC_VER
-		( void ) tcsetattr ( fileno ( stdin ), TCSANOW, &OldModes );
-#endif
-	}
 }
 
 void
@@ -1431,6 +1426,7 @@ CLI::show_prompt
 	{
 		len += write ( sockfd, this->modestring, strlen ( this->modestring ) );
 	}
+	this->lines_out = 0;
 	return len + write ( sockfd, this->promptchar, strlen ( this->promptchar ) );
 }
 
@@ -1441,8 +1437,7 @@ CLI::setup_terminal ()
 #ifndef _MSC_VER
 	struct termios NewModes;
 	setbuf ( stdin, ( char* ) 0 );
-	(void) tcgetattr (fileno (stdin), &OldModes);
-	NewModes = OldModes;
+	(void) tcgetattr (fileno (stdin), &NewModes);
 	NewModes.c_lflag &= ~ ( ICANON );
 	NewModes.c_lflag &= ~ ( ECHO | ECHOE | ECHOK );
 	NewModes.c_lflag |= ECHONL;
@@ -1492,6 +1487,7 @@ CLI::loop
 	{
 		error ( "%s", this->banner );
 	}
+	my_sock = sockfd;
 	/* start off in unprivileged mode */
 	set_privilege ( LIBCLI::UNPRIVILEGED );
 	set_configmode ( LIBCLI::MODE_EXEC, NULL );
@@ -1527,10 +1523,12 @@ CLI::loop
 			fd_set r;
 			if ( this->showprompt )
 			{
+			#if 0
 				if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
 				{
 					write ( sockfd, "\r\n", 2 );
 				}
+			#endif
 				switch ( this->state )
 				{
 				case STATE_LOGIN:
@@ -1843,8 +1841,7 @@ CLI::loop
 					continue;
 				}
 				num_completions = get_completions ( cmd, completions, 128 );
-				// if ( num_completions )
-					this->showprompt = 1;
+				this->showprompt = 1;
 				if ( num_completions == 1 )
 				{	// Single completion
 					for ( ; l > 0; l--, cursor-- )
@@ -1859,7 +1856,10 @@ CLI::loop
 					l += strlen ( completions[0] );
 					cmd[l++] = ' ';
 					cursor = l;
+					write ( sockfd, "\r\n", 2 );
 				}
+				if ( num_completions == 0 )
+					write ( sockfd, "\r\n", 2 );
 				continue;
 			}
 			/* history */
@@ -2105,6 +2105,7 @@ CLI::loop
 				error ( "-ok-" );
 				this->state = STATE_NORMAL;
 				error ("type '?' or 'help' for help.");
+				error (" ");
 			}
 			else
 			{
@@ -2146,6 +2147,7 @@ CLI::loop
 			}
 			if ( allowed )
 			{
+				error ( "-ok-" );
 				this->state = LIBCLI::STATE_ENABLE;
 				set_privilege ( LIBCLI::PRIVILEGED );
 			}
@@ -2336,7 +2338,39 @@ CLI::vabufprint
 	_print ( PRINT_BUFFERED, format, ap );
 }
 
-void
+int
+CLI::pager
+()
+{
+	unsigned char c;
+	bool done = false;
+	const char* more_msg = "--- more ---";
+	write (my_sock, more_msg, strlen(more_msg));
+	c = ' ';
+	while ( done == false )
+	{
+		read ( my_sock, &c, 1 );
+		if (c == 'q')
+		{
+			this->lines_out = 0;
+			write (my_sock, "\r", 1);
+			return 1;
+		}
+		if (c == ' ')
+		{
+			this->lines_out = 0;
+			done = true;
+		}
+		if (c == '\r')
+		{
+			done = true;
+		}
+	}
+	write (my_sock, "\r", 1);
+	return 0;
+}
+
+int
 CLI::print
 (
         const char* format,
@@ -2347,7 +2381,16 @@ CLI::print
 	va_list ap;
 	va_start ( ap, format );
 	_print ( PRINT_FILTERED, format, ap );
+	this->lines_out++;
+	// ask for a key after 20 lines of output
+	// FIXME: make this configurable
+	if (this->lines_out > 20)
+	{
+		if (pager ())
+			return 1;
+	}
 	va_end ( ap );
+	return 0;
 }
 
 void

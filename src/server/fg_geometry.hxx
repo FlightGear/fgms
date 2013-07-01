@@ -110,5 +110,3 @@ void sgGeodToCart(double lat, double lon, double alt, double* xyz);
 
 #endif
 
-// vim: ts=2:sw=2:sts=0
-

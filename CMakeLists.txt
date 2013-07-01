@@ -156,7 +156,6 @@ set( fg_server_SRCS
     src/server/fg_server.cxx 
     src/server/fg_tracker.cxx 
     src/server/fg_config.cxx 
-    src/server/fg_common.cxx 
     src/server/fg_list.cxx 
     src/server/fg_cli.cxx 
     src/server/daemon.cxx 

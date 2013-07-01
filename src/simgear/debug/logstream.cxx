@@ -26,11 +26,12 @@
 #include "logstream.hxx"
 #include "stdio.h"
 
-logstream *global_logstream = NULL;
+logstream* global_logstream = NULL;
 
+bool            logbuf::console_enabled = false;
 bool            logbuf::logging_enabled = true;
 #ifdef _MSC_VER
-   bool         logbuf::has_console = true;
+bool         logbuf::has_console = true;
 #endif
 sgDebugClass    logbuf::logClass        = SG_NONE;
 sgDebugPriority logbuf::logPriority     = SG_INFO;
@@ -38,88 +39,117 @@ streambuf*      logbuf::sbuf            = NULL;
 
 logbuf::logbuf()
 {
-//     if ( sbuf == NULL )
-// 	sbuf = cerr.rdbuf();
 }
 
 logbuf::~logbuf()
 {
-    if ( sbuf )
-	    sync();
+	if ( sbuf )
+	{
+		sync();
+	}
 }
 
 void
-logbuf::set_sb( streambuf* sb )
+logbuf::set_sb ( streambuf* sb )
 {
-    if ( sbuf )
-	    sync();
-
-    sbuf = sb;
+	if ( sbuf )
+	{
+		sync();
+	}
+	sbuf = sb;
 }
 
 void
-logbuf::set_log_level( sgDebugClass c, sgDebugPriority p )
+logbuf::set_log_level ( sgDebugClass c, sgDebugPriority p )
 {
-    logClass = c;
-    logPriority = p;
+	logClass = c;
+	logPriority = p;
 }
 
 void
-logbuf::set_log_classes (sgDebugClass c)
+logbuf::set_log_classes ( sgDebugClass c )
 {
-    logClass = c;
+	logClass = c;
+}
+
+void
+logbuf::enable_log_class ( sgDebugClass c )
+{
+	int l = (int) logClass;
+	l |= c;
+	logClass = (sgDebugClass) l;
+}
+
+void
+logbuf::disable_log_class ( sgDebugClass c )
+{
+	int l = (int) logClass;
+	l &= ~c;
+	logClass = (sgDebugClass) l;
 }
 
 sgDebugClass
 logbuf::get_log_classes ()
 {
-    return logClass;
+	return logClass;
 }
 
 void
-logbuf::set_log_priority (sgDebugPriority p)
+logbuf::set_log_priority ( sgDebugPriority p )
 {
-    logPriority = p;
+	logPriority = p;
 }
 
 sgDebugPriority
 logbuf::get_log_priority ()
 {
-    return logPriority;
+	return logPriority;
+}
+
+
+void
+logstream::enable_log_class ( sgDebugClass c )
+{
+	logbuf::enable_log_class ( c );
+}
+
+void
+logstream::disable_log_class ( sgDebugClass c )
+{
+	logbuf::disable_log_class ( c );
+}
+
+void
+logstream::setLogLevels ( sgDebugClass c, sgDebugPriority p )
+{
+	logbuf::set_log_level ( c, p );
 }
 
 string
 logstream::datestr ( void )
 {
-    if (with_date == false)
-    {
-        return "";
-    }
-    time_t  date;
-    struct tm *tmr;
-    char buf[64];
-
-    if (userdatestr)
-    {
-        string msg = (*userdatestr)();
-        msg += " ";
-            return msg;
-    }
-    date = time(0);
-    tmr = localtime(&date);
-    sprintf (buf, "%02d.%02d.%04d %02d:%02d:%02d ",
-        tmr->tm_mday,
-        tmr->tm_mon+1,
-        tmr->tm_year+1900,
-        tmr->tm_hour,
-        tmr->tm_min,
-        tmr->tm_sec);
-    return (string)buf;
-}
-
-void
-logstream::setLogLevels( sgDebugClass c, sgDebugPriority p )
-{
-    logbuf::set_log_level( c, p );
+	if ( with_date == false )
+	{
+		return "";
+	}
+	time_t  date;
+	struct tm* tmr;
+	char buf[64];
+	if ( userdatestr )
+	{
+		string msg = ( *userdatestr ) ();
+		msg += " ";
+		return msg;
+	}
+	date = time ( 0 );
+	tmr = localtime ( &date );
+	sprintf ( buf, "%02d.%02d.%04d %02d:%02d:%02d ",
+	          tmr->tm_mday,
+	          tmr->tm_mon+1,
+	          tmr->tm_year+1900,
+	          tmr->tm_hour,
+	          tmr->tm_min,
+	          tmr->tm_sec );
+	return ( string ) buf;
 }
 

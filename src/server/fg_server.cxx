@@ -107,6 +107,9 @@ extern void SigHUPHandler ( int SigType );
 #endif // #ifdef USE_TRACKER_PORT
 
 #ifdef ADD_TRACKER_LOG
+
+// FIXME: use SG_LOG !
+
 static void write_time_string ( FILE* file )
 {
 	time_t Timestamp = time ( 0 );
@@ -169,7 +172,10 @@ void write_msg_log ( const char* msg, int len, char* src )
  */
 /** @brief Constructor */
 FG_SERVER::FG_SERVER
-() : m_BlackList("Blacklist")
+() : m_CrossfeedList("Crossfeed"),
+     m_BlackList("Blacklist"),
+     m_RelayList("Relays"),
+     m_PlayerList("Users")
 {
 	typedef union
 	{
@@ -184,7 +190,6 @@ FG_SERVER::FG_SERVER
 	m_ListenPort          = 5000; // port for client connections
 	m_PlayerExpires       = 10; // standard expiration period
 	m_Listening           = false;
-	m_Loglevel            = SG_INFO;
 	m_DataSocket          = 0;
 	m_TelnetPort          = m_ListenPort+1;
 	m_AdminPort           = m_ListenPort+2;
@@ -192,7 +197,6 @@ FG_SERVER::FG_SERVER
 	m_PlayerIsOutOfReach  = 100;  // standard 100 nm
 	m_NumCurrentClients   = 0;
 	m_IsParent            = false;
-	m_MaxClientID         = 0;
 	m_ServerName          = "* Server *";
 	m_BindAddress         = "";
 	tmp                   = ( converter* ) ( & PROTO_VER );
@@ -206,6 +210,7 @@ FG_SERVER::FG_SERVER
 	// clear stats - should show what type of packet was received
 	m_PacketsReceived     = 0;
 	m_TelnetReceived      = 0;
+	m_AdminReceived		= 0;
 	m_BlackRejected       = 0;  // in black list
 	m_PacketsInvalid      = 0;  // invalid packet
 	m_UnknownRelay        = 0;  // unknown relay
@@ -228,8 +233,13 @@ FG_SERVER::FG_SERVER
 	m_TrackerConnect      = 0;
 	m_TrackerDisconnect   = 0;
 	m_TrackerPostion      = 0; // Tracker messages queued
-	SetLoglevel (SG_BULK);
-	pthread_mutex_init ( &m_PlayerMutex, 0 );
+	m_Uptime		= time(0);
+	m_WantExit		= false;
+	// SetLog (SG_FGMS|SG_FGTRACKER, SG_BULK);
+	SetLog (SG_FGMS|SG_FGTRACKER, SG_INFO);
+#ifndef _MSC_VER
+	(void) tcgetattr (fileno (stdin), &OldModes);
+#endif
 } // FG_SERVER::FG_SERVER()
 
 //////////////////////////////////////////////////////////////////////
@@ -240,6 +250,9 @@ FG_SERVER::~FG_SERVER
 ()
 {
 	Done();
+#ifndef _MSC_VER
+	( void ) tcsetattr ( fileno ( stdin ), TCSANOW, &OldModes );
+#endif
 } // FG_SERVER::~FG_SERVER()
 
 //////////////////////////////////////////////////////////////////////
@@ -261,7 +274,7 @@ FG_SERVER::Init
 	if ( !m_LogFile )
 	{
 		m_LogFile.open ( m_LogFileName.c_str(), ios::out|ios::app );
-		sglog().setLogLevels ( SG_ALL, SG_INFO );
+		sglog().setLogLevels ( SG_FGMS, SG_INFO );
 		sglog().enable_with_date ( true );
 		sglog().set_output ( m_LogFile );
 	}
@@ -291,7 +304,7 @@ FG_SERVER::Init
 		m_DataSocket = new netSocket();
 		if ( m_DataSocket->open ( false ) == 0 ) // UDP-Socket
 		{
-			SG_ALERT ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
+			SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
 			           << "failed to create listener socket" );
 			return ( ERROR_CREATE_SOCKET );
 		}
@@ -299,9 +312,9 @@ FG_SERVER::Init
 		m_DataSocket->setSockOpt ( SO_REUSEADDR, true );
 		if ( m_DataSocket->bind ( m_BindAddress.c_str(), m_ListenPort ) != 0 )
 		{
-			SG_ALERT ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
+			SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
 			           << "failed to bind to port " << m_ListenPort );
-			SG_ALERT ( SG_SYSTEMS, SG_ALERT, "already in use?" );
+			SG_LOG ( SG_FGMS, SG_ALERT, "already in use?" );
 			return ( ERROR_COULDNT_BIND );
 		}
 		m_ReinitData = false;
@@ -319,7 +332,7 @@ FG_SERVER::Init
 			m_TelnetSocket = new netSocket;
 			if ( m_TelnetSocket->open ( true ) == 0 ) // TCP-Socket
 			{
-				SG_ALERT ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
+				SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
 				           << "failed to create telnet socket" );
 				return ( ERROR_CREATE_SOCKET );
 			}
@@ -327,14 +340,14 @@ FG_SERVER::Init
 			m_TelnetSocket->setSockOpt ( SO_REUSEADDR, true );
 			if ( m_TelnetSocket->bind ( m_BindAddress.c_str(), m_TelnetPort ) != 0 )
 			{
-				SG_ALERT ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
+				SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
 				           << "failed to bind to port " << m_TelnetPort );
-				SG_ALERT ( SG_SYSTEMS, SG_ALERT, "already in use?" );
+				SG_LOG ( SG_FGMS, SG_ALERT, "already in use?" );
 				return ( ERROR_COULDNT_BIND );
 			}
 			if ( m_TelnetSocket->listen ( MAX_TELNETS ) != 0 )
 			{
-				SG_ALERT ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
+				SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
 				           << "failed to listen to telnet port" );
 				return ( ERROR_COULDNT_LISTEN );
 			}
@@ -354,7 +367,7 @@ FG_SERVER::Init
 			m_AdminSocket = new netSocket;
 			if ( m_AdminSocket->open ( true ) == 0 ) // TCP-Socket
 			{
-				SG_ALERT ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
+				SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
 				           << "failed to create admin socket" );
 				return ( ERROR_CREATE_SOCKET );
 			}
@@ -362,53 +375,54 @@ FG_SERVER::Init
 			m_AdminSocket->setSockOpt ( SO_REUSEADDR, true );
 			if ( m_AdminSocket->bind ( m_BindAddress.c_str(), m_AdminPort ) != 0 )
 			{
-				SG_ALERT ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
+				SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
 				           << "failed to bind to port " << m_AdminPort );
-				SG_ALERT ( SG_SYSTEMS, SG_ALERT, "already in use?" );
+				SG_LOG ( SG_FGMS, SG_ALERT, "already in use?" );
 				return ( ERROR_COULDNT_BIND );
 			}
 			if ( m_AdminSocket->listen ( MAX_TELNETS ) != 0 )
 			{
-				SG_ALERT ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::Init() - "
+				SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
 				           << "failed to listen to admin port" );
 				return ( ERROR_COULDNT_LISTEN );
 			}
 		}
 		m_ReinitAdmin = false;
 	}
-	SG_ALERT ( SG_SYSTEMS, SG_ALERT, "# This is " << m_ServerName );
-	SG_ALERT ( SG_SYSTEMS, SG_ALERT, "# FlightGear Multiplayer Server v"
+	SG_CONSOLE (SG_FGMS, SG_ALERT, "# This is " << m_ServerName );
+	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# FlightGear Multiplayer Server v"
 	           << VERSION << " started" );
-	SG_ALERT ( SG_SYSTEMS, SG_ALERT, "# using protocol version v"
+	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# using protocol version v"
 	           << m_ProtoMajorVersion << "." << m_ProtoMinorVersion
 	           << " (LazyRelay enabled)" );
+	SG_CONSOLE ( SG_FGMS, SG_ALERT,"# listening to port " << m_ListenPort );
+	SG_CONSOLE ( SG_FGMS, SG_ALERT,"# telnet port " << m_TelnetPort );
+	SG_CONSOLE ( SG_FGMS, SG_ALERT,"# admin port " << m_AdminPort );
+	SG_CONSOLE ( SG_FGMS, SG_ALERT,"# using logfile " << m_LogFileName );
 	if ( m_BindAddress != "" )
 	{
-		SG_ALERT ( SG_SYSTEMS, SG_ALERT,"# listening on " << m_BindAddress );
+		SG_CONSOLE ( SG_FGMS, SG_ALERT,"# listening on " << m_BindAddress );
 	}
-	SG_ALERT ( SG_SYSTEMS, SG_ALERT,"# listening to port " << m_ListenPort );
-	SG_ALERT ( SG_SYSTEMS, SG_ALERT,"# telnet port " << m_TelnetPort );
-	SG_ALERT ( SG_SYSTEMS, SG_ALERT,"# using logfile " << m_LogFileName );
 	if ( m_IamHUB )
 	{
-		SG_ALERT ( SG_SYSTEMS, SG_ALERT, "# I am a HUB Server" );
+		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# I am a HUB Server" );
 	}
 	if ( m_IsTracked )
 	{
 		if ( m_Tracker->InitTracker ( &m_TrackerPID ) )
 		{
-			SG_ALERT ( SG_SYSTEMS, SG_ALERT, "# InitTracker FAILED! Disabling tracker!" );
+			SG_CONSOLE ( SG_FGMS, SG_ALERT, "# InitTracker FAILED! Disabling tracker!" );
 			m_IsTracked = false;
 		}
 		else
 		{
 #ifdef USE_TRACKER_PORT
-			SG_ALERT ( SG_SYSTEMS, SG_ALERT, "# tracked to "
+			SG_CONSOLE ( SG_FGMS, SG_ALERT, "# tracked to "
 			           << m_Tracker->GetTrackerServer ()
 			           << ":" << m_Tracker->GetTrackerPort ()
 			           << ", using a thread." );
 #else // #ifdef USE_TRACKER_PORT
-			SG_ALERT ( SG_SYSTEMS, SG_ALERT, "# tracked to "
+			SG_CONSOLE ( SG_FGMS, SG_ALERT, "# tracked to "
 			           << m_Tracker->GetTrackerServer ()
 			           << ":" << m_Tracker->GetTrackerPort () );
 #endif // #ifdef USE_TRACKER_PORT y/n
@@ -416,25 +430,38 @@ FG_SERVER::Init
 	}
 	else
 	{
-		SG_ALERT ( SG_SYSTEMS, SG_ALERT, "# tracking is disabled." );
+		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# tracking is disabled." );
 	}
-	SG_ALERT ( SG_SYSTEMS, SG_ALERT, "# I have " << m_RelayList.size() << " relays" );
-	mT_RelayListIt CurrentRelay = m_RelayList.begin();
-	while ( CurrentRelay != m_RelayList.end() )
+	size_t Count;
+	FG_ListElement Entry("");
+	//////////////////////////////////////////////////
+	// print list of all relays
+	//////////////////////////////////////////////////
+	Count = m_RelayList.Size();
+	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# I have " << Count << " relays" );
+	for (size_t i = 0; i < Count; i++)
 	{
-		SG_ALERT ( SG_SYSTEMS, SG_ALERT, "# relay " << CurrentRelay->Name );
-		CurrentRelay++;
+		Entry = m_RelayList[i];
+		if (Entry.ID == FG_ListElement::NONE_EXISTANT)
+			continue;
+		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# relay " << Entry.Name
+		           << ":" << Entry.Address.getPort() );
 	}
-	SG_ALERT ( SG_SYSTEMS, SG_ALERT, "# I have " << m_CrossfeedList.size() << " crossfeeds" );
-	mT_RelayListIt CurrentCrossfeed = m_CrossfeedList.begin();
-	while ( CurrentCrossfeed != m_CrossfeedList.end() )
+	//////////////////////////////////////////////////
+	// print list of all crossfeeds
+	//////////////////////////////////////////////////
+	Count = m_CrossfeedList.Size();
+	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# I have " << Count << " crossfeeds" );
+	for (size_t i = 0; i < Count; i++)
 	{
-		SG_ALERT ( SG_SYSTEMS, SG_ALERT, "# crossfeed " << CurrentCrossfeed->Name
-		           << ":" << CurrentCrossfeed->Address.getPort() );
-		CurrentCrossfeed++;
+		Entry = m_CrossfeedList[i];
+		if (Entry.ID == FG_ListElement::NONE_EXISTANT)
+			continue;
+		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# crossfeed " << Entry.Name
+		           << ":" << Entry.Address.getPort() );
 	}
-	SG_ALERT ( SG_SYSTEMS, SG_ALERT, "# I have " << m_BlackList.Size() << " blacklisted IPs" );
-	SG_ALERT ( SG_SYSTEMS, SG_ALERT, "# Files: exit=[" << exit_file << "] stat=[" << stat_file << "]" );
+	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# I have " << m_BlackList.Size() << " blacklisted IPs" );
+	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# Files: exit=[" << exit_file << "] stat=[" << stat_file << "]" );
 	m_Listening = true;
 	return ( SUCCESS );
 } // FG_SERVER::Init()
@@ -447,11 +474,11 @@ void
 FG_SERVER::PrepareInit
 ()
 {
-	SG_ALERT ( SG_SYSTEMS, SG_ALERT, "# caught SIGHUP, doing reinit!" );
-	m_RelayList.clear ();
+	SG_LOG ( SG_FGMS, SG_ALERT, "# caught SIGHUP, doing reinit!" );
+	m_RelayList.Clear ();
 	m_BlackList.Clear ();
-	m_RelayMap.clear ();
-	m_CrossfeedList.clear ();
+	m_CrossfeedList.Clear ();
+	m_RelayMap.clear ();	// clear(): is a std::map (NOT a FG_List)
 } // FG_SERVER::PrepareInit ()
 //////////////////////////////////////////////////////////////////////
 
@@ -483,6 +510,14 @@ admin_helper
 	return 0;
 }
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Handle an admin session. 
+ *
+ * If a telnet connection to the admin port is established, a new FG_CLI
+ * instance is created.
+ * @param Fd -- docs todo --
+ */
 void*
 FG_SERVER::HandleAdmin
 (
@@ -543,19 +578,17 @@ FG_SERVER::HandleTelnet
 	{
 		if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror ( errno ) );
+			SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror ( errno ) );
 		}
 		return ( 0 );
 	}
-	pthread_mutex_lock ( & m_PlayerMutex );
-	Message  = "# "+ NumToStr ( m_PlayerList.size(), 0 );
-	pthread_mutex_unlock ( & m_PlayerMutex );
+	Message  = "# "+ NumToStr ( m_PlayerList.Size(), 0 );
 	Message += " pilot(s) online\n";
 	if ( NewTelnet.send ( Message.c_str(),Message.size(), MSG_NOSIGNAL ) < 0 )
 	{
 		if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror ( errno ) );
+			SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror ( errno ) );
 		}
 		return ( 0 );
 	}
@@ -567,18 +600,15 @@ FG_SERVER::HandleTelnet
 	it = 0;
 	for ( ;; )
 	{
-		pthread_mutex_lock ( & m_PlayerMutex );
-		if ( it < m_PlayerList.size() )
+		if ( it < m_PlayerList.Size() )
 		{
 			CurrentPlayer = m_PlayerList[it];
 			it++;
 		}
 		else
 		{
-			pthread_mutex_unlock ( & m_PlayerMutex );
 			break;
 		}
-		pthread_mutex_unlock ( & m_PlayerMutex );
 		sgCartToGeod ( CurrentPlayer.LastPos, PlayerPosGeod );
 		Message = CurrentPlayer.Name + "@";
 		if ( CurrentPlayer.IsLocal )
@@ -616,7 +646,7 @@ FG_SERVER::HandleTelnet
 		{
 			if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 			{
-				SG_LOG ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror ( errno ) );
+				SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::HandleTelnet() - " << strerror ( errno ) );
 			}
 			return ( 0 );
 		}
@@ -639,46 +669,39 @@ void
 FG_SERVER::AddBadClient
 (
         const netAddress& Sender,
-        string&     ErrorMsg,
-        bool      IsLocal
+        string&	ErrorMsg,
+        bool	IsLocal
 )
 {
-	string                  Message;
-	FG_Player               NewPlayer;
-	mT_PlayerListIt         CurrentPlayer;
-	CurrentPlayer = m_PlayerList.begin();
+	string		Message;
+	FG_Player	NewPlayer;
+	PlayerIt	CurrentPlayer;
 	//////////////////////////////////////////////////
 	//      see, if we already know the client
 	//////////////////////////////////////////////////
-	while ( CurrentPlayer != m_PlayerList.end() )
+	m_PlayerList.Lock ();
+	CurrentPlayer = m_PlayerList.Find (Sender);
+	if ( CurrentPlayer != m_PlayerList.End () )
 	{
-		if ( CurrentPlayer->Address.getIP() == Sender.getIP() )
-		{
-			CurrentPlayer->LastSeen = time ( 0 );
-			return;
-		}
-		CurrentPlayer++;
+		CurrentPlayer->LastSeen = time ( 0 );
+		m_PlayerList.Unlock();
+		return;
 	}
+	m_PlayerList.Unlock();
 	//////////////////////////////////////////////////
 	//      new client, send an error message
 	//////////////////////////////////////////////////
-	m_MaxClientID++;
 	NewPlayer.Name      = "* Bad Client *";
 	NewPlayer.ModelName     = "* unknown *";
-	NewPlayer.LastSeen      = time ( 0 );
-	NewPlayer.JoinTime      = NewPlayer.LastSeen;
 	NewPlayer.Origin        = Sender.getHost ();
 	NewPlayer.Address       = Sender;
 	NewPlayer.IsLocal       = IsLocal;
 	NewPlayer.HasErrors     = true;
 	NewPlayer.Error         = ErrorMsg;
-	NewPlayer.ClientID      = m_MaxClientID;
 	NewPlayer.LastRelayedToInactive = 0;
-	SG_LOG ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::AddBadClient() - " << ErrorMsg );
-	pthread_mutex_lock ( & m_PlayerMutex );
-	m_PlayerList.push_back ( NewPlayer );
+	SG_LOG ( SG_FGMS, SG_WARN, "FG_SERVER::AddBadClient() - " << ErrorMsg );
+	m_PlayerList.Add (NewPlayer, 0);
 	m_NumCurrentClients++;
-	pthread_mutex_unlock ( & m_PlayerMutex );
 } // FG_SERVER::AddBadClient ()
 
 //////////////////////////////////////////////////////////////////////
@@ -694,41 +717,33 @@ FG_SERVER::AddClient
         char* Msg
 )
 {
-	time_t          Timestamp;
-	//uint32_t        MsgLen;
-	//uint32_t        MsgId;
-	uint32_t        MsgMagic;
-	string          Message;
-	string          Origin;
-	T_MsgHdr*       MsgHdr;
-	T_PositionMsg*  PosMsg;
-	FG_Player       NewPlayer;
-	bool    IsLocal;
-	Timestamp           = time ( 0 );
-	MsgHdr              = ( T_MsgHdr* ) Msg;
-	PosMsg              = ( T_PositionMsg* ) ( Msg + sizeof ( T_MsgHdr ) );
-	//MsgId               = XDR_decode<uint32_t> (MsgHdr->MsgId);
-	//MsgLen              = XDR_decode<uint32_t> (MsgHdr->MsgLen);
-	MsgMagic            = XDR_decode<uint32_t> ( MsgHdr->Magic );
-	IsLocal             = true;
+	uint32_t	MsgMagic;
+	string		Message;
+	string		Origin;
+	T_MsgHdr*	MsgHdr;
+	T_PositionMsg*	PosMsg;
+	FG_Player	NewPlayer;
+	bool		IsLocal;
+	MsgHdr		= ( T_MsgHdr* ) Msg;
+	PosMsg		= ( T_PositionMsg* ) ( Msg + sizeof ( T_MsgHdr ) );
+	MsgMagic	= XDR_decode<uint32_t> ( MsgHdr->Magic );
+	IsLocal		= true;
 	if ( MsgMagic == RELAY_MAGIC ) // not a local client
 	{
 		IsLocal = false;
 	}
-	NewPlayer.Name  = MsgHdr->Name;
+	NewPlayer.Name	    = MsgHdr->Name;
 	NewPlayer.Passwd    = "test"; //MsgHdr->Passwd;
 	NewPlayer.ModelName = "* unknown *";
-	NewPlayer.LastSeen = Timestamp;
-	NewPlayer.JoinTime  = Timestamp;
 	NewPlayer.Origin    = Sender.getHost ();
 	NewPlayer.HasErrors = false;
 	NewPlayer.Address   = Sender;
 	NewPlayer.IsLocal   = IsLocal;
+	NewPlayer.PktsRcvd = 0;
+	NewPlayer.PktsSent = 0;
+	NewPlayer.LastRelayedToInactive = 0;
 	NewPlayer.LastPos.clear();
 	NewPlayer.LastOrientation.clear();
-	NewPlayer.PktsRcvdFrom = 0;
-	NewPlayer.PktsSentTo       = 0;
-	NewPlayer.LastRelayedToInactive = 0;
 	NewPlayer.LastPos.Set (
 	        XDR_decode64<double> ( PosMsg->position[X] ),
 	        XDR_decode64<double> ( PosMsg->position[Y] ),
@@ -740,12 +755,7 @@ FG_SERVER::AddClient
 	        XDR_decode<float> ( PosMsg->orientation[Z] )
 	);
 	NewPlayer.ModelName = PosMsg->Model;
-	m_MaxClientID++;
-	NewPlayer.ClientID = m_MaxClientID;
-
-	pthread_mutex_lock ( & m_PlayerMutex );
-	m_PlayerList.push_back ( NewPlayer );
-	pthread_mutex_unlock ( & m_PlayerMutex );
+	m_PlayerList.Add ( NewPlayer, m_PlayerExpires );
 	m_NumCurrentClients++;
 	if ( m_NumCurrentClients > m_NumMaxClients )
 	{
@@ -770,7 +780,7 @@ FG_SERVER::AddClient
 			Origin = Relay->second;
 		}
 	}
-	SG_LOG ( SG_SYSTEMS, SG_INFO, Message
+	SG_LOG ( SG_FGMS, SG_INFO, Message
 	         << NewPlayer.Name << " "
 	         << Origin << ":" << Sender.getPort()
 	         << " (" << NewPlayer.ModelName << ")"
@@ -792,27 +802,43 @@ FG_SERVER::AddRelay
         int Port
 )
 {
-	mT_Relay        NewRelay;
+	FG_ListElement  B (Server);
 	unsigned int    IP;
-	NewRelay.Name = Server;
-	NewRelay.Address.set ( ( char* ) Server.c_str(), Port );
-	IP = NewRelay.Address.getIP();
-	if ( IP != INADDR_ANY && IP != INADDR_NONE )
+
+	B.Address.set ( ( char* ) Server.c_str(), Port );
+	IP = B.Address.getIP();
+	if ( IP == INADDR_ANY || IP == INADDR_NONE )
 	{
-		m_RelayList.push_back ( NewRelay );
-		string S;
+		SG_LOG ( SG_FGMS, SG_ALERT,
+		  "AddRelays: FAILED on " << Server << ", port " << Port );
+		return;
+	}
+	m_RelayList.Lock ();
+	ItList CurrentEntry = m_RelayList.Find ( B.Address, "" );
+	m_RelayList.Unlock ();
+	if ( CurrentEntry == m_RelayList.End() )
+	{	
+		m_RelayList.Add (B, 0);
+	}
+	string S;
+	if (B.Address.getHost() == Server)
+	{
+		S = Server;
+	}
+	else
+	{
 		unsigned I;
-		I = NewRelay.Name.find ( "." );
+		I = Server.find ( "." );
 		if ( I != string::npos )
 		{
-			S = NewRelay.Name.substr ( 0, I );
+			S = Server.substr ( 0, I );
 		}
 		else
 		{
-			S = NewRelay.Name;
+			S = Server;
 		}
-		m_RelayMap[NewRelay.Address.getIP()] = S;
 	}
+	m_RelayMap[B.Address.getIP()] = S;
 } // FG_SERVER::AddRelay()
 
 //////////////////////////////////////////////////////////////////////
@@ -828,7 +854,6 @@ FG_SERVER::AddCrossfeed
         int Port
 )
 {
-	mT_Relay        NewRelay;
 	unsigned int    IP;
 	string s = Server;
 #ifdef _MSC_VER
@@ -837,16 +862,20 @@ FG_SERVER::AddCrossfeed
 		s = "127.0.0.1";
 	}
 #endif // _MSC_VER
-	NewRelay.Name = s;
-	NewRelay.Address.set ( ( char* ) s.c_str(), Port );
-	IP = NewRelay.Address.getIP();
-	if ( IP != INADDR_ANY && IP != INADDR_NONE )
+	FG_ListElement B (s);
+	B.Address.set ( ( char* ) s.c_str(), Port );
+	IP = B.Address.getIP();
+	if ( IP == INADDR_ANY || IP == INADDR_NONE )
 	{
-		m_CrossfeedList.push_back ( NewRelay );
+		SG_LOG ( SG_FGMS, SG_ALERT, "AddCrossfeed: FAILED on " << Server << ", port " << Port );
+		return;
 	}
-	else
-	{
-		SG_ALERT ( SG_SYSTEMS, SG_ALERT, "AddCrossfeed: FAILED on " << Server << ", port " << Port );
+	m_CrossfeedList.Lock ();
+	ItList CurrentEntry = m_CrossfeedList.Find ( B.Address, "" );
+	m_CrossfeedList.Unlock ();
+	if ( CurrentEntry == m_CrossfeedList.End() )
+	{	
+		m_CrossfeedList.Add (B, 0);
 	}
 } // FG_SERVER::AddCrossfeed()
 
@@ -910,7 +939,9 @@ FG_SERVER::AddBlacklist
 
 	FG_ListElement B (Reason);
 	B.Address.set (DottedIP.c_str(), 0);
+	m_BlackList.Lock ();
 	ItList CurrentEntry = m_BlackList.Find ( B.Address, "" );
+	m_BlackList.Unlock ();
 	if ( CurrentEntry == m_BlackList.End() )
 	{	// FIXME: every list has its own standard TTL
 		m_BlackList.Add (B, Timeout);
@@ -925,7 +956,7 @@ FG_SERVER::AddBlacklist
 void
 FG_SERVER::DropClient
 (
-        mT_PlayerListIt& CurrentPlayer
+        PlayerIt& CurrentPlayer
 )
 {
 	string Origin;
@@ -948,17 +979,15 @@ FG_SERVER::DropClient
 		Origin = "LOCAL";
 	}
 	m_NumCurrentClients--;
-	SG_LOG ( SG_SYSTEMS, SG_INFO, "TTL exceeded, dropping pilot "
+	SG_LOG ( SG_FGMS, SG_INFO, "TTL exceeded, dropping pilot "
 	         << CurrentPlayer->Name << "@" << Origin
 	         << "  after " << time ( 0 )-CurrentPlayer->JoinTime << " seconds."
-	         << "  Usage #packets in: " << CurrentPlayer->PktsRcvdFrom
-	         << " out: " << CurrentPlayer->PktsSentTo
+	         << "  Usage #packets in: " << CurrentPlayer->PktsRcvd
+	         << " out: " << CurrentPlayer->PktsSent
 	         << ". Current clients: "
 	         << m_NumCurrentClients << " max: " << m_NumMaxClients
 	       );
-	pthread_mutex_lock ( & m_PlayerMutex );
-	CurrentPlayer = m_PlayerList.erase ( CurrentPlayer );
-	pthread_mutex_unlock ( & m_PlayerMutex );
+	CurrentPlayer = m_PlayerList.Delete ( CurrentPlayer );
 } // FG_SERVER::DropClient ()
 //////////////////////////////////////////////////////////////////////
 
@@ -971,23 +1000,25 @@ FG_SERVER::DropClient
 bool
 FG_SERVER::IsKnownRelay
 (
-        const netAddress& SenderAddress
+        const netAddress& SenderAddress,
+	size_t Bytes
 )
 {
-	mT_RelayListIt  CurrentRelay = m_RelayList.begin();
-	while ( CurrentRelay != m_RelayList.end() )
+	ItList CurrentEntry;
+	m_RelayList.Lock ();
+	CurrentEntry = m_RelayList.Find ( SenderAddress, "" );
+	if ( CurrentEntry != m_RelayList.End() )
 	{
-		if ( CurrentRelay->Address.getIP() == SenderAddress.getIP() )
-		{
-			return ( true );
-		}
-		CurrentRelay++;
+		m_RelayList.UpdateRcvd (CurrentEntry, Bytes);
+		m_RelayList.Unlock ();
+		return true;
 	}
+	m_RelayList.Unlock ();
 	string ErrorMsg;
 	ErrorMsg  = SenderAddress.getHost();
 	ErrorMsg += " is not a valid relay!";
 	AddBlacklist ( SenderAddress.getHost(), "not a valid relay" );
-	SG_LOG ( SG_SYSTEMS, SG_ALERT, "UNKNOWN RELAY: " << ErrorMsg );
+	SG_LOG ( SG_FGMS, SG_ALERT, "UNKNOWN RELAY: " << ErrorMsg );
 	return ( false );
 } // FG_SERVER::IsKnownRelay ()
 //////////////////////////////////////////////////////////////////////
@@ -1091,30 +1122,20 @@ FG_SERVER::SendToCrossfeed
 	T_MsgHdr*       MsgHdr;
 	uint32_t        MsgMagic;
 	int             sent;
+	ItList		Entry;
 	MsgHdr    = ( T_MsgHdr* ) Msg;
 	MsgMagic  = MsgHdr->Magic;
 	MsgHdr->Magic = XDR_encode<uint32_t> ( RELAY_MAGIC );
 	// pass on senders address and port to crossfeed server
 	MsgHdr->ReplyAddress = XDR_encode<uint32_t> ( SenderAddress.getIP() );
 	MsgHdr->ReplyPort = XDR_encode<uint32_t> ( SenderAddress.getPort() );
-	mT_RelayListIt CurrentCrossfeed = m_CrossfeedList.begin();
-	while ( CurrentCrossfeed != m_CrossfeedList.end() )
+	m_CrossfeedList.Lock();
+	for (Entry = m_CrossfeedList.Begin(); Entry != m_CrossfeedList.End(); Entry++)
 	{
-		//if (CurrentCrossfeed->Address.getIP() != SenderAddress.getIP())
-		//{
-		sent = m_DataSocket->sendto ( Msg, Bytes, 0, &CurrentCrossfeed->Address );
-		if ( SERROR ( sent ) )
-		{
-			PERROR ( "sendto crossfeed failed!" );
-			m_CrossFeedFailed++;
-		}
-		else
-		{
-			m_CrossFeedSent++;
-		}
-		//}
-		CurrentCrossfeed++;
+		sent = m_DataSocket->sendto ( Msg, Bytes, 0, &Entry->Address );
+		m_CrossfeedList.UpdateSent (Entry, sent);
 	}
+	m_CrossfeedList.Unlock();
 	MsgHdr->Magic = MsgMagic;  // restore the magic value
 } // FG_SERVER::SendToCrossfeed ()
 //////////////////////////////////////////////////////////////////////
@@ -1128,15 +1149,16 @@ FG_SERVER::SendToRelays
 (
         char* Msg,
         int Bytes,
-        mT_PlayerListIt& SendingPlayer
+        FG_Player& SendingPlayer
 )
 {
 	T_MsgHdr*       MsgHdr;
 	uint32_t        MsgMagic;
 	unsigned int    PktsForwarded = 0;
-	mT_RelayListIt  CurrentRelay;
+	ItList		CurrentRelay;
 	time_t          Now;
-	if ( ( ! SendingPlayer->IsLocal ) && ( ! m_IamHUB ) )
+
+	if ( (! SendingPlayer.IsLocal ) && ( ! m_IamHUB ) )
 	{
 		return;
 	}
@@ -1144,24 +1166,27 @@ FG_SERVER::SendToRelays
 	MsgHdr    = ( T_MsgHdr* ) Msg;
 	MsgMagic  = XDR_decode<uint32_t> ( MsgHdr->Magic );
 	MsgHdr->Magic = XDR_encode<uint32_t> ( RELAY_MAGIC );
-	bool UpdateInactive = ( Now - SendingPlayer->LastRelayedToInactive ) > UPDATE_INACTIVE_PERIOD;
+	bool UpdateInactive = ( Now - SendingPlayer.LastRelayedToInactive ) > UPDATE_INACTIVE_PERIOD;
 	if ( UpdateInactive )
 	{
-		SendingPlayer->LastRelayedToInactive = Now;
+		SendingPlayer.LastRelayedToInactive = Now;
 	}
-	CurrentRelay = m_RelayList.begin();
-	while ( CurrentRelay != m_RelayList.end() )
+	m_RelayList.Lock ();
+	CurrentRelay = m_RelayList.Begin();
+	while ( CurrentRelay != m_RelayList.End() )
 	{
-		if ( UpdateInactive || IsInRange ( *CurrentRelay, *SendingPlayer ) )
+		if ( UpdateInactive || IsInRange ( *CurrentRelay, SendingPlayer ) )
 		{
-			if ( CurrentRelay->Address.getIP() != SendingPlayer->Address.getIP() )
+			if ( CurrentRelay->Address.getIP() != SendingPlayer.Address.getIP() )
 			{
 				m_DataSocket->sendto ( Msg, Bytes, 0, &CurrentRelay->Address );
+				m_RelayList.UpdateSent (CurrentRelay, Bytes);
 				PktsForwarded++;
 			}
 		}
 		CurrentRelay++;
 	}
+	m_RelayList.Unlock ();
 	MsgHdr->Magic = XDR_encode<uint32_t> ( MsgMagic ); // restore the magic value
 } // FG_SERVER::SendToRelays ()
 //////////////////////////////////////////////////////////////////////
@@ -1181,24 +1206,28 @@ FG_SERVER::SenderIsKnown
         const netAddress& SenderAddress
 )
 {
-	mT_PlayerListIt CurrentPlayer;
-	for ( CurrentPlayer = m_PlayerList.begin();
-	                CurrentPlayer != m_PlayerList.end();
-	                CurrentPlayer++ )
+	PlayerIt CurrentPlayer;
+	int	 Ret = 0; // Sender is unkown
+	m_PlayerList.Lock ();
+	for ( CurrentPlayer = m_PlayerList.Begin();
+              CurrentPlayer != m_PlayerList.End();
+              CurrentPlayer++ )
 	{
 		if ( CurrentPlayer->Name == SenderName )
 		{
 			if ( CurrentPlayer->Address.getIP() == SenderAddress.getIP() )
 			{
-				return ( 1 ); // Sender is known
+				Ret = 1 ; // Sender is known
+				break;
 			}
 			// Same callsign, but different IP.
 			// Quietly ignore this packet.
-			return ( 2 );
+			Ret = 2;
+			break;
 		}
 	}
-	// Sender is unkown
-	return ( 0 );
+	m_PlayerList.Unlock ();
+	return Ret;
 } // FG_SERVER::SenderIsKnown ()
 //////////////////////////////////////////////////////////////////////
 
@@ -1221,15 +1250,13 @@ FG_SERVER::HandlePacket
 	T_PositionMsg*  PosMsg;
 	uint32_t        MsgId;
 	uint32_t        MsgMagic;
-	time_t          Timestamp;
 	Point3D         SenderPosition;
 	Point3D         SenderOrientation;
 	Point3D         PlayerPosGeod;
-	mT_PlayerListIt CurrentPlayer;
-	mT_PlayerListIt SendingPlayer;
+	PlayerIt	CurrentPlayer;
+	FG_Player	SendingPlayer;
 	ItList		CurrentEntry;
 	unsigned int    PktsForwarded = 0;
-	Timestamp = time ( 0 );
 	MsgHdr    = ( T_MsgHdr* ) Msg;
 	MsgMagic  = XDR_decode<uint32_t> ( MsgHdr->Magic );
 	MsgId     = XDR_decode<uint32_t> ( MsgHdr->MsgId );
@@ -1245,14 +1272,16 @@ FG_SERVER::HandlePacket
 	//  Now do the local processing
 	//
 	//////////////////////////////////////////////////
+	m_BlackList.Lock ();
 	CurrentEntry = m_BlackList.Find ( SenderAddress, "" );
 	if ( CurrentEntry != m_BlackList.End() )
 	{
-		CurrentEntry->LastSeen = Timestamp;
 		m_BlackList.UpdateRcvd (CurrentEntry, Bytes);
 		m_BlackRejected++;
+		m_BlackList.Unlock ();
 		return;
 	}
+	m_BlackList.Unlock ();
 	if ( ! PacketIsValid ( Bytes, MsgHdr, SenderAddress ) )
 	{
 		m_PacketsInvalid++;
@@ -1260,7 +1289,7 @@ FG_SERVER::HandlePacket
 	}
 	if ( MsgMagic == RELAY_MAGIC ) // not a local client
 	{
-		if ( ! IsKnownRelay ( SenderAddress ) )
+		if ( ! IsKnownRelay ( SenderAddress, Bytes ) )
 		{
 			m_UnknownRelay++;
 			return;
@@ -1328,9 +1357,9 @@ FG_SERVER::HandlePacket
 	//
 	//////////////////////////////////////////////////
 	MsgHdr->Magic = XDR_encode<uint32_t> ( MSG_MAGIC );
-	SendingPlayer = m_PlayerList.end();
-	CurrentPlayer = m_PlayerList.begin();
-	while ( CurrentPlayer != m_PlayerList.end() )
+	m_PlayerList.Lock();
+	CurrentPlayer = m_PlayerList.Begin();
+	while ( CurrentPlayer != m_PlayerList.End() )
 	{
 		//////////////////////////////////////////////////
 		//
@@ -1361,9 +1390,8 @@ FG_SERVER::HandlePacket
 				SenderPosition    = CurrentPlayer->LastPos;
 				SenderOrientation = CurrentPlayer->LastOrientation;
 			}
-			SendingPlayer = CurrentPlayer;
-			CurrentPlayer->LastSeen = Timestamp;
-			CurrentPlayer->PktsRcvdFrom++;
+			SendingPlayer = *CurrentPlayer;
+			CurrentPlayer->UpdateRcvd (Bytes);
 			CurrentPlayer++;
 			continue; // don't send packet back to sender
 		}
@@ -1374,7 +1402,7 @@ FG_SERVER::HandlePacket
 		//      FIXME: MAGIC = SFGF!
 		//////////////////////////////////////////////////
 		if ( ( strncasecmp ( MsgHdr->Name, "obs", 3 ) == 0 )
-		                &&  ( MsgId != CHAT_MSG_ID ) )
+		&&   ( MsgId != CHAT_MSG_ID ) )
 		{
 			return;
 		}
@@ -1385,7 +1413,7 @@ FG_SERVER::HandlePacket
 		//
 		//////////////////////////////////////////////////
 		if ( ( Distance ( SenderPosition, CurrentPlayer->LastPos ) > m_PlayerIsOutOfReach )
-		                &&  ( CurrentPlayer->Name.compare ( 0, 3, "obs", 3 ) != 0 ) )
+		&&   ( CurrentPlayer->Name.compare ( 0, 3, "obs", 3 ) != 0 ) )
 		{
 			CurrentPlayer++;
 			continue;
@@ -1398,17 +1426,17 @@ FG_SERVER::HandlePacket
 		if ( CurrentPlayer->IsLocal )
 		{
 			m_DataSocket->sendto ( Msg, Bytes, 0, &CurrentPlayer->Address );
-			CurrentPlayer->PktsSentTo++;
+			CurrentPlayer->UpdateSent (Bytes);
 			PktsForwarded++;
 		}
-
 		CurrentPlayer++;
 	}
-	if ( SendingPlayer == m_PlayerList.end() )
+	m_PlayerList.Unlock();
+	if ( SendingPlayer.ID == FG_ListElement::NONE_EXISTANT )
 	{
 		// player not yet in our list
 		// should not happen, but test just in case
-		SG_LOG ( SG_SYSTEMS, SG_ALERT, "## BAD => "
+		SG_LOG ( SG_FGMS, SG_ALERT, "## BAD => "
 		         << MsgHdr->Name << ":" << SenderAddress.getHost()
 		         << " : " << SenderIsKnown ( MsgHdr->Name, SenderAddress )
 		       );
@@ -1436,20 +1464,21 @@ void FG_SERVER::Show_Stats ( void )
 	mT_CrossFeedFailed += m_CrossFeedFailed;
 	mT_CrossFeedSent   += m_CrossFeedSent;
 	// output to LOG and cerr channels
-	mT_PlayerListIt CurrentPlayer; // get LOCAL pilot count
 	pilot_cnt = local_cnt = 0;
-	for ( CurrentPlayer = m_PlayerList.begin();
-	                CurrentPlayer != m_PlayerList.end();
-	                CurrentPlayer++ )
+	FG_Player CurrentPlayer; // get LOCAL pilot count
+	pilot_cnt = m_PlayerList.Size ();
+	for (int i = 0; i < pilot_cnt; i++)
 	{
-		pilot_cnt++;
-		if ( CurrentPlayer->IsLocal )
+		CurrentPlayer = m_PlayerList[i];
+		if (CurrentPlayer.ID == FG_ListElement::NONE_EXISTANT)
+			continue;
+		if ( CurrentPlayer.IsLocal )
 		{
 			local_cnt++;
 		}
 	}
-	SG_ALERT ( SG_SYSTEMS, SG_ALERT, "## Pilots: total " << pilot_cnt << ", local " << local_cnt );
-	SG_ALERT ( SG_SYSTEMS, SG_ALERT, "## Since: Packets " <<
+	SG_LOG ( SG_FGMS, SG_ALERT, "## Pilots: total " << pilot_cnt << ", local " << local_cnt );
+	SG_LOG ( SG_FGMS, SG_ALERT, "## Since: Packets " <<
 	           m_PacketsReceived << " BL=" <<
 	           m_BlackRejected << " INV=" <<
 	           m_PacketsInvalid << " UR=" <<
@@ -1460,7 +1489,7 @@ void FG_SERVER::Show_Stats ( void )
 	           m_CrossFeedSent << "/" << m_CrossFeedFailed << " TN=" <<
 	           m_TelnetReceived
 	         );
-	SG_ALERT ( SG_SYSTEMS, SG_ALERT, "## Total: Packets " <<
+	SG_LOG ( SG_FGMS, SG_ALERT, "## Total: Packets " <<
 	           mT_PacketsReceived << " BL=" <<
 	           mT_BlackRejected << " INV=" <<
 	           mT_PacketsInvalid << " UR=" <<
@@ -1489,22 +1518,22 @@ FG_SERVER::check_keyboard
 	struct stat buf;
 	if ( stat ( exit_file,&buf ) == 0 )
 	{
-		SG_LOG ( SG_SYSTEMS, SG_ALERT, "## Got EXIT file : " << exit_file );
+		SG_LOG ( SG_FGMS, SG_ALERT, "## Got EXIT file : " << exit_file );
 		unlink ( exit_file );
 		if ( stat ( exit_file,&buf ) == 0 )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "ERROR: Unable to delete exit file! Doing hard exit..." );
+			SG_LOG ( SG_FGMS, SG_ALERT, "ERROR: Unable to delete exit file! Doing hard exit..." );
 			exit ( 1 );
 		}
 		return 1;
 	}
 	else if ( stat ( reset_file,&buf ) == 0 )
 	{
-		SG_LOG ( SG_SYSTEMS, SG_ALERT, "## Got RESET file " << reset_file );
+		SG_LOG ( SG_FGMS, SG_ALERT, "## Got RESET file " << reset_file );
 		unlink ( reset_file );
 		if ( stat ( reset_file,&buf ) == 0 )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "ERROR: Unable to delete reset file! Doing hard exit..." );
+			SG_LOG ( SG_FGMS, SG_ALERT, "ERROR: Unable to delete reset file! Doing hard exit..." );
 			exit ( 1 );
 		}
 		m_Initialized         = true; // Init() will do it
@@ -1515,11 +1544,11 @@ FG_SERVER::check_keyboard
 	}
 	else if ( stat ( stat_file,&buf ) == 0 )
 	{
-		SG_LOG ( SG_SYSTEMS, SG_ALERT, "## Got STAT file " << stat_file );
+		SG_LOG ( SG_FGMS, SG_ALERT, "## Got STAT file " << stat_file );
 		unlink ( stat_file );
 		if ( stat ( stat_file,&buf ) == 0 )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "ERROR: Unable to delete stat file! Doing hard exit..." );
+			SG_LOG ( SG_FGMS, SG_ALERT, "ERROR: Unable to delete stat file! Doing hard exit..." );
 			exit ( 1 );
 		}
 		Show_Stats();
@@ -1559,6 +1588,18 @@ FG_SERVER::check_keyboard
 
 //////////////////////////////////////////////////////////////////////
 /**
+ * @brief allow the Admin CLI to shut down fgms
+ */
+void
+FG_SERVER::WantExit
+()
+{
+	m_WantExit = true;
+}
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
  * @brief Main loop of the server
  */
 int
@@ -1571,50 +1612,43 @@ FG_SERVER::Loop
 	netSocket*  ListenSockets[3 + MAX_TELNETS];
 	time_t      tick0;
 	time_t      CurrentTime;
-	mT_PlayerListIt fg_Player;
+	PlayerIt    fg_Player;
 	tick0 = time ( 0 );
 	m_IsParent = true;
 	if ( m_Listening == false )
 	{
-		SG_ALERT ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::Loop() - "
+		SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Loop() - "
 		           << "not listening on any socket!" );
 		return ( ERROR_NOT_LISTENING );
 	}
 #ifdef _MSC_VER
-	SG_ALERT ( SG_SYSTEMS, SG_ALERT,  "ESC key to EXIT (after select " << m_PlayerExpires << " sec timeout)." );
+	SG_LOG ( SG_FGMS, SG_ALERT,  "ESC key to EXIT (after select " << m_PlayerExpires << " sec timeout)." );
 #endif
+	if (! RunAsDaemon)
+	{	// Run admin CLI in foreground reading from stdin
+		st_telnet* t = new st_telnet;
+		t->Instance = this;
+		t->Fd       = 0;
+		pthread_t th;
+		pthread_create ( &th, NULL, &admin_helper, t );
+	}
 	//////////////////////////////////////////////////
 	//
 	//      infinite listening loop
 	//
 	//////////////////////////////////////////////////
-	for ( ;; )
+	while ( m_WantExit == false )
 	{
 		CurrentTime = time ( 0 );
 		// Update some things every (default) 10 secondes
 		if ( ( CurrentTime - tick0 ) >= m_UpdateSecs )
 		{
 			tick0 = time ( 0 );
-			if ( m_PlayerList.size() >0 )
+			if ( m_PlayerList.Size() >0 )
 			{
-				//check TTL of the pilots, drop if expired
-				fg_Player = m_PlayerList.begin();
-				while ( fg_Player != m_PlayerList.end() )
-				{
-					//////////////////////////////////////////////////
-					//        Drop fg_Player if last sign of
-					//        life is older than TTL
-					//////////////////////////////////////////////////
-					if ( ( tick0 - fg_Player->LastSeen ) > m_PlayerExpires )
-					{
-						DropClient ( fg_Player );
-						continue;
-					}
-					fg_Player++;
-				}
 				// updates the position of the users
 				// regularly (tracker)
-				UpdateTracker ( string ( "" ),string ( "" ), string ( "" ),tick0,UPDATE );
+				UpdateTracker ( string ( "" ),string ( "" ), string ( "" ),tick0, UPDATE );
 			}
 			if ( check_keyboard() )
 			{
@@ -1626,7 +1660,7 @@ FG_SERVER::Loop
 		ListenSockets[1] = m_TelnetSocket;
 		ListenSockets[2] = m_AdminSocket;
 		ListenSockets[3] = 0;
-		Bytes = m_DataSocket->select ( ListenSockets,0,m_PlayerExpires );
+		Bytes = m_DataSocket->select ( ListenSockets, 0, m_PlayerExpires );
 		if ( Bytes <= 0 )
 		{
 			continue;
@@ -1652,7 +1686,7 @@ FG_SERVER::Loop
 			{
 				if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 				{
-					SG_LOG ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::Loop() - " << strerror ( errno ) );
+					SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Loop() - " << strerror ( errno ) );
 				}
 				continue;
 			}
@@ -1666,16 +1700,18 @@ FG_SERVER::Loop
 		{
 			// something on the wire (admin port)
 			netAddress AdminAddress;
-			m_TelnetReceived++;
+			m_AdminReceived++;
 			int Fd = m_AdminSocket->accept ( &AdminAddress );
 			if ( Fd < 0 )
 			{
 				if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 				{
-					SG_LOG ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::Loop() - " << strerror ( errno ) );
+					SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Loop() - " << strerror ( errno ) );
 				}
 				continue;
 			}
+			SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Loop() - new Admin connection from "
+			  << AdminAddress.getHost());
 			st_telnet* t = new st_telnet;
 			t->Instance = this;
 			t->Fd       = Fd;
@@ -1810,14 +1846,14 @@ FG_SERVER::SetOutOfReach
  * @brief Set the default loglevel
  */
 void
-FG_SERVER::SetLoglevel
+FG_SERVER::SetLog
 (
-        int Loglevel
+        int Facility,
+        int Priority
 )
 {
-	m_Loglevel = ( sgDebugPriority ) Loglevel;
-	sglog().setLogLevels ( SG_ALL, m_Loglevel );
-} // FG_SERVER::SetLoglevel ( int iLoglevel )
+	sglog().setLogLevels ( (sgDebugClass) Facility, (sgDebugPriority) Priority );
+} // FG_SERVER::SetLoglevel ()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -1830,26 +1866,18 @@ FG_SERVER::SetLogfile
         const std::string& LogfileName
 )
 {
-	if ( m_LogFile )
+	m_LogFileName = LogfileName;
+	SG_LOG ( SG_FGMS, SG_ALERT,"# using logfile " << m_LogFileName );
+	#if 0
+	if ( ( m_LogFile ) && (m_LogFile.fd() > 2) )
 	{
 		m_LogFile.close ();
 	}
-	#if 0
-	if (RunAsDaemon == false)
-	{
-		SG_ALERT ( SG_SYSTEMS, SG_ALERT,
-		  "# running in foreground, not using logfile!" );
-		return;
-	}
-	else
-	{
-		SG_ALERT ( SG_SYSTEMS, SG_ALERT,"# using logfile " << m_LogFileName );
-	}
 	#endif
-	m_LogFileName = LogfileName;
 	m_LogFile.open ( m_LogFileName.c_str(), ios::out|ios::app );
 	sglog().enable_with_date ( true );
 	sglog().set_output ( m_LogFile );
+
 } // FG_SERVER::SetLogfile ( const std::string &LogfileName )
 //////////////////////////////////////////////////////////////////////
 
@@ -1916,16 +1944,16 @@ FG_SERVER::Done
 		pid_t kid = m_TrackerPID;
 		if ( kill ( kid, SIGTERM ) )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::Done() kill(" << kid << ", SIGKILL)!" );
+			SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Done() kill(" << kid << ", SIGKILL)!" );
 			kill ( kid, SIGKILL );
 		}
 		else
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::Done() kill(" << kid << ", SIGTERM) return ok." );
+			SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Done() kill(" << kid << ", SIGTERM) return ok." );
 		}
 #endif // #ifdef USE_TRACKER_PORT y/n
 	}
-	SG_LOG ( SG_SYSTEMS, SG_ALERT, "FG_SERVER::Done() - exiting" );
+	SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Done() - exiting" );
 	m_LogFile.close();
 	if ( m_Listening == false )
 	{
@@ -1955,7 +1983,7 @@ FG_SERVER::Done
 		// Remove msg queue
 		// msgctl(m_ipcid,IPC_RMID,NULL);
 	}
-	m_RelayList.clear ();
+	m_RelayList.Clear ();
 	m_BlackList.Clear ();
 	m_Listening = false;
 } // FG_SERVER::Done()
@@ -1977,7 +2005,7 @@ FG_SERVER::UpdateTracker
 {
 #ifndef NO_TRACKER_PORT
 	char            TimeStr[100];
-	mT_PlayerListIt CurrentPlayer;
+	FG_Player	CurrentPlayer;
 	Point3D         PlayerPosGeod;
 	string          Aircraft;
 	string          Message;
@@ -2070,16 +2098,19 @@ FG_SERVER::UpdateTracker
 		return ( 0 );
 	}
 	// we only arrive here if type!=CONNECT and !=DISCONNECT
-	CurrentPlayer = m_PlayerList.begin();
-	while ( CurrentPlayer != m_PlayerList.end() )
+	size_t pilot_cnt = m_PlayerList.Size ();
+	for (size_t i = 0; i < pilot_cnt; i++)
 	{
-		if ( CurrentPlayer->IsLocal )
+		CurrentPlayer = m_PlayerList[i];
+		if (CurrentPlayer.ID == FG_ListElement::NONE_EXISTANT)
+			continue;
+		if ( CurrentPlayer.IsLocal )
 		{
-			sgCartToGeod ( CurrentPlayer->LastPos, PlayerPosGeod );
+			sgCartToGeod ( CurrentPlayer.LastPos, PlayerPosGeod );
 			Message =  "POSITION ";
-			Message += CurrentPlayer->Name;
+			Message += CurrentPlayer.Name;
 			Message += " ";
-			Message += CurrentPlayer->Passwd;
+			Message += CurrentPlayer.Passwd;
 			Message += " ";
 			Message += NumToStr ( PlayerPosGeod[Lat], 6 ) +" "; //lat
 			Message += NumToStr ( PlayerPosGeod[Lon], 6 ) +" "; //lon
@@ -2099,7 +2130,6 @@ FG_SERVER::UpdateTracker
 			m_TrackerPostion++; // count a POSITION messge queued
 		}
 		Message.erase ( 0 );
-		CurrentPlayer++;
 	} // while
 #endif // !NO_TRACKER_PORT
 	return ( 0 );
@@ -2137,20 +2167,23 @@ FG_SERVER::CloseTracker
 bool
 FG_SERVER::IsInRange
 (
-        mT_Relay& Relay,
+        FG_ListElement& Relay,
         FG_Player& SendingPlayer
 )
 {
-	mT_PlayerListIt CurrentPlayer;
-	CurrentPlayer = m_PlayerList.begin();
-	while ( CurrentPlayer != m_PlayerList.end() )
+	FG_Player CurrentPlayer;
+	size_t	 Cnt;
+	Cnt = m_PlayerList.Size ();
+	for (size_t i = 0; i < Cnt; i++)
 	{
-		if ( ( CurrentPlayer->Address == Relay.Address )
-		                && ( Distance ( SendingPlayer.LastPos, CurrentPlayer->LastPos ) <= m_PlayerIsOutOfReach ) )
+		CurrentPlayer = m_PlayerList[i];
+		if (CurrentPlayer.ID == FG_ListElement::NONE_EXISTANT)
+			continue;
+		if ( ( CurrentPlayer.Address == Relay.Address )
+		&& ( Distance ( SendingPlayer.LastPos, CurrentPlayer.LastPos ) <= m_PlayerIsOutOfReach ) )
 		{
 			return true;
 		}
-		CurrentPlayer++;
 	}
 	return false;
 } // FG_SERVER::IsInRange()

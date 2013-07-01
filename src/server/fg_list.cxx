@@ -24,21 +24,24 @@
 #include <simgear/debug/logstream.hxx>
 #include <fg_list.hxx>
 
+const size_t FG_ListElement::NONE_EXISTANT = (size_t) -1;
+
 //////////////////////////////////////////////////////////////////////
 FG_ListElement::FG_ListElement
 (
 	const string& Name
 )
 {
-	ID		= -1;	// flag a non existant Element
+	ID		= NONE_EXISTANT;	// flag a non existant Element
 	Timeout		= 0;
 	this->Name	= Name;
 	JoinTime	= time (0);
 	LastSeen	= JoinTime;
-	PktsSentTo	= 0;
-	PktsRcvdFrom	= 0;
-	BytesRcvdFrom	= 0;
-	BytesSentTo	= 0;
+	LastSent	= JoinTime;
+	PktsSent	= 0;
+	PktsRcvd	= 0;
+	BytesRcvd	= 0;
+	BytesSent	= 0;
 }
 //////////////////////////////////////////////////////////////////////
 
@@ -46,15 +49,16 @@ FG_ListElement::FG_ListElement
 FG_ListElement::FG_ListElement
 ()
 {
-	ID		= -1;	// flag a non existant Element
+	ID		= NONE_EXISTANT;	// flag a non existant Element
 	Timeout		= 0;
 	Name		= "";
 	JoinTime	= time (0);
 	LastSeen	= JoinTime;
-	PktsSentTo	= 0;
-	PktsRcvdFrom	= 0;
-	BytesRcvdFrom	= 0;
-	BytesSentTo	= 0;
+	LastSent	= JoinTime;
+	PktsSent	= 0;
+	PktsRcvd	= 0;
+	BytesRcvd	= 0;
+	BytesSent	= 0;
 }
 //////////////////////////////////////////////////////////////////////
 
@@ -72,7 +76,6 @@ FG_ListElement::FG_ListElement
 FG_ListElement::~FG_ListElement
 ()
 {
-	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_ListElement::~FG_ListElement(" << pthread_self() << ")");
 }
 //////////////////////////////////////////////////////////////////////
 
@@ -94,6 +97,7 @@ FG_ListElement::operator ==
 	const FG_ListElement& P
 )
 {
+	// FIXME: compare the name, too?
 	if (Address == P.Address)
 		return true;
 	return false;
@@ -110,13 +114,14 @@ FG_ListElement::assign
 	ID		= P.ID;
 	Timeout		= P.Timeout;
         Name		= P.Name.c_str();
-        Address         = P.Address;
-        JoinTime        = P.JoinTime;
-        LastSeen        = P.LastSeen;
-        PktsSentTo      = P.PktsSentTo;
-	BytesSentTo	= P.BytesSentTo;
-        PktsRcvdFrom	= P.PktsRcvdFrom;
-	BytesRcvdFrom	= P.BytesRcvdFrom;
+        Address 	= P.Address;
+        JoinTime 	= P.JoinTime;
+        LastSeen	= P.LastSeen;
+        LastSent	= P.LastSent;
+        PktsSent	= P.PktsSent;
+	BytesSent	= P.BytesSent;
+        PktsRcvd	= P.PktsRcvd;
+	BytesRcvd	= P.BytesRcvd;
 }
 //////////////////////////////////////////////////////////////////////
 
@@ -127,8 +132,9 @@ FG_ListElement::UpdateSent
 	size_t bytes
 )
 {
-	PktsSentTo++;
-	BytesSentTo += bytes;
+	PktsSent++;
+	BytesSent += bytes;
+	LastSent = time(0);
 }
 //////////////////////////////////////////////////////////////////////
 
@@ -139,8 +145,9 @@ FG_ListElement::UpdateRcvd
 	size_t bytes
 )
 {
-	PktsRcvdFrom++;
-	BytesRcvdFrom += bytes;
+	PktsRcvd++;
+	BytesRcvd += bytes;
+	LastSeen = time(0);
 }
 //////////////////////////////////////////////////////////////////////
 
@@ -148,13 +155,32 @@ FG_ListElement::UpdateRcvd
 FG_Player::FG_Player
 ()
 {
+	Name		= "";
+	JoinTime	= time (0);
+	LastSeen	= JoinTime;
+        LastSent        = 0;
         Passwd          = "";
         ModelName       = "";
-        JoinTime        = 0;
-        LastSeen        = 0;
         Error           = "";
         HasErrors       = false;
-        ClientID        = 0;
+        LastRelayedToInactive   = 0;
+}
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+FG_Player::FG_Player
+(
+	const string& Name
+)
+{
+	this->Name	= Name;
+	JoinTime	= time (0);
+	LastSeen	= JoinTime;
+        LastSent        = 0;
+        Passwd          = "";
+        ModelName       = "";
+        Error           = "";
+        HasErrors       = false;
         LastRelayedToInactive   = 0;
 }
 //////////////////////////////////////////////////////////////////////
@@ -173,7 +199,6 @@ FG_Player::FG_Player
 FG_Player::~FG_Player
 ()
 {
-	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_Player::~FG_Player(" << pthread_self() << ") - " << this->Name);
 }
 //////////////////////////////////////////////////////////////////////
 
@@ -208,7 +233,6 @@ FG_Player::assign
 	const FG_Player& P
 )
 {
-	//SG_LOG (SG_SYSTEMS, SG_ALERT, "FG_Player::assign(" << pthread_self() << ") - " << P.Name);
 	//
 	// using str.c_str() here to prevent copy-on-write in std::string!
 	//
@@ -218,224 +242,12 @@ FG_Player::assign
         ModelName       = P.ModelName.c_str();
         JoinTime        = P.JoinTime;
         LastSeen        = P.LastSeen ;
+        LastSent        = P.LastSent ;
         LastPos         = P.LastPos;
         IsLocal         = P.IsLocal;
         Error           = P.Error.c_str();
         HasErrors       = P.HasErrors;
-        ClientID        = P.ClientID;
         LastOrientation         = P.LastOrientation;
         LastRelayedToInactive   = P.LastRelayedToInactive;
 }
 //////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-FG_List::FG_List
-(
-	const string& Name
-)
-{
-	pthread_mutex_init ( &m_ListMutex, 0 );
-	this->Name = Name;
-	PktsSent	= 0;
-	BytesSent	= 0;
-	PktsRcvd	= 0;
-	BytesRcvd	= 0;
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-FG_List::~FG_List
-()
-{
-	Clear ();
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-size_t
-FG_List::Size
-()
-{
-	int size;
-	pthread_mutex_lock ( & m_ListMutex );
-	size = Elements.size ();
-	pthread_mutex_unlock ( & m_ListMutex );
-	return size;
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-size_t
-FG_List::Add
-(
-	FG_ListElement& Element,
-	time_t TTL
-)
-{
-	this->MaxID++;
-	Element.ID = this->MaxID;
-	Element.Timeout = TTL;
-	pthread_mutex_lock ( & m_ListMutex );
-	Elements.push_back ( Element );
-	pthread_mutex_unlock ( & m_ListMutex );
-	return this->MaxID++;
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-ItList
-FG_List::Delete
-(
-	const ItList& Element
-)
-{
-	ItList E;
-	pthread_mutex_lock   ( & m_ListMutex );
-	E = Elements.erase   ( Element );
-	pthread_mutex_unlock ( & m_ListMutex );
-	return (E);
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-ItList
-FG_List::Find
-(
-	const netAddress& Address,
-	const string& Name
-)
-{
-	ItList Element;
-	ItList RetElem;
-
-	this->LastRun = time (0);
-	RetElem = Elements.end();
-	pthread_mutex_lock ( & m_ListMutex );
-	Element = Elements.begin();
-	while (Element != Elements.end())
-	{
-		if (Element->Address == Address)
-		{
-			if (Name != "") 
-			{
-				if (Element->Name == Name)
-					RetElem = Element;
-			}
-			else
-			{
-				RetElem = Element;
-			}
-		}
-		else
-		{
-			if (Element->Timeout == 0)
-			{	// never times out
-				Element++;
-				continue;
-			}
-			if ( (this->LastRun - Element->LastSeen) > Element->Timeout )
-			{
-				SG_LOG ( SG_SYSTEMS, SG_INFO,
-				  this->Name << ": TTL exceeded for "
-				  << Element->Address.getHost() << " " << Element->Name);
-				Element = Elements.erase (Element);
-				continue;
-			}
-		}
-		Element++;
-	}
-	pthread_mutex_unlock ( & m_ListMutex );
-	return RetElem;
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-ItList
-FG_List::FindByID
-(
-	size_t ID
-)
-{
-	ItList Element;
-	ItList RetElem;
-	this->LastRun = time (0);
-	RetElem = Elements.end();
-	pthread_mutex_lock ( & m_ListMutex );
-	Element = Elements.begin();
-	while (Element != Elements.end())
-	{
-		if (Element->ID == ID)
-		{
-			RetElem = Element;
-			break;
-		}
-		Element++;
-	}
-	pthread_mutex_unlock ( & m_ListMutex );
-	return RetElem;
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-ItList
-FG_List::End
-()
-{
-	return Elements.end ();
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-FG_ListElement
-FG_List::operator []
-(
-	const size_t& Index
-)
-{
-	FG_ListElement RetElem("");
-	pthread_mutex_lock ( & m_ListMutex );
-	if (Index < Elements.size ())
-		RetElem = Elements[Index];
-	pthread_mutex_unlock ( & m_ListMutex );
-	return RetElem;
-}
-//////////////////////////////////////////////////////////////////////
-
-
-//////////////////////////////////////////////////////////////////////
-void
-FG_List::UpdateSent
-(
-	ItList& Element,
-	size_t bytes
-)
-{
-	PktsSent++;
-	BytesSent += bytes;
-	Element->UpdateSent (bytes);
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-void
-FG_List::UpdateRcvd
-(
-	ItList& Element,
-	size_t bytes
-)
-{
-	PktsRcvd++;
-	BytesRcvd += bytes;
-	Element->UpdateRcvd (bytes);
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-void
-FG_List::Clear
-()
-{
-	Elements.clear ();
-}
-//////////////////////////////////////////////////////////////////////
-

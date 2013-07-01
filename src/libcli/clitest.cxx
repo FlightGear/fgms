@@ -109,6 +109,9 @@ int main( int argc, char** argv )
         int s, x;
         struct sockaddr_in addr;
 	int on = 1;
+#ifndef _MSC_VER
+	struct termios  OldModes;
+#endif
 
         signal(SIGCHLD, SIG_IGN);
 
@@ -123,8 +126,13 @@ int main( int argc, char** argv )
 		printf("Login with fred/fred, enable with 'fred'\n");
 		while (1)
 		{
+#ifndef _MSC_VER
+			( void ) tcgetattr ( fileno (stdin), &OldModes );
+#endif
 			cli->loop (0);  // stdin
-			cli->destroy ();
+#ifndef _MSC_VER
+			( void ) tcsetattr ( fileno ( stdin ), TCSANOW, &OldModes );
+#endif
 			exit (0);
 		}
 	}

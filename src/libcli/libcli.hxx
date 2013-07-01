@@ -25,7 +25,7 @@ public:
 		unp* next;
 	};
 
-private:
+protected:
 	int     match_filter_init ( int argc, char** argv, filter_t* filt );
 	int     range_filter_init ( int argc, char** argv, filter_t* filt );
 	int     count_filter_init ( int argc, char** argv, filter_t* filt );
@@ -54,8 +54,10 @@ private:
 	int     internal_dump ( char* command, char* argv[], int argc );
 	int     int_configure_terminal ( UNUSED ( char* command ), UNUSED ( char* argv[] ), UNUSED ( int argc ) );
 	void    unregister_all ( Command<CLI> *command );
+	int	pager ();
 	bool	from_socket;
-	struct termios OldModes;
+	int	my_sock;
+	size_t	lines_out;
 
 public:
 
@@ -117,7 +119,7 @@ public:
 	int     set_configmode ( int mode, const char* config_desc );
 	void    reprompt();
 	void    regular ( int ( *callback ) () );
-	void    print ( const char* format, ... ) __attribute__ ( ( format ( printf, 2, 3 ) ) );
+	int     print ( const char* format, ... ) __attribute__ ( ( format ( printf, 2, 3 ) ) );
 	void    bufprint ( const char* format, ... ) __attribute__ ( ( format ( printf, 2, 3 ) ) );
 	void    vabufprint ( const char* format, va_list ap );
 	void    error ( const char* format, ... ) __attribute__ ( ( format ( printf, 2, 3 ) ) );
