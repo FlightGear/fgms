@@ -61,7 +61,7 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <string>
-#include "../server/typcnvt.hxx"
+#include <fg_util.hxx>
 
 /**
  * @class netAddress

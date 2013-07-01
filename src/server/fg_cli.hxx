@@ -84,10 +84,6 @@ private:
 	//  utility functions
 	//////////////////////////////////////////////////
 	bool need_help (char* argv);
-	std::string timestamp_to_datestr ( time_t date );
-	std::string timestamp_to_days ( time_t date );
-	std::string byte_counter ( uint64 bytes );
-
 };
 
 #endif

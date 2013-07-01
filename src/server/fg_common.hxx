@@ -262,10 +262,4 @@ extern void write_msg_log(const char *msg, int len, char *src = 0); // write to 
     #define PERROR(a) perror(a) 
 #endif
 
-#ifndef _MSC_VER
-	typedef long long uint64;
-#else
-	typedef INT64 uint64;
-#endif
-
 #endif // #ifndef __common_hxx

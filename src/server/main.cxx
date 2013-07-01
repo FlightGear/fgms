@@ -42,7 +42,7 @@
 #include "fg_server.hxx"
 #include "fg_config.hxx"
 #include "daemon.hxx"
-#include "typcnvt.hxx"
+#include "fg_util.hxx"
 
 using namespace std;
 /*DEF_TRACKER_CHILDS (Was 3 but now set to 1 due to a bug on unproper handling of out-of-sequence messages)*/

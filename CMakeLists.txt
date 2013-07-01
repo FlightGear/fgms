@@ -158,12 +158,13 @@ set( fg_server_SRCS
     src/server/fg_config.cxx 
     src/server/fg_list.cxx 
     src/server/fg_cli.cxx 
+    src/server/fg_util.cxx 
     src/server/daemon.cxx 
     src/server/fg_geometry.cxx )
 set( fg_server_HDRS  src/server/fg_server.hxx src/server/fg_tracker.hxx 
     src/server/fg_config.hxx src/server/fg_list.hxx 
     src/server/fg_cli.hxx
-    src/server/daemon.hxx src/server/typcnvt.hxx 
+    src/server/daemon.hxx src/server/fg_util.hxx 
     src/server/fg_common.hxx )
 add_library( fg_server ${LIB_TYPE} ${fg_server_SRCS} ${fg_server_HDRS} )
 # NO INSTALL [noinst_LIBRARIES]

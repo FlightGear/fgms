@@ -42,7 +42,7 @@
 #include <unistd.h>
 #include "fg_common.hxx"
 #include "fg_tracker.hxx"
-#include "typcnvt.hxx"
+#include "fg_util.hxx"
 #include <simgear/debug/logstream.hxx>
 #include "daemon.hxx"
 #include <libcli/debug.hxx>

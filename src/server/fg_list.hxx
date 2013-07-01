@@ -288,7 +288,7 @@ mT_FG_List<T>::Find
 				SG_LOG ( SG_FGMS, SG_INFO,
 				  this->Name << ": TTL exceeded for "
 				  << Element->Address.getHost() << " " << Element->Name
-				  << " after " << (Element->LastSeen - Element->JoinTime) << " seconds"
+				  << " after " << diff_to_days (Element->LastSeen - Element->JoinTime)
 				  );
 				Element = Elements.erase (Element);
 				continue;

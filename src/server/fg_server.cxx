@@ -49,7 +49,7 @@
 
 #include "fg_server.hxx"    /* includes pthread.h */
 #include "fg_common.hxx"
-#include "typcnvt.hxx"
+#include "fg_util.hxx"
 #include "fg_cli.hxx"
 
 #ifdef _MSC_VER
