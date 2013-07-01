@@ -1193,46 +1193,6 @@ FG_SERVER::SendToRelays
 
 //////////////////////////////////////////////////////////////////////
 /**
- * @brief Look if we know the sending client
- * @return
- *       - 0: Sender is unknown
- *       - 1: Sender is known
- *       - 2: Sender is known, but has a different IP
- */
-int
-FG_SERVER::SenderIsKnown
-(
-        const string& SenderName,
-        const netAddress& SenderAddress
-)
-{
-	PlayerIt CurrentPlayer;
-	int	 Ret = 0; // Sender is unkown
-	m_PlayerList.Lock ();
-	for ( CurrentPlayer = m_PlayerList.Begin();
-              CurrentPlayer != m_PlayerList.End();
-              CurrentPlayer++ )
-	{
-		if ( CurrentPlayer->Name == SenderName )
-		{
-			if ( CurrentPlayer->Address.getIP() == SenderAddress.getIP() )
-			{
-				Ret = 1 ; // Sender is known
-				break;
-			}
-			// Same callsign, but different IP.
-			// Quietly ignore this packet.
-			Ret = 2;
-			break;
-		}
-	}
-	m_PlayerList.Unlock ();
-	return Ret;
-} // FG_SERVER::SenderIsKnown ()
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-/**
  * @brief Handle client connections
  * @param Msg
  * @param Bytes
@@ -1332,8 +1292,9 @@ FG_SERVER::HandlePacket
 	//    Add Client to list if its not known
 	//
 	//////////////////////////////////////////////////
-	int ClientInList = SenderIsKnown ( MsgHdr->Name, SenderAddress );
-	if ( ClientInList == 0 )
+	m_PlayerList.Lock();
+	CurrentPlayer = m_PlayerList.Find ( SenderAddress, MsgHdr->Name );
+	if (CurrentPlayer == m_PlayerList.End () )
 	{
 		// unknown, add to the list
 		if ( MsgId != POS_DATA_ID )
@@ -1342,11 +1303,6 @@ FG_SERVER::HandlePacket
 			return;
 		}
 		AddClient ( SenderAddress, Msg );
-	}
-	else if ( ClientInList == 2 )
-	{
-		// known, but different IP => ignore
-		return;
 	}
 	//////////////////////////////////////////
 	//
@@ -1357,7 +1313,6 @@ FG_SERVER::HandlePacket
 	//
 	//////////////////////////////////////////////////
 	MsgHdr->Magic = XDR_encode<uint32_t> ( MSG_MAGIC );
-	m_PlayerList.Lock();
 	CurrentPlayer = m_PlayerList.Begin();
 	while ( CurrentPlayer != m_PlayerList.End() )
 	{
@@ -1438,7 +1393,6 @@ FG_SERVER::HandlePacket
 		// should not happen, but test just in case
 		SG_LOG ( SG_FGMS, SG_ALERT, "## BAD => "
 		         << MsgHdr->Name << ":" << SenderAddress.getHost()
-		         << " : " << SenderIsKnown ( MsgHdr->Name, SenderAddress )
 		       );
 		return;
 	}

@@ -215,7 +215,6 @@ protected:
 	bool  IsInRange ( FG_ListElement& Relay,  FG_Player& SendingPlayer );
 	void  SendToCrossfeed ( char* Msg, int Bytes, const netAddress& SenderAddress );
 	void  SendToRelays ( char* Msg, int Bytes, FG_Player& SendingPlayer );
-	int   SenderIsKnown ( const string& SenderName, const netAddress& SenderAddress );
 	void  WantExit ();
 }; // FG_SERVER
 
