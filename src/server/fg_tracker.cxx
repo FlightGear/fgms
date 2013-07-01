@@ -78,7 +78,6 @@
 #endif
 
 extern bool RunAsDaemon;
-static bool AddDebug = DEF_DEBUG_OUTPUT;
 
 //////////////////////////////////////////////////////////////////////
 /**
