@@ -1294,6 +1294,7 @@ FG_SERVER::HandlePacket
 	//////////////////////////////////////////////////
 	m_PlayerList.Lock();
 	CurrentPlayer = m_PlayerList.Find ( SenderAddress, MsgHdr->Name );
+	m_PlayerList.Unlock();
 	if (CurrentPlayer == m_PlayerList.End () )
 	{
 		// unknown, add to the list
@@ -1313,6 +1314,7 @@ FG_SERVER::HandlePacket
 	//
 	//////////////////////////////////////////////////
 	MsgHdr->Magic = XDR_encode<uint32_t> ( MSG_MAGIC );
+	m_PlayerList.Lock();
 	CurrentPlayer = m_PlayerList.Begin();
 	while ( CurrentPlayer != m_PlayerList.End() )
 	{
