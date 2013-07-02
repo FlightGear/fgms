@@ -1,3 +1,22 @@
+//                                                                                                                           
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License as
+// published by the Free Software Foundation; either version 2 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
+//
+// derived from libcli by David Parrish (david@dparrish.com)
+// Copyright (C) 2011  Oliver Schroeder
+//
+
 #include <exception>
 #include <stdio.h>
 #include <errno.h>
@@ -2238,106 +2257,6 @@ CLI::file
 	return LIBCLI::OK;
 }
 
-void
-CLI::_print
-(
-        int print_mode,
-        const char* format,
-        va_list ap
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	static char* buffer;
-	static int size, len;
-	char* p;
-	int n;
-	buffer = this->buffer;
-	size = this->buf_size;
-	len = strlen ( buffer );
-	while ( ( n = vsnprintf ( buffer+len, size-len, format, ap ) ) >= size-len )
-	{
-		if ( ! ( buffer = ( char* ) realloc ( buffer, size += 1024 ) ) )
-		{
-			return;
-		}
-		this->buffer = buffer;
-		this->buf_size = size;
-	}
-	if ( n < 0 ) // vaprintf failed
-	{
-		return;
-	}
-	p = buffer;
-	do
-	{
-		char* next = strchr ( p, '\n' );
-		filter_t* f = ( print_mode&PRINT_FILTERED ) ? this->filters : 0;
-		int print = 1;
-		if ( next )
-		{
-			*next++ = 0;
-		}
-		else if ( print_mode&PRINT_BUFFERED )
-		{
-			break;
-		}
-		while ( print && f )
-		{
-			print = ( f->exec ( *this, p, f->data ) == LIBCLI::OK );
-			f = f->next;
-		}
-		if ( print )
-		{
-			if ( this->print_callback )
-			{
-				this->print_callback ( p );
-			}
-			else if ( this->client )
-			{
-				fprintf ( this->client, "%s\r\n", p );
-			}
-		}
-		p = next;
-	}
-	while ( p );
-	if ( p && *p )
-	{
-		if ( p != buffer )
-		{
-			bcopy ( p, buffer, strlen ( p ) );
-		}
-	}
-	else
-	{
-		*buffer = 0;
-	}
-}
-
-void
-CLI::bufprint
-(
-        const char* format,
-        ...
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	va_list ap;
-	va_start ( ap, format );
-	_print ( PRINT_BUFFERED|PRINT_FILTERED, format, ap );
-	va_end ( ap );
-}
-
-void
-CLI::vabufprint
-(
-        const char* format,
-        va_list ap
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	_print ( PRINT_BUFFERED, format, ap );
-}
-
 int
 CLI::pager
 ()
@@ -2371,7 +2290,91 @@ CLI::pager
 }
 
 int
-CLI::print
+CLI::_print
+(
+        int print_mode,
+        const char* format,
+        va_list ap
+)
+{
+	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
+	static char* buffer;
+	static int size, len;
+	char* p;
+	int n;
+	buffer = this->buffer;
+	size = this->buf_size;
+	len = strlen ( buffer );
+	while ( ( n = vsnprintf ( buffer+len, size-len, format, ap ) ) >= size-len )
+	{
+		if ( ! ( buffer = ( char* ) realloc ( buffer, size += 1024 ) ) )
+		{
+			return 0;
+		}
+		this->buffer = buffer;
+		this->buf_size = size;
+	}
+	if ( n < 0 ) // vaprintf failed
+	{
+		return 0;
+	}
+	p = buffer;
+	do
+	{
+		char* next = strchr ( p, '\n' );
+		filter_t* f = ( print_mode&PRINT_FILTERED ) ? this->filters : 0;
+		int print = 1;
+		if ( next )
+		{
+			*next++ = 0;
+		}
+		else if ( print_mode&PRINT_BUFFERED )
+		{
+			break;
+		}
+		while ( print && f )
+		{
+			print = ( f->exec ( *this, p, f->data ) == LIBCLI::OK );
+			f = f->next;
+		}
+		if ( print )
+		{
+			if ( this->print_callback )
+			{
+				this->print_callback ( p );
+			}
+			else if ( this->client )
+			{
+				fprintf ( this->client, "%s\r\n", p );
+			}
+			this->lines_out++;
+			// ask for a key after 20 lines of output
+			// FIXME: make this configurable
+			if (this->lines_out > 20)
+			{
+				if (pager ())
+					return 1;
+			}
+		}
+		p = next;
+	}
+	while ( p );
+	if ( p && *p )
+	{
+		if ( p != buffer )
+		{
+			bcopy ( p, buffer, strlen ( p ) );
+		}
+	}
+	else
+	{
+		*buffer = 0;
+	}
+	return 0;
+}
+
+void
+CLI::bufprint
 (
         const char* format,
         ...
@@ -2380,15 +2383,35 @@ CLI::print
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	va_list ap;
 	va_start ( ap, format );
-	_print ( PRINT_FILTERED, format, ap );
-	this->lines_out++;
-	// ask for a key after 20 lines of output
-	// FIXME: make this configurable
-	if (this->lines_out > 20)
-	{
-		if (pager ())
-			return 1;
-	}
+	_print ( PRINT_BUFFERED|PRINT_FILTERED, format, ap );
+	va_end ( ap );
+}
+
+void
+CLI::vabufprint
+(
+        const char* format,
+        va_list ap
+)
+{
+	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
+	_print ( PRINT_BUFFERED, format, ap );
+}
+
+int
+CLI::print
+(
+        const char* format,
+        ...
+)
+{
+	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
+	int n;
+	va_list ap;
+	va_start ( ap, format );
+	n = _print ( PRINT_FILTERED, format, ap );
+	if (n)
+		return n;
 	va_end ( ap );
 	return 0;
 }

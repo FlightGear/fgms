@@ -1,0 +1,21 @@
+libcli emulates a cisco style telnet command-line interface.
+
+Get help by entering "help" or hitting ?.
+
+libcli provides support for using the arrow keys for command-line editing.
+Up and Down arrows will cycle through the command history, and Left & Right
+can be used for editing the current command line.
+libcli also works out the shortest way of entering a command, so if you
+have a command "show users grep foobar" defined, you can enter "sh us g
+foobar" if that is the shortest possible way of doing it.
+
+Enter "sh?" at the command line to get a list of commands starting with
+"sh"
+
+A few commands are defined in every libcli program:
+help
+quit
+exit
+logout
+history
+

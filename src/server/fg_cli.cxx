@@ -364,7 +364,7 @@ FG_CLI::cmd_fgms_die
 		return (0);
 	}
 	fgms->m_WantExit = true;
-	internal_quit (command, argv, argc);
+	CLI::internal_quit (command, argv, argc);
 	return 0;
 }
 
