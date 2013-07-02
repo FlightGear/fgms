@@ -527,6 +527,10 @@ FG_SERVER::HandleAdmin
 	MyCLI = new FG_CLI ( this );
 	MyCLI->loop ( Fd );
 	MyCLI->done ();
+	if (Fd == 0)
+	{	// reading from stdin
+		WantExit();
+	}
 	return ( 0 );
 }
 
