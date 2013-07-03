@@ -175,13 +175,13 @@ protected:
 	//  statistics
 	//
 	//////////////////////////////////////////////////
-	size_t		m_PacketsReceived; // rw data packet received
-	size_t		m_BlackRejected;  // in black list
-	size_t		m_PacketsInvalid; // invalid packet
-	size_t		m_UnknownRelay; // unknown relay
-	size_t		m_RelayMagic; // known relay packet
-	size_t		m_PositionData;   // position data packet
-	size_t		m_NotPosData;     // packet NOT pos data
+	size_t		m_PacketsReceived;	// rw data packet received
+	size_t		m_BlackRejected;	// in black list
+	size_t		m_PacketsInvalid;	// invalid packet
+	size_t		m_UnknownRelay;		// unknown relay
+	size_t		m_RelayMagic;		// known relay packet
+	size_t		m_PositionData;		// position data packet
+	size_t		m_NotPosData;		// packet NOT pos data
 	size_t		m_TelnetReceived;
 	size_t		m_AdminReceived;
 	size_t		mT_PacketsReceived, mT_BlackRejected, mT_PacketsInvalid;

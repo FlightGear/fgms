@@ -50,9 +50,10 @@ private:
 	//////////////////////////////////////////////////
 	// general  commands
 	//////////////////////////////////////////////////
-	int cmd_show_stats (  UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
-	int cmd_show_version (  UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
-	int cmd_fgms_die ( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
+	int cmd_show_stats	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
+	int cmd_show_version	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
+	int cmd_show_uptime	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
+	int cmd_fgms_die	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
 	//////////////////////////////////////////////////
 	// show/modify blacklist
 	//////////////////////////////////////////////////
@@ -77,8 +78,6 @@ private:
 	int cmd_user_show   (  char *command, char *argv[], int argc );
 private:
 	FG_SERVER* fgms;
-	int  check_auth (const string& username, const string& password);
-	int  check_enable(const string& password);
 	int cmd_NOT_IMPLEMENTED (  char *command, char *argv[], int argc );
 	//////////////////////////////////////////////////
 	//  utility functions

@@ -700,7 +700,6 @@ FG_SERVER::AddBadClient
 	NewPlayer.IsLocal       = IsLocal;
 	NewPlayer.HasErrors     = true;
 	NewPlayer.Error         = ErrorMsg;
-	NewPlayer.LastRelayedToInactive = 0;
 	SG_LOG ( SG_FGMS, SG_WARN, "FG_SERVER::AddBadClient() - " << ErrorMsg );
 	m_PlayerList.Add (NewPlayer, 0);
 } // FG_SERVER::AddBadClient ()
@@ -1299,8 +1298,8 @@ FG_SERVER::HandlePacket
 				SenderPosition    = CurrentPlayer->LastPos;
 				SenderOrientation = CurrentPlayer->LastOrientation;
 			}
+			m_PlayerList.UpdateRcvd (CurrentPlayer, Bytes);
 			SendingPlayer = *CurrentPlayer;
-			CurrentPlayer->UpdateRcvd (Bytes);
 			CurrentPlayer++;
 			continue; // don't send packet back to sender
 		}
@@ -1335,7 +1334,7 @@ FG_SERVER::HandlePacket
 		if ( CurrentPlayer->IsLocal )
 		{
 			m_DataSocket->sendto ( Msg, Bytes, 0, &CurrentPlayer->Address );
-			CurrentPlayer->UpdateSent (Bytes);
+			m_PlayerList.UpdateSent (CurrentPlayer, Bytes);
 			PktsForwarded++;
 		}
 		CurrentPlayer++;

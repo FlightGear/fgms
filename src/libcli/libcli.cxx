@@ -118,8 +118,8 @@ CLI::set_enable_callback
 void
 CLI::allow_user
 (
-        char* username,
-        char* password
+        const char* username,
+        const char* password
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
@@ -164,7 +164,7 @@ CLI::allow_user
 void
 CLI::allow_enable
 (
-        char* password
+	const char* password
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
@@ -643,25 +643,26 @@ CLI::CLI
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	Command<CLI> *c;
 	this->modestring	= 0;
-	this->banner	= 0;
+	this->banner		= 0;
 	this->promptchar	= 0;
-	this->hostname	= 0;
-	this->buffer	= 0;
+	this->hostname		= 0;
+	this->buffer		= 0;
 	this->enable_password	= 0;
-	this->client	= 0;
-	this->conn	= 0;
-	this->service	= 0;
-	this->users	= 0;
-	this->commands	= 0;
-	this->filters	= 0;
+	this->client		= 0;
+	this->conn		= 0;
+	this->service		= 0;
+	this->users		= 0;
+	this->commands		= 0;
+	this->filters		= 0;
 	this->auth_callback	= 0;
 	this->cpp_auth_callback	= 0;
 	this->regular_callback	= 0;
 	this->enable_callback	= 0;
 	this->cpp_enable_callback	= 0;
 	this->print_callback	= 0;
-	this->from_socket = false;
-	this->lines_out = 0;
+	this->from_socket	= false;
+	this->lines_out		= 0;
+	this->max_screen_lines	= 24;
 	int i;
 	for ( i = 0; i < MAX_HISTORY; i++ )
 	{
@@ -1060,7 +1061,7 @@ AGAIN:
 					}
 					else
 					{
-						error ( "Invalid %s \"%s\"", commands->parent ? "argument" : "command", words[start_word] );
+						error ("Invalid argument \"%s\"", words[start_word + 1] );
 					}
 				}
 				return rc;
@@ -1481,6 +1482,7 @@ CLI::loop
 	        "\xFF\xFB\x01"
 	        "\xFF\xFD\x03"
 	        "\xFF\xFD\x01";
+
 	this->state = STATE_LOGIN;
 	free_history ();
 	if ( sockfd == fileno ( stdin ) )  // read from stdin
@@ -2280,7 +2282,7 @@ CLI::pager
 			this->lines_out = 0;
 			done = true;
 		}
-		if (c == '\r')
+		if ((c == '\r') || (c == '\n'))
 		{
 			done = true;
 		}
@@ -2350,7 +2352,7 @@ CLI::_print
 			this->lines_out++;
 			// ask for a key after 20 lines of output
 			// FIXME: make this configurable
-			if (this->lines_out > 20)
+			if (this->lines_out > this->max_screen_lines)
 			{
 				if (pager ())
 					return 1;

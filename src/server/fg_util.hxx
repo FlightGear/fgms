@@ -17,6 +17,7 @@ using namespace std;
 #include <string>
 #include <cstdlib>
 #include <ctype.h>		// toupper()
+#include <stdint.h>
 
 typedef long long t_longlong;
 
@@ -39,16 +40,10 @@ enum NUMERIC_BASE_LIMITS
 	MAX_BASE = 36		// 0-9, a-z
 };
 
-#ifndef _MSC_VER
-	typedef long long uint64;
-#else
-	typedef INT64 uint64;
-#endif
-
 std::string timestamp_to_datestr ( time_t date );
 std::string timestamp_to_days ( time_t date );
 std::string diff_to_days ( time_t date );
-std::string byte_counter ( uint64 bytes );
+std::string byte_counter ( double bytes );
 
 //////////////////////////////////////////////////////////////////////
 /** 

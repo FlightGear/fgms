@@ -87,7 +87,7 @@ public:
   netAddress ( const char* host, int port ) ;
 
   void set ( const char* host, int port ) ;
-  const string getHost () const ;
+  const std::string getHost () const ;
   unsigned int getPort() const ;
   unsigned int getIP () const ;
   unsigned int getFamily () const ;

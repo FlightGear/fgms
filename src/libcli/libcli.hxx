@@ -77,6 +77,7 @@ protected:
 	bool	from_socket;
 	int	my_sock;
 	size_t	lines_out;
+	size_t	max_screen_lines;
 
 public:
 
@@ -127,8 +128,8 @@ public:
 	void    set_auth_callback ( cpp_auth_func callback );
 	void    set_enable_callback ( c_enable_func callback );
 	void    set_enable_callback ( cpp_enable_func callback );
-	void    allow_user ( char* username, char* password );
-	void    allow_enable ( char* password );
+	void    allow_user ( const char* username, const char* password );
+	void    allow_enable ( const char* password );
 	void    deny_user ( char* username );
 	void    set_banner ( const char* banner );
 	void    set_hostname ( const char* hostname );

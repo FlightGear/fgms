@@ -65,11 +65,11 @@ FG_CLI::setup
 	//////////////////////////////////////////////////
 	if (fgms->m_AdminUser != "")
 	{
-		set_auth_callback( static_cast<auth_callback> (& FG_CLI::check_auth) );
+		allow_user ( fgms->m_AdminUser.c_str(), fgms->m_AdminPass.c_str() );
 	}
 	if (fgms->m_AdminEnable != "")
 	{
-		set_enable_callback( static_cast<enable_callback> (& FG_CLI::check_enable) );  
+		allow_enable (fgms->m_AdminEnable.c_str());
 	}
 	//////////////////////////////////////////////////
 	// general commands
@@ -99,6 +99,15 @@ FG_CLI::setup
 		LIBCLI::UNPRIVILEGED,
 		LIBCLI::MODE_ANY,
 		"Show running version information"
+	), c);
+
+	register_command ( new Command<CLI> (
+		this,
+		"uptime",
+		static_cast<callback_ptr> (&FG_CLI::cmd_show_uptime),
+		LIBCLI::UNPRIVILEGED,
+		LIBCLI::MODE_ANY,
+		"Show uptime information"
 	), c);
 
 	register_command (new Command<CLI> (
@@ -232,29 +241,6 @@ FG_CLI::setup
 
 }
 
-int
-FG_CLI::check_auth
-(
-	const string& username,
-	const string& password
-)
-{
-	if (username != fgms->m_AdminUser)
-		return LIBCLI::ERROR;
-	if (password != fgms->m_AdminPass)
-		return LIBCLI::ERROR;
-	return LIBCLI::OK;
-}
-
-int
-FG_CLI::check_enable
-(
-	const string& password
-)
-{
-	return (password == fgms->m_AdminEnable);
-}
-
 bool
 FG_CLI::need_help
 (
@@ -278,11 +264,17 @@ FG_CLI::cmd_show_stats
 )
 {
 	int n;
+	string	temp;
+	time_t	difftime;
+	time_t	now;
 	if (argc > 0)
 	{
 		print ("<br>");
 		return (0);
 	}
+	now = time(0);
+	difftime = now - fgms->m_Uptime;
+
 	cmd_show_version (command, argv, argc);
 	n = print (" ");
 	if (n) return 0;
@@ -292,18 +284,26 @@ FG_CLI::cmd_show_stats
 	if (n) return 0;
 	n = print ("I have %lu relays", fgms->m_RelayList.Size ());
 	if (n) return 0;
+	n = print ("I have %lu users", fgms->m_PlayerList.Size ());
+	if (n) return 0;
 
 	n = print ("Sent counters:");
 	if (n) return 0;
-	n = print ("  %-20s %llu packets (%s)",
+
+	temp = byte_counter ((double) fgms->m_CrossfeedList.BytesSent / difftime);
+	n = print ("  %-20s %lu packets / %s (%s/s)",
 	  "to crossfeeds:",
 	  fgms->m_CrossfeedList.PktsSent,
-	  byte_counter (fgms->m_CrossfeedList.BytesSent).c_str());
+	  byte_counter (fgms->m_CrossfeedList.BytesSent).c_str(),
+	  temp.c_str());
 	if (n) return 0;
-	n = print ("  %-20s %llu packets (%s)",
+
+	temp = byte_counter ((double) fgms->m_RelayList.BytesSent / difftime);
+	n = print ("  %-20s %lu packets %s (%s/s)",
 	  "to relays:",
 	  fgms->m_RelayList.PktsSent,
-	  byte_counter (fgms->m_RelayList.BytesSent).c_str());
+	  byte_counter (fgms->m_RelayList.BytesSent).c_str(),
+	  temp.c_str());
 	if (n) return 0;
 
 	n = print ("Receive counters:");
@@ -318,15 +318,19 @@ FG_CLI::cmd_show_stats
 	if (n) return 0;
 	n = print ("  %-20s %lu", "other data:", fgms->m_NotPosData);
 	if (n) return 0;
-	n = print ("  %-20s %llu packets (%s)",
+	temp = byte_counter ((double) fgms->m_RelayList.BytesRcvd / difftime);
+	n = print ("  %-20s %lu packets %s (%s/s)",
 	  "From Relays:",
 	  fgms->m_RelayList.PktsRcvd,
-	  byte_counter (fgms->m_RelayList.BytesRcvd).c_str());
+	  byte_counter (fgms->m_RelayList.BytesRcvd).c_str(),
+	  temp.c_str());
 	if (n) return 0;
-	n = print ("  %-20s %llu packets (%s)",
+	temp = byte_counter ((double) fgms->m_BlackList.BytesRcvd / difftime);
+	n = print ("  %-20s %lu packets %s (%s/s)",
 	  "Blacklist:",
 	  fgms->m_BlackList.PktsRcvd,
-	  byte_counter (fgms->m_BlackList.BytesRcvd).c_str());
+	  byte_counter (fgms->m_BlackList.BytesRcvd).c_str(),
+	  temp.c_str());
 	if (n) return 0;
 
 	float telnet_per_second;
@@ -369,6 +373,28 @@ FG_CLI::cmd_fgms_die
 }
 
 int
+FG_CLI::cmd_show_uptime
+(
+	UNUSED(char *command),
+	UNUSED(char *argv[]),
+	UNUSED(int argc)
+)
+{
+	if (argc > 0)
+	{
+		if (strcmp (argv[0], "?") == 0)
+		{
+			print ("<br>");
+		}
+		return (0);
+	}
+	string A = timestamp_to_datestr (fgms->m_Uptime);
+	string B = timestamp_to_days    (fgms->m_Uptime);
+	print ("UP since %s (%s)", A.c_str(), B.c_str());
+	return (0);
+}
+
+int
 FG_CLI::cmd_show_version
 (
 	UNUSED(char *command),
@@ -398,9 +424,7 @@ FG_CLI::cmd_show_version
 		print ("This server is tracked: %s", fgms->m_Tracker->GetTrackerServer().c_str());
 	else
 		print ("This server is NOT tracked");
-	string A = timestamp_to_datestr (fgms->m_Uptime);
-	string B = timestamp_to_days    (fgms->m_Uptime);
-	print ("UP since %s (%s)", A.c_str(), B.c_str());
+	cmd_show_uptime (command, argv, argc);
 	return (0);
 }
 
@@ -483,6 +507,10 @@ FG_CLI::cmd_blacklist_show
 	FG_ListElement Entry("");
 	n = print (" ");
 	if (n) return 0;
+	time_t  difftime;
+	time_t  now;
+	now = time(0);
+	difftime = now - fgms->m_Uptime;
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_BlackList[i];
@@ -512,7 +540,7 @@ FG_CLI::cmd_blacklist_show
 		if (n) return 0;
 		n = print ("  last seen    : %sago", B.c_str());
 		if (n) return 0;
-		n = print ("  rcvd packets : %llu", Entry.PktsRcvd);
+		n = print ("  rcvd packets : %lu", Entry.PktsRcvd);
 		if (n) return 0;
 		n = print ("  rcvd bytes   : %s", byte_counter (Entry.BytesRcvd).c_str());
 		if (n) return 0;
@@ -523,9 +551,11 @@ FG_CLI::cmd_blacklist_show
 	if (n) return 0;
 	n = print ("%lu entries found", EntriesFound);
 	if (n) return 0;
-	n = print ("Total received: %llu packets %s",
-	  fgms->m_BlackList.PktsRcvd,
-	  byte_counter (fgms->m_BlackList.BytesRcvd).c_str());
+	n = print ("Total rcvd: %lu packets (%lu/s) / %s (%s/s)",
+	  fgms->m_BlackList.PktsSent,
+	  fgms->m_BlackList.PktsSent / difftime,
+	  byte_counter (fgms->m_BlackList.BytesSent).c_str(),
+	  byte_counter ((double) (fgms->m_BlackList.BytesSent/difftime)).c_str());
 	return 0;
 }
 
@@ -949,6 +979,11 @@ FG_CLI::cmd_crossfeed_show
 	FG_ListElement Entry("");
 	print ("%s : ", fgms->m_CrossfeedList.Name.c_str());
 	print (" ");
+	string  temp;
+	time_t  difftime;
+	time_t  now;
+	now = time(0);
+	difftime = now - fgms->m_Uptime;
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_CrossfeedList[i];
@@ -973,20 +1008,27 @@ FG_CLI::cmd_crossfeed_show
 		string B = timestamp_to_days    (Entry.LastSent);
 		n = print ("  entered      : %s", A.c_str());
 		if (n) return 0;
-		n = print ("  last sent    : %sago", B.c_str());
+		n = print ("  last sent    : %s ago", B.c_str());
 		if (n) return 0;
-		n = print ("  sent packets : %llu", Entry.PktsSent);
+		n = print ("  sent packets : %lu (%f packets/s)",
+			Entry.PktsSent,
+			(double) (Entry.PktsSent / difftime));
 		if (n) return 0;
-		n = print ("  sent bytes   : %s", byte_counter (Entry.BytesSent).c_str());
+		temp = byte_counter ((double) Entry.BytesSent / difftime);
+		n = print ("  sent bytes   : %s (%s/s)",
+			byte_counter (Entry.BytesSent).c_str(),
+			temp.c_str());
 		if (n) return 0;
 	}
 	n = print (" ");
 	if (n) return 0;
 	n = print ("%lu entries found", EntriesFound);
 	if (n) return 0;
-	n = print ("Total sent: %llu packets %s",
+	n = print ("Total sent: %lu packets (%lu/s) / %s (%s/s)",
 	  fgms->m_CrossfeedList.PktsSent,
-	  byte_counter (fgms->m_CrossfeedList.BytesSent).c_str());
+	  fgms->m_CrossfeedList.PktsSent / difftime,
+	  byte_counter (fgms->m_CrossfeedList.BytesSent).c_str(),
+	  byte_counter ((double) (fgms->m_CrossfeedList.BytesSent/difftime)).c_str());
 	if (n) return 0;
 	return 0;
 }
@@ -1070,6 +1112,11 @@ FG_CLI::cmd_relay_show
 	FG_ListElement Entry("");
 	print ("%s : ", fgms->m_RelayList.Name.c_str());
 	print (" ");
+	string  temp;
+	time_t  difftime;
+	time_t  now;
+	now = time(0);
+	difftime = now - fgms->m_Uptime;
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_RelayList[i];
@@ -1101,11 +1148,15 @@ FG_CLI::cmd_relay_show
 		if (n) return 0;
 		n = print ("  %-15s: %s", "last seen", B.c_str());
 		if (n) return 0;
-		n = print ("  %-15s: %llu packets (%s)", "sent",
-				Entry.PktsSent, byte_counter (Entry.BytesSent).c_str());
+		n = print ("  %-15s: %lu packets / %s (%f/s)", "sent",
+			Entry.PktsSent, byte_counter (Entry.BytesSent).c_str(),
+			(double) (Entry.PktsSent / difftime)
+			);
 		if (n) return 0;
-		n = print ("  %-15s: %llu packets (%s)", "rcvd",
-				Entry.PktsRcvd, byte_counter (Entry.BytesRcvd).c_str());
+		temp = byte_counter ((double) Entry.BytesRcvd / difftime);
+		n = print ("  %-15s: %lu packets / %s (%s/s)", "rcvd",
+			Entry.PktsRcvd, byte_counter (Entry.BytesRcvd).c_str(),
+			temp.c_str());
 		if (n) return 0;
 	}
 	print ("\n%lu entries found", EntriesFound);
@@ -1113,13 +1164,19 @@ FG_CLI::cmd_relay_show
 	{
 		n = print ("Totals:");
 		if (n) return 0;
-		n = print ("  sent    : %llu packets (%s)",
-				fgms->m_RelayList.PktsSent,
-				byte_counter (fgms->m_RelayList.BytesSent).c_str());
+		temp = byte_counter ((double) fgms->m_RelayList.BytesSent / difftime);
+		n = print ("  sent    : %lu packets (%lu/s) / %s (%s/s)",
+			fgms->m_RelayList.PktsSent,
+			fgms->m_RelayList.PktsSent / difftime,
+			byte_counter (fgms->m_RelayList.BytesSent).c_str(),
+			temp.c_str());
 		if (n) return 0;
-		n = print ("  received: %llu packets (%s)",
-				fgms->m_RelayList.PktsRcvd,
-				byte_counter (fgms->m_RelayList.BytesRcvd).c_str());
+		temp = byte_counter ((double) fgms->m_RelayList.BytesRcvd / difftime);
+		n = print ("  received: %lu packets (%lu/s) / %s (%s/s)",
+			fgms->m_RelayList.PktsRcvd,
+			fgms->m_RelayList.PktsRcvd / difftime,
+			byte_counter (fgms->m_RelayList.BytesRcvd).c_str(),
+			temp.c_str());
 		if (n) return 0;
 	}
 	return 0;
@@ -1315,6 +1372,8 @@ FG_CLI::cmd_user_show
 	bool		Brief = false;
 	size_t		EntriesFound = 0;
 	int		n;
+	time_t		difftime;
+	time_t		now;
 	for (int i=0; i < argc; i++)
 	{
 		ID  = StrToNum<size_t> ( argv[0], ID_invalid );
@@ -1365,6 +1424,7 @@ FG_CLI::cmd_user_show
 				break;
 		}
 	}
+	string temp;
 	int Count = fgms->m_PlayerList.Size ();
 	FG_Player	Player;
 	Point3D		PlayerPosGeod;
@@ -1374,6 +1434,8 @@ FG_CLI::cmd_user_show
 	print (" ");
 	for (int i = 0; i < Count; i++)
 	{
+		now = time(0);
+		difftime = now - fgms->m_Uptime;
 		Player = fgms->m_PlayerList[i];
 		if ( (ID == 0) && (Address.getIP() != 0) )
 		{	// only list matching entries
@@ -1410,8 +1472,7 @@ FG_CLI::cmd_user_show
 		}
 		FullName = Player.Name + string("@") + Origin;
 		string A = timestamp_to_days (Player.JoinTime);
-		A += "ago";
-		n = print ("%-20s (ID %lu) entered: %s",
+		n = print ("%-20s (ID %lu) entered: %s ago",
 			FullName.c_str (),
 			Player.ID,
 			A.c_str()
@@ -1426,24 +1487,46 @@ FG_CLI::cmd_user_show
 			n = print ("         %-15s: %s",  "ERROR", Player.Error.c_str());
 			if (n) return 0;
 		}
-		time_t Now = time(0);
-		int expires = Player.Timeout - (Now - Player.LastSeen);
-
-		n = print ("          %-15s: %s",  "joined", timestamp_to_datestr(Player.JoinTime).c_str()); if (n) return 0;
-		n = print ("          %-15s: %s",  "last seen", timestamp_to_datestr(Player.LastSeen).c_str()); if (n) return 0;
-		n = print ("          %-15s: %u seconds",  "exprires in", expires); if (n) return 0;
-		n = print ("          %-15s: %lu", "TTL", Player.Timeout); if (n) return 0;
-		n = print ("          %-15s: %s",  "using model", Player.ModelName.c_str()); if (n) return 0;
-
-		n = print ("          %-15s: %s", "real origin", Player.Origin.c_str()); if (n) return 0;
-
-		n = print ("          %-15s: %llu packets (%s)", "sent",
-				Player.PktsSent, byte_counter (Player.BytesSent).c_str());
+		int expires = Player.Timeout - (now - Player.LastSeen);
+		n = print ("          %-15s: %s",
+			"joined",
+			timestamp_to_datestr(Player.JoinTime).c_str());
 		if (n) return 0;
-		n = print ("          %-15s: %llu packets (%s)", "rcvd",
-				Player.PktsRcvd, byte_counter (Player.BytesRcvd).c_str());
+		n = print ("          %-15s: %s",
+			"last seen",
+			timestamp_to_datestr(Player.LastSeen).c_str());
 		if (n) return 0;
-		n = print ("          %-15s: %s", "inactive", timestamp_to_days(Player.LastRelayedToInactive).c_str()); if (n) return 0;
+		n = print ("          %-15s: %u seconds",
+			"exprires in",
+			expires);
+		if (n) return 0;
+		n = print ("          %-15s: %s",
+			"using model",
+			Player.ModelName.c_str());
+		if (n) return 0;
+		n = print ("          %-15s: %s",
+			"real origin",
+			Player.Origin.c_str());
+		if (n) return 0;
+
+		temp = byte_counter ((double) Player.BytesSent / difftime);
+		n = print ("          %-15s: %lu packets / %s (%s/s)",
+			"sent",
+			Player.PktsSent,
+			byte_counter (Player.BytesSent).c_str(),
+			temp.c_str());
+		if (n) return 0;
+		temp = byte_counter ((double) Player.BytesRcvd / difftime);
+		n = print ("          %-15s: %lu packets / %s (%s/s)",
+			"rcvd",
+			Player.PktsRcvd,
+			byte_counter (Player.BytesRcvd).c_str(),
+			temp.c_str());
+		if (n) return 0;
+		n = print ("          %-15s: %s",
+			"inactive",
+			timestamp_to_days(now - Player.LastRelayedToInactive).c_str());
+		if (n) return 0;
 
 #if 0
 	// do we really want to see the position in the admin interface?
@@ -1465,13 +1548,19 @@ FG_CLI::cmd_user_show
 	{
 		n = print ("Totals:");
 		if (n) return 0;
-		n = print ("          sent    : %llu packets (%s)",
-				fgms->m_PlayerList.PktsSent,
-				byte_counter (fgms->m_PlayerList.BytesSent).c_str());
+		temp = byte_counter ((double) fgms->m_PlayerList.BytesSent / difftime);
+		n = print ("          sent    : %lu packets (%lu/s) / %s (%s/s)",
+			fgms->m_PlayerList.PktsSent,
+			fgms->m_PlayerList.PktsSent / difftime,
+			byte_counter (fgms->m_PlayerList.BytesSent).c_str(),
+			temp.c_str());
 		if (n) return 0;
-		n = print ("          received: %llu packets (%s)",
-				fgms->m_PlayerList.PktsRcvd,
-				byte_counter (fgms->m_PlayerList.BytesRcvd).c_str());
+		temp = byte_counter ((double) fgms->m_PlayerList.BytesRcvd / difftime);
+		n = print ("          received: %lu packets (%lu/s) / %s (%s/s)",
+			fgms->m_PlayerList.PktsRcvd,
+			fgms->m_PlayerList.PktsRcvd / difftime,
+			byte_counter (fgms->m_PlayerList.BytesRcvd).c_str(),
+			temp.c_str());
 		if (n) return 0;
 	}
 	return 0;

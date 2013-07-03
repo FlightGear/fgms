@@ -60,13 +60,13 @@ public:
 	/** @brief timestamp of last sent packet to this element */
 	time_t		LastSent;
 	/** @brief Count of packets recieved from client */
-	uint64		PktsRcvd;
+	uint64_t		PktsRcvd;
 	/** @brief Count of packets sent to client */
-	uint64		PktsSent;
+	uint64_t		PktsSent;
 	/** @brief Count of bytes recieved from client */
-	uint64		BytesRcvd;
+	uint64_t		BytesRcvd;
 	/** @brief Count of bytes sent to client */
-	uint64		BytesSent;
+	uint64_t		BytesSent;
 	FG_ListElement ( const string& Name );
 	FG_ListElement ( const FG_ListElement& P );
 	~FG_ListElement ();
@@ -150,13 +150,13 @@ public:
 	void Unlock();
 	T operator []( const size_t& Index );
 	/** @brief Count of packets recieved from client */
-	uint64		PktsRcvd;  
+	uint64_t		PktsRcvd;  
 	/** @brief Count of packets sent to client */
-	uint64		PktsSent;
+	uint64_t		PktsSent;
 	/** @brief Count of bytes recieved from client */
-	uint64		BytesRcvd;  
+	uint64_t		BytesRcvd;  
 	/** @brief Count of bytes sent to client */
-	uint64		BytesSent;        
+	uint64_t		BytesSent;        
 	string	Name;
 private:
 	/** @brief mutex for thread safty */
