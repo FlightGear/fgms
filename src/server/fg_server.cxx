@@ -1532,6 +1532,16 @@ FG_SERVER::Loop
 #ifdef _MSC_VER
 	SG_LOG ( SG_FGMS, SG_ALERT,  "ESC key to EXIT (after select " << m_PlayerExpires << " sec timeout)." );
 #endif
+	if ( (m_AdminUser == "" ) || (m_AdminPass == "") )
+	{
+		if (m_AdminSocket)
+		{
+			m_AdminSocket->close();
+			delete m_AdminSocket;
+			m_AdminSocket = 0;
+			SG_CONSOLE (SG_FGMS, SG_ALERT, "# Admin port disabled, please set user and password");
+		}
+	}
 	if (! RunAsDaemon)
 	{	// Run admin CLI in foreground reading from stdin
 		st_telnet* t = new st_telnet;
