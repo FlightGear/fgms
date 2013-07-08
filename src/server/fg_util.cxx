@@ -106,13 +106,13 @@ byte_counter
 
         if (bytes > 1125899906842624)
         {
-                ret_val = (bytes / 1125899906842624);
+                ret_val = (bytes / 1125899906842624.);
                 ret_str = NumToStr (ret_val) + " TiB";                                                                       
                 return ret_str;
         }
         else if (bytes > 1099511627776)
         {
-                ret_val = (bytes / 1099511627776);
+                ret_val = (bytes / 1099511627776.);
                 ret_str = NumToStr (ret_val) + " GiB";
                 return ret_str;
         }
