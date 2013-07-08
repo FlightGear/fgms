@@ -92,28 +92,29 @@ protected:
 class FG_Player : public FG_ListElement
 {
 public:
-	string        Origin;
+	string	Origin;
 	/** @brief The password 
 		@warning This is not currently used
 	 */
-	string        Passwd;
+	string	Passwd;
 	/** @brief The model name */
-	string        ModelName;
+	string	ModelName;
 	/** @brief The last recorded position */
-	Point3D       LastPos;
+	Point3D	LastPos;
 	/** @brief The last recorded orientation */
-	Point3D       LastOrientation;
+	Point3D	LastOrientation;
 	/** @brief \b true is this client is directly connected to this \ref fgms instance */
-	bool          IsLocal;
+	bool	IsLocal;
 	/** @brief The last error message is any 
 	 * @see FG_SERVER::AddBadClient
 	 */
-	string        Error;    // in case of errors
+	string	Error;    // in case of errors
 	/** @brief \b true if this client has errors
 	 * @see FG_SERVER::AddBadClient
 	 */
-	bool          HasErrors;
-	time_t        LastRelayedToInactive;
+	bool	HasErrors;
+	time_t	LastRelayedToInactive;
+	bool	DoUpdate;
 	FG_Player ();
 	FG_Player ( const string& Name );
 	FG_Player ( const FG_Player& P);
@@ -205,9 +206,9 @@ mT_FG_List<T>::Size
 ()
 {
 	int size;
-	pthread_mutex_lock   ( & m_ListMutex );
+//	pthread_mutex_lock   ( & m_ListMutex );
 	size = Elements.size ();
-	pthread_mutex_unlock ( & m_ListMutex );
+//	pthread_mutex_unlock ( & m_ListMutex );
 	return size;
 }
 //////////////////////////////////////////////////////////////////////

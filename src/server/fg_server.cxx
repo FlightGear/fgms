@@ -1107,26 +1107,20 @@ FG_SERVER::SendToRelays
 	uint32_t        MsgMagic;
 	unsigned int    PktsForwarded = 0;
 	ItList		CurrentRelay;
-	time_t          Now;
 
 	if ( (! SendingPlayer.IsLocal ) && ( ! m_IamHUB ) )
 	{
 		return;
 	}
-	Now   = time ( 0 );
 	MsgHdr    = ( T_MsgHdr* ) Msg;
 	MsgMagic  = XDR_decode<uint32_t> ( MsgHdr->Magic );
 	MsgHdr->Magic = XDR_encode<uint32_t> ( RELAY_MAGIC );
-	bool UpdateInactive = ( Now - SendingPlayer.LastRelayedToInactive ) > UPDATE_INACTIVE_PERIOD;
-	if ( UpdateInactive )
-	{
-		SendingPlayer.LastRelayedToInactive = Now;
-	}
 	m_RelayList.Lock ();
 	CurrentRelay = m_RelayList.Begin();
 	while ( CurrentRelay != m_RelayList.End() )
 	{
-		if ( UpdateInactive || IsInRange ( *CurrentRelay, SendingPlayer ) )
+
+		if ( SendingPlayer.DoUpdate || IsInRange ( *CurrentRelay, SendingPlayer ) )
 		{
 			if ( CurrentRelay->Address.getIP() != SendingPlayer.Address.getIP() )
 			{
@@ -1167,10 +1161,12 @@ FG_SERVER::HandlePacket
 	PlayerIt	CurrentPlayer;
 	FG_Player	SendingPlayer;
 	ItList		CurrentEntry;
+	time_t          Now;
 	unsigned int    PktsForwarded = 0;
 	MsgHdr    = ( T_MsgHdr* ) Msg;
 	MsgMagic  = XDR_decode<uint32_t> ( MsgHdr->Magic );
 	MsgId     = XDR_decode<uint32_t> ( MsgHdr->MsgId );
+	Now   = time ( 0 );
 	//////////////////////////////////////////////////
 	//
 	//  First of all, send packet to all
@@ -1299,6 +1295,15 @@ FG_SERVER::HandlePacket
 				SenderOrientation = CurrentPlayer->LastOrientation;
 			}
 			m_PlayerList.UpdateRcvd (CurrentPlayer, Bytes);
+			CurrentPlayer->DoUpdate = ( (Now - CurrentPlayer->LastRelayedToInactive) > UPDATE_INACTIVE_PERIOD );
+			if ( CurrentPlayer->DoUpdate )
+			{
+				CurrentPlayer->LastRelayedToInactive = Now;
+			}
+			else
+			{
+				CurrentPlayer->DoUpdate = false;
+			}
 			SendingPlayer = *CurrentPlayer;
 			CurrentPlayer++;
 			continue; // don't send packet back to sender
@@ -1340,7 +1345,7 @@ FG_SERVER::HandlePacket
 		CurrentPlayer++;
 	}
 	m_PlayerList.Unlock();
-	if ( SendingPlayer.ID == FG_ListElement::NONE_EXISTANT )
+	if ( SendingPlayer.ID ==  FG_ListElement::NONE_EXISTANT )
 	{
 		// player not yet in our list
 		// should not happen, but test just in case

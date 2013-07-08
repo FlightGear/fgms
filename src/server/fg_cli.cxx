@@ -274,7 +274,6 @@ FG_CLI::cmd_show_stats
 	}
 	now = time(0);
 	difftime = now - fgms->m_Uptime;
-
 	cmd_show_version (command, argv, argc);
 	n = print (" ");
 	if (n) return 0;
@@ -1151,14 +1150,19 @@ FG_CLI::cmd_relay_show
 		if (n) return 0;
 		n = print ("  %-15s: %s", "last seen", B.c_str());
 		if (n) return 0;
-		n = print ("  %-15s: %lu packets / %s (%f/s)", "sent",
-			Entry.PktsSent, byte_counter (Entry.BytesSent).c_str(),
-			(double) (Entry.PktsSent / difftime)
+		temp = byte_counter ((double) Entry.BytesSent / difftime);
+		n = print ("  %-15s: %lu packets (%lu/s) / %s (%s/s)", "sent",
+			Entry.PktsSent,
+			Entry.PktsSent / difftime,
+			byte_counter (Entry.BytesSent).c_str(),
+			temp.c_str()
 			);
 		if (n) return 0;
 		temp = byte_counter ((double) Entry.BytesRcvd / difftime);
-		n = print ("  %-15s: %lu packets / %s (%s/s)", "rcvd",
-			Entry.PktsRcvd, byte_counter (Entry.BytesRcvd).c_str(),
+		n = print ("  %-15s: %lu packets (%lu/s) / %s (%s/s)", "rcvd",
+			Entry.PktsRcvd,
+			Entry.PktsRcvd / difftime,
+			byte_counter (Entry.BytesRcvd).c_str(),
 			temp.c_str());
 		if (n) return 0;
 	}
@@ -1513,22 +1517,24 @@ FG_CLI::cmd_user_show
 		if (n) return 0;
 
 		temp = byte_counter ((double) Player.BytesSent / difftime);
-		n = print ("          %-15s: %lu packets / %s (%s/s)",
+		n = print ("          %-15s: %lu packets (%lu/s) / %s (%s/s)",
 			"sent",
 			Player.PktsSent,
+			Player.PktsSent / difftime,
 			byte_counter (Player.BytesSent).c_str(),
 			temp.c_str());
 		if (n) return 0;
 		temp = byte_counter ((double) Player.BytesRcvd / difftime);
-		n = print ("          %-15s: %lu packets / %s (%s/s)",
+		n = print ("          %-15s: %lu packets (%lu/s) / %s (%s/s)",
 			"rcvd",
 			Player.PktsRcvd,
+			Player.PktsRcvd / difftime,
 			byte_counter (Player.BytesRcvd).c_str(),
 			temp.c_str());
 		if (n) return 0;
-		n = print ("          %-15s: %s",
+		n = print ("          %-15s: %lu",
 			"inactive",
-			timestamp_to_days(now - Player.LastRelayedToInactive).c_str());
+			now - Player.LastRelayedToInactive);
 		if (n) return 0;
 
 #if 0
@@ -1546,6 +1552,7 @@ FG_CLI::cmd_user_show
 #endif
 
 	}
+	difftime = now - fgms->m_Uptime;
 	print ("\n%lu entries found", EntriesFound);
 	if (! Brief)
 	{

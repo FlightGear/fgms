@@ -163,6 +163,7 @@ FG_Player::FG_Player
         ModelName       = "";
         Error           = "";
         HasErrors       = false;
+	DoUpdate	= false;
         LastRelayedToInactive   = 0;
 }
 //////////////////////////////////////////////////////////////////////
@@ -181,6 +182,7 @@ FG_Player::FG_Player
         ModelName       = "";
         Error           = "";
         HasErrors       = false;
+	DoUpdate	= false;
         LastRelayedToInactive   = 0;
 }
 //////////////////////////////////////////////////////////////////////
@@ -247,7 +249,8 @@ FG_Player::assign
         IsLocal         = P.IsLocal;
         Error           = P.Error.c_str();
         HasErrors       = P.HasErrors;
-        LastOrientation         = P.LastOrientation;
+        LastOrientation	= P.LastOrientation;
+	DoUpdate	= P.DoUpdate;
         LastRelayedToInactive   = P.LastRelayedToInactive;
 }
 //////////////////////////////////////////////////////////////////////
