@@ -535,10 +535,13 @@ FG_CLI::cmd_blacklist_show
 		string B = timestamp_to_days    (Entry.LastSeen);
 		string C = "NEVER";
 		if (Entry.Timeout != 0)
+		{
 			C = NumToStr (Entry.Timeout, 0) + " seconds";
+			C += " ago";
+		}
 		n = print ("  entered      : %s", A.c_str());
 		if (n) return 0;
-		n = print ("  last seen    : %sago", B.c_str());
+		n = print ("  last seen    : %s", B.c_str());
 		if (n) return 0;
 		n = print ("  rcvd packets : %lu", Entry.PktsRcvd);
 		if (n) return 0;
@@ -1142,7 +1145,7 @@ FG_CLI::cmd_relay_show
 		if (Entry.JoinTime != Entry.LastSeen)
 		{
 			B = timestamp_to_days    (Entry.LastSeen);
-			B += "ago";
+			B += " ago";
 		}
 		n = print ("  %-15s: %s", "entered", A.c_str());
 		if (n) return 0;
