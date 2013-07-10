@@ -104,13 +104,13 @@ byte_counter
         double ret_val;
         string ret_str;
 
-        if (bytes > 1125899906842624)
+        if (bytes > 1125899906842624.)
         {
                 ret_val = (bytes / 1125899906842624.);
                 ret_str = NumToStr (ret_val) + " TiB";                                                                       
                 return ret_str;
         }
-        else if (bytes > 1099511627776)
+        else if (bytes > 1099511627776.)
         {
                 ret_val = (bytes / 1099511627776.);
                 ret_str = NumToStr (ret_val) + " GiB";
