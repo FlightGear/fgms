@@ -44,6 +44,11 @@
 class FG_ListElement
 {
 public:
+	/** every element has a a name */
+	FG_ListElement ( const string& Name );
+	FG_ListElement ( const FG_ListElement& P );
+	~FG_ListElement ();
+	/** mark a nonexisting element */
 	static const size_t NONE_EXISTANT;
 	/** @brief The ID of this entry */
 	size_t		ID;
@@ -67,9 +72,6 @@ public:
 	uint64_t		BytesRcvd;
 	/** @brief Count of bytes sent to client */
 	uint64_t		BytesSent;
-	FG_ListElement ( const string& Name );
-	FG_ListElement ( const FG_ListElement& P );
-	~FG_ListElement ();
 	void operator =  ( const FG_ListElement& P );
 	virtual bool operator ==  ( const FG_ListElement& P );
 	void UpdateSent ( size_t bytes );

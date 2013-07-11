@@ -4,7 +4,6 @@
  * 
  */
 
-
 #ifndef TYPCNVTHDR
 #define TYPCNVTHDR 1
 
@@ -37,7 +36,7 @@ typedef long long t_longlong;
 enum NUMERIC_BASE_LIMITS
 {
 	MIN_BASE = 2,
-	MAX_BASE = 36		// 0-9, a-z
+	MAX_BASE = 36	// 0-9, a-z
 };
 
 std::string timestamp_to_datestr ( time_t date );
@@ -48,6 +47,10 @@ std::string byte_counter ( double bytes );
 //////////////////////////////////////////////////////////////////////
 /** 
  * @brief  Convert string into a number
+ * @param str_Number	the string representation of a number
+ * @param n_Error	if an error (illegal char) occured, n_Error
+ * 			point to the position
+ * @param n_Base	The base of the string representation
  * @return 
  *        - n_Error -1:     empty string
  *        - n_Error -2:     overflow
@@ -176,10 +179,15 @@ T StrToNum (string str_Number, int &n_Error, int n_Base = 10)
 		T_Result = -T_Result;
 	}
 	return (T_Result);
-}
+} // StrToNum ()
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
 /**
  * @brief Convert a number to string
+ * @param n_Number	the number to convert
+ * @param n_Precision	number of digits after the dot
+ * @param n_Base	the base of the string representation
  */
 template < typename T >
 string NumToStr ( T n_Number, int n_Precision = 2, int n_Base = 10 )
@@ -203,7 +211,6 @@ string NumToStr ( T n_Number, int n_Precision = 2, int n_Base = 10 )
 	//	for the floating point part
 	//
 	//////////////////////////////////////////////////
-
 	if (n_Precision != 0)
 	{
 		n_Factor = 1;
@@ -255,6 +262,7 @@ string NumToStr ( T n_Number, int n_Precision = 2, int n_Base = 10 )
 		str_Return = "-" + str_Return;
 	}
 	return (str_Return);
-	}
+} // NumToStr ()
+//////////////////////////////////////////////////////////////////////
 
 #endif

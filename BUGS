@@ -1,0 +1,8 @@
+
+1) kill -HUP <pid> does not reload the config file.
+
+That's a bit complicated to implement. FGMS must store the name of the
+config file and the values of all command line arguments. After a SIGHUP,
+reload config file, apply the switch values and reinitialise fgms. The
+configfile parser must be moved to fg_server.
+

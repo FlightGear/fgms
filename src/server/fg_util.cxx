@@ -1,6 +1,11 @@
 #include <fg_util.hxx>
 #include <stdio.h>
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief convert a unix timestamp to a string
+ * representation of a date
+ */
 string
 timestamp_to_datestr
 (
@@ -18,8 +23,14 @@ timestamp_to_datestr
                 tmr->tm_min,
                 tmr->tm_sec);
         return (string)buf;
-}
+} // timestamp_to_datestr()
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief calculate the difference of a timestamp to now and convert
+ * the difference to a string representation of the form "3 days 2 hours"
+ */
 string
 timestamp_to_days
 (
@@ -27,9 +38,25 @@ timestamp_to_days
 )
 {
         time_t Diff = time (0) - Date;
-        unsigned int temp = 0;
+	return diff_to_days (Diff);
+} // timestamp_to_days
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief convert a time duration expressed in seconds to a string
+ * representation of the form "3 days 2 hours"
+ */
+string
+diff_to_days
+(
+	time_t Date
+)
+{
+        time_t Diff = Date;
+        unsigned int temp = 0;
         string Result;
+
         if (Diff > 31536000)	// years
         {
                 temp = Diff / 31536000;
@@ -57,44 +84,17 @@ timestamp_to_days
         temp = Diff;
         Result += NumToStr (temp, 0) + " seconds";
         return Result;
-}
 
-string
-diff_to_days
-(
-	time_t Date
-)
-{
-        time_t Diff = Date;
-        unsigned int Days       = 0;
-        unsigned int Hours      = 0;
-        unsigned int Minutes    = 0;
-        unsigned int Seconds    = 0;
+} // diff_to_days
+//////////////////////////////////////////////////////////////////////
 
-        string Result;
-        if (Diff > 86400)
-        {
-                Days = Diff / 86400;
-                Diff -= (Days * 86400);
-                Result += NumToStr (Days, 0) + " days ";
-        }
-        if (Diff > 3600)
-        {
-                Hours = Diff / 3600;
-                Diff -= (Hours * 3600);
-                Result += NumToStr (Hours, 0) + " hours ";
-        }
-        if (Diff > 60)
-        {
-                Minutes = Diff / 60;
-                Diff -= (Minutes * 60);
-                Result += NumToStr (Minutes, 0) + " minutes ";
-        }
-        Seconds = Diff;
-        Result += NumToStr (Seconds, 0) + " seconds ";
-        return Result;
-}
-
+//////////////////////////////////////////////////////////////////////
+/**
+ * Convert a byte counter to a string representation of the form
+ * "3.7 Gib" (3.7 Gigibit).
+ * The units conform to IEC,
+ * see http://physics.nist.gov/cuu/Units/binary.html
+ */
 string
 byte_counter
 (
@@ -130,7 +130,7 @@ byte_counter
         }
         ret_str = NumToStr (bytes) + " b";
         return ret_str;
-}
-
+} // byte_counter()
+//////////////////////////////////////////////////////////////////////
 
 
