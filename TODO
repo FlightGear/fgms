@@ -1,3 +1,4 @@
+- rewrite logstream and make it thread-safe
 - implement server to server communication
   special messages for server internal purposes
 - rate limit clients
