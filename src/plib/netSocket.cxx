@@ -328,6 +328,10 @@ int netSocket::connect ( const char* host, int port )
   return ::connect(handle,(const sockaddr*)&addr,sizeof(netAddress));
 }
 
+int netSocket::write_str ( const string&  str, int flags )
+{
+	return send (str.c_str(), str.size(), flags);
+}
 
 int netSocket::send (const void * buffer, int size, int flags)
 {
@@ -344,6 +348,13 @@ int netSocket::sendto ( const void * buffer, int size,
                          (const sockaddr*)to,sizeof(netAddress));
 }
 
+int netSocket::read_char ()
+{
+  assert ( handle != -1 ) ;
+  int c;
+  ::recv (handle, &c, 1, 0);
+  return c;
+}
 
 int netSocket::recv (void * buffer, int size, int flags)
 {

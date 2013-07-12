@@ -581,7 +581,7 @@ FG_SERVER::HandleTelnet
 		Message += m_Tracker->GetTrackerServer();
 		Message += "\n";
 	}
-	if ( NewTelnet.send ( Message.c_str(),Message.size(), MSG_NOSIGNAL ) < 0 )
+	if ( NewTelnet.write_str ( Message, MSG_NOSIGNAL ) < 0 )
 	{
 		if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 		{
@@ -591,7 +591,7 @@ FG_SERVER::HandleTelnet
 	}
 	Message  = "# "+ NumToStr ( m_PlayerList.Size(), 0 );
 	Message += " pilot(s) online\n";
-	if ( NewTelnet.send ( Message.c_str(),Message.size(), MSG_NOSIGNAL ) < 0 )
+	if ( NewTelnet.write_str ( Message, MSG_NOSIGNAL ) < 0 )
 	{
 		if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 		{
@@ -649,7 +649,7 @@ FG_SERVER::HandleTelnet
 		Message += NumToStr ( CurrentPlayer.LastOrientation[Z], 6 ) +" ";
 		Message += CurrentPlayer.ModelName;
 		Message += "\n";
-		if ( NewTelnet.send ( Message.c_str(),Message.size(), MSG_NOSIGNAL ) < 0 )
+		if ( NewTelnet.write_str ( Message, MSG_NOSIGNAL ) < 0 )
 		{
 			if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 			{
@@ -696,7 +696,7 @@ FG_SERVER::AddBadClient
 	}
 	m_PlayerList.Unlock();
 	//////////////////////////////////////////////////
-	//      new client, send an error message
+	//      new client, add to the list
 	//////////////////////////////////////////////////
 	NewPlayer.Name      = "* Bad Client *";
 	NewPlayer.ModelName     = "* unknown *";
@@ -1630,7 +1630,6 @@ FG_SERVER::SetDataPort
         int Port
 )
 {
-	cout << "set data from " << m_ListenPort << " to " << Port << endl;
 	if ( Port != m_ListenPort )
 	{
 		m_ListenPort = Port;		m_ReinitData   = true;
