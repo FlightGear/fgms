@@ -337,7 +337,7 @@ FG_SERVER::Init
 			if ( m_TelnetSocket->bind ( m_BindAddress.c_str(), m_TelnetPort ) != 0 )
 			{
 				SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
-				           << "failed to bind to port " << m_TelnetPort );
+				           << "failed to bind telnet socket " << m_TelnetPort );
 				SG_LOG ( SG_FGMS, SG_ALERT, "already in use?" );
 				return ( ERROR_COULDNT_BIND );
 			}
@@ -355,7 +355,6 @@ FG_SERVER::Init
 		if ( m_AdminSocket )
 		{
 			delete m_AdminSocket;
-			m_AdminSocket = 0;
 		}
 		m_AdminSocket = 0;
 		if ( m_AdminPort != 0 )
@@ -372,7 +371,7 @@ FG_SERVER::Init
 			if ( m_AdminSocket->bind ( m_BindAddress.c_str(), m_AdminPort ) != 0 )
 			{
 				SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
-				           << "failed to bind to port " << m_AdminPort );
+				           << "failed to bind admin socket " << m_AdminPort );
 				SG_LOG ( SG_FGMS, SG_ALERT, "already in use?" );
 				return ( ERROR_COULDNT_BIND );
 			}
@@ -392,8 +391,24 @@ FG_SERVER::Init
 	           << m_ProtoMajorVersion << "." << m_ProtoMinorVersion
 	           << " (LazyRelay enabled)" );
 	SG_CONSOLE ( SG_FGMS, SG_ALERT,"# listening to port " << m_ListenPort );
-	SG_CONSOLE ( SG_FGMS, SG_ALERT,"# telnet port " << m_TelnetPort );
-	SG_CONSOLE ( SG_FGMS, SG_ALERT,"# admin port " << m_AdminPort );
+	if ( m_TelnetSocket )
+	{
+		SG_CONSOLE ( SG_FGMS, SG_ALERT,"# telnet port " << m_TelnetPort );
+		SG_CONSOLE ( SG_FGMS, SG_ALERT,"# telnet socket " << m_TelnetSocket );
+	}
+	else
+	{
+		SG_CONSOLE ( SG_FGMS, SG_ALERT,"# telnet port DISABLED");
+	}
+	if ( m_AdminSocket )
+	{
+		SG_CONSOLE ( SG_FGMS, SG_ALERT,"# admin port " << m_AdminPort );
+		SG_CONSOLE ( SG_FGMS, SG_ALERT,"# admin socket " << m_AdminSocket );
+	}
+	else
+	{
+		SG_CONSOLE ( SG_FGMS, SG_ALERT,"# admin port DISABLED" );
+	}
 	SG_CONSOLE ( SG_FGMS, SG_ALERT,"# using logfile " << m_LogFileName );
 	if ( m_BindAddress != "" )
 	{
@@ -1642,10 +1657,12 @@ FG_SERVER::SetDataPort
         int Port
 )
 {
+	cout << "set data from " << m_ListenPort << " to " << Port << endl;
 	if ( Port != m_ListenPort )
 	{
-		m_ListenPort = Port;
-		m_ReinitData = true;
+		m_ListenPort = Port;		m_ReinitData   = true;
+		m_TelnetPort = m_ListenPort+1;	m_ReinitTelnet = true;
+		m_AdminPort  = m_ListenPort+2;	m_ReinitAdmin  = true;
 	}
 } // FG_SERVER::SetPort ( unsigned int iPort )
 
@@ -1778,12 +1795,10 @@ FG_SERVER::SetLogfile
 {
 	m_LogFileName = LogfileName;
 	SG_LOG ( SG_FGMS, SG_ALERT,"# using logfile " << m_LogFileName );
-	#if 0
-	if ( ( m_LogFile ) && (m_LogFile.fd() > 2) )
+	if ( ( m_LogFile ) && (m_LogFile != cerr) )
 	{
 		m_LogFile.close ();
 	}
-	#endif
 	m_LogFile.open ( m_LogFileName.c_str(), ios::out|ios::app );
 	sglog().enable_with_date ( true );
 	sglog().set_output ( m_LogFile );
@@ -1869,19 +1884,19 @@ FG_SERVER::Done
 	{
 		return;
 	}
-	if ( m_ReinitTelnet && m_TelnetSocket )
+	if ( m_TelnetSocket )
 	{
 		m_TelnetSocket->close();
 		delete m_TelnetSocket;
 		m_TelnetSocket = 0;
 	}
-	if ( m_ReinitAdmin && m_AdminSocket )
+	if ( m_AdminSocket )
 	{
 		m_AdminSocket->close();
 		delete m_AdminSocket;
 		m_AdminSocket = 0;
 	}
-	if ( m_ReinitData && m_DataSocket )
+	if ( m_DataSocket )
 	{
 		m_DataSocket->close();
 		delete m_DataSocket;

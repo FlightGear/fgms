@@ -103,7 +103,6 @@ is_file_or_directory ( char* path )
 	return 0;
 }
 
-
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief Print a help screen for command line parameters, see \ref command_line
@@ -131,7 +130,6 @@ PrintHelp ()
 	exit ( 0 );
 } // PrintHelp ()
 //////////////////////////////////////////////////////////////////////
-
 
 #ifdef _MSC_VER
 // kludge for getopt() for WIN32
@@ -179,8 +177,6 @@ int getopt ( int argcount, char* argvars[], char* args )
 }
 #endif // _MSC_VER
 
-
-
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief Read a config file and set internal variables accordingly
@@ -199,6 +195,10 @@ ProcessConfig ( const string& ConfigName )
 	}
 	if ( Config.Read ( ConfigName ) )
 	{
+		bHadConfig = true;
+		SG_LOG ( SG_SYSTEMS, SG_ALERT,
+		  "Could not read config file '" << ConfigName
+		  << "' => using defaults");
 		return ( false );
 	}
 	cout << "processing " << ConfigName << endl;
@@ -485,6 +485,8 @@ ParseParams ( int argcount, char* argvars[] )
 			}
 			break;
 		case 'c':
+				ProcessConfig ( optarg );
+				#if 0
 			if ( is_file_or_directory ( optarg ) == 1 )
 			{
 				ProcessConfig ( optarg );
@@ -496,6 +498,7 @@ ParseParams ( int argcount, char* argvars[] )
 				     << endl;
 				exit ( 1 );
 			}
+			#endif
 			break;
 		case 'p':
 			Servant.SetDataPort ( StrToNum<int>  ( optarg, E ) );
@@ -537,11 +540,9 @@ ParseParams ( int argcount, char* argvars[] )
 			Servant.SetLogfile ( optarg );
 			break;
 		case 'd':
-			cout << "param daemon = false" << endl;
 			RunAsDaemon = false;
 			break;
 		case 'D':
-			cout << "param daemon = true" << endl;
 			RunAsDaemon = true;
 			break;
 		default:
@@ -552,8 +553,6 @@ ParseParams ( int argcount, char* argvars[] )
 	} // while ()
 	return ( 1 ); // success
 } // ParseParams()
-
-
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -648,8 +647,6 @@ SigCHLDHandler ( int s )
 //////////////////////////////////////////////////////////////////////
 #endif // !_MSC_VER
 
-
-
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief MAIN routine
@@ -683,6 +680,7 @@ main ( int argc, char* argv[] )
 #ifndef _MSC_VER
 	if ( RunAsDaemon )
 	{
+	cout << "#3.5" << endl;
 		Myself.Daemonize ();
 		SG_LOG ( SG_SYSTEMS, SG_ALERT, "Main server started!" );
 	}

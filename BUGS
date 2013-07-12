@@ -6,3 +6,9 @@ config file and the values of all command line arguments. After a SIGHUP,
 reload config file, apply the switch values and reinitialise fgms. The
 configfile parser must be moved to fg_server.
 
+2) strange behavior if 'localhost' is configured as a relay
+
+If you run a second instance of fgms on the same host and configure it as a
+relay of the first instance, the first instance also receives the sent
+packets and thinks it has a new user, adding him to the list. Could not
+find out why.
