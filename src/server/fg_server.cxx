@@ -181,54 +181,55 @@ FG_SERVER::FG_SERVER
 		int16_t     Low;
 	} converter;
 	converter*    tmp;
-	m_Initialized         = true; // Init() will do it
-	m_ReinitData          = true; // init the data port
-	m_ReinitTelnet        = true; // init the telnet port
-	m_ListenPort          = 5000; // port for client connections
-	m_PlayerExpires       = 10; // standard expiration period
-	m_Listening           = false;
-	m_DataSocket          = 0;
-	m_TelnetPort          = m_ListenPort+1;
-	m_AdminPort           = m_ListenPort+2;
-	m_NumMaxClients       = 0;
-	m_PlayerIsOutOfReach  = 100;  // standard 100 nm
-	m_IsParent            = false;
-	m_ServerName          = "* Server *";
-	m_BindAddress         = "";
-	tmp                   = ( converter* ) ( & PROTO_VER );
-	m_ProtoMinorVersion   = tmp->High;
-	m_ProtoMajorVersion   = tmp->Low;
-	m_LogFileName         = DEF_SERVER_LOG; // "fg_server.log";
-	m_RelayMap            = map<uint32_t, string>();
-	m_IsTracked           = false; // off until config file read
-	m_Tracker             = 0; // no tracker yet
-	m_UpdateSecs          = DEF_UPDATE_SECS;
+	m_Initialized		= true; // Init() will do it
+	m_ReinitData		= true; // init the data port
+	m_ReinitTelnet		= true; // init the telnet port
+	m_ReinitAdmin		= true; // init the telnet port
+	m_ListenPort		= 5000; // port for client connections
+	m_PlayerExpires		= 10; // standard expiration period
+	m_Listening		= false;
+	m_DataSocket		= 0;
+	m_TelnetPort		= m_ListenPort+1;
+	m_AdminPort		= m_ListenPort+2;
+	m_NumMaxClients		= 0;
+	m_PlayerIsOutOfReach	= 100;  // standard 100 nm
+	m_IsParent		= false;
+	m_ServerName		= "* Server *";
+	m_BindAddress		= "";
+	tmp			= ( converter* ) ( & PROTO_VER );
+	m_ProtoMinorVersion	= tmp->High;
+	m_ProtoMajorVersion	= tmp->Low;
+	m_LogFileName		= DEF_SERVER_LOG; // "fg_server.log";
+	m_RelayMap		= map<uint32_t, string>();
+	m_IsTracked		= false; // off until config file read
+	m_Tracker		= 0; // no tracker yet
+	m_UpdateSecs		= DEF_UPDATE_SECS;
 	// clear stats - should show what type of packet was received
-	m_PacketsReceived     = 0;
-	m_TelnetReceived      = 0;
+	m_PacketsReceived	= 0;
+	m_TelnetReceived	= 0;
 	m_AdminReceived		= 0;
-	m_BlackRejected       = 0;  // in black list
-	m_PacketsInvalid      = 0;  // invalid packet
-	m_UnknownRelay        = 0;  // unknown relay
-	m_RelayMagic          = 0;  // relay magic packet
-	m_PositionData        = 0;  // position data packet
-	m_NotPosData          = 0;
+	m_BlackRejected		= 0;  // in black list
+	m_PacketsInvalid	= 0;  // invalid packet
+	m_UnknownRelay		= 0;  // unknown relay
+	m_RelayMagic		= 0;  // relay magic packet
+	m_PositionData		= 0;  // position data packet
+	m_NotPosData		= 0;
 	// clear totals
-	mT_PacketsReceived    = 0;
-	mT_BlackRejected      = 0;
-	mT_PacketsInvalid     = 0;
-	mT_UnknownRelay       = 0;
-	mT_PositionData       = 0;
-	mT_TelnetReceived     = 0;
-	mT_RelayMagic         = 0;
-	mT_NotPosData         = 0;
-	m_CrossFeedFailed     = 0;
-	m_CrossFeedSent       = 0;
-	mT_CrossFeedFailed    = 0;
-	mT_CrossFeedSent      = 0;
-	m_TrackerConnect      = 0;
-	m_TrackerDisconnect   = 0;
-	m_TrackerPostion      = 0; // Tracker messages queued
+	mT_PacketsReceived	= 0;
+	mT_BlackRejected	= 0;
+	mT_PacketsInvalid	= 0;
+	mT_UnknownRelay		= 0;
+	mT_PositionData		= 0;
+	mT_TelnetReceived	= 0;
+	mT_RelayMagic		= 0;
+	mT_NotPosData		= 0;
+	m_CrossFeedFailed	= 0;
+	m_CrossFeedSent		= 0;
+	mT_CrossFeedFailed	= 0;
+	mT_CrossFeedSent	= 0;
+	m_TrackerConnect	= 0;
+	m_TrackerDisconnect	= 0;
+	m_TrackerPostion	= 0; // Tracker messages queued
 	m_Uptime		= time(0);
 	m_WantExit		= false;
 	// SetLog (SG_FGMS|SG_FGTRACKER, SG_BULK);
@@ -285,9 +286,9 @@ FG_SERVER::Init
 		m_DataSocket        = 0;
 		m_NumMaxClients     = 0;
 	}
-	if ( m_ReinitData || m_ReinitTelnet )
+	if ( m_ReinitData || m_ReinitTelnet || m_ReinitAdmin )
 	{
-		netInit ();
+		netInit (); // WinSocket initialisation
 	}
 	if ( m_ReinitData )
 	{
@@ -1433,10 +1434,11 @@ FG_SERVER::check_keyboard
 			SG_LOG ( SG_FGMS, SG_ALERT, "ERROR: Unable to delete reset file! Doing hard exit..." );
 			exit ( 1 );
 		}
-		m_Initialized         = true; // Init() will do it
-		m_ReinitData          = true; // init the data port
-		m_ReinitTelnet        = true; // init the telnet port
-		m_Listening           = false;
+		m_Initialized	= true; // Init() will do it
+		m_ReinitData	= true; // init the data port
+		m_ReinitTelnet	= true; // init the telnet port
+		m_ReinitAdmin	= true; // init the admin port
+		m_Listening	= false;
 		SigHUPHandler ( 0 );
 	}
 	else if ( stat ( stat_file,&buf ) == 0 )
@@ -1463,10 +1465,11 @@ FG_SERVER::check_keyboard
 		else if ( ( ch == 'R' ) || ( ch == 'r' ) )
 		{
 			printf ( "Got 'R' - Reset key...\n" );
-			m_Initialized         = true; // Init() will do it
-			m_ReinitData          = true; // init the data port
-			m_ReinitTelnet        = true; // init the telnet port
-			m_Listening           = false;
+			m_Initialized	= true; // Init() will do it
+			m_ReinitData	= true; // init the data port
+			m_ReinitTelnet	= true; // init the telnet port
+			m_ReinitAdmin	= true; // init the admin port
+			m_Listening	= false;
 			SigHUPHandler ( 0 );
 		}
 		else if ( ( ch == 'S' ) || ( ch == 's' ) )
