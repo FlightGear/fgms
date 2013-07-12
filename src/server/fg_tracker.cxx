@@ -73,10 +73,6 @@
 	extern  cDaemon Myself;
 #endif // !_MSC_VER
 
-#ifndef DEF_DEBUG_OUTPUT
-	#define DEF_DEBUG_OUTPUT false
-#endif
-
 extern bool RunAsDaemon;
 
 //////////////////////////////////////////////////////////////////////
@@ -110,7 +106,6 @@ FG_TRACKER::~FG_TRACKER ()
 void* func_Tracker ( void* vp )
 {
 	FG_TRACKER* pt = ( FG_TRACKER* ) vp;
-	pt->Connect();
 	pt->TrackerLoop();
 	return ( ( void* ) 0xdead );
 }
@@ -167,7 +162,7 @@ FG_TRACKER::InitTracker ( pid_t* pPIDS )
 		signal ( SIGTSTP, signal_handler );
 #endif // !_MSC_VER
 		TrackerLoop ();
-		exit ( 0 );
+		// exit ( 0 );
 	}
 	else
 	{
@@ -186,29 +181,36 @@ FG_TRACKER::InitTracker ( pid_t* pPIDS )
 int
 FG_TRACKER::TrackerLoop ()
 {
-	m_MsgBuffer		buf;
-	int 			i=0;
-	int			length;
-	int			pkt_sent = 0;
-	int			max_msg_sent = 25; /*Maximun message sent before receiving reply.*/
-	char			res[MSGMAXLINE];	/*Msg from/to server*/
-	string 			PINGRPY;
-	stringstream out;
-	char 			b;
-	pid_t			pid = getpid();
-	short int		time_out_counter_l=0;
-	unsigned int		time_out_counter_u=0;
-	short int		time_out_fraction=25; /* 1000000/time_out_fraction must be integer*/
-	bool			resentflg = false; /*If ture, resend all message in the msgbuf first*/
-	bool			connected = false; /*If connected to fgtracker*/
-	bool			sockect_read_completed = false;
 	/*Msg structure*/
-	struct MSG
+	class MSG
 	{
+	public:
 		char msg[MSGMAXLINE];
 		struct MSG* next;
 	};
-	struct MSG*		msgque_head,*msgque_tail,*msgque_new,*msgbuf_head,*msgbuf_tail,*msgbuf_new,*msgbuf_resend;
+	m_MsgBuffer	buf;
+	int 		i=0;
+	int		length;
+	int		pkt_sent = 0;
+	int		max_msg_sent = 25; /*Maximun message sent before receiving reply.*/
+	char		res[MSGMAXLINE];	/*Msg from/to server*/
+	string 		PINGRPY;
+	stringstream	out;
+	char 		b;
+	pid_t		pid = getpid();
+	short int	time_out_counter_l=0;
+	unsigned int	time_out_counter_u=0;
+	short int	time_out_fraction=25; /* 1000000/time_out_fraction must be integer*/
+	bool		resentflg = false; /*If ture, resend all message in the msgbuf first*/
+	bool		connected = false; /*If connected to fgtracker*/
+	bool		sockect_read_completed = false;
+	MSG*		msgque_head;
+	MSG*		msgque_tail;
+	MSG*		msgque_new;
+	MSG*		msgbuf_head;
+	MSG*		msgbuf_tail;
+	MSG*		msgbuf_new;
+	MSG*		msgbuf_resend;
 	/*Initalize value*/
 	strcpy ( res, "" );
 	msgque_head = NULL;
@@ -220,10 +222,15 @@ FG_TRACKER::TrackerLoop ()
 	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 		<< "Msg structure size: " << sizeof ( struct MSG )
 	);
-	connected=Connect();
+	connected = Connect();
 	/*Infinite loop*/
 	for ( ; ; )
 	{
+		while (! connected)
+		{
+			sleep (DEF_TRACKER_SLEEP);
+			connected = Connect();
+		}
 		length = 0;
 		/*time-out issue*/
 		usleep ( 1000000/time_out_fraction );
@@ -253,13 +260,14 @@ FG_TRACKER::TrackerLoop ()
 					<< "Connection timed out..."
 				);
 			}
-			connected=Connect();
-			msgbuf_resend=NULL;
-			pkt_sent=0;
+			connected = false;
+			pkt_sent  = 0;
 			resentflg = true;
+			msgbuf_resend=NULL;
 			strcpy ( res, "" );
-			time_out_counter_l=1;
-			time_out_counter_u=0;
+			time_out_counter_l = 1;
+			time_out_counter_u = 0;
+			continue;
 		}
 		/*time-out issue End*/
 		/*Read msg from IPC*/
@@ -518,11 +526,12 @@ FG_TRACKER::TrackerLoop ()
 				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 					<< "Can't write to server..."
 				);
-				connected=Connect();
-				msgbuf_resend=NULL;
-				pkt_sent=0;
-				strcpy ( res, "" );
+				connected = false;
+				pkt_sent  = 0;
 				resentflg = true;
+				msgbuf_resend=NULL;
+				strcpy ( res, "" );
+				continue;
 			}
 			else
 			{
@@ -550,7 +559,6 @@ FG_TRACKER::TrackerLoop ()
 bool
 FG_TRACKER::Connect()
 {
-	bool connected = false;
 	pid_t pid = getpid();
 	//////////////////////////////////////////////////
 	// close all inherited open sockets, but
@@ -562,25 +570,18 @@ FG_TRACKER::Connect()
 	}
 	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect [" << pid << "]: "
 		<< "Server: " << m_TrackerServer << ", Port: " << m_TrackerPort);
-	if ( connected == false )
+	m_TrackerSocket = TcpConnect ( m_TrackerServer, m_TrackerPort );
+	if ( m_TrackerSocket < 0 )
 	{
-		m_TrackerSocket = TcpConnect ( m_TrackerServer, m_TrackerPort );
-		if ( m_TrackerSocket >= 0 )
-		{
-			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect [" << pid << "]: "
-				<< "success"
-			);
-			connected = true;
-		}
-		else
-		{
-			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect [" << pid << "]: "
-				<< "Failed to connect to fgtracker! Wait " << DEF_TRACKER_SLEEP
-				<< " seconds and retry."
-			);
-			return false;
-		}
+		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect [" << pid << "]: "
+			<< "Failed to connect to fgtracker! Wait " << DEF_TRACKER_SLEEP
+			<< " seconds and retry."
+		);
+		return false;
 	}
+	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect [" << pid << "]: "
+		<< "success"
+	);
 	SWRITE ( m_TrackerSocket,"",1 );
 	sleep ( 2 );
 	SWRITE ( m_TrackerSocket,"NOWAIT",7 );

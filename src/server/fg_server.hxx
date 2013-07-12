@@ -28,8 +28,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <list>
-#include <vector>
 #include <map>
 #include <string>
 #include <string.h>

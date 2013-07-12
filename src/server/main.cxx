@@ -80,29 +80,6 @@ static bool     bHadConfig = false;
 #define SYSCONFDIR "/usr/etc"
 #endif
 
-/**
- * @brief Checks is path is a file or directory
- * @param path Path to check
- * @retval int 0, 1, 2 -- todo --
- */
-static int
-is_file_or_directory ( char* path )
-{
-	struct stat buf;
-	if ( stat ( path,&buf ) == 0 )
-	{
-		if ( buf.st_mode & M_IS_DIR )
-		{
-			return 2;
-		}
-		else
-		{
-			return 1;
-		}
-	}
-	return 0;
-}
-
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief Print a help screen for command line parameters, see \ref command_line
@@ -485,20 +462,7 @@ ParseParams ( int argcount, char* argvars[] )
 			}
 			break;
 		case 'c':
-				ProcessConfig ( optarg );
-				#if 0
-			if ( is_file_or_directory ( optarg ) == 1 )
-			{
-				ProcessConfig ( optarg );
-			}
-			else
-			{
-				cerr << "could not read '"
-				     << optarg << "' for input!"
-				     << endl;
-				exit ( 1 );
-			}
-			#endif
+			ProcessConfig ( optarg );
 			break;
 		case 'p':
 			Servant.SetDataPort ( StrToNum<int>  ( optarg, E ) );
@@ -627,8 +591,6 @@ void SigHUPHandler ( int SigType )
 } // SigHUPHandler ()
 //////////////////////////////////////////////////////////////////////
 
-
-
 #ifndef _MSC_VER
 //////////////////////////////////////////////////////////////////////
 /**
@@ -680,7 +642,6 @@ main ( int argc, char* argv[] )
 #ifndef _MSC_VER
 	if ( RunAsDaemon )
 	{
-	cout << "#3.5" << endl;
 		Myself.Daemonize ();
 		SG_LOG ( SG_SYSTEMS, SG_ALERT, "Main server started!" );
 	}

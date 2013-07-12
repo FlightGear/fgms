@@ -20,7 +20,6 @@ using namespace std;
 
 #include <iostream>
 #include <fstream>
-#include <list>
 #include <string>
 #include <string.h>
 #include <errno.h>
@@ -30,16 +29,15 @@ using namespace std;
 #include "daemon.hxx"
 #include "fg_geometry.hxx"
 
-#define CONNECT     0
-#define DISCONNECT  1
-#define UPDATE    2
+#define CONNECT    0
+#define DISCONNECT 1
+#define UPDATE     2
 
 #ifndef IPCPERMS
 #define IPCPERMS    0600
 #endif
 
 void signal_handler(int s);
-
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -100,7 +98,7 @@ public:
 	};
 
 #ifdef USE_TRACKER_PORT    // leave all members PUBLIC!
-    pthread_t thread;
+	pthread_t thread;
 #else // !USE_TRACKER_POSRT
 private:
 #endif // USE_TRACKER_PORT y/n
