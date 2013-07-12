@@ -97,11 +97,9 @@ extern void SigHUPHandler ( int SigType );
 	static char* stat_file   = ( char* ) "/tmp/" DEF_STAT_FILE;
 #endif // _MSC_VER y/n
 
-#ifdef USE_TRACKER_PORT
-	pthread_mutex_t msg_mutex     = PTHREAD_MUTEX_INITIALIZER;
-	pthread_cond_t  condition_var = PTHREAD_COND_INITIALIZER;
-	vMSG msg_queue; // queue for messages
-#endif // #ifdef USE_TRACKER_PORT
+pthread_mutex_t msg_mutex     = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  condition_var = PTHREAD_COND_INITIALIZER;
+vMSG msg_queue; // queue for messages
 
 #ifdef ADD_TRACKER_LOG
 
@@ -427,16 +425,10 @@ FG_SERVER::Init
 		}
 		else
 		{
-#ifdef USE_TRACKER_PORT
-			SG_CONSOLE ( SG_FGMS, SG_ALERT, "# tracked to "
-			           << m_Tracker->GetTrackerServer ()
-			           << ":" << m_Tracker->GetTrackerPort ()
-			           << ", using a thread." );
-#else // #ifdef USE_TRACKER_PORT
-			SG_CONSOLE ( SG_FGMS, SG_ALERT, "# tracked to "
-			           << m_Tracker->GetTrackerServer ()
-			           << ":" << m_Tracker->GetTrackerPort () );
-#endif // #ifdef USE_TRACKER_PORT y/n
+		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# tracked to "
+			   << m_Tracker->GetTrackerServer ()
+			   << ":" << m_Tracker->GetTrackerPort ()
+			   << ", using a thread." );
 		}
 	}
 	else
@@ -888,30 +880,11 @@ FG_SERVER::AddTracker
 )
 {
 	m_IsTracked     = IsTracked;
-#ifndef NO_TRACKER_PORT
-#ifdef USE_TRACKER_PORT
 	if ( m_Tracker )
 	{
 		delete m_Tracker;
 	}
 	m_Tracker = new FG_TRACKER ( Port,Server,0 );
-#else // !#ifdef USE_TRACKER_PORT
-	if ( m_Tracker )
-	{
-		msgctl ( m_ipcid,IPC_RMID,NULL );
-		delete m_Tracker;
-		m_Tracker = 0; // just deleted
-	}
-	printf ( "Establishing IPC\n" );
-	m_ipcid         = msgget ( IPC_PRIVATE,IPCPERMS );
-	if ( m_ipcid <= 0 )
-	{
-		perror ( "msgget getting ipc id failed" );
-		return -1;
-	}
-	m_Tracker = new FG_TRACKER ( Port,Server,m_ipcid );
-#endif // #ifdef USE_TRACKER_PORT y/n
-#endif // NO_TRACKER_PORT
 	return ( SUCCESS );
 } // FG_SERVER::AddTracker()
 
@@ -1860,24 +1833,6 @@ FG_SERVER::Done
 	{
 		return;
 	}
-	if ( m_IsTracked )
-	{
-#ifdef USE_TRACKER_PORT
-		// using a thread - could kill it, but...
-#else // #ifdef USE_TRACKER_PORT
-		// using fork() - must kill child processes
-		pid_t kid = m_TrackerPID;
-		if ( kill ( kid, SIGTERM ) )
-		{
-			SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Done() kill(" << kid << ", SIGKILL)!" );
-			kill ( kid, SIGKILL );
-		}
-		else
-		{
-			SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Done() kill(" << kid << ", SIGTERM) return ok." );
-		}
-#endif // #ifdef USE_TRACKER_PORT y/n
-	}
 	SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Done() - exiting" );
 	m_LogFile.close();
 	if ( m_Listening == false )
@@ -1905,8 +1860,6 @@ FG_SERVER::Done
 	if ( m_IsTracked )
 	{
 		delete m_Tracker;
-		// Remove msg queue
-		// msgctl(m_ipcid,IPC_RMID,NULL);
 	}
 	m_RelayList.Clear ();
 	m_BlackList.Clear ();
@@ -1928,7 +1881,6 @@ FG_SERVER::UpdateTracker
         int type
 )
 {
-#ifndef NO_TRACKER_PORT
 	char            TimeStr[100];
 	FG_Player	CurrentPlayer;
 	Point3D         PlayerPosGeod;
@@ -1981,14 +1933,10 @@ FG_SERVER::UpdateTracker
 		// queue the message
 		sprintf ( buf.mtext, "%s", Message.c_str() );
 		buf.mtype = 1;
-#ifdef USE_TRACKER_PORT
 		pthread_mutex_lock ( &msg_mutex ); // acquire the lock
 		msg_queue.push_back ( Message ); // queue the message
 		pthread_cond_signal ( &condition_var ); // wake up the worker
 		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
-#else // !#ifdef USE_TRACKER_PORT
-		msgsnd ( m_ipcid, &buf, strlen ( buf.mtext ), IPC_NOWAIT );
-#endif // #ifdef USE_TRACKER_PORT y/n
 #ifdef ADD_TRACKER_LOG
 		write_msg_log ( Message.c_str(), Message.size(), ( char* ) "IN: " ); // write message log
 #endif // #ifdef ADD_TRACKER_LOG
@@ -2008,14 +1956,10 @@ FG_SERVER::UpdateTracker
 		// queue the message
 		sprintf ( buf.mtext, "%s", Message.c_str() );
 		buf.mtype = 1;
-#ifdef USE_TRACKER_PORT
 		pthread_mutex_lock ( &msg_mutex ); // acquire the lock
 		msg_queue.push_back ( Message ); // queue the message
 		pthread_cond_signal ( &condition_var ); // wake up the worker
 		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
-#else // !#ifdef USE_TRACKER_PORT
-		msgsnd ( m_ipcid, &buf, strlen ( buf.mtext ), IPC_NOWAIT );
-#endif // #ifdef USE_TRACKER_PORT y/n
 #ifdef ADD_TRACKER_LOG
 		write_msg_log ( Message.c_str(), Message.size(), ( char* ) "IN: " ); // write message log
 #endif // #ifdef ADD_TRACKER_LOG
@@ -2044,19 +1988,14 @@ FG_SERVER::UpdateTracker
 			// queue the message
 			sprintf ( buf.mtext,"%s",Message.c_str() );
 			buf.mtype=1;
-#ifdef USE_TRACKER_PORT
 			pthread_mutex_lock ( &msg_mutex ); // acquire the lock
 			msg_queue.push_back ( Message ); // queue the message
 			pthread_cond_signal ( &condition_var ); // wake up the worker
 			pthread_mutex_unlock ( &msg_mutex ); // give up the lock
-#else // !#ifdef USE_TRACKER_PORT
-			msgsnd ( m_ipcid,&buf,strlen ( buf.mtext ),IPC_NOWAIT );
-#endif // #ifdef USE_TRACKER_PORT y/n
 			m_TrackerPostion++; // count a POSITION messge queued
 		}
 		Message.erase ( 0 );
 	} // while
-#endif // !NO_TRACKER_PORT
 	return ( 0 );
 } // UpdateTracker (...)
 //////////////////////////////////////////////////////////////////////

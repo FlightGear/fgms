@@ -218,22 +218,20 @@ typedef void Sigfunc (int);     /* for signal handlers */
 	#define PERROR(a) perror(a) 
 #endif
 
-#ifdef USE_TRACKER_PORT
-	extern void write_msg_log(const char *msg, int len, char *src = 0); // write to 'tracker' log
-	/* Compile time option
-	 * Use a vector to pass messages from 'server' to 'tracker',
-	 * with the 'msg_queue' protected by a 'msg_mutex', and signaled
-	 * by a 'condition_var' that the tracker thread waits on...
-	 * replacing the unix IPC msgctl/msgsnd/msgrcv...
-	 * expose these globally 
-	 */
-	#include <string>
-	#include <vector>
-	typedef std::vector<std::string> vMSG;  /* string vector */
-	typedef typename vMSG::iterator VI;              /* string vector iterator */
-	extern pthread_mutex_t msg_mutex;       /* message queue mutext */
-	extern pthread_cond_t  condition_var;   /* message queue condition */
-	extern vMSG msg_queue;                  /* the single message queue */
-#endif // #ifdef USE_TRACKER_PORT
+extern void write_msg_log(const char *msg, int len, char *src = 0); // write to 'tracker' log
+/* Compile time option
+ * Use a vector to pass messages from 'server' to 'tracker',
+ * with the 'msg_queue' protected by a 'msg_mutex', and signaled
+ * by a 'condition_var' that the tracker thread waits on...
+ * replacing the unix IPC msgctl/msgsnd/msgrcv...
+ * expose these globally 
+ */
+#include <string>
+#include <vector>
+typedef std::vector<std::string> vMSG;  /* string vector */
+typedef typename vMSG::iterator VI;              /* string vector iterator */
+extern pthread_mutex_t msg_mutex;       /* message queue mutext */
+extern pthread_cond_t  condition_var;   /* message queue condition */
+extern vMSG msg_queue;                  /* the single message queue */
 
 #endif // #ifndef __common_hxx

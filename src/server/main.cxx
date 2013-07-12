@@ -591,24 +591,6 @@ void SigHUPHandler ( int SigType )
 } // SigHUPHandler ()
 //////////////////////////////////////////////////////////////////////
 
-#ifndef _MSC_VER
-//////////////////////////////////////////////////////////////////////
-/**
- * @brief Add the pid of the child to the main exit pon receiving SIGCHLD
- * @param s int with pid
- */
-void
-SigCHLDHandler ( int s )
-{
-	pid_t child;
-	while ( ( child = waitpid ( -1, NULL, WNOHANG ) ) > 0 )
-	{
-		SG_LOG ( SG_SYSTEMS, SG_ALERT, "["<< getpid() << "] SigCHLDHandler: CHILD " << child << " dead!" );
-	}
-} // SigCHLDHandler ()
-//////////////////////////////////////////////////////////////////////
-#endif // !_MSC_VER
-
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief MAIN routine
@@ -619,12 +601,8 @@ int
 main ( int argc, char* argv[] )
 {
 	int     I;
-#if defined ENABLE_DEBUG
-	//  logbuf::set_log_classes(SG_GENERAL);
-#endif
 #ifndef _MSC_VER
 	signal ( SIGHUP, SigHUPHandler );
-	signal ( SIGCHLD, SigCHLDHandler );
 #endif
 	ParseParams ( argc, argv );
 	ReadConfigs ();
@@ -647,13 +625,9 @@ main ( int argc, char* argv[] )
 	}
 #endif
 	I = Servant.Loop();
-	if ( I != 0 )
-	{
-		Servant.CloseTracker();
-		return ( I );
-	}
+	Servant.CloseTracker();
 	Servant.Done();
-	return ( 0 );
+	return ( I );
 } // main()
 //////////////////////////////////////////////////////////////////////
 

@@ -100,18 +100,12 @@ FG_TRACKER::~FG_TRACKER ()
 {
 } // ~FG_TRACKER()
 
-
-
-#ifdef USE_TRACKER_PORT
 void* func_Tracker ( void* vp )
 {
 	FG_TRACKER* pt = ( FG_TRACKER* ) vp;
 	pt->TrackerLoop();
 	return ( ( void* ) 0xdead );
 }
-
-#endif // #ifdef USE_TRACKER_PORT
-
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -121,55 +115,11 @@ void* func_Tracker ( void* vp )
 int
 FG_TRACKER::InitTracker ( pid_t* pPIDS )
 {
-#ifndef NO_TRACKER_PORT
-#ifdef USE_TRACKER_PORT
 	if ( pthread_create ( &thread, NULL, func_Tracker, ( void* ) this ) )
 	{
 		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::InitTracker: can't create thread..." );
 		return 1;
 	}
-#else // !#ifdef USE_TRACKER_PORT
-	pid_t ChildsPID;
-	ChildsPID = fork();
-	if ( ChildsPID < 0 )
-	{
-		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::InitTracker: fork() FAILED!" );
-		return 1;
-	}
-	else if ( ChildsPID == 0 )
-	{
-		usleep ( 2500 );
-#ifndef _MSC_VER
-		/*Install signal handler*/
-		signal ( SIGCHLD, signal_handler );
-		signal ( SIGHUP, signal_handler );
-		signal ( SIGINT, signal_handler );
-		signal ( SIGQUIT, signal_handler );
-		signal ( SIGILL, signal_handler );
-		signal ( SIGTRAP, signal_handler );
-		signal ( SIGABRT, signal_handler );
-		signal ( SIGBUS, signal_handler );
-		signal ( SIGFPE, signal_handler );
-		signal ( SIGKILL, signal_handler );
-		signal ( SIGUSR1, signal_handler );
-		signal ( SIGSEGV, signal_handler );
-		signal ( SIGUSR2, signal_handler );
-		signal ( SIGPIPE, signal_handler );
-		signal ( SIGALRM, signal_handler );
-		signal ( SIGTERM, signal_handler );
-		signal ( SIGCONT, signal_handler );
-		signal ( SIGSTOP, signal_handler );
-		signal ( SIGTSTP, signal_handler );
-#endif // !_MSC_VER
-		TrackerLoop ();
-		// exit ( 0 );
-	}
-	else
-	{
-		pPIDS[0] = ChildsPID; // parent - store child PID
-	}
-#endif // #ifdef USE_TRACKER_PORT y/n
-#endif // NO_TRACKER_PORT
 	return ( 0 );
 } // InitTracker (int port, string server, int id, int pid)
 
@@ -271,8 +221,6 @@ FG_TRACKER::TrackerLoop ()
 		}
 		/*time-out issue End*/
 		/*Read msg from IPC*/
-#ifndef NO_TRACKER_PORT
-#ifdef USE_TRACKER_PORT
 		pthread_mutex_lock ( &msg_mutex );  // acquire the lock
 		pthread_cond_wait ( &condition_var, &msg_mutex );   // go wait for the condition
 		VI vi = msg_queue.begin(); // get first message
@@ -284,10 +232,6 @@ FG_TRACKER::TrackerLoop ()
 			strcpy ( buf.mtext, s.c_str() ); // mtext is 1200 bytes!!!
 		}
 		pthread_mutex_unlock ( &msg_mutex ); // unlock the mutex
-#else // !#ifdef USE_TRACKER_PORT
-		length = msgrcv ( ipcid, &buf, MAXLINE, 0, MSG_NOERROR | IPC_NOWAIT );
-#endif // #ifdef USE_TRACKER_PORT y/n
-#endif // NO_TRACKER_PORT
 		buf.mtext[length] = '\0';
 #ifdef ADD_TRACKER_LOG
 		if ( length )

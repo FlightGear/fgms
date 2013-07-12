@@ -24,11 +24,6 @@
 #define strncasecmp strncmp
 #define unlink _unlink
 
-// alternative to fork() and the msgget/msgsnd/msgrcv IPC - now handled as a CMakeLists.txt OPTION
-// #ifdef NO_TRACKER_PORT
-// #undef NO_TRACKER_PORT
-// #endif // NO_TRACKER_PORT
-
 /* Now REQUIRED <pthread.h>, and the pthreadVC2.lib and dll */
 #define HAVE_PTHREAD_H 1
 
