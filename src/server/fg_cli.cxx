@@ -267,6 +267,11 @@ FG_CLI::cmd_show_stats
 	string	temp;
 	time_t	difftime;
 	time_t	now;
+	uint64_t	accumulated_sent	= 0;
+	uint64_t	accumulated_rcvd	= 0;
+	uint64_t	accumulated_sent_pkts	= 0;
+	uint64_t	accumulated_rcvd_pkts	= 0;
+
 	if (argc > 0)
 	{
 		print ("<br>");
@@ -289,19 +294,36 @@ FG_CLI::cmd_show_stats
 	n = print ("Sent counters:");
 	if (n) return 0;
 
+	accumulated_sent	+= fgms->m_CrossfeedList.BytesSent;
+	accumulated_sent_pkts	+= fgms->m_CrossfeedList.PktsSent;
 	temp = byte_counter ((double) fgms->m_CrossfeedList.BytesSent / difftime);
-	n = print ("  %-20s %lu packets / %s (%s/s)",
+	n = print ("  %-20s %lu packets (%lu/s) / %s (%s/s)",
 	  "to crossfeeds:",
 	  fgms->m_CrossfeedList.PktsSent,
+	  fgms->m_CrossfeedList.PktsSent / difftime,
 	  byte_counter (fgms->m_CrossfeedList.BytesSent).c_str(),
 	  temp.c_str());
 	if (n) return 0;
 
+	accumulated_sent	+= fgms->m_RelayList.BytesSent;
+	accumulated_sent_pkts	+= fgms->m_RelayList.PktsSent;
 	temp = byte_counter ((double) fgms->m_RelayList.BytesSent / difftime);
-	n = print ("  %-20s %lu packets %s (%s/s)",
+	n = print ("  %-20s %lu packets (%lu/s) / %s (%s/s)",
 	  "to relays:",
 	  fgms->m_RelayList.PktsSent,
+	  fgms->m_RelayList.PktsSent / difftime,
 	  byte_counter (fgms->m_RelayList.BytesSent).c_str(),
+	  temp.c_str());
+	if (n) return 0;
+
+	accumulated_sent	+= fgms->m_PlayerList.BytesSent;
+	accumulated_sent_pkts	+= fgms->m_PlayerList.PktsSent;
+	temp = byte_counter ((double) fgms->m_PlayerList.BytesSent / difftime);
+	n = print ("  %-20s %lu packets (%lu/s) / %s (%s/s)",
+	  "to users:",
+	  fgms->m_PlayerList.PktsSent,
+	  fgms->m_PlayerList.PktsSent / difftime,
+	  byte_counter (fgms->m_PlayerList.BytesSent).c_str(),
 	  temp.c_str());
 	if (n) return 0;
 
@@ -317,27 +339,6 @@ FG_CLI::cmd_show_stats
 	if (n) return 0;
 	n = print ("  %-20s %lu", "other data:", fgms->m_NotPosData);
 	if (n) return 0;
-	temp = byte_counter ((double) fgms->m_RelayList.BytesRcvd / difftime);
-	n = print ("  %-20s %lu packets %s (%s/s)",
-	  "From Relays:",
-	  fgms->m_RelayList.PktsRcvd,
-	  byte_counter (fgms->m_RelayList.BytesRcvd).c_str(),
-	  temp.c_str());
-	if (n) return 0;
-	temp = byte_counter ((double) fgms->m_BlackList.BytesRcvd / difftime);
-	n = print ("  %-20s %lu packets %s (%s/s)",
-	  "Blacklist:",
-	  fgms->m_BlackList.PktsRcvd,
-	  byte_counter (fgms->m_BlackList.BytesRcvd).c_str(),
-	  temp.c_str());
-	if (n) return 0;
-
-	float telnet_per_second;
-	if (fgms->m_TelnetReceived)
-		telnet_per_second = fgms->m_TelnetReceived / (time(0) - fgms->m_Uptime);
-	else
-		telnet_per_second = 0;
-	n = print ("  %-20s %lu (%.2f t/sec)", "telnet connections:", fgms->m_TelnetReceived, telnet_per_second);
 	if (n) return 0;
 	n = print ("  %-20s %lu", "admin connections:", fgms->m_AdminReceived);
 	if (n) return 0;
@@ -346,6 +347,63 @@ FG_CLI::cmd_show_stats
 	n = print ("  %-20s %lu", "tracker disconnets:", fgms->m_TrackerDisconnect);
 	if (n) return 0;
 	n = print ("  %-20s %lu", "tracker positions:", fgms->m_TrackerPostion);
+
+	float telnet_per_second;
+	if (fgms->m_TelnetReceived)
+		telnet_per_second = fgms->m_TelnetReceived / (time(0) - fgms->m_Uptime);
+	else
+		telnet_per_second = 0;
+	n = print ("  %-20s %lu (%.2f t/sec)", "telnet connections:", fgms->m_TelnetReceived, telnet_per_second);
+
+	accumulated_rcvd	+= fgms->m_BlackList.BytesRcvd;
+	accumulated_rcvd_pkts	+= fgms->m_BlackList.PktsRcvd;
+	temp = byte_counter ((double) fgms->m_BlackList.BytesRcvd / difftime);
+	n = print ("  %-20s %lu packets (%lu/s) / %s (%s/s)",
+	  "blacklist:",
+	  fgms->m_BlackList.PktsRcvd,
+	  fgms->m_BlackList.PktsRcvd / difftime,
+	  byte_counter (fgms->m_BlackList.BytesRcvd).c_str(),
+	  temp.c_str());
+	if (n) return 0;
+
+	accumulated_rcvd	+= fgms->m_RelayList.BytesRcvd;
+	accumulated_rcvd_pkts	+= fgms->m_RelayList.PktsRcvd;
+	temp = byte_counter ((double) fgms->m_RelayList.BytesRcvd / difftime);
+	n = print ("  %-20s %lu packets (%lu/s) / %s (%s/s)",
+	  "relays:",
+	  fgms->m_RelayList.PktsRcvd,
+	  fgms->m_RelayList.PktsRcvd / difftime,
+	  byte_counter (fgms->m_RelayList.BytesRcvd).c_str(),
+	  temp.c_str());
+	if (n) return 0;
+
+	accumulated_rcvd	+= fgms->m_PlayerList.BytesRcvd;
+	accumulated_rcvd_pkts	+= fgms->m_PlayerList.PktsRcvd;
+	temp = byte_counter ((double) fgms->m_PlayerList.BytesRcvd / difftime);
+	n = print ("  %-20s %lu packets (%lu/s) / %s (%s/s)",
+	  "users:",
+	  fgms->m_PlayerList.PktsRcvd,
+	  fgms->m_PlayerList.PktsRcvd / difftime,
+	  byte_counter (fgms->m_PlayerList.BytesRcvd).c_str(),
+	  temp.c_str());
+	if (n) return 0;
+
+	n = print ("Totals:");
+	if (n) return 0;
+	temp = byte_counter ((double) accumulated_sent / difftime);
+	n = print ("  sent    : %lu packets (%lu/s) / %s (%s/s)",
+		accumulated_sent_pkts,
+		accumulated_sent_pkts / difftime,
+		byte_counter (accumulated_sent).c_str(),
+		temp.c_str());
+	if (n) return 0;
+	temp = byte_counter ((double) accumulated_rcvd / difftime);
+	n = print ("  received: %lu packets (%lu/s) / %s (%s/s)",
+		accumulated_rcvd_pkts,
+		accumulated_rcvd_pkts / difftime,
+		byte_counter (accumulated_rcvd).c_str(),
+		temp.c_str());
+	if (n) return 0;
 
 	return (0);
 }

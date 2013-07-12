@@ -24,6 +24,7 @@
 //      Server for FlightGear
 //      (c) 2005-2012 Oliver Schroeder
 //      and contributors (see AUTHORS)
+//
 //////////////////////////////////////////////////////////////////////
 #ifdef HAVE_CONFIG_H
 	#include "config.h"
@@ -42,10 +43,6 @@
 	#include <netinet/in.h>
 #endif
 #include <string>
-/* From netSocket.cxx */
-#ifndef INADDR_NONE
-	#define INADDR_NONE ((unsigned long)-1)
-#endif
 
 #include "fg_server.hxx"    /* includes pthread.h */
 #include "fg_common.hxx"
@@ -797,16 +794,8 @@ FG_SERVER::AddRelay
 )
 {
 	FG_ListElement  B (Server);
-	unsigned int    IP;
 
 	B.Address.set ( ( char* ) Server.c_str(), Port );
-	IP = B.Address.getIP();
-	if ( IP == INADDR_ANY || IP == INADDR_NONE )
-	{
-		SG_LOG ( SG_FGMS, SG_ALERT,
-		  "AddRelays: FAILED on " << Server << ", port " << Port );
-		return;
-	}
 	m_RelayList.Lock ();
 	ItList CurrentEntry = m_RelayList.Find ( B.Address, "" );
 	m_RelayList.Unlock ();
@@ -848,7 +837,6 @@ FG_SERVER::AddCrossfeed
         int Port
 )
 {
-	unsigned int    IP;
 	string s = Server;
 #ifdef _MSC_VER
 	if ( s == "localhost" )
@@ -858,12 +846,6 @@ FG_SERVER::AddCrossfeed
 #endif // _MSC_VER
 	FG_ListElement B (s);
 	B.Address.set ( ( char* ) s.c_str(), Port );
-	IP = B.Address.getIP();
-	if ( IP == INADDR_ANY || IP == INADDR_NONE )
-	{
-		SG_LOG ( SG_FGMS, SG_ALERT, "AddCrossfeed: FAILED on " << Server << ", port " << Port );
-		return;
-	}
 	m_CrossfeedList.Lock ();
 	ItList CurrentEntry = m_CrossfeedList.Find ( B.Address, "" );
 	m_CrossfeedList.Unlock ();
@@ -1294,7 +1276,10 @@ FG_SERVER::HandlePacket
 				SenderPosition    = CurrentPlayer->LastPos;
 				SenderOrientation = CurrentPlayer->LastOrientation;
 			}
-			m_PlayerList.UpdateRcvd (CurrentPlayer, Bytes);
+			if ( CurrentPlayer->IsLocal )
+			{
+				m_PlayerList.UpdateRcvd (CurrentPlayer, Bytes);
+			}
 			CurrentPlayer->DoUpdate = ( (Now - CurrentPlayer->LastRelayedToInactive) > UPDATE_INACTIVE_PERIOD );
 			if ( CurrentPlayer->DoUpdate )
 			{

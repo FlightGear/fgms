@@ -272,10 +272,14 @@ mT_FG_List<T>::Find
 			if (Name != "") 
 			{	// additionally look for matching name
 				if (Element->Name == Name)
+				{
+					Element->LastSeen = this->LastRun;
 					RetElem = Element;
+				}
 			}
 			else
 			{
+				Element->LastSeen = this->LastRun;
 				RetElem = Element;
 			}
 		}
@@ -290,8 +294,9 @@ mT_FG_List<T>::Find
 			{
 				SG_LOG ( SG_FGMS, SG_INFO,
 				  this->Name << ": TTL exceeded for "
-				  << Element->Address.getHost() << " " << Element->Name
-				  << " after " << diff_to_days (Element->LastSeen - Element->JoinTime)
+				  << Element->Name << " "
+				  << Element->Address.getHost() << " "
+				  << "after " << diff_to_days (Element->LastSeen - Element->JoinTime)
 				  );
 				Element = Elements.erase (Element);
 				continue;
