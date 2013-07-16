@@ -123,7 +123,6 @@ public:
 	CLI ();
 	~CLI ();
 	void	destroy ();
-	int     done();
 	void    register_command ( Command<CLI>* command, Command<CLI>* parent = 0 );
 	int     unregister_command ( char* command );
 	int     run_command ( char* command );

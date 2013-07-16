@@ -44,10 +44,10 @@
 #endif
 #include <string>
 
+#include "fg_cli.hxx"
 #include "fg_server.hxx"    /* includes pthread.h */
 #include "fg_common.hxx"
 #include "fg_util.hxx"
-#include "fg_cli.hxx"
 
 #ifdef _MSC_VER
 	#include <conio.h> // for _kbhit(), _getch
@@ -491,15 +491,15 @@ telnet_helper
 	return 0;
 }
 
-static void*
+void*
 admin_helper
 (
         void* context
 )
 {
-	pthread_detach ( pthread_self() );
 	st_telnet* t = reinterpret_cast<st_telnet*> ( context );
 	FG_SERVER* tmp_server = t->Instance;
+	pthread_detach ( pthread_self() );
 	tmp_server->HandleAdmin ( t->Fd );
 	delete t;
 	return 0;
@@ -523,7 +523,6 @@ FG_SERVER::HandleAdmin
 	errno = 0;
 	MyCLI = new FG_CLI ( this );
 	MyCLI->loop ( Fd );
-	MyCLI->done ();
 	if (Fd == 0)
 	{	// reading from stdin
 		WantExit();

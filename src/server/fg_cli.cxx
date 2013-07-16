@@ -425,8 +425,7 @@ FG_CLI::cmd_fgms_die
 		return (0);
 	}
 	fgms->m_WantExit = true;
-	CLI::internal_quit (command, argv, argc);
-	return 0;
+	return LIBCLI::QUIT;
 }
 
 int
@@ -1517,7 +1516,6 @@ FG_CLI::cmd_user_show
 			if (Player.Name != Name)
 				continue;
 		}
-		EntriesFound++;
 		sgCartToGeod ( Player.LastPos, PlayerPosGeod );
 		if (Player.IsLocal)
 		{
@@ -1594,6 +1592,7 @@ FG_CLI::cmd_user_show
 			"inactive",
 			now - Player.LastRelayedToInactive);
 		if (n) return 0;
+		EntriesFound++;
 
 #if 0
 	// do we really want to see the position in the admin interface?

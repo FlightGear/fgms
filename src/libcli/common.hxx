@@ -69,7 +69,7 @@ enum PRINT_MODE
 
 enum MATCH_MODE
 {
-	MATCH_REGEX     = 1,
+	MATCH_NORM	= 0,
 	MATCH_INVERT    = 2
 };
 

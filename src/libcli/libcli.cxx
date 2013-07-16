@@ -26,7 +26,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
-#include <regex.h>
 #include <fg_util.hxx>
 #include "libcli.hxx"
 
@@ -44,11 +43,7 @@ class match_filter_state
 {
 public:
 	int flags;
-	union
-	{
-		char* str;
-		regex_t re;
-	} match;
+	char* str;
 };
 
 class range_filter_state
@@ -66,8 +61,6 @@ filter_cmds_t filter_cmds[] =
 	{ "count",   "Count of lines"   },
 	{ "exclude", "Exclude lines that match" },
 	{ "include", "Include lines that match" },
-	{ "grep",    "Include lines that match regex (options: -v, -i, -e)" },
-	{ "egrep",   "Include lines that match extended regex" },
 	{ NULL, NULL}
 };
 
@@ -823,42 +816,6 @@ CLI::unregister_all
 }
 
 int
-CLI::done
-()
-{
-#if 0
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-
-	unp* u = this->users, *n;
-	free_history();
-	// Free all users
-	while ( u )
-	{
-		if ( u->username )
-		{
-			free ( u->username );
-		}
-		if ( u->password )
-		{
-			free ( u->password );
-		}
-		n = u->next;
-		free ( u );
-		u = n;
-	}
-	/* free all commands */
-	unregister_all ( 0 );
-	free_z ( this->modestring );
-	free_z ( this->banner );
-	free_z ( this->promptchar );
-	free_z ( this->hostname );
-	free_z ( this->buffer );
-
-#endif
-	return LIBCLI::OK;
-}
-
-int
 CLI::add_history
 (
         char* cmd
@@ -1161,14 +1118,12 @@ CORRECT_CHECKS:
 				}
 				*filt = ( filter_t* ) calloc ( sizeof ( filter_t ), 1 );
 				if ( !strncmp ( "include", argv[0], len )
-				                ||  !strncmp ( "exclude", argv[0], len )
-				                ||  !strncmp ( "grep", argv[0], len )
-				                ||  !strncmp ( "egrep", argv[0], len ) )
+				||  !strncmp ( "exclude", argv[0], len ) )
 				{
 					rc = match_filter_init ( argc, argv, *filt );
 				}
 				else if ( !strncmp ( "begin", argv[0], len )
-				                || !strncmp ( "between", argv[0], len ) )
+				|| !strncmp ( "between", argv[0], len ) )
 				{
 					rc = range_filter_init ( argc, argv, *filt );
 				}
@@ -2359,11 +2314,13 @@ CLI::_print
 			if ( this->print_callback )
 			{
 				this->print_callback ( p );
+				this->lines_out++;
 			}
 			else if ( this->client )
 			{
 				client->write_str (p);
 				client->write_str ("\r\n");
+				this->lines_out++;
 			}
 		}
 		p = next;
@@ -2415,14 +2372,10 @@ CLI::print
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	int n;
 	va_list ap;
 	va_start ( ap, format );
-	n = _print ( PRINT_FILTERED, format, ap );
-	if (n)
-		return n;
+	_print ( PRINT_FILTERED, format, ap );
 	va_end ( ap );
-	this->lines_out++;
 	// ask for a key after 20 lines of output
 	// FIXME: make this configurable
 	if (this->lines_out > this->max_screen_lines)
@@ -2459,9 +2412,6 @@ CLI::match_filter_init
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	match_filter_state* state;
-	int rflags;
-	int i;
-	char* p;
 	if ( argc < 2 )
 	{
 		if ( this->client )
@@ -2473,66 +2423,12 @@ CLI::match_filter_init
 	filt->filter = &CLI::match_filter;
 	state = new match_filter_state;
 	filt->data = state;
-	if ( argv[0][0] == 'i' // include/exclude
-	                ||  ( argv[0][0] == 'e' && argv[0][1] == 'x' ) )
+	state->flags = MATCH_NORM;
+	if ( argv[0][0] == 'e' )
 	{
-		if ( argv[0][0] == 'e' )
-		{
-			state->flags = MATCH_INVERT;
-		}
-		state->match.str = join_words ( argc-1, argv+1 );
-		return LIBCLI::OK;
+		state->flags = MATCH_INVERT;
 	}
-	state->flags = MATCH_REGEX;
-	// grep/egrep
-	rflags = REG_NOSUB;
-	if ( argv[0][0] == 'e' ) // egrep
-	{
-		rflags |= REG_EXTENDED;
-	}
-	i = 1;
-	while ( i < argc - 1 && argv[i][0] == '-' && argv[i][1] )
-	{
-		int last = 0;
-		p = &argv[i][1];
-		if ( strspn ( p, "vie" ) != strlen ( p ) )
-		{
-			break;
-		}
-		while ( *p )
-		{
-			switch ( *p++ )
-			{
-			case 'v':
-				state->flags |= MATCH_INVERT;
-				break;
-			case 'i':
-				rflags |= REG_ICASE;
-				break;
-			case 'e':
-				last++;
-				break;
-			}
-		}
-		i++;
-		if ( last )
-		{
-			break;
-		}
-	}
-	p = join_words ( argc-i, argv+i );
-	if ( ( i = regcomp ( &state->match.re, p, rflags ) ) )
-	{
-		if ( this->client )
-		{
-			client->write_str ("Invalid pattern \"");
-			client->write_str (p);
-			client->write_str ("\"\r\n");
-		}
-		free_z ( p );
-		return LIBCLI::ERROR;
-	}
-	free_z ( p );
+	state->str = join_words ( argc-1, argv+1 );
 	return LIBCLI::OK;
 }
 
@@ -2548,30 +2444,13 @@ CLI::match_filter
 	int r = LIBCLI::ERROR;
 	if ( !cmd ) // clean up
 	{
-		if ( state->flags & MATCH_REGEX )
-		{
-			regfree ( &state->match.re );
-		}
-		else
-		{
-			free ( state->match.str );
-		}
+		free ( state->str );
 		free ( state );
 		return LIBCLI::OK;
 	}
-	if ( state->flags & MATCH_REGEX )
+	if ( strstr ( cmd, state->str ) )
 	{
-		if ( !regexec ( &state->match.re, cmd, 0, NULL, 0 ) )
-		{
-			r = LIBCLI::OK;
-		}
-	}
-	else
-	{
-		if ( strstr ( cmd, state->match.str ) )
-		{
-			r = LIBCLI::OK;
-		}
+		r = LIBCLI::OK;
 	}
 	if ( state->flags & MATCH_INVERT )
 	{
@@ -2630,6 +2509,7 @@ CLI::range_filter_init
 	filt->filter = &CLI::range_filter;
 	state = new range_filter_state;
 	filt->data = state;
+	state->matched = 0;
 	state->from = from;
 	state->to = to;
 	return LIBCLI::OK;
@@ -2685,7 +2565,7 @@ CLI::count_filter_init
 		return LIBCLI::ERROR;
 	}
 	filt->filter = &CLI::count_filter;
-	filt->data = new int[1];
+	filt->data = new int(0);
 	if ( ! filt->data )
 	{
 		return LIBCLI::ERROR;

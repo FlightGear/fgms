@@ -40,7 +40,6 @@
 #include <flightgear/MultiPlayer/mpmessages.hxx>
 #include <flightgear/MultiPlayer/tiny_xdr.hxx>
 #include <simgear/debug/logstream.hxx>
-#include <libcli/libcli.hxx>
 #include "daemon.hxx"
 #include "fg_geometry.hxx"
 #include "fg_list.hxx"
@@ -58,6 +57,7 @@ class FG_SERVER
 public:
 
 	friend class FG_CLI;
+	friend void* admin_helper ( void* context );
 
 	/** @brief Internal Constants */
 	enum FG_SERVER_CONSTANTS
