@@ -152,7 +152,6 @@ FG_TRACKER::TrackerLoop ()
 	unsigned int	time_out_counter_u=0;
 	short int	time_out_fraction=25; /* 1000000/time_out_fraction must be integer*/
 	bool		resentflg = false; /*If ture, resend all message in the msgbuf first*/
-	bool		connected = false; /*If connected to fgtracker*/
 	bool		sockect_read_completed = false;
 	MSG*		msgque_head;
 	MSG*		msgque_tail;
@@ -172,14 +171,14 @@ FG_TRACKER::TrackerLoop ()
 	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 		<< "Msg structure size: " << sizeof ( struct MSG )
 	);
-	connected = Connect();
+	m_connected = Connect();
 	/*Infinite loop*/
 	for ( ; ; )
 	{
-		while (! connected)
+		while (! m_connected)
 		{
 			sleep (DEF_TRACKER_SLEEP);
-			connected = Connect();
+			m_connected = Connect();
 		}
 		length = 0;
 		/*time-out issue*/
@@ -193,7 +192,7 @@ FG_TRACKER::TrackerLoop ()
 		if ( time_out_counter_u%60==0 && time_out_counter_u >=180 && time_out_counter_l==0 )
 		{
 			/*Print warning*/
-			if ( connected==true )
+			if ( m_connected==true )
 			{
 				SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 					<< "Warning: FG_TRACKER::TrackerLoop No data receive from server for "
@@ -204,13 +203,13 @@ FG_TRACKER::TrackerLoop ()
 		if ( time_out_counter_u%DEF_TRACKER_SLEEP==0 && time_out_counter_l==0 )
 		{
 			/*Timed out/Need retry - reconnect*/
-			if ( connected==true )
+			if ( m_connected==true )
 			{
 				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 					<< "Connection timed out..."
 				);
 			}
-			connected = false;
+			m_connected = false;
 			pkt_sent  = 0;
 			resentflg = true;
 			msgbuf_resend=NULL;
@@ -263,7 +262,7 @@ FG_TRACKER::TrackerLoop ()
 		}
 		length = 0;
 		/*DO NOT place any stream read/write above this line!*/
-		if ( connected==false )
+		if ( m_connected==false )
 		{
 			continue;
 		}
@@ -289,8 +288,7 @@ FG_TRACKER::TrackerLoop ()
 			{
 				break;
 			}
-		}
-		while ( length++ );
+		} while ( length++ );
 		i=0;
 		res[length]='\0';
 		if ( length > 0 && sockect_read_completed==true )
@@ -378,7 +376,15 @@ FG_TRACKER::TrackerLoop ()
 				SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 					<< "PING from server received"
 				);
-				SWRITE ( m_TrackerSocket,PINGRPY.c_str(),strlen ( PINGRPY.c_str() ) +1 );
+				if (SWRITE ( m_TrackerSocket,PINGRPY.c_str(),strlen ( PINGRPY.c_str() ) +1 ) < 0)
+				{
+					m_connected = false;
+					SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
+						<< "lost connection to server"
+					);
+					continue;
+
+				}
 				PINGRPY.erase();
 				out.str ( "" );
 			}
@@ -470,7 +476,7 @@ FG_TRACKER::TrackerLoop ()
 				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 					<< "Can't write to server..."
 				);
-				connected = false;
+				m_connected = false;
 				pkt_sent  = 0;
 				resentflg = true;
 				msgbuf_resend=NULL;

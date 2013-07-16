@@ -112,6 +112,7 @@ public:
 	int   m_TrackerPort;
 	char  m_TrackerServer[128];
 	int   m_TrackerSocket;
+	bool  m_connected; /*If connected to fgtracker*/
 };
 #endif
 
