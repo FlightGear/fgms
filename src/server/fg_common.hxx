@@ -229,7 +229,7 @@ extern void write_msg_log(const char *msg, int len, char *src = 0); // write to 
 #include <string>
 #include <vector>
 typedef std::vector<std::string> vMSG;  /* string vector */
-typedef typename vMSG::iterator VI;              /* string vector iterator */
+typedef vMSG::iterator VI;              /* string vector iterator */
 extern pthread_mutex_t msg_mutex;       /* message queue mutext */
 extern pthread_cond_t  condition_var;   /* message queue condition */
 extern vMSG msg_queue;                  /* the single message queue */
