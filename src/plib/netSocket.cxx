@@ -328,9 +328,37 @@ int netSocket::connect ( const char* host, int port )
   return ::connect(handle,(const sockaddr*)&addr,sizeof(netAddress));
 }
 
-int netSocket::write_str ( const string&  str, int flags )
+int netSocket::write_str ( const char* str, int len )
 {
-	return send (str.c_str(), str.size(), flags);
+	char* p		= (char*) str;
+	int left	= len;
+	int written	= 0;
+
+	errno = 0;
+	while (left > 0)
+	{
+		written = ::write (handle, p, left);
+		if (written <= 0)
+		{
+			if (errno == EINTR)
+				written = 0;
+			else
+				return -1;
+		}
+		left -= written;
+		p += written;
+	}
+	return len;
+}
+
+int netSocket::write_str ( const string&  str )
+{
+	return write_str (str.c_str(), str.length());
+}
+
+int netSocket::write_char ( const char&  c )
+{
+	return write (handle, &c, 1);
 }
 
 int netSocket::send (const void * buffer, int size, int flags)
@@ -348,12 +376,10 @@ int netSocket::sendto ( const void * buffer, int size,
                          (const sockaddr*)to,sizeof(netAddress));
 }
 
-int netSocket::read_char ()
+int netSocket::read_char ( unsigned char& c )
 {
-  assert ( handle != -1 ) ;
-  int c;
-  ::recv (handle, &c, 1, 0);
-  return c;
+    int n = read ( handle, &c, 1 );
+    return n;
 }
 
 int netSocket::recv (void * buffer, int size, int flags)
@@ -446,13 +472,10 @@ int netSocket::select ( netSocket** reads, netSocket** writes, int timeout )
 {
   fd_set r,w;
   int	retval;
-  
   FD_ZERO (&r);
   FD_ZERO (&w);
-
   int i;
   int num = 0 ;
-
 //  if ((reads == 0) || (reads[0] == 0))
 //    return (0);
   if (reads)
@@ -464,7 +487,6 @@ int netSocket::select ( netSocket** reads, netSocket** writes, int timeout )
       num++;
     }
   }
-
   if (writes)
   {
     for ( i=0; writes[i]; i++ )
@@ -474,10 +496,8 @@ int netSocket::select ( netSocket** reads, netSocket** writes, int timeout )
       num++;
     }
   }
-
   if (!num)
     return num ;
-
   /* Set up the timeout */
   struct timeval tv ;
   /*
@@ -486,26 +506,20 @@ int netSocket::select ( netSocket** reads, netSocket** writes, int timeout )
   */
   tv.tv_sec = timeout;
   tv.tv_usec = 0;
-
   // It bothers me that select()'s first argument does not appear to
   // work as advertised... [it hangs like this if called with
   // anything less than FD_SETSIZE, which seems wasteful?]
-  
   // Note: we ignore the 'exception' fd_set - I have never had a
   // need to use it.  The name is somewhat misleading - the only
   // thing I have ever seen it used for is to detect urgent data -
   // which is an unportable feature anyway.
-
   retval = ::select (FD_SETSIZE, &r, &w, 0, &tv);
   if (retval == 0) // timeout
-    return (-2);
+    return 0;
   if (retval == -1)// error
     return (-1);
-
   //remove sockets that had no activity
-
   num = 0 ;
-
   if (reads)
   {
     for ( i=0; reads[i]; i++ )
@@ -519,7 +533,6 @@ int netSocket::select ( netSocket** reads, netSocket** writes, int timeout )
     }
     reads[i] = NULL ;
   }
-
   if (writes)
   {
     for ( i=0; writes[i]; i++ )
@@ -535,7 +548,6 @@ int netSocket::select ( netSocket** reads, netSocket** writes, int timeout )
   }
   return num ;
 }
-
 
 /* Init/Exit functions */
 

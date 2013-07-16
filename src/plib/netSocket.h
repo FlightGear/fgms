@@ -124,10 +124,12 @@ public:
   int   listen      ( int backlog ) ;
   int   accept      ( netAddress* addr ) ;
   int   connect     ( const char* host, int port ) ;
-  int   write_str   ( const string&  str, int flags = 0 ) ;
+  int   write_str   ( const char* str, int len );
+  int   write_str   ( const string&  str );
+  int   write_char  ( const char&  c );
   int   send        ( const void * buffer, int size, int flags = 0 ) ;
   int   sendto      ( const void * buffer, int size, int flags, const netAddress* to ) ;
-  int	read_char   ();
+  int	read_char   ( unsigned char& c);
   int   recv        ( void * buffer, int size, int flags = 0 ) ;
   int   recvfrom    ( void * buffer, int size, int flags, netAddress* from ) ;
 

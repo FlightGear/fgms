@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <regex.h>
+#include <fg_util.hxx>
 #include "libcli.hxx"
 
 namespace LIBCLI
@@ -661,7 +662,7 @@ CLI::CLI
 	this->print_callback	= 0;
 	this->from_socket	= false;
 	this->lines_out		= 0;
-	this->max_screen_lines	= 24;
+	this->max_screen_lines	= 22;
 	int i;
 	for ( i = 0; i < MAX_HISTORY; i++ )
 	{
@@ -741,6 +742,43 @@ CLI::CLI
 	set_configmode ( LIBCLI::MODE_EXEC, 0 );
 }
 
+CLI::~CLI
+()
+{
+	unp* u = this->users, *n;
+	free_history();
+	// Free all users
+	while ( u )
+	{
+		if ( u->username )
+		{
+			free ( u->username );
+		}
+		if ( u->password )
+		{
+			free ( u->password );
+		}
+		n = u->next;
+		free ( u );
+		u = n;
+	}
+	/* free all commands */
+	unregister_all ( 0 );
+	free_z ( this->modestring );
+	free_z ( this->banner );
+	free_z ( this->promptchar );
+	free_z ( this->hostname );
+	free_z ( this->buffer );
+#ifndef _MSC_VER
+	if (client->getHandle() == 0)
+	{
+		( void ) tcsetattr ( fileno ( stdin ), TCSANOW, &OldModes );
+	}
+#endif
+	client->close();
+	client = 0;
+}
+
 void
 CLI::destroy
 ()
@@ -788,7 +826,9 @@ int
 CLI::done
 ()
 {
+#if 0
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
+
 	unp* u = this->users, *n;
 	free_history();
 	// Free all users
@@ -813,6 +853,8 @@ CLI::done
 	free_z ( this->promptchar );
 	free_z ( this->hostname );
 	free_z ( this->buffer );
+
+#endif
 	return LIBCLI::OK;
 }
 
@@ -1359,7 +1401,6 @@ CLI::get_completions
 void
 CLI::clear_line
 (
-        int sockfd,
         char* cmd,
         int l,
         int cursor
@@ -1369,8 +1410,8 @@ CLI::clear_line
 	int i;
 	if ( cursor < l )
 	{
-		for ( i = 0; i < ( l - cursor ); i++ ) write ( sockfd, " ", 1 )
-			/* intentionally empty */ ;
+		for ( i = 0; i < ( l - cursor ); i++ )
+			client->write_char (' ');
 	}
 	for ( i = 0; i < l; i++ )
 	{
@@ -1384,7 +1425,7 @@ CLI::clear_line
 	{
 		cmd[i] = '\b';
 	}
-	write ( sockfd, cmd, i );
+	client->write_str (cmd);
 	memset ( cmd, 0, i );
 	l = cursor = 0;
 }
@@ -1431,22 +1472,21 @@ CLI::pass_matches
 
 int
 CLI::show_prompt
-(
-        int sockfd
-)
+()
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	int len = 0;
 	if ( this->hostname )
 	{
-		len += write ( sockfd, this->hostname, strlen ( this->hostname ) );
+		len = client->write_str (hostname);
 	}
 	if ( this->modestring )
 	{
-		len += write ( sockfd, this->modestring, strlen ( this->modestring ) );
+		len = client->write_str (modestring);
 	}
 	this->lines_out = 0;
-	return len + write ( sockfd, this->promptchar, strlen ( this->promptchar ) );
+	len += client->write_str (promptchar);
+	return len;
 }
 
 void
@@ -1456,7 +1496,8 @@ CLI::setup_terminal ()
 #ifndef _MSC_VER
 	struct termios NewModes;
 	setbuf ( stdin, ( char* ) 0 );
-	(void) tcgetattr (fileno (stdin), &NewModes);
+	(void) tcgetattr (fileno (stdin), &OldModes);
+	NewModes = OldModes;
 	NewModes.c_lflag &= ~ ( ICANON );
 	NewModes.c_lflag &= ~ ( ECHO | ECHOE | ECHOK );
 	NewModes.c_lflag |= ECHONL;
@@ -1472,7 +1513,7 @@ CLI::loop
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	unsigned char c;
-	int n, l, oldl = 0, is_telnet_option = 0, skip = 0, esc = 0;
+	int l, oldl = 0, is_telnet_option = 0, skip = 0, esc = 0;
 	int cursor = 0, insertmode = 1;
 	char* cmd = NULL, *oldcmd = 0;
 	char* username = NULL, *password = NULL;
@@ -1481,6 +1522,7 @@ CLI::loop
 	        "\xFF\xFB\x01"
 	        "\xFF\xFD\x03"
 	        "\xFF\xFD\x01";
+	netSocket*  ListenSockets[1];
 
 	this->state = STATE_LOGIN;
 	free_history ();
@@ -1498,16 +1540,12 @@ CLI::loop
 	{
 		return LIBCLI::ERROR;
 	}
-	if ( ! ( this->client = fdopen ( sockfd, "w+" ) ) )
-	{
-		return LIBCLI::ERROR;
-	}
-	setbuf ( this->client, NULL );
+	client = new netSocket ();
+	client->setHandle ( sockfd );
 	if ( this->banner )
 	{
 		error ( "%s", this->banner );
 	}
-	my_sock = sockfd;
 	/* start off in unprivileged mode */
 	set_privilege ( LIBCLI::UNPRIVILEGED );
 	set_configmode ( LIBCLI::MODE_EXEC, NULL );
@@ -1519,7 +1557,6 @@ CLI::loop
 	while ( 1 )
 	{
 		signed int in_history = 0;
-		struct timeval tm;
 		this->showprompt = 1;
 		if ( oldcmd )
 		{
@@ -1535,50 +1572,42 @@ CLI::loop
 			l = 0;
 			cursor = 0;
 		}
-		tm.tv_sec = 1;
-		tm.tv_usec = 0;
 		while ( 1 )
 		{
 			int sr;
-			fd_set r;
 			if ( this->showprompt )
 			{
-			#if 0
-				if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-				{
-					write ( sockfd, "\r\n", 2 );
-				}
-			#endif
 				switch ( this->state )
 				{
 				case STATE_LOGIN:
-					write ( sockfd, "Username: ", strlen ( "Username: " ) );
+					client->write_str ("Username: ");
 					break;
 				case STATE_PASSWORD:
-					write ( sockfd, "Password: ", strlen ( "Password: " ) );
+					client->write_str ("Password: ");
 					break;
 				case STATE_NORMAL:
 				case STATE_ENABLE:
-					show_prompt ( sockfd );
-					write ( sockfd, cmd, l );
+					show_prompt ();
+					client->write_str (cmd, l);
 					if ( cursor < l )
 					{
 						int n = l - cursor;
 						while ( n-- )
 						{
-							write ( sockfd, "\b", 1 );
+							client->write_char ('\b');
 						}
 					}
 					break;
 				case STATE_ENABLE_PASSWORD:
-					write ( sockfd, "Password: ", strlen ( "Password: " ) );
+					client->write_str ("Password: ");
 					break;
 				}
 				this->showprompt = 0;
 			}
-			FD_ZERO ( &r );
-			FD_SET ( sockfd, &r );
-			if ( ( sr = select ( sockfd + 1, &r, NULL, NULL, &tm ) ) < 0 )
+			ListenSockets[0] = client;
+			ListenSockets[1] = 0;
+			sr = client->select ( ListenSockets, 0, 1 );
+			if (sr < 0)
 			{
 				/* select error */
 				if ( errno == EINTR )
@@ -1596,22 +1625,13 @@ CLI::loop
 				{
 					break;
 				}
-				tm.tv_sec = 1;
-				tm.tv_usec = 0;
 				continue;
 			}
-			if ( ( n = read ( sockfd, &c, 1 ) ) < 0 )
+			int n = client->read_char (c);
+			if ( n <= 0 )
 			{
 				if ( errno == EINTR )
-				{
 					continue;
-				}
-				perror ( "read" );
-				l = -1;
-				break;
-			}
-			if ( n == 0 )
-			{
 				l = -1;
 				break;
 			}
@@ -1674,7 +1694,7 @@ CLI::loop
 			{
 				if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
 				{
-					write ( sockfd, "\r\n", 2 );
+					client->write_str ("\r\n");
 				}
 				break;
 			}
@@ -1686,7 +1706,7 @@ CLI::loop
 			{
 				if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
 				{
-					write ( sockfd, "\r\n", 2 );
+					client->write_str ("\r\n");
 				}
 				break;
 			}
@@ -1697,7 +1717,7 @@ CLI::loop
 			}
 			if ( c == CTRL ( 'C' ) )
 			{
-				write ( sockfd, "\a", 1 );
+				client->write_char ('\a');
 				continue;
 			}
 			/* back word, backspace/delete */
@@ -1726,7 +1746,7 @@ CLI::loop
 				{
 					if ( l == 0 || cursor == 0 )
 					{
-						write ( sockfd, "\a", 1 );
+						client->write_char ('\a');
 						continue;
 					}
 					back = 1;
@@ -1740,7 +1760,7 @@ CLI::loop
 							cmd[--cursor] = 0;
 							if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
 							{
-								write ( sockfd, "\b \b", 3 );
+								client->write_str ("\b \b");
 							}
 						}
 						else
@@ -1751,12 +1771,12 @@ CLI::loop
 							{
 								for ( i = cursor; i <= l; i++ ) cmd[i] = cmd[i+1]
 									                /* intentionally empty */;
-								write ( sockfd, "\b", 1 );
-								write ( sockfd, cmd + cursor, strlen ( cmd + cursor ) );
-								write ( sockfd, " ", 1 );
+								client->write_char ('\b');
+								client->write_str (cmd + cursor);
+								client->write_char (' ');
 								for ( i = 0; i <= ( int ) strlen ( cmd + cursor ); i++ )
 								{
-									write ( sockfd, "\b", 1 );
+									client->write_char ('\b');
 								}
 							}
 						}
@@ -1774,12 +1794,12 @@ CLI::loop
 				{
 					continue;
 				}
-				write ( sockfd, "\r\n", 2 );
-				show_prompt ( sockfd );
-				write ( sockfd, cmd, l );
+				client->write_str ("\r\n");
+				show_prompt ();
+				client->write_str (cmd);
 				for ( i = 0; i < cursorback; i++ )
 				{
-					write ( sockfd, "\b", 1 );
+					client->write_char ('\b');
 				}
 				continue;
 			}
@@ -1792,7 +1812,7 @@ CLI::loop
 				}
 				else
 				{
-					clear_line ( sockfd, cmd, l, cursor );
+					clear_line ( cmd, l, cursor );
 				}
 				l = cursor = 0;
 				continue;
@@ -1809,11 +1829,11 @@ CLI::loop
 					int c;
 					for ( c = cursor; c < l; c++ )
 					{
-						write ( sockfd, " ", 1 );
+						client->write_char (' ');
 					}
 					for ( c = cursor; c < l; c++ )
 					{
-						write ( sockfd, "\b", 1 );
+						client->write_char ('\b');
 					}
 				}
 				memset ( cmd + cursor, 0, l - cursor );
@@ -1833,7 +1853,7 @@ CLI::loop
 				}
 				strcpy ( cmd, "quit" );
 				l = cursor = strlen ( cmd );
-				write ( sockfd, "quit\r\n", l + 2 );
+				client->write_str ("quit\r\n");
 				break;
 			}
 			/* disable */
@@ -1841,7 +1861,7 @@ CLI::loop
 			{
 				if ( this->mode != MODE_EXEC )
 				{
-					clear_line ( sockfd, cmd, l, cursor );
+					clear_line ( cmd, l, cursor );
 					set_configmode ( MODE_EXEC, NULL );
 					this->showprompt = 1;
 				}
@@ -1870,16 +1890,16 @@ CLI::loop
 						{
 							break;
 						}
-						write ( sockfd, "\b", 1 );
+						client->write_char ('\b');
 					}
 					strcpy ( ( cmd + l ), completions[0] );
 					l += strlen ( completions[0] );
 					cmd[l++] = ' ';
 					cursor = l;
-					write ( sockfd, "\r\n", 2 );
+					client->write_str ("\r\n");
 				}
 				if ( num_completions == 0 )
-					write ( sockfd, "\r\n", 2 );
+					client->write_str ("\r\n");
 				continue;
 			}
 			/* history */
@@ -1939,11 +1959,11 @@ CLI::loop
 				if ( history_found && this->history[in_history] )
 				{
 					// Show history item
-					clear_line ( sockfd, cmd, l, cursor );
+					clear_line ( cmd, l, cursor );
 					memset ( cmd, 0, 4096 );
 					strncpy ( cmd, this->history[in_history], 4095 );
 					l = cursor = strlen ( cmd );
-					write ( sockfd, cmd, l );
+					client->write_str (cmd);
 				}
 				continue;
 			}
@@ -1956,7 +1976,7 @@ CLI::loop
 					{
 						if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
 						{
-							write ( sockfd, "\b", 1 );
+							client->write_char ('\b');
 						}
 						cursor--;
 					}
@@ -1967,7 +1987,7 @@ CLI::loop
 					{
 						if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
 						{
-							write ( sockfd, &cmd[cursor], 1 );
+							client->write_char (cmd[cursor]);
 						}
 						cursor++;
 					}
@@ -1981,8 +2001,8 @@ CLI::loop
 				{
 					if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
 					{
-						write ( sockfd, "\r", 1 );
-						show_prompt ( sockfd );
+						client->write_char ('\r');
+						show_prompt ();
 					}
 					cursor = 0;
 				}
@@ -1995,7 +2015,7 @@ CLI::loop
 				{
 					if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
 					{
-						write ( sockfd, &cmd[cursor], l - cursor );
+						client->write_str (cmd + cursor);
 					}
 					cursor = l;
 				}
@@ -2013,7 +2033,7 @@ CLI::loop
 				}
 				else
 				{
-					write ( sockfd, "\a", 1 );
+					client->write_char ('\a');
 					continue;
 				}
 			}
@@ -2034,10 +2054,10 @@ CLI::loop
 					}
 					// Write what we've just added
 					cmd[cursor] = c;
-					write ( sockfd, &cmd[cursor], l - cursor + 1 );
+					client->write_str (cmd + cursor);
 					for ( i = 0; i < ( l - cursor + 1 ); i++ )
 					{
-						write ( sockfd, "\b", 1 );
+						client->write_char ('\b');
 					}
 					l++;
 				}
@@ -2051,12 +2071,12 @@ CLI::loop
 			{
 				if ( c == '?' && cursor == l )
 				{
-					write ( sockfd, "\r\n", 2 );
+					client->write_str ("\r\n");
 					oldcmd = cmd;
 					oldl = cursor = l - 1;
 					break;
 				}
-				write ( sockfd, &c, 1 );
+				client->write_char (c);
 			}
 			oldcmd = 0;
 			oldl = 0;
@@ -2193,12 +2213,9 @@ CLI::loop
 			}
 		}
 	}
-	free_history ();
 	free_z ( username );
 	free_z ( password );
 	free_z ( cmd );
-	fclose ( this->client );
-	this->client = 0;
 	return LIBCLI::OK;
 }
 
@@ -2264,16 +2281,15 @@ CLI::pager
 {
 	unsigned char c;
 	bool done = false;
-	const char* more_msg = "--- more ---";
-	write (my_sock, more_msg, strlen(more_msg));
+	client->write_str ("--- more ---");
 	c = ' ';
 	while ( done == false )
 	{
-		read ( my_sock, &c, 1 );
+		client->read_char (c);
 		if (c == 'q')
 		{
 			this->lines_out = 0;
-			write (my_sock, "\r", 1);
+			client->write_char ('\r');
 			return 1;
 		}
 		if (c == ' ')
@@ -2286,7 +2302,7 @@ CLI::pager
 			done = true;
 		}
 	}
-	write (my_sock, "\r", 1);
+	client->write_char ('\r');
 	return 0;
 }
 
@@ -2346,20 +2362,12 @@ CLI::_print
 			}
 			else if ( this->client )
 			{
-				fprintf ( this->client, "%s\r\n", p );
-			}
-			this->lines_out++;
-			// ask for a key after 20 lines of output
-			// FIXME: make this configurable
-			if (this->lines_out > this->max_screen_lines)
-			{
-				if (pager ())
-					return 1;
+				client->write_str (p);
+				client->write_str ("\r\n");
 			}
 		}
 		p = next;
-	}
-	while ( p );
+	} while ( p );
 	if ( p && *p )
 	{
 		if ( p != buffer )
@@ -2414,6 +2422,16 @@ CLI::print
 	if (n)
 		return n;
 	va_end ( ap );
+	this->lines_out++;
+	// ask for a key after 20 lines of output
+	// FIXME: make this configurable
+	if (this->lines_out > this->max_screen_lines)
+	{
+		if (pager ())
+		{
+			return 1;
+		}
+	}
 	return 0;
 }
 
@@ -2448,7 +2466,7 @@ CLI::match_filter_init
 	{
 		if ( this->client )
 		{
-			fprintf ( this->client, "Match filter requires an argument\r\n" );
+			client->write_str ("Match filter requires an argument\r\n");
 		}
 		return LIBCLI::ERROR;
 	}
@@ -2507,7 +2525,9 @@ CLI::match_filter_init
 	{
 		if ( this->client )
 		{
-			fprintf ( this->client, "Invalid pattern \"%s\"\r\n", p );
+			client->write_str ("Invalid pattern \"");
+			client->write_str (p);
+			client->write_str ("\"\r\n");
 		}
 		free_z ( p );
 		return LIBCLI::ERROR;
@@ -2585,7 +2605,7 @@ CLI::range_filter_init
 		{
 			if ( this->client )
 			{
-				fprintf ( this->client, "Between filter requires 2 arguments\r\n" );
+				client->write_str ("Between filter requires 2 arguments\r\n");
 			}
 			return LIBCLI::ERROR;
 		}
@@ -2601,7 +2621,7 @@ CLI::range_filter_init
 		{
 			if ( this->client )
 			{
-				fprintf ( this->client, "Begin filter requires an argument\r\n" );
+				client->write_str ("Begin filter requires an argument\r\n");
 			}
 			return LIBCLI::ERROR;
 		}
@@ -2660,7 +2680,7 @@ CLI::count_filter_init
 	{
 		if ( this->client )
 		{
-			fprintf ( this->client, "Count filter does not take arguments\r\n" );
+			client->write_str ("Count filter does not take arguments\r\n");
 		}
 		return LIBCLI::ERROR;
 	}
@@ -2687,7 +2707,8 @@ CLI::count_filter
 		// print count
 		if ( this->client )
 		{
-			fprintf ( this->client, "%d\r\n", *count );
+			client->write_str (NumToStr (*count, 0));
+			client->write_str ("\r\n");
 		}
 		free ( count );
 		return LIBCLI::OK;

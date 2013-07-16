@@ -36,9 +36,6 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <pthread.h>
-#ifndef _MSC_VER
-        #include <termios.h>
-#endif
 #include <plib/netSocket.h>
 #include <flightgear/MultiPlayer/mpmessages.hxx>
 #include <flightgear/MultiPlayer/tiny_xdr.hxx>
@@ -189,9 +186,6 @@ protected:
 	size_t		mT_CrossFeedFailed, mT_CrossFeedSent;
 	size_t		m_TrackerConnect, m_TrackerDisconnect,m_TrackerPostion;
 	time_t		m_Uptime;
-#ifndef _MSC_VER
-	struct termios	OldModes;
-#endif
 
 	//////////////////////////////////////////////////
 	//

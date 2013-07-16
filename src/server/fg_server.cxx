@@ -232,9 +232,6 @@ FG_SERVER::FG_SERVER
 	m_WantExit		= false;
 	// SetLog (SG_FGMS|SG_FGTRACKER, SG_BULK);
 	SetLog (SG_FGMS|SG_FGTRACKER, SG_INFO);
-#ifndef _MSC_VER
-	(void) tcgetattr (fileno (stdin), &OldModes);
-#endif
 } // FG_SERVER::FG_SERVER()
 
 //////////////////////////////////////////////////////////////////////
@@ -245,9 +242,6 @@ FG_SERVER::~FG_SERVER
 ()
 {
 	Done();
-#ifndef _MSC_VER
-	( void ) tcsetattr ( fileno ( stdin ), TCSANOW, &OldModes );
-#endif
 } // FG_SERVER::~FG_SERVER()
 
 //////////////////////////////////////////////////////////////////////
@@ -392,7 +386,6 @@ FG_SERVER::Init
 	if ( m_TelnetSocket )
 	{
 		SG_CONSOLE ( SG_FGMS, SG_ALERT,"# telnet port " << m_TelnetPort );
-		SG_CONSOLE ( SG_FGMS, SG_ALERT,"# telnet socket " << m_TelnetSocket );
 	}
 	else
 	{
@@ -401,7 +394,6 @@ FG_SERVER::Init
 	if ( m_AdminSocket )
 	{
 		SG_CONSOLE ( SG_FGMS, SG_ALERT,"# admin port " << m_AdminPort );
-		SG_CONSOLE ( SG_FGMS, SG_ALERT,"# admin socket " << m_AdminSocket );
 	}
 	else
 	{
@@ -536,6 +528,7 @@ FG_SERVER::HandleAdmin
 	{	// reading from stdin
 		WantExit();
 	}
+	delete MyCLI;
 	return ( 0 );
 }
 
@@ -581,7 +574,7 @@ FG_SERVER::HandleTelnet
 		Message += m_Tracker->GetTrackerServer();
 		Message += "\n";
 	}
-	if ( NewTelnet.write_str ( Message, MSG_NOSIGNAL ) < 0 )
+	if ( NewTelnet.write_str ( Message ) < 0 )
 	{
 		if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 		{
@@ -591,7 +584,7 @@ FG_SERVER::HandleTelnet
 	}
 	Message  = "# "+ NumToStr ( m_PlayerList.Size(), 0 );
 	Message += " pilot(s) online\n";
-	if ( NewTelnet.write_str ( Message, MSG_NOSIGNAL ) < 0 )
+	if ( NewTelnet.write_str ( Message ) < 0 )
 	{
 		if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 		{
@@ -649,7 +642,7 @@ FG_SERVER::HandleTelnet
 		Message += NumToStr ( CurrentPlayer.LastOrientation[Z], 6 ) +" ";
 		Message += CurrentPlayer.ModelName;
 		Message += "\n";
-		if ( NewTelnet.write_str ( Message, MSG_NOSIGNAL ) < 0 )
+		if ( NewTelnet.write_str ( Message ) < 0 )
 		{
 			if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 			{

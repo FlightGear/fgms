@@ -25,6 +25,7 @@
 #ifndef _MSC_VER
 	#include <termios.h>
 #endif
+#include <plib/netSocket.h>
 #include "common.hxx"
 #include "command.hxx"
 #include "filter.hxx"
@@ -58,9 +59,9 @@ protected:
 	char*   join_words ( int argc, char** argv );
 	int     find_command ( Command<CLI> *commands, int num_words, char* words[], int start_word, int filters[] );
 	int     get_completions ( char* command, char** completions, int max_completions );
-	void    clear_line ( int sockfd, char* cmd, int l, int cursor );
+	void    clear_line ( char* cmd, int l, int cursor );
 	int     pass_matches ( char* pass, char* tried_pass );
-	int     show_prompt ( int sockfd );
+	int     show_prompt ();
 	void    setup_terminal ();
 	int     _print ( int print_mode, const char* format, va_list ap );
 	int     show_help ( Command<CLI> *c );
@@ -78,6 +79,9 @@ protected:
 	int	my_sock;
 	size_t	lines_out;
 	size_t	max_screen_lines;
+#ifndef _MSC_VER
+	struct termios  OldModes;                                                                                            
+#endif
 
 public:
 
@@ -97,7 +101,7 @@ public:
 	int     privilege;
 	int     mode;
 	int     state;
-	FILE*   client;
+	netSocket*   client;
 	/* internal buffers */
 	void*   conn;
 	void*   service;
@@ -117,6 +121,7 @@ public:
 	void    set_print_callback ( void ( *callback ) ( char* ) );
 
 	CLI ();
+	~CLI ();
 	void	destroy ();
 	int     done();
 	void    register_command ( Command<CLI>* command, Command<CLI>* parent = 0 );
