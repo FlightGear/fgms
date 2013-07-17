@@ -204,20 +204,6 @@ typedef void Sigfunc (int);     /* for signal handlers */
 	}; 
 #endif 
 
-#ifdef _MSC_VER
-	#define SWRITE(a,b,c) send(a,b,c,0)
-	#define SREAD(a,b,c)  recv(a,b,c,0)
-	#define SCLOSE closesocket
-	#define SERROR(a) (a == SOCKET_ERROR)
-	#define PERROR(a)  win_wsa_perror(a)
-#else
-	#define SWRITE write
-	#define SREAD  read
-	#define SCLOSE close
-	#define SERROR(a) (a < 0)
-	#define PERROR(a) perror(a) 
-#endif
-
 extern void write_msg_log(const char *msg, int len, char *src = 0); // write to 'tracker' log
 /* Compile time option
  * Use a vector to pass messages from 'server' to 'tracker',

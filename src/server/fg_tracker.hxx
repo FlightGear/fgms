@@ -26,6 +26,7 @@ using namespace std;
 #include <time.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <plib/netSocket.h>
 #include "daemon.hxx"
 #include "fg_geometry.hxx"
 
@@ -60,7 +61,7 @@ public:
 	//  public methods
 	//
 	//////////////////////////////////////////////////
-	int       InitTracker ( pid_t *pPid );
+	int       InitTracker ();
 	int       TcpConnect (char *server_address, int server_port);
 	int       TrackerLoop ();
 	
@@ -94,7 +95,7 @@ public:
 		/** 
 		 * @brief Message contents 
 		 */
-		char mtext[1200];
+		string mtext;
 	};
 	pthread_t thread;
 	//////////////////////////////////////////////////
@@ -111,8 +112,8 @@ public:
 	int   ipcid;
 	int   m_TrackerPort;
 	char  m_TrackerServer[128];
-	int   m_TrackerSocket;
 	bool  m_connected; /*If connected to fgtracker*/
+	netSocket m_TrackerSocket;
 };
 #endif
 
