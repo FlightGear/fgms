@@ -116,7 +116,6 @@ public:
 	void  Show_Stats ( void );
 	void* HandleTelnet  ( int Fd );
 	void* HandleAdmin  ( int Fd );
-	pid_t m_TrackerPID; // tracker child pid
 
 protected:
 
@@ -163,7 +162,7 @@ protected:
 	int		m_childpid;
 	FG_TRACKER*	m_Tracker;
 	bool		m_IamHUB;
-	time_t		m_UpdateSecs;
+	time_t		m_UpdateTrackerFreq;
 	bool		m_WantExit;
 	//////////////////////////////////////////////////
 	//
@@ -200,11 +199,12 @@ protected:
 	                      const netAddress& SenderAddress );
 	void  HandlePacket  ( char* sMsg, int Bytes,
 	                      const netAddress& SenderAdress );
-	int   UpdateTracker ( string callsign, string passwd, string modelname,
-	                      time_t time, int type );
-	bool  IsInRange ( FG_ListElement& Relay,  FG_Player& SendingPlayer );
+	int   UpdateTracker ( const string& callsign, const string& passwd, const string& modelname,
+	                      const time_t time, const int type );
+	void  DropClient    ( PlayerIt& CurrentPlayer ); 
+	bool  IsInRange     ( FG_ListElement& Relay,  FG_Player& SendingPlayer );
 	void  SendToCrossfeed ( char* Msg, int Bytes, const netAddress& SenderAddress );
-	void  SendToRelays ( char* Msg, int Bytes, FG_Player& SendingPlayer );
+	void  SendToRelays  ( char* Msg, int Bytes, FG_Player& SendingPlayer );
 	void  WantExit ();
 }; // FG_SERVER
 

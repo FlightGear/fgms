@@ -128,7 +128,7 @@ void write_msg_log ( const char* msg, int len, char* src )
 {
 	if ( msg_file == NULL )
 	{
-		msg_file = fopen ( msg_log,"ab" );
+		msg_file = fopen ( msg_log, "ab" );
 		if ( !msg_file )
 		{
 			printf ( "ERROR: Failed to OPEN/append %s log file!\n", msg_log );
@@ -201,7 +201,7 @@ FG_SERVER::FG_SERVER
 	m_RelayMap		= map<uint32_t, string>();
 	m_IsTracked		= false; // off until config file read
 	m_Tracker		= 0; // no tracker yet
-	m_UpdateSecs		= DEF_UPDATE_SECS;
+	m_UpdateTrackerFreq	= DEF_UPDATE_SECS;
 	// clear stats - should show what type of packet was received
 	m_PacketsReceived	= 0;
 	m_TelnetReceived	= 0;
@@ -410,7 +410,7 @@ FG_SERVER::Init
 	}
 	if ( m_IsTracked )
 	{
-		if ( m_Tracker->InitTracker ( &m_TrackerPID ) )
+		if ( m_Tracker->InitTracker () )
 		{
 			SG_CONSOLE ( SG_FGMS, SG_ALERT, "# InitTracker FAILED! Disabling tracker!" );
 			m_IsTracked = false;
@@ -871,12 +871,12 @@ FG_SERVER::AddTracker
         bool IsTracked
 )
 {
-	m_IsTracked     = IsTracked;
+	m_IsTracked = IsTracked;
 	if ( m_Tracker )
 	{
 		delete m_Tracker;
 	}
-	m_Tracker = new FG_TRACKER ( Port,Server,0 );
+	m_Tracker = new FG_TRACKER ( Port, Server, 0 );
 	return ( SUCCESS );
 } // FG_SERVER::AddTracker()
 
@@ -1100,6 +1100,45 @@ FG_SERVER::SendToRelays
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+//	Remove Player from list
+void
+FG_SERVER::DropClient
+(
+	PlayerIt& CurrentPlayer
+)
+{
+	string Origin;
+	if (CurrentPlayer->IsLocal)
+	{
+		UpdateTracker (CurrentPlayer->Name,
+			CurrentPlayer->Passwd,
+			CurrentPlayer->ModelName,
+			CurrentPlayer->LastSeen,
+			DISCONNECT
+		);
+	}
+	mT_RelayMapIt Relay = m_RelayMap.find ( CurrentPlayer->Address.getIP() );
+	if ( Relay != m_RelayMap.end() )
+	{
+		Origin = Relay->second;
+	}
+	else
+	{
+		Origin = "LOCAL";
+	}
+	SG_LOG (SG_FGMS, SG_ALERT, "TTL exceeded, dropping pilot "
+		<< CurrentPlayer->Name << "@" << Origin
+		<< " after " << time(0)-CurrentPlayer->JoinTime << " seconds."
+		<< " Usage #packets in: " << CurrentPlayer->PktsRcvd
+		<< " out: " << CurrentPlayer->PktsSent
+		<< ". Current clients: "
+		<< m_PlayerList.Size() << " max: " << m_NumMaxClients
+	);
+	m_PlayerList.Delete (CurrentPlayer);
+} // FG_SERVER::DropClient()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
 /**
  * @brief Handle client connections
  * @param Msg
@@ -1276,6 +1315,15 @@ FG_SERVER::HandlePacket
 			SendingPlayer = *CurrentPlayer;
 			CurrentPlayer++;
 			continue; // don't send packet back to sender
+		}
+		//////////////////////////////////////////////////
+		//	Drop Users if they did'nt send data
+		//	within TTL
+		//////////////////////////////////////////////////
+		if ( (Now - CurrentPlayer->LastSeen) > CurrentPlayer->Timeout )
+		{
+			DropClient (CurrentPlayer); // ###
+			continue;
 		}
 		//////////////////////////////////////////////////
 		//      do not send packets to clients if the
@@ -1493,10 +1541,10 @@ FG_SERVER::Loop
 	char        Msg[MAX_PACKET_SIZE];
 	netAddress  SenderAddress;
 	netSocket*  ListenSockets[3 + MAX_TELNETS];
-	time_t      tick0;
+	time_t      LastTrackerUpdate;
 	time_t      CurrentTime;
 	PlayerIt    fg_Player;
-	tick0 = time ( 0 );
+	LastTrackerUpdate = time ( 0 );
 	m_IsParent = true;
 	if ( m_Listening == false )
 	{
@@ -1534,14 +1582,14 @@ FG_SERVER::Loop
 	{
 		CurrentTime = time ( 0 );
 		// Update some things every (default) 10 secondes
-		if ( ( CurrentTime - tick0 ) >= m_UpdateSecs )
+		if ( ( CurrentTime - LastTrackerUpdate ) >= m_UpdateTrackerFreq )
 		{
-			tick0 = time ( 0 );
+			LastTrackerUpdate = time ( 0 );
 			if ( m_PlayerList.Size() >0 )
 			{
 				// updates the position of the users
 				// regularly (tracker)
-				UpdateTracker ( string ( "" ),string ( "" ), string ( "" ),tick0, UPDATE );
+				UpdateTracker ("" , "", "", LastTrackerUpdate, UPDATE );
 			}
 			if ( check_keyboard() )
 			{
@@ -1868,11 +1916,11 @@ FG_SERVER::Done
 int
 FG_SERVER::UpdateTracker
 (
-        string Name,
-        string Passwd,
-        string Modelname,
-        time_t Timestamp,
-        int type
+        const string& Name,
+        const string& Passwd,
+        const string& Modelname,
+        const time_t Timestamp,
+        const int    type
 )
 {
 	char            TimeStr[100];
@@ -1881,8 +1929,7 @@ FG_SERVER::UpdateTracker
 	string          Aircraft;
 	string          Message;
 	tm*              tm;
-	FG_TRACKER::m_MsgBuffer buf;
-	if ( ! m_IsTracked || strcmp ( Name.c_str(),"mpdummy" ) == 0 )
+	if ( ! m_IsTracked || ( Name == "mpdummy" ) )
 	{
 		return ( 1 );
 	}
@@ -1925,8 +1972,6 @@ FG_SERVER::UpdateTracker
 		Message += " ";
 		Message += TimeStr;
 		// queue the message
-		sprintf ( buf.mtext, "%s", Message.c_str() );
-		buf.mtype = 1;
 		pthread_mutex_lock ( &msg_mutex ); // acquire the lock
 		msg_queue.push_back ( Message ); // queue the message
 		pthread_cond_signal ( &condition_var ); // wake up the worker
@@ -1948,8 +1993,6 @@ FG_SERVER::UpdateTracker
 		Message += " ";
 		Message += TimeStr;
 		// queue the message
-		sprintf ( buf.mtext, "%s", Message.c_str() );
-		buf.mtype = 1;
 		pthread_mutex_lock ( &msg_mutex ); // acquire the lock
 		msg_queue.push_back ( Message ); // queue the message
 		pthread_cond_signal ( &condition_var ); // wake up the worker
@@ -1980,8 +2023,6 @@ FG_SERVER::UpdateTracker
 			Message += NumToStr ( PlayerPosGeod[Alt], 6 ) +" "; //alt
 			Message += TimeStr;
 			// queue the message
-			sprintf ( buf.mtext,"%s",Message.c_str() );
-			buf.mtype=1;
 			pthread_mutex_lock ( &msg_mutex ); // acquire the lock
 			msg_queue.push_back ( Message ); // queue the message
 			pthread_cond_signal ( &condition_var ); // wake up the worker

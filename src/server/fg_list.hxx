@@ -65,13 +65,13 @@ public:
 	/** @brief timestamp of last sent packet to this element */
 	time_t		LastSent;
 	/** @brief Count of packets recieved from client */
-	uint64_t		PktsRcvd;
+	uint64_t	PktsRcvd;
 	/** @brief Count of packets sent to client */
-	uint64_t		PktsSent;
+	uint64_t	PktsSent;
 	/** @brief Count of bytes recieved from client */
-	uint64_t		BytesRcvd;
+	uint64_t	BytesRcvd;
 	/** @brief Count of bytes sent to client */
-	uint64_t		BytesSent;
+	uint64_t	BytesSent;
 	void operator =  ( const FG_ListElement& P );
 	virtual bool operator ==  ( const FG_ListElement& P );
 	void UpdateSent ( size_t bytes );
@@ -133,8 +133,6 @@ class mT_FG_List
 public:
 	typedef vector<T> ListElements;
 	typedef typename vector<T>::iterator ListIterator;
-	/** @brief maximum entries this list ever had */
-	size_t		MaxID;
 	mT_FG_List   ( const string& Name );
 	~mT_FG_List  ();
 	size_t Size  ();
@@ -152,15 +150,17 @@ public:
 	void Lock();
 	void Unlock();
 	T operator []( const size_t& Index );
+	/** @brief maximum entries this list ever had */
+	size_t		MaxID;
 	/** @brief Count of packets recieved from client */
-	uint64_t		PktsRcvd;  
+	uint64_t	PktsRcvd;  
 	/** @brief Count of packets sent to client */
-	uint64_t		PktsSent;
+	uint64_t	PktsSent;
 	/** @brief Count of bytes recieved from client */
-	uint64_t		BytesRcvd;  
+	uint64_t	BytesRcvd;  
 	/** @brief Count of bytes sent to client */
-	uint64_t		BytesSent;        
-	string	Name;
+	uint64_t	BytesSent;        
+	string		Name;
 private:
 	/** @brief mutex for thread safty */
 	pthread_mutex_t   m_ListMutex;
@@ -285,7 +285,7 @@ mT_FG_List<T>::Find
 		}
 		else
 		{
-			if (Element->Timeout == 0)
+			if ((Element->Timeout == 0) || (this->Name == "Users"))
 			{	// never times out
 				Element++;
 				continue;
