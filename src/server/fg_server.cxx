@@ -1224,7 +1224,7 @@ FG_SERVER::HandlePacket
 	//
 	//////////////////////////////////////////////////
 	MsgHdr->Magic = XDR_encode<uint32_t> ( MSG_MAGIC );
-	m_PlayerList.Lock();
+	// m_PlayerList.Lock();
 	CurrentPlayer = m_PlayerList.Begin();
 	while ( CurrentPlayer != m_PlayerList.End() )
 	{
@@ -1261,6 +1261,9 @@ FG_SERVER::HandlePacket
 			{
 				m_PlayerList.UpdateRcvd (CurrentPlayer, Bytes);
 			}
+			//////////////////////////////////////////////////
+			//	send update to inactive relays?
+			//////////////////////////////////////////////////
 			CurrentPlayer->DoUpdate = ( (Now - CurrentPlayer->LastRelayedToInactive) > UPDATE_INACTIVE_PERIOD );
 			if ( CurrentPlayer->DoUpdate )
 			{
@@ -1310,7 +1313,7 @@ FG_SERVER::HandlePacket
 		}
 		CurrentPlayer++;
 	}
-	m_PlayerList.Unlock();
+	// m_PlayerList.Unlock();
 	if ( SendingPlayer.ID ==  FG_ListElement::NONE_EXISTANT )
 	{
 		// player not yet in our list
