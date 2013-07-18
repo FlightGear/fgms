@@ -205,6 +205,9 @@ set( libcli_HDRS
     src/libcli/filter.hxx
     src/libcli/libcli.hxx
     )
+if (WIN32)
+    list(APPEND libcli_SRCS src/libcli/crypt-win.c)
+endif ()
 add_library( LibCLI ${LIB_TYPE} ${libcli_SRCS} ${libcli_HDRS} )
 if(WIN32)
     list(APPEND add_LIBS LibCLI)
