@@ -16,6 +16,9 @@
 // derived from libcli by David Parrish (david@dparrish.com)
 // Copyright (C) 2011  Oliver Schroeder
 //
+#ifdef HAVE_CONFIG_H
+	#include "config.h"
+#endif
 
 #include <exception>
 #include <stdio.h>
@@ -28,6 +31,19 @@
 #include <unistd.h>
 #include <fg_util.hxx>
 #include "libcli.hxx"
+
+#ifdef _MSC_VER
+// some windows quick fixes
+#define CTRL(a)  ( a & 037 )
+#define bcopy(b1,b2,len) memmove((b2), (b1), (len))
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern char *crypt(const char *key, const char *salt);
+#ifdef __cplusplus
+}
+#endif
+#endif
 
 namespace LIBCLI
 {
@@ -484,7 +500,7 @@ CLI::show_help
 		                && ( this->privilege >= p->privilege )
 		                && ( ( p->mode == this->mode ) || ( p->mode == MODE_ANY ) ) )
 		{
-			error ( "  %-20s %s", p->command, p->help ? : "" );
+			error ( "  %-20s %s", p->command, p->help ? p->help : "" );
 		}
 	}
 	return LIBCLI::OK;
@@ -999,12 +1015,12 @@ CLI::find_command
 			                && this->privilege >= c->privilege
 			                && ( c->mode == this->mode || c->mode == MODE_ANY ) )
 			{
-				error ( "  %-20s %s", c->command, c->help ? : "" );
+				error ( "  %-20s %s", c->command, c->help ? c->help : "" );
 			}
 		}
 		if ( commands->parent && commands->parent->have_callback )
 		{
-			error ( "  %-20s %s", "<br>",  commands->parent->help ? : "" );
+			error ( "  %-20s %s", "<br>",  commands->parent->help ? commands->parent->help : "" );
 		}
 		return LIBCLI::OK;
 	}
@@ -1330,7 +1346,7 @@ CLI::get_completions
 				error ( " " );
 				j++;
 			}
-			print ( "  %-20s %s", c->command, c->help ? : "" );
+			print ( "  %-20s %s", c->command, c->help ? c->help : "" );
 		}
 		if (strncmp (command, c->command, strlen (c->command)) != 0)
 			completions[k++] = c->command;
@@ -1346,7 +1362,7 @@ CLI::get_completions
 			{
 				error ( " " );
 			}
-			print ( "  %-20s %s", "<br>", p->help ? : "" );
+			print ( "  %-20s %s", "<br>", p->help ? p->help : "" );
 			k++;
 		}
 	}
@@ -1489,7 +1505,11 @@ CLI::loop
 	else    // read from socket
 	{
 		this->from_socket = true;
+#ifdef _MSC_VER
+		send ( sockfd, negotiate, strlen ( negotiate ), 0 );
+#else
 		write ( sockfd, negotiate, strlen ( negotiate ) );
+#endif
 	}
 	if ( ( cmd = ( char* ) malloc ( 4096 ) ) == NULL )
 	{

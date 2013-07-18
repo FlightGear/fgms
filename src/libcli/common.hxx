@@ -35,7 +35,9 @@
 
 #define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember)) 
 #define free_z(p) do { if (p) { free (p); (p) = 0; } } while (0)
-
+#ifdef _MSC_VER
+#undef ERROR
+#endif
 namespace LIBCLI
 {
 
