@@ -230,7 +230,6 @@ FG_SERVER::FG_SERVER
 	m_TrackerPostion	= 0; // Tracker messages queued
 	m_Uptime		= time(0);
 	m_WantExit		= false;
-	// SetLog (SG_FGMS|SG_FGTRACKER, SG_BULK);
 	SetLog (SG_FGMS|SG_FGTRACKER, SG_INFO);
 } // FG_SERVER::FG_SERVER()
 
@@ -796,6 +795,12 @@ FG_SERVER::AddRelay
 	FG_ListElement  B (Server);
 
 	B.Address.set ( ( char* ) Server.c_str(), Port );
+	if (B.Address.getIP() == 0)
+	{
+		SG_LOG ( SG_FGMS, SG_ALERT,
+			"could not resolve '" << Server << "'");
+		return;
+	}
 	m_RelayList.Lock ();
 	ItList CurrentEntry = m_RelayList.Find ( B.Address, "" );
 	m_RelayList.Unlock ();
@@ -1126,7 +1131,7 @@ FG_SERVER::DropClient
 	{
 		Origin = "LOCAL";
 	}
-	SG_LOG (SG_FGMS, SG_ALERT, "TTL exceeded, dropping pilot "
+	SG_LOG (SG_FGMS, SG_INFO, "TTL exceeded, dropping pilot "
 		<< CurrentPlayer->Name << "@" << Origin
 		<< " after " << time(0)-CurrentPlayer->JoinTime << " seconds."
 		<< " Usage #packets in: " << CurrentPlayer->PktsRcvd
