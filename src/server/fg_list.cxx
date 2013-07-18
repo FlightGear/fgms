@@ -19,6 +19,9 @@
 //
 // Copyright (C) 2005-2012  Oliver Schroeder
 //
+#ifdef HAVE_CONFIG_H
+	#include "config.h"
+#endif
 
 #include <time.h>
 #include <simgear/debug/logstream.hxx>

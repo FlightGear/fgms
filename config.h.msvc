@@ -9,6 +9,7 @@
 #define _FGMS_CONFIG_H_
 
 #pragma warning ( disable : 4996 )  // remove warning "The POSIX name for this item is depreciated" ...
+#pragma warning ( disable : 4244 )  // conversion from 'a' to 'b', possible loss of data
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -21,7 +22,9 @@
 #endif
 
 #define sleep(a) Sleep(a * 1000)
-#define strncasecmp strncmp
+#define strcasecmp strcmp
+#define strncasecmp _strnicmp
+#define snprintf _snprintf
 #define unlink _unlink
 
 /* Now REQUIRED <pthread.h>, and the pthreadVC2.lib and dll */

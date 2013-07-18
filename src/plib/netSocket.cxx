@@ -58,6 +58,15 @@
 #define INADDR_NONE ((unsigned long)-1)
 #endif
 
+#ifdef _MSC_VER
+int recoverable_wsa_error()
+{
+    int wsa_errno = WSAGetLastError();
+    WSASetLastError(0); // clear the error
+    return (wsa_errno == WSAEINTR) ? 1 : 0;
+}
+#endif
+
 using namespace std;
 
 netAddress::netAddress ( const char* host, int port )
@@ -337,6 +346,16 @@ int netSocket::write_str ( const char* str, int len )
 	errno = 0;
 	while (left > 0)
 	{
+#ifdef _MSC_VER
+		written = ::send (handle, p, left, 0);
+		if (written == SOCKET_ERROR)
+		{
+            if (recoverable_wsa_error())
+				written = 0;
+			else
+				return -1;
+		}
+#else // !_MSC_VER
 		written = ::write (handle, p, left);
 		if (written <= 0)
 		{
@@ -345,6 +364,7 @@ int netSocket::write_str ( const char* str, int len )
 			else
 				return -1;
 		}
+#endif // _MSC_VER y/n
 		left -= written;
 		p += written;
 	}
@@ -358,7 +378,11 @@ int netSocket::write_str ( const string&  str )
 
 int netSocket::write_char ( const char&  c )
 {
+#ifdef _MSC_VER
+    return send ((const void *)c, 1 );
+#else // !_MSC_VER
 	return write (handle, &c, 1);
+#endif // _MSC_VER y/n
 }
 
 int netSocket::send (const void * buffer, int size, int flags)
@@ -378,7 +402,11 @@ int netSocket::sendto ( const void * buffer, int size,
 
 int netSocket::read_char ( unsigned char& c )
 {
+#ifdef _MSC_VER
+    int n = recv ( (void *)c, 1 );
+#else // !_MSC_VER
     int n = read ( handle, &c, 1 );
+#endif
     return n;
 }
 

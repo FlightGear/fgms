@@ -35,14 +35,13 @@
 
 #define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember)) 
 #define free_z(p) do { if (p) { free (p); (p) = 0; } } while (0)
-
 namespace LIBCLI
 {
 
 enum RETURN_CODES
 {
 	OK              = 0,
-	ERROR           = -1,
+	ERROR_ANY       = -1,
 	QUIT            = -2,
 	ERROR_ARG       = -3
 };

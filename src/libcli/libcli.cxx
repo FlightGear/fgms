@@ -16,6 +16,9 @@
 // derived from libcli by David Parrish (david@dparrish.com)
 // Copyright (C) 2011  Oliver Schroeder
 //
+#ifdef HAVE_CONFIG_H
+	#include "config.h"
+#endif
 
 #include <exception>
 #include <stdio.h>
@@ -28,6 +31,18 @@
 #include <unistd.h>
 #include <fg_util.hxx>
 #include "libcli.hxx"
+
+#ifdef _MSC_VER
+// some windows quick fixes
+#define CTRL(a)  ( a & 037 )
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern char *crypt(const char *key, const char *salt);
+#ifdef __cplusplus
+}
+#endif
+#endif
 
 namespace LIBCLI
 {
@@ -483,7 +498,7 @@ CLI::show_help
 		                && ( this->privilege >= p->privilege )
 		                && ( ( p->mode == this->mode ) || ( p->mode == MODE_ANY ) ) )
 		{
-			error ( "  %-20s %s", p->command, p->help ? : "" );
+			error ( "  %-20s %s", p->command, p->help ? p->help : "" );
 		}
 	}
 	return LIBCLI::OK;
@@ -829,7 +844,7 @@ CLI::add_history
 			if ( i == 0 || strcasecmp ( this->history[i-1], cmd ) )
 				if ( ! ( this->history[i] = strdup ( cmd ) ) )
 				{
-					return LIBCLI::ERROR;
+					return LIBCLI::ERROR_ANY;
 				}
 			return LIBCLI::OK;
 		}
@@ -842,7 +857,7 @@ CLI::add_history
 	}
 	if ( ! ( this->history[MAX_HISTORY - 1] = strdup ( cmd ) ) )
 	{
-		return LIBCLI::ERROR;
+		return LIBCLI::ERROR_ANY;
 	}
 	return LIBCLI::OK;
 }
@@ -986,7 +1001,7 @@ CLI::find_command
 	// Deal with ? for help
 	if ( ! words[start_word] )
 	{
-		return LIBCLI::ERROR;
+		return LIBCLI::ERROR_ANY;
 	}
 	if ( words[start_word][strlen ( words[start_word] ) - 1] == '?' )
 	{
@@ -998,12 +1013,12 @@ CLI::find_command
 			                && this->privilege >= c->privilege
 			                && ( c->mode == this->mode || c->mode == MODE_ANY ) )
 			{
-				error ( "  %-20s %s", c->command, c->help ? : "" );
+				error ( "  %-20s %s", c->command, c->help ? c->help : "" );
 			}
 		}
 		if ( commands->parent && commands->parent->have_callback )
 		{
-			error ( "  %-20s %s", "<br>",  commands->parent->help ? : "" );
+			error ( "  %-20s %s", "<br>",  commands->parent->help ? commands->parent->help : "" );
 		}
 		return LIBCLI::OK;
 	}
@@ -1034,7 +1049,7 @@ AGAIN:
 				if ( ! c->have_callback )
 				{
 					error ( "No callback for \"%s\"", c->command );
-					return LIBCLI::ERROR;
+					return LIBCLI::ERROR_ANY;
 				}
 			}
 			else
@@ -1046,7 +1061,7 @@ AGAIN:
 						goto CORRECT_CHECKS;
 					}
 					error ( "Incomplete command" );
-					return LIBCLI::ERROR;
+					return LIBCLI::ERROR_ANY;
 				}
 				rc = find_command ( c->children, num_words, words, start_word + 1, filters );
 				if ( rc == LIBCLI::ERROR_ARG )
@@ -1066,7 +1081,7 @@ AGAIN:
 			if ( ! c->have_callback )
 			{
 				error ( "Internal server error processing \"%s\"", c->command );
-				return LIBCLI::ERROR;
+				return LIBCLI::ERROR_ANY;
 			}
 CORRECT_CHECKS:
 			for ( f = 0; rc == LIBCLI::OK && filters[f]; f++ )
@@ -1082,7 +1097,7 @@ CORRECT_CHECKS:
 				if ( filters[f] == n - 1 )
 				{
 					error ( "Missing filter" );
-					return LIBCLI::ERROR;
+					return LIBCLI::ERROR_ANY;
 				}
 				argv = words + filters[f] + 1;
 				argc = n - ( filters[f] + 1 );
@@ -1113,7 +1128,7 @@ CORRECT_CHECKS:
 				if ( argv[0][0] == 'b' && len < 3 ) // [beg]in, [bet]ween
 				{
 					error ( "Ambiguous filter \"%s\" (begin, between)", argv[0] );
-					return LIBCLI::ERROR;
+					return LIBCLI::ERROR_ANY;
 				}
 				*filt = ( filter_t* ) calloc ( sizeof ( filter_t ), 1 );
 				if ( !strncmp ( "include", argv[0], len )
@@ -1133,7 +1148,7 @@ CORRECT_CHECKS:
 				else
 				{
 					error ( "Invalid filter \"%s\"", argv[0] );
-					rc = LIBCLI::ERROR;
+					rc = LIBCLI::ERROR_ANY;
 				}
 				if ( rc == LIBCLI::OK )
 				{
@@ -1193,7 +1208,7 @@ CLI::run_command
 	int filters[128] = {0};
 	if ( ! command )
 	{
-		return LIBCLI::ERROR;
+		return LIBCLI::ERROR_ANY;
 	}
 	while ( isspace ( *command ) )
 	{
@@ -1218,7 +1233,7 @@ CLI::run_command
 	}
 	else
 	{
-		r = LIBCLI::ERROR;
+		r = LIBCLI::ERROR_ANY;
 	}
 	for ( i = 0; i < num_words; i++ )
 	{
@@ -1329,7 +1344,7 @@ CLI::get_completions
 				error ( " " );
 				j++;
 			}
-			print ( "  %-20s %s", c->command, c->help ? : "" );
+			print ( "  %-20s %s", c->command, c->help ? c->help : "" );
 		}
 		if (strncmp (command, c->command, strlen (c->command)) != 0)
 			completions[k++] = c->command;
@@ -1345,7 +1360,7 @@ CLI::get_completions
 			{
 				error ( " " );
 			}
-			print ( "  %-20s %s", "<br>", p->help ? : "" );
+			print ( "  %-20s %s", "<br>", p->help ? p->help : "" );
 			k++;
 		}
 	}
@@ -1488,11 +1503,15 @@ CLI::loop
 	else    // read from socket
 	{
 		this->from_socket = true;
+#ifdef _MSC_VER
+		send ( sockfd, negotiate, strlen ( negotiate ), 0 );
+#else
 		write ( sockfd, negotiate, strlen ( negotiate ) );
+#endif
 	}
 	if ( ( cmd = ( char* ) malloc ( 4096 ) ) == NULL )
 	{
-		return LIBCLI::ERROR;
+		return LIBCLI::ERROR_ANY;
 	}
 	client = new netSocket ();
 	client->setHandle ( sockfd );
@@ -2328,7 +2347,7 @@ CLI::_print
 	{
 		if ( p != buffer )
 		{
-			bcopy ( p, buffer, strlen ( p ) );
+			memmove (buffer, p, strlen (p));
 		}
 	}
 	else
@@ -2417,7 +2436,7 @@ CLI::match_filter_init
 		{
 			client->write_str ("Match filter requires an argument\r\n");
 		}
-		return LIBCLI::ERROR;
+		return LIBCLI::ERROR_ANY;
 	}
 	filt->filter = &CLI::match_filter;
 	state = new match_filter_state;
@@ -2440,7 +2459,7 @@ CLI::match_filter
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	match_filter_state* state = reinterpret_cast<match_filter_state*> ( data );
-	int r = LIBCLI::ERROR;
+	int r = LIBCLI::ERROR_ANY;
 	if ( !cmd ) // clean up
 	{
 		free ( state->str );
@@ -2455,7 +2474,7 @@ CLI::match_filter
 	{
 		if ( r == LIBCLI::OK )
 		{
-			r = LIBCLI::ERROR;
+			r = LIBCLI::ERROR_ANY;
 		}
 		else
 		{
@@ -2485,11 +2504,11 @@ CLI::range_filter_init
 			{
 				client->write_str ("Between filter requires 2 arguments\r\n");
 			}
-			return LIBCLI::ERROR;
+			return LIBCLI::ERROR_ANY;
 		}
 		if ( ! ( from = strdup ( argv[1] ) ) )
 		{
-			return LIBCLI::ERROR;
+			return LIBCLI::ERROR_ANY;
 		}
 		to = join_words ( argc-2, argv+2 );
 	}
@@ -2501,7 +2520,7 @@ CLI::range_filter_init
 			{
 				client->write_str ("Begin filter requires an argument\r\n");
 			}
-			return LIBCLI::ERROR;
+			return LIBCLI::ERROR_ANY;
 		}
 		from = join_words ( argc-1, argv+1 );
 	}
@@ -2523,7 +2542,7 @@ CLI::range_filter
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	range_filter_state* state = ( range_filter_state* ) data;
-	int r = LIBCLI::ERROR;
+	int r = LIBCLI::ERROR_ANY;
 	if ( !cmd ) // clean up
 	{
 		free_z ( state->from );
@@ -2561,13 +2580,13 @@ CLI::count_filter_init
 		{
 			client->write_str ("Count filter does not take arguments\r\n");
 		}
-		return LIBCLI::ERROR;
+		return LIBCLI::ERROR_ANY;
 	}
 	filt->filter = &CLI::count_filter;
 	filt->data = new int(0);
 	if ( ! filt->data )
 	{
-		return LIBCLI::ERROR;
+		return LIBCLI::ERROR_ANY;
 	}
 	return LIBCLI::OK;
 }
@@ -2600,7 +2619,7 @@ CLI::count_filter
 	{
 		( *count ) ++;        // only count non-blank lines
 	}
-	return LIBCLI::ERROR; // no output
+	return LIBCLI::ERROR_ANY; // no output
 }
 
 void

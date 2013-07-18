@@ -16,7 +16,9 @@
 // derived from libcli by David Parrish (david@dparrish.com)
 // Copyright (C) 2011  Oliver Schroeder
 //
-
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "common.hxx"
 #include "filter.hxx"

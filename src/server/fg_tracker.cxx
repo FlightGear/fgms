@@ -69,8 +69,6 @@
 		}
 		while ( ( time2-time1 ) < waitTime );
 	}
-#else
-	extern  cDaemon Myself;
 #endif // !_MSC_VER
 
 //////////////////////////////////////////////////////////////////////
@@ -188,7 +186,7 @@ FG_TRACKER::TrackerLoop ()
 	msgbuf_resend = NULL;
 	// m_connected = Connect();
 	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
-		<< "Msg structure size: " << sizeof ( MSG )
+		<< "Msg structure size: " << sizeof ( class MSG )
 	);
 	/*Infinite loop*/
 	for ( ; ; )

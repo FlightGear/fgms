@@ -143,10 +143,17 @@ public:
 	int     set_configmode ( int mode, const char* config_desc );
 	void    reprompt();
 	void    regular ( int ( *callback ) () );
+// #ifdef _MSC_VER
+	int     print ( const char* format, ... );
+	void    bufprint ( const char* format, ... );
+	void    error ( const char* format, ... );
+#if 0
+// #else // !_MSC_VER
 	int     print ( const char* format, ... ) __attribute__ ( ( format ( printf, 2, 3 ) ) );
 	void    bufprint ( const char* format, ... ) __attribute__ ( ( format ( printf, 2, 3 ) ) );
-	void    vabufprint ( const char* format, va_list ap );
 	void    error ( const char* format, ... ) __attribute__ ( ( format ( printf, 2, 3 ) ) );
+#endif // _MSC_VER y/n
+	void    vabufprint ( const char* format, va_list ap );
 	void    free_history();
 };
 

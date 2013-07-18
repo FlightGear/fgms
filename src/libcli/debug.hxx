@@ -16,7 +16,7 @@
 // Copyright (C) 2011  Oliver Schroeder
 //
 
-#if not defined CLI_DEBUG_H
+#if !defined CLI_DEBUG_H
 #define CLI_DEBUG_H
 
 #define CLI_TRACE __FUNCTION__,__FILE__,__LINE__
