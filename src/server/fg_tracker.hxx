@@ -18,9 +18,12 @@
 
 using namespace std;
 
+#define ADD_TRACKER_LOG
+
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <vector>
 #include <string.h>
 #include <errno.h>
 #include <time.h>
@@ -64,6 +67,7 @@ public:
 	int       InitTracker ();
 	int       TcpConnect (char *server_address, int server_port);
 	int       TrackerLoop ();
+	void	AddMessage ( const string & message );
 	
 	/** 
 	 * @brief Return the server of the tracker
@@ -97,7 +101,6 @@ public:
 		 */
 		string mtext;
 	};
-	pthread_t thread;
 	//////////////////////////////////////////////////
 	//
 	//  private methods
@@ -111,9 +114,16 @@ public:
 	//////////////////////////////////////////////////
 	int   ipcid;
 	int   m_TrackerPort;
-	char  m_TrackerServer[128];
+	string m_TrackerServer;
 	bool  m_connected; /*If connected to fgtracker*/
-	netSocket m_TrackerSocket;
+	netSocket* m_TrackerSocket;
+
+	typedef std::vector<std::string> vMSG;	/* string vector */
+	typedef vMSG::iterator VI;		/* string vector iterator */
+	pthread_mutex_t msg_mutex;		/* message queue mutext */
+	pthread_cond_t  condition_var;		/* message queue condition */
+	vMSG    msg_queue;			/* the single message queue */
+
 };
 #endif
 

@@ -34,7 +34,6 @@ namespace LIBCLI
 
 using namespace std;
 
-
 #ifndef CALL_MEMBER_FN
 	CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
 #endif

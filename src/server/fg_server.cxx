@@ -97,10 +97,6 @@ extern void SigHUPHandler ( int SigType );
 	static char* stat_file   = ( char* ) "/tmp/" DEF_STAT_FILE;
 #endif // _MSC_VER y/n
 
-pthread_mutex_t msg_mutex     = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t  condition_var = PTHREAD_COND_INITIALIZER;
-vMSG msg_queue; // queue for messages
-
 #ifdef ADD_TRACKER_LOG
 
 // FIXME: use SG_LOG !
@@ -231,6 +227,7 @@ FG_SERVER::FG_SERVER
 	m_Uptime		= time(0);
 	m_WantExit		= false;
 	SetLog (SG_FGMS|SG_FGTRACKER, SG_INFO);
+	// SetLog (SG_FGMS|SG_FGTRACKER, SG_DISABLED);
 } // FG_SERVER::FG_SERVER()
 
 //////////////////////////////////////////////////////////////////////
@@ -1977,10 +1974,7 @@ FG_SERVER::UpdateTracker
 		Message += " ";
 		Message += TimeStr;
 		// queue the message
-		pthread_mutex_lock ( &msg_mutex ); // acquire the lock
-		msg_queue.push_back ( Message ); // queue the message
-		pthread_cond_signal ( &condition_var ); // wake up the worker
-		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
+		m_Tracker->AddMessage (Message);
 #ifdef ADD_TRACKER_LOG
 		write_msg_log ( Message.c_str(), Message.size(), ( char* ) "IN: " ); // write message log
 #endif // #ifdef ADD_TRACKER_LOG
@@ -1998,10 +1992,7 @@ FG_SERVER::UpdateTracker
 		Message += " ";
 		Message += TimeStr;
 		// queue the message
-		pthread_mutex_lock ( &msg_mutex ); // acquire the lock
-		msg_queue.push_back ( Message ); // queue the message
-		pthread_cond_signal ( &condition_var ); // wake up the worker
-		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
+		m_Tracker->AddMessage (Message);
 #ifdef ADD_TRACKER_LOG
 		write_msg_log ( Message.c_str(), Message.size(), ( char* ) "IN: " ); // write message log
 #endif // #ifdef ADD_TRACKER_LOG
@@ -2028,10 +2019,7 @@ FG_SERVER::UpdateTracker
 			Message += NumToStr ( PlayerPosGeod[Alt], 6 ) +" "; //alt
 			Message += TimeStr;
 			// queue the message
-			pthread_mutex_lock ( &msg_mutex ); // acquire the lock
-			msg_queue.push_back ( Message ); // queue the message
-			pthread_cond_signal ( &condition_var ); // wake up the worker
-			pthread_mutex_unlock ( &msg_mutex ); // give up the lock
+			m_Tracker->AddMessage (Message);
 			m_TrackerPostion++; // count a POSITION messge queued
 		}
 		Message.erase ( 0 );

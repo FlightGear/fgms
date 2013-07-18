@@ -73,8 +73,6 @@
 	extern  cDaemon Myself;
 #endif // !_MSC_VER
 
-extern bool RunAsDaemon;
-
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief Initialize to standard values
@@ -86,7 +84,11 @@ FG_TRACKER::FG_TRACKER ( int port, string server, int id )
 {
 	ipcid         = id;
 	m_TrackerPort = port;
-	strcpy ( m_TrackerServer, server.c_str() );
+	m_TrackerServer = server;
+	m_TrackerSocket = 0;
+	pthread_mutex_init ( &msg_mutex, 0 ); 
+	pthread_cond_init  ( &condition_var, 0 ); 
+	m_connected = Connect();
 	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::FG_TRACKER:"
 		<< m_TrackerServer << ", Port: " << m_TrackerPort
 	);
@@ -115,6 +117,7 @@ void* func_Tracker ( void* vp )
 int
 FG_TRACKER::InitTracker ()
 {
+	pthread_t thread;
 	if ( pthread_create ( &thread, NULL, func_Tracker, ( void* ) this ) )
 	{
 		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::InitTracker: can't create thread..." );
@@ -123,6 +126,20 @@ FG_TRACKER::InitTracker ()
 	return ( 0 );
 } // InitTracker (int port, string server, int id, int pid)
 
+//////////////////////////////////////////////////////////////////////
+
+void
+FG_TRACKER::AddMessage
+(
+	const string & message
+)
+{
+	pthread_mutex_lock ( &msg_mutex ); // acquire the lock 
+	msg_queue.push_back ( message ); // queue the message
+	pthread_cond_signal ( &condition_var ); // wake up the worker
+	pthread_mutex_unlock ( &msg_mutex ); // give up the lock
+} // FG_TRACKER::AddMessage()
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -136,7 +153,7 @@ FG_TRACKER::TrackerLoop ()
 	{
 	public:
 		string msg;
-		struct MSG* next;
+		MSG* next;
 	};
 	m_MsgBuffer	buf;
 	int 		i=0;
@@ -169,10 +186,10 @@ FG_TRACKER::TrackerLoop ()
 	msgbuf_head = NULL;
 	msgbuf_tail = NULL;
 	msgbuf_resend = NULL;
+	// m_connected = Connect();
 	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
-		<< "Msg structure size: " << sizeof ( struct MSG )
+		<< "Msg structure size: " << sizeof ( MSG )
 	);
-	m_connected = Connect();
 	/*Infinite loop*/
 	for ( ; ; )
 	{
@@ -221,7 +238,7 @@ FG_TRACKER::TrackerLoop ()
 		}
 		/*time-out issue End*/
 		/*Read msg from IPC*/
-		pthread_mutex_lock ( &msg_mutex );  // acquire the lock
+		pthread_mutex_lock ( &msg_mutex );
 		pthread_cond_wait ( &condition_var, &msg_mutex );   // go wait for the condition
 		VI vi = msg_queue.begin(); // get first message
 		if ( vi != msg_queue.end() )
@@ -231,14 +248,11 @@ FG_TRACKER::TrackerLoop ()
 			length = CurrentMessage.size(); // should I worry about LENGTH???
 		}
 		pthread_mutex_unlock ( &msg_mutex ); // unlock the mutex
-#ifdef ADD_TRACKER_LOG
 		if ( length )
 		{
-			write_msg_log ( buf.mtext.c_str(), length, ( char* ) "OUT: " );
-		}
+#ifdef ADD_TRACKER_LOG
+			write_msg_log ( CurrentMessage.c_str(), length, ( char* ) "OUT: " );
 #endif // #ifdef ADD_TRACKER_LOG
-		if ( length>0 )
-		{
 			msgque_new = new MSG;
 			if ( msgque_new == NULL )
 			{
@@ -259,6 +273,10 @@ FG_TRACKER::TrackerLoop ()
 			}
 			msgque_tail = msgque_new;
 		}
+		else
+		{
+			CurrentMessage = "length=0!";
+		}
 		length = 0;
 		/*DO NOT place any stream read/write above this line!*/
 		if ( m_connected == false )
@@ -277,7 +295,7 @@ FG_TRACKER::TrackerLoop ()
 				break;
 			}
 			// FIXME: why receive byte for byte?
-			i = m_TrackerSocket.recv (&b, sizeof ( b ), 0);
+			i = m_TrackerSocket->recv (&b, sizeof ( b ), 0);
 			res[length] = b;
 			if ( (b == '\0') && (i >= 1) )
 			{
@@ -379,7 +397,7 @@ FG_TRACKER::TrackerLoop ()
 				SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 					<< "PING from server received"
 				);
-				if (m_TrackerSocket.write_str (PINGRPY) < 0)
+				if (m_TrackerSocket->write_str (PINGRPY) < 0)
 				{
 					m_connected = false;
 					SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
@@ -477,7 +495,7 @@ FG_TRACKER::TrackerLoop ()
 			SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 				<< "Msg: " << msgbuf_new->msg
 			);
-			if ( m_TrackerSocket.write_str (msgbuf_new->msg) < 0 )
+			if ( m_TrackerSocket->write_str (msgbuf_new->msg) < 0 )
 			{
 				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 					<< "Can't write to server..."
@@ -516,38 +534,35 @@ bool
 FG_TRACKER::Connect()
 {
 	pid_t pid = getpid();
-	//////////////////////////////////////////////////
-	// close all inherited open sockets, but
-	// leave cin, cout, cerr open
-	//////////////////////////////////////////////////
-	if ( m_TrackerSocket.getHandle() > 0 )
+	if ( m_TrackerSocket )
 	{
-		m_TrackerSocket.close ();
+		m_TrackerSocket->close ();
+		delete m_TrackerSocket;
 	}
 	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect [" << pid << "]: "
 		<< "Server: " << m_TrackerServer << ", Port: " << m_TrackerPort);
-	netInit ();
-	if ( m_TrackerSocket.open (true) == false)
+	m_TrackerSocket = new netSocket();
+	if ( m_TrackerSocket->open (true) == false)
 	{
 		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect [" << pid << "]: "
 			<< "Can't get socket..."
 		);
 		return false;
 	}
-	if ( m_TrackerSocket.connect ( m_TrackerServer, m_TrackerPort ) < 0 )
+	if ( m_TrackerSocket->connect ( m_TrackerServer.c_str(), m_TrackerPort ) < 0 )
 	{
 		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect [" << pid << "]: "
 			<< "Connect failed!"
 		);
 		return false;
 	}
-	m_TrackerSocket.setBlocking ( false );
+	m_TrackerSocket->setBlocking ( false );
 	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect [" << pid << "]: "
 		<< "success"
 	);
-	m_TrackerSocket.write_char ('\0');
+	m_TrackerSocket->write_char ('\0');
 	sleep ( 2 );
-	m_TrackerSocket.write_str ("NOWAIT");
+	m_TrackerSocket->write_str ("NOWAIT");
 	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect [" << pid << "]: "
 		<< "Written 'NOWAIT'"
 		);
@@ -564,9 +579,10 @@ FG_TRACKER::Connect()
 void
 FG_TRACKER::Disconnect ()
 {
-	if ( m_TrackerSocket.getHandle() > 0 )
+	if ( m_TrackerSocket )
 	{
-		m_TrackerSocket.close ();
+		m_TrackerSocket->close ();
+		delete m_TrackerSocket;
 	}
 } // Disconnect ()
 //////////////////////////////////////////////////////////////////////
