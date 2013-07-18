@@ -136,7 +136,7 @@ FG_TRACKER::TrackerLoop ()
 	{
 	public:
 		char msg[MSGMAXLINE];
-		struct MSG* next;
+		class MSG* next;
 	};
 	m_MsgBuffer	buf;
 	int 		i=0;
@@ -169,7 +169,7 @@ FG_TRACKER::TrackerLoop ()
 	msgbuf_tail = NULL;
 	msgbuf_resend = NULL;
 	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
-		<< "Msg structure size: " << sizeof ( struct MSG )
+		<< "Msg structure size: " << sizeof ( class MSG )
 	);
 	m_connected = Connect();
 	/*Infinite loop*/
@@ -240,7 +240,7 @@ FG_TRACKER::TrackerLoop ()
 #endif // #ifdef ADD_TRACKER_LOG
 		if ( length>0 )
 		{
-			msgque_new = ( struct MSG* ) malloc ( sizeof ( struct MSG ) );
+			msgque_new = ( class MSG* ) malloc ( sizeof ( class MSG ) );
 			if ( msgque_new==NULL )
 			{
 				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
