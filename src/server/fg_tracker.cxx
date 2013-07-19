@@ -48,7 +48,8 @@
 #include <libcli/debug.hxx>
 
 #ifndef DEF_TRACKER_SLEEP
-	#define DEF_TRACKER_SLEEP 300   // try to connect each Five minutes
+	// #define DEF_TRACKER_SLEEP 300   // try to connect each Five minutes
+	#define DEF_TRACKER_SLEEP 30   // try to connect each Five minutes
 #endif // DEF_TRACKER_SLEEP
 
 #ifdef _MSC_VER
@@ -71,6 +72,20 @@
 	}
 #endif // !_MSC_VER
 
+logstream* fgms_logstream = NULL;
+inline logstream&
+tracklog()
+{
+        if ( fgms_logstream == NULL )
+        {
+                fgms_logstream = new logstream ( cerr );
+        }
+        return *fgms_logstream;
+}
+
+// #define TRACK_LOG(C,P,M) tracklog()   << loglevel(C,P) << tracklog().datestr() << M << std::endl
+#define TRACK_LOG(C,P,M) sglog()   << loglevel(C,P) << sglog().datestr() << M << std::endl
+
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief Initialize to standard values
@@ -84,10 +99,7 @@ FG_TRACKER::FG_TRACKER ( int port, string server, int id )
 	m_TrackerPort = port;
 	m_TrackerServer = server;
 	m_TrackerSocket = 0;
-	pthread_mutex_init ( &msg_mutex, 0 ); 
-	pthread_cond_init  ( &condition_var, 0 ); 
-	m_connected = Connect();
-	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::FG_TRACKER:"
+	TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::FG_TRACKER:"
 		<< m_TrackerServer << ", Port: " << m_TrackerPort
 	);
 } // FG_TRACKER()
@@ -118,14 +130,14 @@ FG_TRACKER::InitTracker ()
 	pthread_t thread;
 	if ( pthread_create ( &thread, NULL, func_Tracker, ( void* ) this ) )
 	{
-		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::InitTracker: can't create thread..." );
+		TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::InitTracker: can't create thread..." );
 		return 1;
 	}
 	return ( 0 );
 } // InitTracker (int port, string server, int id, int pid)
-
 //////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
 void
 FG_TRACKER::AddMessage
 (
@@ -161,7 +173,6 @@ FG_TRACKER::TrackerLoop ()
 	char		res[MSGMAXLINE];	/*Msg from/to server*/
 	string 		PINGRPY;
 	stringstream	out;
-	char 		b;
 	pid_t		pid = getpid();
 	short int	time_out_counter_l=0;
 	unsigned int	time_out_counter_u=0;
@@ -184,8 +195,15 @@ FG_TRACKER::TrackerLoop ()
 	msgbuf_head = NULL;
 	msgbuf_tail = NULL;
 	msgbuf_resend = NULL;
-	// m_connected = Connect();
-	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
+	pthread_mutex_init ( &msg_mutex, 0 ); 
+	pthread_cond_init  ( &condition_var, 0 ); 
+	sleep (2);
+	// tracklog().setLogLevels ( SG_FGTRACKER, SG_INFO );
+	TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
+		<< "trying to connect"
+	);
+	m_connected = Connect();
+	TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 		<< "Msg structure size: " << sizeof ( class MSG )
 	);
 	/*Infinite loop*/
@@ -193,6 +211,9 @@ FG_TRACKER::TrackerLoop ()
 	{
 		while (! m_connected)
 		{
+			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
+				<< "not connected, will slepp for " << DEF_TRACKER_SLEEP << " seconds"
+			);
 			sleep (DEF_TRACKER_SLEEP);
 			m_connected = Connect();
 		}
@@ -210,7 +231,7 @@ FG_TRACKER::TrackerLoop ()
 			/*Print warning*/
 			if ( m_connected==true )
 			{
-				SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
+				TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 					<< "Warning: FG_TRACKER::TrackerLoop No data receive from server for "
 					<< time_out_counter_u << "seconds"
 				);
@@ -221,7 +242,7 @@ FG_TRACKER::TrackerLoop ()
 			/*Timed out/Need retry - reconnect*/
 			if ( m_connected==true )
 			{
-				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
+				TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 					<< "Connection timed out..."
 				);
 			}
@@ -254,7 +275,7 @@ FG_TRACKER::TrackerLoop ()
 			msgque_new = new MSG;
 			if ( msgque_new == NULL )
 			{
-				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
+				TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 					"Cannot allocate memory. Force exit..."
 				);
 				exit ( 0 );
@@ -279,34 +300,21 @@ FG_TRACKER::TrackerLoop ()
 		/*DO NOT place any stream read/write above this line!*/
 		if ( m_connected == false )
 		{
+			cout << "TrackerLoop::m_connected == false!" << endl;
 			continue;
 		}
 		/*Place stream read/write below this line.*/
 		/*Read socket and see if anything arrived*/
-		length = strlen ( res );
-		do
+		/*Maximun character in a line : MSGMAXLINE-1. res[MSGMAXLINE] = '\0'*/
+		length = 0;
+		i = m_TrackerSocket->recv (res, MSGMAXLINE, 0);
+		if (i >= 0)
 		{
-			/*Maximun character in a line : MSGMAXLINE-1. res[MSGMAXLINE] = '\0'*/
-			if ( length == (MSGMAXLINE - 1) )
-			{
-				sockect_read_completed = true;
-				break;
-			}
-			// FIXME: why receive byte for byte?
-			i = m_TrackerSocket->recv (&b, sizeof ( b ), 0);
-			res[length] = b;
-			if ( (b == '\0') && (i >= 1) )
-			{
-				sockect_read_completed = true;
-				break;
-			}
-			if ( i < 1 )
-			{
-				break;
-			}
-		} while ( length++ );
+			sockect_read_completed = true;
+			length = i;
+			res[length]='\0';
+		}
 		i=0;
-		res[length]='\0';
 		//////////////////////////////////////////////////
 		//	received data from tracking server
 		//////////////////////////////////////////////////
@@ -320,7 +328,7 @@ FG_TRACKER::TrackerLoop ()
 				time_out_counter_u=0;
 				if ( msgbuf_head==NULL )
 				{
-					SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
+					TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 						<< "Warning! Message count mismatch between fgms "
 						<< "and fgtracker. Potential data loss!"
 					);
@@ -392,13 +400,13 @@ FG_TRACKER::TrackerLoop ()
 					PINGRPY.append ( "msgbuf_head is NOT null. " );
 				}
 				/*output status to tracker server*/
-				SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
+				TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 					<< "PING from server received"
 				);
 				if (m_TrackerSocket->write_str (PINGRPY) < 0)
 				{
 					m_connected = false;
-					SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
+					TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 						<< "lost connection to server"
 					);
 					continue;
@@ -409,8 +417,8 @@ FG_TRACKER::TrackerLoop ()
 			}
 			else
 			{
-				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
-					<< "Responce not recognized. Msg: " << res
+				TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
+					<< "Responce not recognized. Msg: '" << res << "' length: " << length
 				);
 			}
 			strcpy ( res, "" );
@@ -426,7 +434,7 @@ FG_TRACKER::TrackerLoop ()
 				if ( msgbuf_head==NULL )
 				{
 					/*All msg sent and well received*/
-					SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
+					TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 						<< "Resend data completed."
 					);
 					resentflg     = false;
@@ -486,16 +494,16 @@ FG_TRACKER::TrackerLoop ()
 		{
 			length++; /*including the '\0'*/
 			/*Send message at msgbuf_new via tcp*/
-			SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
+			TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 				<< "sending msg " << length << "  bytes, addr " << msgbuf_new
 				<< "next addr " << msgbuf_new->next
 			);
-			SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
+			TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 				<< "Msg: " << msgbuf_new->msg
 			);
 			if ( m_TrackerSocket->write_str (msgbuf_new->msg) < 0 )
 			{
-				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
+				TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 					<< "Can't write to server..."
 				);
 				m_connected = false;
@@ -513,7 +521,7 @@ FG_TRACKER::TrackerLoop ()
 		else
 		{
 			/*should not happen at all!*/
-			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
+			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop [" << pid << "]: "
 				<< "Internal Error (Msg size <= 0). Contact programmer to fix this issue."
 			);
 		}
@@ -532,43 +540,42 @@ bool
 FG_TRACKER::Connect()
 {
 	pid_t pid = getpid();
+
 	if ( m_TrackerSocket )
 	{
 		m_TrackerSocket->close ();
 		delete m_TrackerSocket;
 	}
-	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect [" << pid << "]: "
-		<< "Server: " << m_TrackerServer << ", Port: " << m_TrackerPort);
 	m_TrackerSocket = new netSocket();
+	TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect [" << pid << "]: "
+		<< "Server: " << m_TrackerServer << ", Port: " << m_TrackerPort);
 	if ( m_TrackerSocket->open (true) == false)
 	{
-		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect [" << pid << "]: "
+		TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect [" << pid << "]: "
 			<< "Can't get socket..."
 		);
 		return false;
 	}
 	if ( m_TrackerSocket->connect ( m_TrackerServer.c_str(), m_TrackerPort ) < 0 )
 	{
-		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect [" << pid << "]: "
+		TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect [" << pid << "]: "
 			<< "Connect failed!"
 		);
 		return false;
 	}
 	m_TrackerSocket->setBlocking ( false );
-	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect [" << pid << "]: "
+	TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect [" << pid << "]: "
 		<< "success"
 	);
 	m_TrackerSocket->write_char ('\0');
 	sleep ( 2 );
 	m_TrackerSocket->write_str ("NOWAIT");
-	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect [" << pid << "]: "
+	TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect [" << pid << "]: "
 		<< "Written 'NOWAIT'"
 		);
 	sleep ( 1 );
 	return true;
 } // Connect ()
-
-
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -584,7 +591,6 @@ FG_TRACKER::Disconnect ()
 	}
 } // Disconnect ()
 //////////////////////////////////////////////////////////////////////
-
 
 #ifdef _MSC_VER
 #if !defined(NTDDI_VERSION) || !defined(NTDDI_VISTA) || (NTDDI_VERSION < NTDDI_VISTA)   // if less than VISTA, provide alternative
@@ -607,7 +613,6 @@ int inet_pton ( int af, const char* src, void* dst )
 }
 #endif // #if (NTDDI_VERSION < NTDDI_VISTA)
 #endif // _MSC_VER
-
 
 //////////////////////////////////////////////////////////////////////
 /**

@@ -350,7 +350,7 @@ int netSocket::write_str ( const char* str, int len )
 		written = ::send (handle, p, left, 0);
 		if (written == SOCKET_ERROR)
 		{
-            if (recoverable_wsa_error())
+			if (recoverable_wsa_error())
 				written = 0;
 			else
 				return -1;
@@ -379,10 +379,10 @@ int netSocket::write_str ( const string&  str )
 int netSocket::write_char ( const char&  c )
 {
 #ifdef _MSC_VER
-    return send ((const void *)c, 1 );
-#else // !_MSC_VER
+	return send ((const void *)c, 1 )
+#else
 	return write (handle, &c, 1);
-#endif // _MSC_VER y/n
+#endif
 }
 
 int netSocket::send (const void * buffer, int size, int flags)

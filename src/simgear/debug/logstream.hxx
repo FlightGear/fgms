@@ -213,9 +213,9 @@ inline void
 logbuf::set_log_state ( sgDebugClass c, sgDebugPriority p )
 {
 	logging_enabled = ( (( c & logClass ) != 0) && (p >= logPriority) );
+	console_enabled = ( (( c & SG_CONSOLE ) != 0) && (p >= logPriority) );
 	if ((p == SG_ALERT) && (logPriority != SG_DISABLED))
 		logging_enabled = true;	// SG_ALERT is logged regardless of logClass
-	console_enabled = (( c & SG_CONSOLE ) != 0);
 }
 
 inline logbuf::int_type

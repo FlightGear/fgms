@@ -5,8 +5,6 @@
  *
  */
 
-
-
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -611,19 +609,19 @@ main ( int argc, char* argv[] )
 		SG_LOG ( SG_SYSTEMS, SG_ALERT, "No configuration file '" << DEF_CONF_FILE << "' found!" );
 		exit ( 1 );
 	}
+#ifndef _MSC_VER
+	if ( RunAsDaemon )
+	{
+		Myself.Daemonize ();
+	}
+#endif
 	I = Servant.Init ();
+	SG_CONSOLE ( SG_SYSTEMS, SG_ALERT, "Main server started!" );
 	if ( I != 0 )
 	{
 		Servant.CloseTracker();
 		return ( I );
 	}
-#ifndef _MSC_VER
-	if ( RunAsDaemon )
-	{
-		Myself.Daemonize ();
-		SG_LOG ( SG_SYSTEMS, SG_ALERT, "Main server started!" );
-	}
-#endif
 	I = Servant.Loop();
 	Servant.CloseTracker();
 	Servant.Done();

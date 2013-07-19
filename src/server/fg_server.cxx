@@ -227,7 +227,7 @@ FG_SERVER::FG_SERVER
 	m_Uptime		= time(0);
 	m_WantExit		= false;
 	SetLog (SG_FGMS|SG_FGTRACKER, SG_INFO);
-	// SetLog (SG_FGMS|SG_FGTRACKER, SG_DISABLED);
+	// SetLog (SG_ALL, SG_DISABLED);
 } // FG_SERVER::FG_SERVER()
 
 //////////////////////////////////////////////////////////////////////
@@ -1819,7 +1819,6 @@ FG_SERVER::SetLogfile
 	m_LogFile.open ( m_LogFileName.c_str(), ios::out|ios::app );
 	sglog().enable_with_date ( true );
 	sglog().set_output ( m_LogFile );
-
 } // FG_SERVER::SetLogfile ( const std::string &LogfileName )
 //////////////////////////////////////////////////////////////////////
 

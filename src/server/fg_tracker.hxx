@@ -14,7 +14,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #if !defined FG_TRACKER_HPP
-#define FG_TRACKER_HPP
+// #define FG_TRACKER_HPP
 
 using namespace std;
 
