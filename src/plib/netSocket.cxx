@@ -340,7 +340,7 @@ int netSocket::connect ( const char* host, int port )
 int netSocket::write_str ( const char* str, int len )
 {
 	char* p		= (char*) str;
-	int left	= len;
+	int left	= len + 1;
 	int written	= 0;
 
 	errno = 0;

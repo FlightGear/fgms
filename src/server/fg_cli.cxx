@@ -288,7 +288,8 @@ FG_CLI::cmd_show_stats
 	if (n) return 0;
 	n = print ("I have %lu relays", fgms->m_RelayList.Size ());
 	if (n) return 0;
-	n = print ("I have %lu users", fgms->m_PlayerList.Size ());
+	n = print ("I have %lu users (%lu max)", fgms->m_PlayerList.Size (),
+		fgms->m_NumMaxClients);
 	if (n) return 0;
 
 	n = print ("Sent counters:");
