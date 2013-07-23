@@ -76,6 +76,10 @@ private:
 	// show list of players
 	//////////////////////////////////////////////////
 	int cmd_user_show   (  char *command, char *argv[], int argc );
+	//////////////////////////////////////////////////
+	// show status of tracker
+	//////////////////////////////////////////////////
+	int cmd_tracker_show   (  char *command, char *argv[], int argc );
 private:
 	FG_SERVER* fgms;
 	int cmd_NOT_IMPLEMENTED (  char *command, char *argv[], int argc );

@@ -139,6 +139,15 @@ FG_CLI::setup
 
 	register_command (new Command<CLI> (
 		this,
+		"tracker",
+		static_cast<callback_ptr> (&FG_CLI::cmd_tracker_show),
+		LIBCLI::UNPRIVILEGED,
+		LIBCLI::MODE_ANY,
+		"Show status of tracker"
+	), c);
+
+	register_command (new Command<CLI> (
+		this,
 		"users",
 		static_cast<callback_ptr> (&FG_CLI::cmd_user_show),
 		LIBCLI::UNPRIVILEGED,
@@ -476,7 +485,6 @@ FG_CLI::cmd_show_version
 	print ("FlightGear Multiplayer %s Server version %s", s.c_str(), VERSION);
 	print ("using protocol version v%u.%u (LazyRelay enabled)", 
 	  fgms->m_ProtoMajorVersion, fgms->m_ProtoMinorVersion);
-	print (" ");
 	if (fgms->m_IsTracked)
 		print ("This server is tracked: %s", fgms->m_Tracker->GetTrackerServer().c_str());
 	else
@@ -1244,6 +1252,96 @@ FG_CLI::cmd_relay_show
 			temp.c_str());
 		if (n) return 0;
 	}
+	return 0;
+}
+
+//////////////////////////////////////////////////
+/**
+ *  @brief Show status of tracker server
+ *
+ *  possible arguments:
+ *  show tracker ?
+ *  show tracker <cr>
+ */
+int
+FG_CLI::cmd_tracker_show
+(
+	char *command,
+	char *argv[],
+	int argc
+)
+{
+	for (int i=0; i < argc; i++)
+	{
+		switch (i)
+		{
+			case 0: // '?'
+				if ( need_help (argv[i]) )
+				{
+					print ("  %-20s %s", "<cr>",  "show long listing");
+					print ("  %-20s %s", "|",     "output modifier");
+					return (0);
+				}
+				else
+					error ("%% invalid argument");
+				break;
+			default:
+				error ("%% invalid argument");
+				break;
+		}
+	}
+	if (! fgms->m_IsTracked)
+	{
+		print ("This server is NOT tracked");
+		print ("");
+		return 0;
+	}
+	string A;
+	string B;
+	time_t  difftime;
+	time_t  now;
+	now = time(0);
+	difftime = now - fgms->m_Uptime;
+	print ("This server is tracked: %s:%u",
+		fgms->m_Tracker->GetTrackerServer().c_str(),
+		fgms->m_Tracker->GetTrackerPort()
+	);
+	if (fgms->m_Tracker->m_connected)
+	{
+		A = timestamp_to_datestr(fgms->m_Tracker->LastConnected),
+		B = timestamp_to_days (fgms->m_Tracker->LastConnected);
+		print ("state: connected since %s (%s ago)",
+			A.c_str(),
+			B.c_str()
+		);
+	}
+	else
+	{
+		print ("state: NOT connected!");
+	}
+	A = timestamp_to_days (fgms->m_Tracker->LastSeen);
+	B = timestamp_to_days (fgms->m_Tracker->LastSent);
+	print ("last seen %s ago, last sent %s ago", A.c_str(), B.c_str());
+	print ("I had %u lost connections", fgms->m_Tracker->LostConnections);
+	print ("");
+	print ("Counters:");
+	A = byte_counter ((double) fgms->m_Tracker->BytesSent / difftime);
+	print ("  sent    : %lu packets (%lu/s) / %s (%s/s)",
+		fgms->m_Tracker->PktsSent,
+		fgms->m_Tracker->PktsSent / difftime,
+		byte_counter (fgms->m_Tracker->BytesSent).c_str(),
+		A.c_str()
+	);
+	A = byte_counter ((double) fgms->m_Tracker->BytesRcvd / difftime);
+	print ("  received: %lu packets (%lu/s) / %s (%s/s)",
+		fgms->m_Tracker->PktsRcvd,
+		fgms->m_Tracker->PktsRcvd / difftime,
+		byte_counter (fgms->m_Tracker->BytesRcvd).c_str(),
+		A.c_str()
+	);
+	print ("  queue size: %lu messages",
+		fgms->m_Tracker->msg_queue.size()
+	);
 	return 0;
 }
 
