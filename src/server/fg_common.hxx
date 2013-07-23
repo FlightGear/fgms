@@ -31,6 +31,9 @@
 	#include <unistd.h>
 	#include <sys/ipc.h>
 	#include <sys/msg.h>
+	#ifndef MSG_NOSIGNAL
+		#define MSG_NOSIGNAL 0
+	#endif
 #endif // !_MSC_VER
 
 #ifdef HAVE_SYS_SELECT_H

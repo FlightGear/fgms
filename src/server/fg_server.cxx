@@ -52,9 +52,6 @@
 #ifdef _MSC_VER
 	#include <conio.h> // for _kbhit(), _getch
 	typedef int pid_t;
-	#ifndef MSG_NOSIGNAL
-		#define MSG_NOSIGNAL 0
-	#endif
 #else
 	cDaemon Myself;
 #endif
