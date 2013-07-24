@@ -35,9 +35,6 @@
 	#include <sys/msg.h>
 	#include <sys/types.h>
 	#include <signal.h>
-	#ifndef __FreeBSD__
-		#include <endian.h>
-	#endif
 #endif
 #include <unistd.h>
 #include <stdio.h>
@@ -47,19 +44,6 @@
 #include <simgear/debug/logstream.hxx>
 #include "daemon.hxx"
 #include <libcli/debug.hxx>
-
-#ifndef DEF_TRACKER_SLEEP
-	// #define DEF_TRACKER_SLEEP 300   // try to connect each Five minutes
-	#define DEF_TRACKER_SLEEP 30   // try to connect each Five minutes
-#endif // DEF_TRACKER_SLEEP
-
-#ifdef _MSC_VER
-	typedef int pid_t;
-	int getpid ( void )
-	{
-		return ( int ) GetCurrentThreadId();
-	}
-#endif // !_MSC_VER
 
 logstream* fgms_logstream = NULL;
 inline logstream&
@@ -171,7 +155,7 @@ FG_TRACKER::WriteQueue ()
 void* func_Tracker ( void* vp )
 {
 	FG_TRACKER* pt = ( FG_TRACKER* ) vp;
-	pt->TrackerLoop();
+	pt->Loop();
 	return ( ( void* ) 0xdead );
 }
 
@@ -244,17 +228,17 @@ FG_TRACKER::ReplyToServer (const string& str)
 		{
 			m_connected = false;
 			LostConnections++;
-			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop: "
+			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyToServer: "
 				<< "lost connection to server"
 			);
 			return;
 		}
-		TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::TrackerLoop: "
+		TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::ReplyToServer: "
 			<< "PING from server received"
 		);
 		return;
 	}
-	TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop: "
+	TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyToServer: "
 		<< "Responce not recognized. Msg: '" << str
 	);
 }
@@ -265,7 +249,7 @@ FG_TRACKER::ReplyToServer (const string& str)
  * @brief Send the messages to the tracker server
  */
 int
-FG_TRACKER::TrackerLoop ()
+FG_TRACKER::Loop ()
 {
 	VI	CurrentMessage;
 	int 	i=0;
@@ -282,16 +266,16 @@ FG_TRACKER::TrackerLoop ()
 	{
 		while (! m_connected)
 		{
-			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop: "
+			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
 				<< "trying to connect"
 			);
 			m_connected = Connect();
 			if (! m_connected )
 			{
-				TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop: "
-					<< "not connected, will slepp for " << DEF_TRACKER_SLEEP << " seconds"
+				TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
+					<< "not connected, will slepp for 30 seconds"
 				);
-				sleep (DEF_TRACKER_SLEEP);
+				sleep (30);
 			}
 			ReadQueue (); 	// read backlog, if any
 		}
@@ -303,7 +287,7 @@ FG_TRACKER::TrackerLoop ()
 			if (length == 0)
 			{	// wait for data
 				pthread_mutex_lock ( &msg_mutex );
-				pthread_cond_wait ( &condition_var, &msg_mutex );   // go wait for the condition
+				pthread_cond_wait ( &condition_var, &msg_mutex );
 				length = msg_queue.size ();
 				pthread_mutex_unlock ( &msg_mutex );
 			}
@@ -319,12 +303,12 @@ FG_TRACKER::TrackerLoop ()
 #ifdef ADD_TRACKER_LOG
 			write_msg_log ( Msg.c_str(), Msg.size(), ( char* ) "OUT: " );
 #endif // #ifdef ADD_TRACKER_LOG
-			TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::TrackerLoop: "
+			TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Loop: "
 				<< "sending msg " << Msg.size() << "  bytes: " << Msg
 			);
 			if ( TrackerWrite (Msg) < 0 )
 			{
-				TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerLoop: "
+				TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
 					<< "Can't write to server..."
 				);
 				LostConnections++;
@@ -334,8 +318,15 @@ FG_TRACKER::TrackerLoop ()
 				continue;
 			}
 			Msg = "";
-			i = m_TrackerSocket->recv (res, MSGMAXLINE, 0);
-			if (i >= 0)
+			if (m_TrackerSocket->recv (res, MSGMAXLINE, MSG_NOSIGNAL) < 0)
+			{
+				m_connected = false;
+				LostConnections++;
+				TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyToServer: "
+					<< "lost connection to server"
+				);
+			}
+			else
 			{	// something received from tracker server
 				res[i]='\0';
 				LastSeen = time (0);
@@ -346,7 +337,7 @@ FG_TRACKER::TrackerLoop ()
 		}
 	}
 	return ( 0 );
-} // TrackerLoop ()
+} // Loop ()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -441,106 +432,105 @@ void
 signal_handler ( int s )
 {
 #ifndef _MSC_VER
-	pid_t mypid = getpid();
 	switch ( s )
 	{
 	case  1:
-		printf ( "[%d] SIGHUP received, exiting...\n",mypid );
+		printf ("SIGHUP received, exiting...\n");
 		exit ( 0 );
 		break;
 	case  2:
-		printf ( "[%d] SIGINT received, exiting...\n",mypid );
+		printf ("SIGINT received, exiting...\n");
 		exit ( 0 );
 		break;
 	case  3:
-		printf ( "[%d] SIGQUIT received, exiting...\n",mypid );
+		printf ("SIGQUIT received, exiting...\n");
 		break;
 	case  4:
-		printf ( "[%d] SIGILL received\n",mypid );
+		printf ("SIGILL received\n");
 		break;
 	case  5:
-		printf ( "[%d] SIGTRAP received\n",mypid );
+		printf ("SIGTRAP received\n");
 		break;
 	case  6:
-		printf ( "[%d] SIGABRT received\n",mypid );
+		printf ("SIGABRT received\n");
 		break;
 	case  7:
-		printf ( "[%d] SIGBUS received\n",mypid );
+		printf ("SIGBUS received\n");
 		break;
 	case  8:
-		printf ( "[%d] SIGFPE received\n",mypid );
+		printf ("SIGFPE received\n");
 		break;
 	case  9:
-		printf ( "[%d] SIGKILL received\n",mypid );
+		printf ("SIGKILL received\n");
 		exit ( 0 );
 		break;
 	case 10:
-		printf ( "[%d] SIGUSR1 received\n",mypid );
+		printf ("SIGUSR1 received\n");
 		break;
 	case 11:
-		printf ( "[%d] SIGSEGV received. Exiting...\n",mypid );
+		printf ("SIGSEGV received. Exiting...\n");
 		exit ( 1 );
 		break;
 	case 12:
-		printf ( "[%d] SIGUSR2 received\n",mypid );
+		printf ("SIGUSR2 received\n");
 		break;
 	case 13:
-		printf ( "[%d] SIGPIPE received. Connection Error.\n",mypid );
+		printf ("SIGPIPE received. Connection Error.\n");
 		break;
 	case 14:
-		printf ( "[%d] SIGALRM received\n",mypid );
+		printf ("SIGALRM received\n");
 		break;
 	case 15:
-		printf ( "[%d] SIGTERM received\n",mypid );
+		printf ("SIGTERM received\n");
 		exit ( 0 );
 		break;
 	case 16:
-		printf ( "[%d] SIGSTKFLT received\n",mypid );
+		printf ("SIGSTKFLT received\n");
 		break;
 	case 17:
-		printf ( "[%d] SIGCHLD received\n",mypid );
+		printf ("SIGCHLD received\n");
 		break;
 	case 18:
-		printf ( "[%d] SIGCONT received\n",mypid );
+		printf ("SIGCONT received\n");
 		break;
 	case 19:
-		printf ( "[%d] SIGSTOP received\n",mypid );
+		printf ("SIGSTOP received\n");
 		break;
 	case 20:
-		printf ( "[%d] SIGTSTP received\n",mypid );
+		printf ("SIGTSTP received\n");
 		break;
 	case 21:
-		printf ( "[%d] SIGTTIN received\n",mypid );
+		printf ("SIGTTIN received\n");
 		break;
 	case 22:
-		printf ( "[%d] SIGTTOU received\n",mypid );
+		printf ("SIGTTOU received\n");
 		break;
 	case 23:
-		printf ( "[%d] SIGURG received\n",mypid );
+		printf ("SIGURG received\n");
 		break;
 	case 24:
-		printf ( "[%d] SIGXCPU received\n",mypid );
+		printf ("SIGXCPU received\n");
 		break;
 	case 25:
-		printf ( "[%d] SIGXFSZ received\n",mypid );
+		printf ("SIGXFSZ received\n");
 		break;
 	case 26:
-		printf ( "[%d] SIGVTALRM received\n",mypid );
+		printf ("SIGVTALRM received\n");
 		break;
 	case 27:
-		printf ( "[%d] SIGPROF received\n",mypid );
+		printf ("SIGPROF received\n");
 		break;
 	case 28:
-		printf ( "[%d] SIGWINCH received\n",mypid );
+		printf ("SIGWINCH received\n");
 		break;
 	case 29:
-		printf ( "[%d] SIGIO received\n",mypid );
+		printf ("SIGIO received\n");
 		break;
 	case 30:
-		printf ( "[%d] SIGPWR received\n",mypid );
+		printf ("SIGPWR received\n");
 		break;
 	default:
-		printf ( "[%d] signal %d received\n",mypid,s );
+		printf ("signal %d received\n",s );
 	}
 #endif
 }

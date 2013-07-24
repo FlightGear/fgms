@@ -62,7 +62,7 @@ public:
 	//////////////////////////////////////////////////
 	int	InitTracker ();
 	int	TcpConnect (char *server_address, int server_port);
-	int	TrackerLoop ();
+	int	Loop ();
 	void	AddMessage ( const string & message );
 	
 	/** 
