@@ -318,13 +318,18 @@ FG_TRACKER::Loop ()
 				continue;
 			}
 			Msg = "";
-			if (m_TrackerSocket->recv (res, MSGMAXLINE, MSG_NOSIGNAL) < 0)
-			{
-				m_connected = false;
-				LostConnections++;
-				TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyToServer: "
-					<< "lost connection to server"
-				);
+			errno = 0;
+			i = m_TrackerSocket->recv (res, MSGMAXLINE, MSG_NOSIGNAL);
+			if (i <= 0)
+			{	// error
+				if ((errno != EAGAIN) && (errno != EWOULDBLOCK) && (errno != EINTR))
+				{
+					m_connected = false;
+					LostConnections++;
+					TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyToServer: "
+						<< "lost connection to server"
+					);
+				}
 			}
 			else
 			{	// something received from tracker server
