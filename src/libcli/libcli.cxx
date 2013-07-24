@@ -1,4 +1,3 @@
-//                                                                                                                           
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -33,15 +32,15 @@
 #include "libcli.hxx"
 
 #ifdef _MSC_VER
-// some windows quick fixes
-#define CTRL(a)  ( a & 037 )
-#ifdef __cplusplus
-extern "C" {
-#endif
-extern char *crypt(const char *key, const char *salt);
-#ifdef __cplusplus
-}
-#endif
+	// some windows quick fixes
+	#define CTRL(a)  ( a & 037 )
+	#ifdef __cplusplus
+		extern "C" {
+	#endif
+		extern char *crypt(const char *key, const char *salt);
+	#ifdef __cplusplus
+		}
+	#endif
 #endif
 
 namespace LIBCLI
@@ -157,9 +156,8 @@ CLI::allow_user
 	else
 	{
 		for ( u = this->users; u && u->next; u = u->next )
-			/* intentionally empty */
 		{
-			;
+			/* intentionally empty */
 		}
 		if ( u )
 		{

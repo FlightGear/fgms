@@ -80,7 +80,7 @@ protected:
 	size_t	lines_out;
 	size_t	max_screen_lines;
 #ifndef _MSC_VER
-	struct termios  OldModes;                                                                                            
+	struct termios  OldModes;
 #endif
 
 public:
@@ -147,12 +147,6 @@ public:
 	int     print ( const char* format, ... );
 	void    bufprint ( const char* format, ... );
 	void    error ( const char* format, ... );
-#if 0
-// #else // !_MSC_VER
-	int     print ( const char* format, ... ) __attribute__ ( ( format ( printf, 2, 3 ) ) );
-	void    bufprint ( const char* format, ... ) __attribute__ ( ( format ( printf, 2, 3 ) ) );
-	void    error ( const char* format, ... ) __attribute__ ( ( format ( printf, 2, 3 ) ) );
-#endif // _MSC_VER y/n
 	void    vabufprint ( const char* format, va_list ap );
 	void    free_history();
 };
