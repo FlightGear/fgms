@@ -1107,7 +1107,7 @@ FG_SERVER::DropClient
 )
 {
 	string Origin;
-	if (CurrentPlayer->IsLocal)
+	if ((CurrentPlayer->IsLocal) && (CurrentPlayer->HasErrors == false))
 	{
 		UpdateTracker (CurrentPlayer->Name,
 			CurrentPlayer->Passwd,
