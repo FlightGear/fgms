@@ -3,12 +3,12 @@ LIB = libcli.so
 CC = c++
 DEBUG = -g
 #OPTIM = -O3
-CPPFLAGS += $(DEBUG) $(OPTIM) -Wall -fPIC
+CPPFLAGS += $(DEBUG) $(OPTIM) -I.. -Wall -fPIC
 LDFLAGS += -shared -Wl,-soname,$(LIB).$(MAJOR).$(MINOR)
 LIBPATH += -L.
 LIBS = -lcrypt
 
-OBJS = filter.o debug.o libcli.o
+OBJS = filter.o debug.o cli_client.o libcli.o
 
 
 all: $(LIB) clitest

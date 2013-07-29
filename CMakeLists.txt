@@ -196,6 +196,7 @@ endif(WIN32)
 set( libcli_SRCS
     src/libcli/debug.cxx
     src/libcli/filter.cxx
+    src/libcli/cli_client.cxx
     src/libcli/libcli.cxx
     )
 set( libcli_HDRS
@@ -203,6 +204,7 @@ set( libcli_HDRS
     src/libcli/command.hxx
     src/libcli/debug.hxx
     src/libcli/filter.hxx
+    src/libcli/cli_client.hxx
     src/libcli/libcli.hxx
     )
 if (WIN32)
