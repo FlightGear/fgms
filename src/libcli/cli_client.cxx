@@ -16,7 +16,29 @@
 // Copyright (C) 2011  Oliver Schroeder
 //
 
-#include <cli_client.hxx>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <iostream>
+#include "cli_client.hxx"
+
+#ifdef _MSC_VER
+	#include <conio.h> // for _kbhit(), _getch
+	#define kbhit	_kbhit
+	#define getchar	_getch
+
+	bool wait_for_key ( unsigned timeout_ms = 0 )
+	{
+		return WaitForSingleObject(
+			GetStdHandle( STD_INPUT_HANDLE ),
+			timeout_ms
+		) == WAIT_OBJECT_0;
+	}
+#endif
+
+namespace LIBCLI
+{
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -25,7 +47,7 @@ Client::Client ( int fd )
 {
 	if (fd == fileno ( stdin ))
 	{	// setup terminal attributes
-		socket = 0;
+		m_socket = 0;
 		#ifndef _MSC_VER
 		struct termios NewModes;
 	        setbuf ( stdin, ( char* ) 0 );
@@ -41,16 +63,16 @@ Client::Client ( int fd )
 	}
 	else
 	{	// setup telnet session
-		socket = new netSocket();
-		socket->setHandle (fd);
+		m_socket = new netSocket();
+		m_socket->setHandle (fd);
 		const char* negotiate =
-			"\xFF\xFB\x03"
-			"\xFF\xFB\x01"
-			"\xFF\xFD\x03"
-			"\xFF\xFD\x01";
-		socket->send (negotiate, strlen ( negotiate ), 0 );
+			"\xFF\xFB\x03"	// WILL SUPPRESS GO AHEAD OPTION
+			"\xFF\xFB\x01"	// WILL ECHO
+			"\xFF\xFD\x03"	// DO SUPPRESS GO AHEAD OPTION
+			"\xFF\xFD\x01";	// DO ECHO
+		m_socket->send (negotiate, strlen ( negotiate ), 0 );
 	}
-} Client::Client ()
+} // Client::Client ()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -64,20 +86,122 @@ Client::~Client ()
 		( void ) tcsetattr ( fileno ( stdin ), TCSANOW, &OldModes );
 		#endif
 	}
+	else
+	{
+		m_socket->close();
+		delete m_socket;
+	}
 } // Client::~Client ()
 //////////////////////////////////////////////////////////////////////
 
-int wait_for_input ();	// select()
-void close ();
-template <class T>
-Client& operator << ( T v );
-Client& operator << ( const char& c );
-Client& operator << ( Client& (*f) (Client&) );
-friend Client& endl ( Client& );
+//////////////////////////////////////////////////////////////////////
+//
+//	return 0:	timeout
+//	return >0:	input available
+//	return <0:	error
+//////////////////////////////////////////////////////////////////////
+int
+Client::wait_for_input ( int seconds )
+{
+#ifdef _MSC_VER
+	if (m_socket != 0)
+	{
+		return wait_for_key (seconds * 1000);
+	}
+#endif
+	if (m_socket != 0)
+	{
+		netSocket*  ListenSockets[1];
+		ListenSockets[0] = m_socket;
+		ListenSockets[1] = 0;
+		return m_socket->select ( ListenSockets, 0, seconds );
+	}
+	else
+	{
+		struct timeval tv ;
+		tv.tv_sec = seconds;
+		tv.tv_usec = 0;
+		fd_set r;
+		FD_ZERO (&r);
+		FD_SET (0, &r);
+		return ::select (FD_SETSIZE, &r, 0, 0, &tv);
+	}
+}
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+//
+//////////////////////////////////////////////////////////////////////
+int
+Client::read_char ( unsigned char& c )
+{
+	if (m_socket != 0)
+	{
+		return m_socket->read_char(c);
+	}
+	c = getchar();
+	return 1;
+} // :read_char ()
+//////////////////////////////////////////////////////////////////////
 
-private:
-	bool			have_socket;
-	netSocket*		socket;
-	std::ostringstream	m_output;
+//////////////////////////////////////////////////////////////////////
+//
+//////////////////////////////////////////////////////////////////////
+void
+Client::put_char ( const char& c )
+{
+	if (m_socket != 0)
+	{
+		m_socket->send (&c, 1);
+	}
+	else
+	{
+		cout << c;	
+		cout.flush();
+	}
+	// m_output.str("");
+} // operator << ( c );
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+//
+//////////////////////////////////////////////////////////////////////
+Client&
+Client::operator << ( Client& (*f) (Client&) )
+{
+	return ((*f)(*this));
+} // operator << ( Client& (*f) )
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+//
+//////////////////////////////////////////////////////////////////////
+Client& commit ( Client& out )
+{
+	if (out.m_socket != 0)
+	{
+		string s = out.m_output.str();
+		size_t l = s.size();
+		out.m_socket->send (s.c_str(), l);
+	}
+	else
+	{
+		cout << out.m_output.str();
+		cout.flush();
+	}
+	out.m_output.str ("");
+	return out;
+} // Client& commit()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+//
+//////////////////////////////////////////////////////////////////////
+Client& CRLF ( Client& out )
+{
+	out.m_output << "\r\n";
+	return commit (out);
+} // CRLF()
+//////////////////////////////////////////////////////////////////////
+
+}; // namespace LIBCLI

@@ -20,12 +20,12 @@
 #ifndef __LIBCLI_H__
 #define __LIBCLI_H__
 
-#include <stdio.h>
+#include <string>
 #include <stdarg.h>
 #ifndef _MSC_VER
 	#include <termios.h>
 #endif
-#include <plib/netSocket.h>
+#include "cli_client.hxx"
 #include "common.hxx"
 #include "command.hxx"
 #include "filter.hxx"
@@ -45,6 +45,61 @@ public:
 		unp* next;
 	};
 
+	typedef int (*c_auth_func) ( const string& , const string& );
+	typedef int (CLI::*cpp_auth_func) ( const string&, const string& );
+	typedef int (*c_enable_func) ( const string& );
+	typedef int (CLI::*cpp_enable_func) ( const string& );
+
+	int	completion_callback;
+	string	banner;
+	string	enable_password;
+	char*   history[MAX_HISTORY];
+	bool	showprompt;
+	string	prompt;
+	string	hostname;
+	string	modestring;
+	int     privilege;
+	int     mode;
+	int     state;
+	Client  client;
+	/* internal buffers */
+	char*   buffer;
+	unsigned buf_size;
+	unp*    users;
+	Command<CLI>*   commands;
+	filter_t*   filters;
+
+	int		(*regular_callback)();
+	c_auth_func	auth_callback;
+	cpp_auth_func	cpp_auth_callback;
+	c_enable_func	enable_callback;
+	cpp_enable_func	cpp_enable_callback;
+	
+	CLI ( int fd );
+	~CLI ();
+	void	destroy ();
+	void    register_command ( Command<CLI>* command, Command<CLI>* parent = 0 );
+	int     unregister_command ( char* command );
+	int     run_command ( char* command );
+	int     loop ();
+	int     file ( FILE* fh, int privilege, int mode );
+	void    set_auth_callback ( c_auth_func callback );
+	void    set_auth_callback ( cpp_auth_func callback );
+	void    set_enable_callback ( c_enable_func callback );
+	void    set_enable_callback ( cpp_enable_func callback );
+	void    allow_user ( const char* username, const char* password );
+	void    allow_enable ( const string& password );
+	void    deny_user ( char* username );
+	void    set_banner ( const string& banner );
+	void    set_hostname ( const string& hostname );
+	void    set_prompt ( const string& prompt );
+	void    set_modestring ( const string& modestring );
+	int     set_privilege ( int privilege );
+	int     set_configmode ( int mode, const string& config_desc );
+	void    regular ( int ( *callback ) () );
+	int     print ( const char* format, ... );
+	void    free_history();
+
 protected:
 	int     match_filter_init ( int argc, char** argv, filter_t* filt );
 	int     range_filter_init ( int argc, char** argv, filter_t* filt );
@@ -60,14 +115,13 @@ protected:
 	int     find_command ( Command<CLI> *commands, int num_words, char* words[], int start_word, int filters[] );
 	int     get_completions ( char* command, char** completions, int max_completions );
 	void    clear_line ( char* cmd, int l, int cursor );
-	int     pass_matches ( char* pass, char* tried_pass );
-	int     show_prompt ();
-	void    setup_terminal ();
+	int     pass_matches ( string pass, string tried_pass );
+	void	show_prompt ();
 	int     _print ( int print_mode, const char* format, va_list ap );
-	int     show_help ( Command<CLI> *c );
 	int     internal_enable ( UNUSED ( char* command ), UNUSED ( char* argv[] ), UNUSED ( int argc ) );
 	int     internal_disable ( UNUSED ( char* command ), UNUSED ( char* argv[] ), UNUSED ( int argc ) );
 	int     internal_help ( UNUSED ( char* command ), UNUSED ( char* argv[] ), UNUSED ( int argc ) );
+	int     internal_whoami ( UNUSED ( char* command ), UNUSED ( char* argv[] ), UNUSED ( int argc ) );
 	int     internal_history ( UNUSED ( char* command ), UNUSED ( char* argv[] ), UNUSED ( int argc ) );
 	int     internal_quit ( UNUSED ( char* command ), UNUSED ( char* argv[] ), UNUSED ( int argc ) );
 	int     internal_exit ( char* command, char* argv[], int argc );
@@ -75,80 +129,39 @@ protected:
 	int     int_configure_terminal ( UNUSED ( char* command ), UNUSED ( char* argv[] ), UNUSED ( int argc ) );
 	void    unregister_all ( Command<CLI> *command );
 	int	pager ();
+	// line editing and handling of special chars
+	void	handle_telnet_option ();
+	int	get_input ( unsigned char& c );
+	void	check_enable ( const char* pass );
+	void	check_user_auth ( char* username, char* password );
+	void	delete_backwards ( const unsigned char c );
+	void	prompt_user ();
+	void	redraw_line ();
+	void	clear_line ();
+	void	clear_to_eol ();
+	bool	try_logout ();
+	void	leave_config_mode ();
+	void	list_completions ();
+	void	do_history ( const unsigned char& c );
+	void	cursor_left ();
+	void	cursor_right ();
+	void	jump_start_of_line ();
+	void	jump_end_of_line ();
+	bool	append ( const unsigned char& c );
+	void	insert ( const unsigned char& c );
+	unsigned char	map_esc ();
+	// Variables
 	bool	from_socket;
 	int	my_sock;
 	size_t	lines_out;
 	size_t	max_screen_lines;
+	int	length;		// length of current input line
+	int	cursor;		// cursor position within input line
+	char*	cmd;		// content of current input line
+	char*	username;	// login name of user
 #ifndef _MSC_VER
 	struct termios  OldModes;
 #endif
-
-public:
-
-	typedef int (*c_auth_func) ( const string& , const string& );
-	typedef int (CLI::*cpp_auth_func) ( const string&, const string& );
-	typedef int (*c_enable_func) ( const string& );
-	typedef int (CLI::*cpp_enable_func) ( const string& );
-
-	int     completion_callback;
-	char*   banner;
-	char*   enable_password;
-	char*   history[MAX_HISTORY];
-	char    showprompt;
-	char*   promptchar;
-	char*   hostname;
-	char*   modestring;
-	int     privilege;
-	int     mode;
-	int     state;
-	netSocket*   client;
-	/* internal buffers */
-	void*   conn;
-	void*   service;
-	char*   buffer;
-	unsigned buf_size;
-	unp*    users;
-	Command<CLI>*   commands;
-	filter_t*   filters;
-
-	int     (*regular_callback)();
-	c_auth_func   auth_callback;
-	cpp_auth_func cpp_auth_callback;
-	c_enable_func enable_callback;
-	cpp_enable_func cpp_enable_callback;
-	
-	void    ( *print_callback ) ( char* cmd );
-	void    set_print_callback ( void ( *callback ) ( char* ) );
-
-	CLI ();
-	~CLI ();
-	void	destroy ();
-	void    register_command ( Command<CLI>* command, Command<CLI>* parent = 0 );
-	int     unregister_command ( char* command );
-	int     run_command ( char* command );
-	int     loop ( int sockfd );
-	int     file ( FILE* fh, int privilege, int mode );
-	void    set_auth_callback ( c_auth_func callback );
-	void    set_auth_callback ( cpp_auth_func callback );
-	void    set_enable_callback ( c_enable_func callback );
-	void    set_enable_callback ( cpp_enable_func callback );
-	void    allow_user ( const char* username, const char* password );
-	void    allow_enable ( const char* password );
-	void    deny_user ( char* username );
-	void    set_banner ( const char* banner );
-	void    set_hostname ( const char* hostname );
-	void    set_promptchar ( const char* prompt );
-	void    set_modestring ( const char* modestring );
-	int     set_privilege ( int privilege );
-	int     set_configmode ( int mode, const char* config_desc );
-	void    reprompt();
-	void    regular ( int ( *callback ) () );
-// #ifdef _MSC_VER
-	int     print ( const char* format, ... );
-	void    bufprint ( const char* format, ... );
-	void    error ( const char* format, ... );
-	void    vabufprint ( const char* format, va_list ap );
-	void    free_history();
 };
 
 }; // namespace LIBCLI

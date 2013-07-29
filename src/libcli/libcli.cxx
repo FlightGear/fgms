@@ -20,6 +20,7 @@
 #endif
 
 #include <exception>
+#include <iomanip>
 #include <stdio.h>
 #include <errno.h>
 #include <stdarg.h>
@@ -28,7 +29,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
-#include <fg_util.hxx>
+#include <server/fg_util.hxx>
 #include "libcli.hxx"
 
 #ifdef _MSC_VER
@@ -132,20 +133,20 @@ CLI::allow_user
 	unp* u, *n;
 	if ( ! ( n = ( unp* ) malloc ( sizeof ( unp ) ) ) )
 	{
-		cerr << "Couldn't allocate memory for user: " << strerror ( errno ) << endl;
+		cerr << "Couldn't allocate memory for user: " << strerror ( errno ) << std::endl;
 		return;
 	}
 	if ( ! ( n->username = strdup ( username ) ) )
 	{
-		fprintf ( stderr, "Couldn't allocate memory for username: %s", strerror ( errno ) );
-		free ( n );
+		cerr << "Couldn't allocate memory for username: " << strerror ( errno ) << endl;
+		free_z ( n );
 		return;
 	}
 	if ( ! ( n->password = strdup ( password ) ) )
 	{
-		fprintf ( stderr, "Couldn't allocate memory for password: %s", strerror ( errno ) );
-		free ( n->username );
-		free ( n );
+		cerr << "Couldn't allocate memory for password: " << strerror ( errno ) << endl;
+		free_z ( n->username );
+		free_z ( n );
 		return;
 	}
 	n->next = NULL;
@@ -169,15 +170,11 @@ CLI::allow_user
 void
 CLI::allow_enable
 (
-	const char* password
+	const string& password
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	free_z ( this->enable_password );
-	if ( ! ( this->enable_password = strdup ( password ) ) )
-	{
-		fprintf ( stderr, "Couldn't allocate memory for enable password: %s", strerror ( errno ) );
-	}
+	enable_password = password;
 }
 
 void
@@ -204,9 +201,9 @@ CLI::deny_user
 			{
 				this->users = u->next;
 			}
-			free ( u->username );
-			free ( u->password );
-			free ( u );
+			free_z ( u->username );
+			free_z ( u->password );
+			free_z ( u );
 			break;
 		}
 		p = u;
@@ -216,40 +213,31 @@ CLI::deny_user
 void
 CLI::set_banner
 (
-        const char* banner
+        const string& banner
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	free_z ( this->banner );
-	if ( banner && *banner )
-	{
-		this->banner = strdup ( banner );
-	}
+	this->banner = banner;
 }
 
 void
 CLI::set_hostname
 (
-        const char* hostname
+        const string& hostname
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	free_z ( this->hostname );
-	if ( hostname && *hostname )
-	{
-		this->hostname = strdup ( hostname );
-	}
+	this->hostname = hostname;
 }
 
 void
-CLI::set_promptchar
+CLI::set_prompt
 (
-        const char* prompt
+        const string& prompt
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	free_z ( this->promptchar );
-	this->promptchar = strdup ( prompt );
+	this->prompt = prompt;
 }
 
 int
@@ -313,7 +301,7 @@ CLI::set_privilege
 	this->privilege = priv;
 	if ( priv != old )
 	{
-		set_promptchar ( priv == LIBCLI::PRIVILEGED ? "# " : "> " );
+		set_prompt ( priv == LIBCLI::PRIVILEGED ? "# " : "> " );
 		build_shortest ( this->commands );
 	}
 	return old;
@@ -322,22 +310,18 @@ CLI::set_privilege
 void
 CLI::set_modestring
 (
-        const char* modestring
+        const string& modestring
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	free_z ( this->modestring );
-	if ( modestring )
-	{
-		this->modestring = strdup ( modestring );
-	}
+	this->modestring = modestring;
 }
 
 int
 CLI::set_configmode
 (
         int mode,
-        const char* config_desc
+        const string& config_desc
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
@@ -348,13 +332,12 @@ CLI::set_configmode
 		if ( !this->mode )
 		{
 			// Not config mode
-			set_modestring ( NULL );
+			set_modestring ("");
 		}
-		else if ( config_desc && *config_desc )
+		else if ( config_desc != "" )
 		{
-			char str[64];
-			snprintf ( str, sizeof ( str ), "(config-%s)", config_desc );
-			set_modestring ( str );
+			string s = "(config-" + config_desc + ")";
+			set_modestring (s);
 		}
 		else
 		{
@@ -398,7 +381,7 @@ CLI::register_command
 			build_shortest ( parent );
 			return;
 		}
-		cout << "bummer!" << endl;
+		cout << "bummer!" << std::endl;
 	}
 	if ( ! this->commands )
 	{
@@ -418,7 +401,7 @@ CLI::register_command
 		}
 		else
 		{
-			cout << "bummer 2" << endl;
+			cout << "bummer 2" << std::endl;
 		}
 	}
 	build_shortest ( ( command->parent ) ? command->parent : this->commands );
@@ -438,12 +421,12 @@ CLI::free_command
 		free_command ( c );
 		c = p;
 	}
-	free ( cmd->command );
+	free_z ( cmd->command );
 	if ( cmd->help )
 	{
-		free ( cmd->help );
+		free_z ( cmd->help );
 	}
-	free ( cmd );
+	free_z ( cmd );
 }
 
 int
@@ -483,26 +466,6 @@ CLI::unregister_command
 }
 
 int
-CLI::show_help
-(
-        Command<CLI> *c
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	Command<CLI> *p;
-	for ( p = c; p; p = p->next )
-	{
-		if ( p->command
-		                && ( this->privilege >= p->privilege )
-		                && ( ( p->mode == this->mode ) || ( p->mode == MODE_ANY ) ) )
-		{
-			error ( "  %-20s %s", p->command, p->help ? p->help : "" );
-		}
-	}
-	return LIBCLI::OK;
-}
-
-int
 CLI::internal_enable
 (
         UNUSED ( char* command ),
@@ -515,11 +478,11 @@ CLI::internal_enable
 	{
 		return LIBCLI::OK;
 	}
-	if ( !this->enable_password && !this->enable_callback && !this->cpp_enable_callback)
+	if ( (enable_password == "") && !this->enable_callback && !this->cpp_enable_callback)
 	{
 		/* no password required, set privilege immediately */
 		set_privilege ( LIBCLI::PRIVILEGED );
-		set_configmode ( LIBCLI::MODE_EXEC, NULL );
+		set_configmode ( LIBCLI::MODE_EXEC, "" );
 	}
 	else
 	{
@@ -539,7 +502,7 @@ CLI::internal_disable
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	set_privilege ( LIBCLI::UNPRIVILEGED );
-	set_configmode ( LIBCLI::MODE_EXEC, NULL );
+	set_configmode ( LIBCLI::MODE_EXEC, "" );
 	return LIBCLI::OK;
 }
 
@@ -552,20 +515,32 @@ CLI::internal_help
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	print (
-		"Help may be requested at any point in a command by entering\n"
-		"a question mark '?'.  If nothing matches, the help list will\n"
-		"be empty and you must backup until entering a '?' shows the\n"
-		"available options.\n"
-		"Two styles of help are provided:\n"
-		"1. Full help is available when you are ready to enter a\n"
-		"   command argument (e.g. 'show ?') and describes each possible\n"
-		"   argument.\n"
-		"2. Partial help is provided when an abbreviated argument is entered\n"
-		"   and you want to know what arguments match the input\n"
-		"   (e.g. 'show pr?'.)\n"
-	);
-	// show_help ( this->commands );
+	client <<
+		"Help may be requested at any point in a command by entering\r\n"
+		"a question mark '?'.  If nothing matches, the help list will\r\n"
+		"be empty and you must backup until entering a '?' shows the\r\n"
+		"available options.\r\n"
+		"Two styles of help are provided:\r\n"
+		"1. Full help is available when you are ready to enter a\r\n"
+		"   command argument (e.g. 'show ?') and describes each possible\r\n"
+		"   argument.\r\n"
+		"2. Partial help is provided when an abbreviated argument is entered\r\n"
+		"   and you want to know what arguments match the input\r\n"
+		"   (e.g. 'show pr?'.)\r\n"
+		<< CRLF;
+	return LIBCLI::OK;
+}
+
+int
+CLI::internal_whoami
+(
+        UNUSED ( char* command ),
+        UNUSED ( char* argv[] ),
+        UNUSED ( int argc )
+)
+{
+	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
+	client << "You are '" << username << "'" << CRLF;
 	return LIBCLI::OK;
 }
 
@@ -579,12 +554,12 @@ CLI::internal_history
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	int i;
-	error ( "\nCommand history:" );
+	client << CRLF << "Command history:" << CRLF;
 	for ( i = 0; i < LIBCLI::MAX_HISTORY; i++ )
 	{
 		if ( this->history[i] )
 		{
-			error ( "%3d. %s", i, this->history[i] );
+			client << setw(3) << i << " " << this->history[i] << CRLF;
 		}
 	}
 	return LIBCLI::OK;
@@ -600,7 +575,7 @@ CLI::internal_quit
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	set_privilege ( LIBCLI::UNPRIVILEGED );
-	set_configmode ( LIBCLI::MODE_EXEC, NULL );
+	set_configmode ( LIBCLI::MODE_EXEC, "" );
 	return LIBCLI::QUIT;
 }
 
@@ -619,13 +594,12 @@ CLI::internal_exit
 	}
 	if ( this->mode > MODE_CONFIG )
 	{
-		set_configmode ( MODE_CONFIG, NULL );
+		set_configmode ( MODE_CONFIG, "" );
 	}
 	else
 	{
-		set_configmode ( MODE_EXEC, NULL );
+		set_configmode ( MODE_EXEC, "" );
 	}
-	this->service = NULL;
 	return LIBCLI::OK;
 }
 
@@ -638,24 +612,21 @@ CLI::int_configure_terminal
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	set_configmode ( MODE_CONFIG, NULL );
+	set_configmode ( MODE_CONFIG, "" );
 	return LIBCLI::OK;
 }
 
 CLI::CLI
-()
+(
+	int fd
+): client (fd)
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	Command<CLI> *c;
-	this->modestring	= 0;
-	this->banner		= 0;
-	this->promptchar	= 0;
-	this->hostname		= 0;
+	length	= 0;
+	cursor	= 0;
+	cmd	= 0;
 	this->buffer		= 0;
-	this->enable_password	= 0;
-	this->client		= 0;
-	this->conn		= 0;
-	this->service		= 0;
 	this->users		= 0;
 	this->commands		= 0;
 	this->filters		= 0;
@@ -664,7 +635,6 @@ CLI::CLI
 	this->regular_callback	= 0;
 	this->enable_callback	= 0;
 	this->cpp_enable_callback	= 0;
-	this->print_callback	= 0;
 	this->from_socket	= false;
 	this->lines_out		= 0;
 	this->max_screen_lines	= 22;
@@ -678,6 +648,7 @@ CLI::CLI
 	{
 		throw mem_error ();
 	}
+
 	register_command ( new Command<CLI> (
 	                           this,
 	                           "help",
@@ -685,6 +656,14 @@ CLI::CLI
 	                           LIBCLI::UNPRIVILEGED,
 	                           LIBCLI::MODE_ANY,
 	                           "show available commands"
+	                   ) );
+	register_command ( new Command<CLI> (
+	                           this,
+	                           "whoami",
+	                           & CLI::internal_whoami,
+	                           LIBCLI::UNPRIVILEGED,
+	                           LIBCLI::MODE_ANY,
+	                           "show who you are"
 	                   ) );
 	register_command ( new Command<CLI> (
 	                           this,
@@ -744,7 +723,7 @@ CLI::CLI
 	                   ), c );
 	this->privilege = this->mode = -1;
 	set_privilege ( LIBCLI::UNPRIVILEGED );
-	set_configmode ( LIBCLI::MODE_EXEC, 0 );
+	set_configmode ( LIBCLI::MODE_EXEC, "" );
 }
 
 CLI::~CLI
@@ -757,31 +736,19 @@ CLI::~CLI
 	{
 		if ( u->username )
 		{
-			free ( u->username );
+			free_z ( u->username );
 		}
 		if ( u->password )
 		{
-			free ( u->password );
+			free_z ( u->password );
 		}
 		n = u->next;
-		free ( u );
+		free_z ( u );
 		u = n;
 	}
 	/* free all commands */
 	unregister_all ( 0 );
-	free_z ( this->modestring );
-	free_z ( this->banner );
-	free_z ( this->promptchar );
-	free_z ( this->hostname );
 	free_z ( this->buffer );
-#ifndef _MSC_VER
-	if (client->getHandle() == 0)
-	{
-		( void ) tcsetattr ( fileno ( stdin ), TCSANOW, &OldModes );
-	}
-#endif
-	client->close();
-	client = 0;
 }
 
 void
@@ -816,13 +783,13 @@ CLI::unregister_all
 		}
 		if ( c->command )
 		{
-			free ( c->command );
+			free_z ( c->command );
 		}
 		if ( c->help )
 		{
-			free ( c->help );
+			free_z ( c->help );
 		}
-		free ( c );
+		free_z ( c );
 		c = p;
 	}
 }
@@ -848,7 +815,7 @@ CLI::add_history
 		}
 	}
 	// No space found, drop one off the beginning of the list
-	free ( this->history[0] );
+	free_z ( this->history[0] );
 	for ( i = 0; i < MAX_HISTORY-1; i++ )
 	{
 		this->history[i] = this->history[i+1];
@@ -1007,16 +974,22 @@ CLI::find_command
 		for ( c = commands; c; c = c->next )
 		{
 			if ( strncasecmp ( c->command, words[start_word], l ) == 0
-			                && ( c->have_callback || c->children )
-			                && this->privilege >= c->privilege
-			                && ( c->mode == this->mode || c->mode == MODE_ANY ) )
+			&& ( c->have_callback || c->children )
+			&& this->privilege >= c->privilege
+			&& ( c->mode == this->mode || c->mode == MODE_ANY ) )
 			{
-				error ( "  %-20s %s", c->command, c->help ? c->help : "" );
+				client << "  "
+				  << left << setfill(' ') << setw(20)
+				  << c->command
+				  << (c->help ? c->help : "") << CRLF;
 			}
 		}
 		if ( commands->parent && commands->parent->have_callback )
 		{
-			error ( "  %-20s %s", "<br>",  commands->parent->help ? commands->parent->help : "" );
+			client << "  "
+			  << left << setfill(' ') << setw(20) << "<br>"
+			  << (commands->parent->help ? commands->parent->help : "")
+			  << CRLF;
 		}
 		return LIBCLI::OK;
 	}
@@ -1046,7 +1019,7 @@ AGAIN:
 				// Last word
 				if ( ! c->have_callback )
 				{
-					error ( "No callback for \"%s\"", c->command );
+					client << "No callback for '" << c->command << "'" << CRLF;
 					return LIBCLI::ERROR_ANY;
 				}
 			}
@@ -1058,7 +1031,7 @@ AGAIN:
 					{
 						goto CORRECT_CHECKS;
 					}
-					error ( "Incomplete command" );
+					client << "Incomplete command" << CRLF;
 					return LIBCLI::ERROR_ANY;
 				}
 				rc = find_command ( c->children, num_words, words, start_word + 1, filters );
@@ -1071,14 +1044,16 @@ AGAIN:
 					}
 					else
 					{
-						error ("Invalid argument \"%s\"", words[start_word + 1] );
+						client << "Invalid argument '" << words[start_word + 1] << "'"
+						  << CRLF;
 					}
 				}
 				return rc;
 			}
 			if ( ! c->have_callback )
 			{
-				error ( "Internal server error processing \"%s\"", c->command );
+				client << "Internal server error processing '" << c->command << "'"
+				  << CRLF;
 				return LIBCLI::ERROR_ANY;
 			}
 CORRECT_CHECKS:
@@ -1094,7 +1069,7 @@ CORRECT_CHECKS:
 				}
 				if ( filters[f] == n - 1 )
 				{
-					error ( "Missing filter" );
+					client << "Missing filter" << CRLF;
 					return LIBCLI::ERROR_ANY;
 				}
 				argv = words + filters[f] + 1;
@@ -1107,25 +1082,28 @@ CORRECT_CHECKS:
 						int i;
 						for ( i = 0; filter_cmds[i].cmd; i++ )
 						{
-							error ( "  %-20s %s", filter_cmds[i].cmd, filter_cmds[i].help );
+							client << "  "
+							  << left << setfill(' ') << setw(20)
+							  << filter_cmds[i].cmd
+							  << filter_cmds[i].help << CRLF;
 						}
 					}
 					else
 					{
 						if ( argv[0][0] != 'c' ) // count
 						{
-							error ( "  WORD" );
+							client << "  WORD" << CRLF;
 						}
 						if ( argc > 2 || argv[0][0] == 'c' ) // count
 						{
-							error ( "  <cr>" );
+							client << "  <cr>" << CRLF;
 						}
 					}
 					return LIBCLI::OK;
 				}
 				if ( argv[0][0] == 'b' && len < 3 ) // [beg]in, [bet]ween
 				{
-					error ( "Ambiguous filter \"%s\" (begin, between)", argv[0] );
+					client << "Ambiguous filter '" << argv[0] << "' (begin, between)" << CRLF;
 					return LIBCLI::ERROR_ANY;
 				}
 				*filt = ( filter_t* ) calloc ( sizeof ( filter_t ), 1 );
@@ -1145,7 +1123,7 @@ CORRECT_CHECKS:
 				}
 				else
 				{
-					error ( "Invalid filter \"%s\"", argv[0] );
+					client << "Invalid filter '" << argv[0] << "'" << CRLF;
 					rc = LIBCLI::ERROR_ANY;
 				}
 				if ( rc == LIBCLI::OK )
@@ -1154,7 +1132,7 @@ CORRECT_CHECKS:
 				}
 				else
 				{
-					free ( *filt );
+					free_z ( *filt );
 					*filt = 0;
 				}
 			}
@@ -1168,7 +1146,7 @@ CORRECT_CHECKS:
 				// call one last time to clean up
 				filt->exec ( *this, NULL );
 				this->filters = filt->next;
-				free ( filt );
+				free_z ( filt );
 			}
 			return rc;
 		}
@@ -1183,12 +1161,13 @@ CORRECT_CHECKS:
 	if ( again )
 	{
 		c = again;
-		set_configmode ( MODE_CONFIG, NULL );
+		set_configmode ( MODE_CONFIG, "" );
 		goto AGAIN;
 	}
 	if ( start_word == 0 )
 	{
-		error ( "Invalid %s \"%s\"", commands->parent ? "argument" : "command", words[start_word] );
+		client << "Invalid " << (commands->parent ? "argument" : "command")
+		  << " '" << words[start_word] << "'" << CRLF;
 	}
 	return LIBCLI::ERROR_ARG;
 }
@@ -1339,10 +1318,12 @@ CLI::get_completions
 		{	// more than one completion
 			if ( j == 0 )
 			{
-				error ( " " );
+				client << CRLF;
 				j++;
 			}
-			print ( "  %-20s %s", c->command, c->help ? c->help : "" );
+			client << "  " << left << setfill(' ') << setw(20)
+			  << c->command
+			  << (c->help ? c->help : "") << CRLF;
 		}
 		if (strncmp (command, c->command, strlen (c->command)) != 0)
 			completions[k++] = c->command;
@@ -1356,9 +1337,12 @@ CLI::get_completions
 		{
 			if ( j == 0 )
 			{
-				error ( " " );
+				client << CRLF;
 			}
-			print ( "  %-20s %s", "<br>", p->help ? p->help : "" );
+			client << "  "
+			  << left << setfill(' ') << setw(20)
+			  << "<br>"
+			  << (p->help ? p->help : "") << CRLF;
 			k++;
 		}
 	}
@@ -1378,7 +1362,7 @@ CLI::clear_line
 	if ( cursor < l )
 	{
 		for ( i = 0; i < ( l - cursor ); i++ )
-			client->write_char (' ');
+			client.put_char (' ');
 	}
 	for ( i = 0; i < l; i++ )
 	{
@@ -1392,16 +1376,9 @@ CLI::clear_line
 	{
 		cmd[i] = '\b';
 	}
-	client->write_str (cmd);
+	client << cmd << commit;
 	memset ( cmd, 0, i );
 	l = cursor = 0;
-}
-
-void
-CLI::reprompt
-()
-{
-	this->showprompt = 1;
 }
 
 void
@@ -1414,656 +1391,758 @@ CLI::regular
 	this->regular_callback = callback;
 }
 
-#define DES_PREFIX "{crypt}"    /* to distinguish clear text from DES crypted */
-#define MD5_PREFIX "$1$"
+const string DES_PREFIX = "{crypt}";    /* to distinguish clear text from DES crypted */
+const string MD5_PREFIX = "$1$";
 
 int
 CLI::pass_matches
 (
-        char* pass,
-        char* tried_pass
+	string pass,
+	string tried_pass
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	int des;
-	if ( ( des = !strncasecmp ( pass, DES_PREFIX, sizeof ( DES_PREFIX )-1 ) ) )
+	int idx = 0;
+	des = ! pass.compare (0, DES_PREFIX.size(), DES_PREFIX);
+	if (des)
 	{
-		pass += sizeof ( DES_PREFIX )-1;
+		idx = sizeof ( DES_PREFIX )-1;
 	}
-	if ( des || !strncmp ( pass, MD5_PREFIX, sizeof ( MD5_PREFIX )-1 ) )
+	if ( des || (! pass.compare (0, MD5_PREFIX.size(), MD5_PREFIX)))
 	{
-		tried_pass = crypt ( tried_pass, pass );
+		tried_pass = crypt ( (char*) tried_pass.c_str(), (char*) pass.c_str() );
 	}
-	return !strcmp ( pass, tried_pass );
+	return ! pass.compare (idx, pass.size(), tried_pass);
 }
 
-int
+void
 CLI::show_prompt
 ()
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	int len = 0;
-	if ( this->hostname )
+
+
+
+	if ( hostname != "" )
 	{
-		len = client->write_str (hostname);
+		client << hostname << commit;
 	}
-	if ( this->modestring )
+	if ( modestring != "" )
 	{
-		len = client->write_str (modestring);
+		client << modestring << commit;
 	}
 	this->lines_out = 0;
-	len += client->write_str (promptchar);
-	return len;
+	client << prompt << commit;
+}
+
+unsigned char
+CLI::map_esc
+()
+{
+	unsigned char c;
+	client.read_char (c);
+	if (c != '[')
+		return 0;
+	client.read_char (c);
+	/* remap to readline control codes */
+	switch ( c )
+	{
+	case 'A': /* Up */
+		c = CTRL ( 'P' );
+		break;
+	case 'B': /* Down */
+		c = CTRL ( 'N' );
+		break;
+	case 'C': /* Right */
+		c = CTRL ( 'F' );
+		break;
+	case 'D': /* Left */
+		c = CTRL ( 'B' );
+		break;
+	default:
+		c = 0;
+	}
+	return c;
 }
 
 void
-CLI::setup_terminal ()
+CLI::handle_telnet_option ()
 {
-	// I believe 'termios' is not present on windows!
-#ifndef _MSC_VER
-	struct termios NewModes;
-	setbuf ( stdin, ( char* ) 0 );
-	(void) tcgetattr (fileno (stdin), &OldModes);
-	NewModes = OldModes;
-	NewModes.c_lflag &= ~ ( ICANON );
-	NewModes.c_lflag &= ~ ( ECHO | ECHOE | ECHOK );
-	NewModes.c_lflag |= ECHONL;
-	( void ) tcsetattr ( fileno ( stdin ), TCSANOW, &NewModes );
-#endif
+	unsigned char c;
+	client.read_char (c);
+	switch (c)
+	{
+		case 0xfb:	// WILL
+		case 0xfc:	// WON'T
+		case 0xfd:	// DO
+		case 0xfe:	// DON'T
+			client.read_char (c);
+			break;
+	}
+}
+
+int
+CLI::get_input
+(
+	unsigned char& c
+)
+{
+	int ret = 0;
+	while (ret == 0)
+	{
+		ret = client.wait_for_input(1);
+		if (ret == SOCKET_ERROR)
+		{	// error
+			if ( RECOVERABLE_ERROR )
+				continue;
+			perror ("read");
+			return ret;
+		}
+		if ( ret == 0 )
+		{	/* timeout every second */
+			if ( this->regular_callback && this->regular_callback() != LIBCLI::OK )
+				break;
+			continue;
+		}
+		ret = client.read_char (c);
+		if (ret == SOCKET_ERROR)
+		{
+			if ( errno == EINTR )
+				continue;
+			return ret;
+		}
+		return ret;
+	}
+	return ret;
+}
+
+void
+CLI::check_enable ( const char* pass )
+{
+	int allowed = 0;
+	if ( enable_password != "" )
+	{	// check stored static enable password 
+		if ( pass_matches ( enable_password, pass ) )
+		{
+			allowed++;
+		}
+	}
+	if ( !allowed )
+	{
+		/* check callback */
+		if (this->enable_callback)
+		{
+			if ( enable_callback ( pass ) )
+			{
+				allowed++;
+			}
+		}
+		else if (cpp_enable_callback)
+		{
+			if ( CALL_MEMBER_FN ((*this), cpp_enable_callback) ( pass ) )
+			{
+				allowed++;
+			}
+		}
+	}
+	if ( allowed )
+	{
+		client << "-ok-" << CRLF;
+		state = LIBCLI::STATE_ENABLE;
+		set_privilege ( LIBCLI::PRIVILEGED );
+	}
+	else
+	{
+		client << CRLF << CRLF << "Access denied" << CRLF;
+		state = LIBCLI::STATE_NORMAL;
+	}
+}
+
+void
+CLI::check_user_auth
+(
+	char* username,
+	char* password
+)
+{
+	/* require password */
+	int allowed = 0;
+	if ( this->auth_callback )
+	{
+		if ( this->auth_callback ( username, password ) == LIBCLI::OK )
+		{
+			allowed++;
+		}
+	}
+	else if ( this->cpp_auth_callback )
+	{
+		if ( CALL_MEMBER_FN ((*this), cpp_auth_callback)  ( username, password ) == LIBCLI::OK )
+		{
+			allowed++;
+		}
+	}
+	if ( ! allowed )
+	{
+		unp* u;
+		for ( u = this->users; u; u = u->next )
+		{
+			if ( !strcmp ( u->username, username ) && pass_matches ( u->password, password ) )
+			{
+				allowed++;
+				break;
+			}
+		}
+	}
+	if ( allowed )
+	{
+		client << "-ok-" << CRLF;
+		this->state = STATE_NORMAL;
+		client << "type '?' or 'help' for help." << CRLF << CRLF;
+	}
+	else
+	{
+		client << CRLF << CRLF << "Access denied" << CRLF;
+		this->state = LIBCLI::STATE_LOGIN;
+	}
+	showprompt = true;
+}
+
+void
+CLI::delete_backwards
+(
+	const unsigned char c
+)
+{
+	int back = 0;
+
+	if ( length == 0 || cursor == 0 )
+	{
+		client.put_char ('\a');
+		return;
+	}
+	if ( c == CTRL ( 'W' ) ) /* word */
+	{
+		int nc = cursor;
+		while ( nc && cmd[nc - 1] == ' ' )
+		{
+			nc--;
+			back++;
+		}
+		while ( nc && cmd[nc - 1] != ' ' )
+		{
+			nc--;
+			back++;
+		}
+	}
+	else /* char */
+	{
+		back = 1;
+	}
+	while ( back-- )
+	{
+		if ( length == cursor )
+		{
+			cmd[--cursor] = 0;
+			if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
+			{
+				client << "\b \b" << commit;
+			}
+		}
+		else
+		{
+			int i;
+			cursor--;
+			if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
+			{
+				for ( i = cursor; i <= length; i++ )
+				{
+					cmd[i] = cmd[i+1];
+				}
+				client.put_char ('\b');
+				client << (cmd + cursor) << commit;
+				client.put_char (' ');
+				for ( i = 0; i <= ( int ) strlen ( cmd + cursor ); i++ )
+				{
+					client.put_char ('\b');
+				}
+			}
+		}
+		length--;
+	}
+}
+
+void
+CLI::prompt_user ()
+{
+	switch ( this->state )
+	{
+	case STATE_LOGIN:
+		client << "Username: " << commit;
+		break;
+	case STATE_PASSWORD:
+		client << "Password: " << commit;
+		break;
+	case STATE_NORMAL:
+	case STATE_ENABLE:
+		show_prompt ();
+		client << cmd << commit;
+		if ( cursor < length )
+		{
+			int n = length - cursor;
+			while ( n-- )
+			{
+				client.put_char ('\b');
+			}
+		}
+		break;
+	case STATE_ENABLE_PASSWORD:
+		client << "Password: " << commit;
+		break;
+	}
+	showprompt = false;
+}
+
+void
+CLI::redraw_line
+()
+{
+	if ( this->state == STATE_PASSWORD || this->state == STATE_ENABLE_PASSWORD )
+	{
+		return;
+	}
+	client << CRLF;
+	show_prompt ();
+	client << cmd << commit;
+	for ( int i = 0; i < (length - cursor); i++ )
+	{
+		client.put_char ('\b');
+	}
+}
+
+void
+CLI::clear_line
+()
+{
+	if ( this->state == STATE_PASSWORD || this->state == STATE_ENABLE_PASSWORD )
+	{
+		memset ( cmd, 0, length );
+	}
+	else
+	{
+		clear_line ( cmd, length, cursor );
+	}
+	length = cursor = 0;
+}
+
+void
+CLI::clear_to_eol
+()
+{
+	if ( cursor == length )
+	{
+		return;
+	}
+	if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
+	{
+		int c;
+		for ( c = cursor; c < length; c++ )
+		{
+			client.put_char (' ');
+		}
+		for ( c = cursor; c < length; c++ )
+		{
+			client.put_char ('\b');
+		}
+	}
+	memset ( cmd + cursor, 0, length - cursor );
+	length = cursor;
+}
+
+bool
+CLI::try_logout
+()
+{
+	if ( length )
+	{
+		return false;
+	}
+	strcpy ( cmd, "quit" );
+	length = cursor = strlen ( cmd );
+	client << "quit" << CRLF;
+	return true;
+}
+
+void
+CLI::leave_config_mode
+()
+{
+	if ( this->mode != MODE_EXEC )
+	{
+		client << CRLF;
+		clear_line ( cmd, length, cursor );
+		set_configmode ( MODE_EXEC, "" );
+		showprompt = true;
+	}
+	else
+	{
+		client.put_char ('\a');
+	}
+}
+
+void
+CLI::list_completions
+()
+{
+	char* completions[128];
+	int num_completions = 0;
+	if ( this->state == STATE_PASSWORD || this->state == STATE_ENABLE_PASSWORD )
+	{
+		return;
+	}
+	if ( cursor != length )
+	{
+		return;
+	}
+	num_completions = get_completions ( cmd, completions, 128 );
+	showprompt = true;
+	if ( num_completions == 1 )
+	{	// Single completion
+		for ( ; length > 0; length--, cursor-- )
+		{
+			if ( cmd[length-1] == ' ' || cmd[length-1] == '|' )
+			{
+				break;
+			}
+			client.put_char ('\b');
+		}
+		strcpy ( ( cmd + length ), completions[0] );
+		length += strlen ( completions[0] );
+		cmd[length++] = ' ';
+		cursor = length;
+		client << CRLF;
+	}
+	if ( num_completions == 0 )
+	{
+		client << CRLF;
+		client << "  <br>" << CRLF;
+	}
+}
+
+void
+CLI::do_history
+(
+	const unsigned char& c
+)
+{
+	static signed int in_history = 0;
+	int history_found = 0;
+	if ( this->state == STATE_PASSWORD || this->state == STATE_ENABLE_PASSWORD )
+	{
+		return;
+	}
+	if ( c == CTRL ( 'P' ) ) // Up
+	{
+		in_history--;
+		if ( in_history < 0 )
+		{
+			for ( in_history = MAX_HISTORY-1; in_history >= 0; in_history-- )
+			{
+				if ( this->history[in_history] )
+				{
+					history_found = 1;
+					break;
+				}
+			}
+		}
+		else
+		{
+			if ( this->history[in_history] )
+			{
+				history_found = 1;
+			}
+		}
+	}
+	else // Down
+	{
+		in_history++;
+		if ( in_history >= MAX_HISTORY || !this->history[in_history] )
+		{
+			int i = 0;
+			for ( i = 0; i < MAX_HISTORY; i++ )
+			{
+				if ( this->history[i] )
+				{
+					in_history = i;
+					history_found = 1;
+					break;
+				}
+			}
+		}
+		else
+		{
+			if ( this->history[in_history] )
+			{
+				history_found = 1;
+			}
+		}
+	}
+	if ( history_found && this->history[in_history] )
+	{
+		// Show history item
+		clear_line ( cmd, length, cursor );
+		memset ( cmd, 0, 4096 );
+		strncpy ( cmd, this->history[in_history], 4095 );
+		length = cursor = strlen ( cmd );
+		client << cmd << commit;
+	}
+}
+
+void
+CLI::cursor_left
+()
+{
+	if ( cursor == 0 )
+	{
+		return;
+	}
+	if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
+	{
+		client.put_char ('\b');
+	}
+	cursor--;
+}
+
+void
+CLI::cursor_right
+()
+{
+	if ( cursor >= length )
+	{
+		return;
+	}
+	if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
+	{
+		client.put_char (cmd[cursor]);
+	}
+	cursor++;
+}
+
+void
+CLI::jump_start_of_line
+()
+{
+	if ( cursor )
+	{
+		if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
+		{
+			client.put_char ('\r');
+			show_prompt ();
+		}
+		cursor = 0;
+	}
+}
+
+void
+CLI::jump_end_of_line
+()
+{
+	if ( cursor < length )
+	{
+		if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
+		{
+			client << (cmd + cursor) << commit;
+		}
+		cursor = length;
+	}
+}
+
+bool
+CLI::append
+(
+	const unsigned char& c
+)
+{
+	cmd[cursor] = c;
+	if ( length < 4095 )
+	{
+		length++;
+		cursor++;
+		return true;
+	}
+	client.put_char ('\a');
+	return false;
+}
+
+void
+CLI::insert
+(
+	const unsigned char& c
+)
+{
+	int  insertmode = 1;	// what keypress could change this?
+	// Middle of text
+	if ( insertmode )
+	{
+		int i;
+		// Move everything one character to the right
+		if ( length >= 4094 )
+		{
+			length--;
+		}
+		for ( i = length; i >= cursor; i-- )
+		{
+			cmd[i + 1] = cmd[i];
+		}
+		// Write what we've just added
+		cmd[cursor] = c;
+		client << (cmd + cursor) << commit;
+		for ( i = 0; i < ( length - cursor + 1 ); i++ )
+		{
+			client.put_char ('\b');
+		}
+		length++;
+	}
+	else
+	{
+		cmd[cursor] = c;
+	}
+	cursor++;
 }
 
 int
 CLI::loop
-(
-        int sockfd
-)
+()
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	unsigned char c;
-	int l, oldl = 0, is_telnet_option = 0, skip = 0, esc = 0;
-	int cursor = 0, insertmode = 1;
-	char* cmd = NULL, *oldcmd = 0;
-	char* username = NULL, *password = NULL;
-	const char* negotiate =
-	        "\xFF\xFB\x03"
-	        "\xFF\xFB\x01"
-	        "\xFF\xFD\x03"
-	        "\xFF\xFD\x01";
-	netSocket*  ListenSockets[1];
+	bool remember_command;
 
 	this->state = STATE_LOGIN;
 	free_history ();
-	if ( sockfd == fileno ( stdin ) )  // read from stdin
-	{
-		this->from_socket = false;
-		this->setup_terminal ();
-	}
-	else    // read from socket
-	{
-		this->from_socket = true;
-#ifdef _MSC_VER
-		send ( sockfd, negotiate, strlen ( negotiate ), 0 );
-#else
-		write ( sockfd, negotiate, strlen ( negotiate ) );
-#endif
-	}
 	if ( ( cmd = ( char* ) malloc ( 4096 ) ) == NULL )
 	{
 		return LIBCLI::ERROR_ANY;
 	}
-	client = new netSocket ();
-	client->setHandle ( sockfd );
-	if ( this->banner )
+	if ( banner != "" )
 	{
-		error ( "%s", this->banner );
+		client << banner << CRLF;
 	}
 	/* start off in unprivileged mode */
 	set_privilege ( LIBCLI::UNPRIVILEGED );
-	set_configmode ( LIBCLI::MODE_EXEC, NULL );
+	set_configmode ( LIBCLI::MODE_EXEC, "" );
 	/* no auth required? */
 	if ( !this->users && !this->auth_callback && !this->cpp_auth_callback )
 	{
 		this->state = STATE_NORMAL;
 	}
+	showprompt = true;
 	while ( 1 )
 	{
-		signed int in_history = 0;
-		this->showprompt = 1;
-		if ( oldcmd )
+		remember_command = false;
+		if (showprompt == true)
 		{
-			l = cursor = oldl;
-			oldcmd[l] = 0;
-			this->showprompt = 1;
-			oldcmd = NULL;
-			oldl = 0;
+			prompt_user ();
 		}
-		else
+		if (get_input (c) == SOCKET_ERROR)
 		{
-			memset ( cmd, 0, 4096 );
-			l = 0;
-			cursor = 0;
+			length = -1;
+			break;
 		}
-		while ( 1 )
+		switch (c)
 		{
-			int sr;
-			if ( this->showprompt )
+		case 255:
+			handle_telnet_option();
+			continue;
+		case 27:		// handle ANSI arrows
+			c = map_esc ();
+			switch (c)
 			{
-				switch ( this->state )
-				{
-				case STATE_LOGIN:
-					client->write_str ("Username: ");
-					break;
-				case STATE_PASSWORD:
-					client->write_str ("Password: ");
-					break;
-				case STATE_NORMAL:
-				case STATE_ENABLE:
-					show_prompt ();
-					client->write_str (cmd, l);
-					if ( cursor < l )
-					{
-						int n = l - cursor;
-						while ( n-- )
-						{
-							client->write_char ('\b');
-						}
-					}
-					break;
-				case STATE_ENABLE_PASSWORD:
-					client->write_str ("Password: ");
-					break;
-				}
-				this->showprompt = 0;
+			case CTRL ( 'B' ):	// cursor left
+				cursor_left ();
+				continue;
+			case CTRL ( 'F' ):	// cursor right
+				cursor_right ();
+				continue;
+			case CTRL ( 'P' ):	// Cursor Up
+			case CTRL ( 'N' ):	// Cursor Down
+				do_history (c);
+				continue;
 			}
-			ListenSockets[0] = client;
-			ListenSockets[1] = 0;
-			sr = client->select ( ListenSockets, 0, 1 );
-			if (sr < 0)
-			{
-				/* select error */
-				if ( errno == EINTR )
-				{
-					continue;
-				}
-				perror ( "read" );
-				l = -1;
+			continue;
+		case '\n':
+		case '\r':
+			showprompt = true;
+			if ( state != STATE_PASSWORD && state != STATE_ENABLE_PASSWORD )
+				client << CRLF;
+			break;
+		case 0:
+			continue;
+		case CTRL ( 'C' ):
+			client.put_char ('\a');
+			continue;
+		case CTRL ( 'W' ):	// back word
+		case CTRL ( 'H' ):	// backspace
+		case 0x7f:		// delete
+			delete_backwards (c);
+			continue;
+		case CTRL ( 'L' ):	// redraw
+			redraw_line ();
+			continue;
+		case CTRL ( 'U' ):	// clear line
+			clear_line ();
+			continue;
+		case CTRL ( 'K' ):
+			clear_to_eol ();
+			continue;
+		case CTRL ( 'D' ):	// EOT
+			if (try_logout () == true)
 				break;
-			}
-			if ( sr == 0 )
+			continue;
+		case CTRL ( 'Z' ):	// leave config mode
+			leave_config_mode ();
+			continue;
+		case CTRL ( 'I' ):	// TAB completion
+			list_completions ();
+			continue;
+		case CTRL ( 'A' ):	// start of line
+			jump_start_of_line ();
+			continue;
+		case CTRL ( 'E' ):	// end of line
+			jump_end_of_line ();
+			continue;
+		default:		// normal character typed
+			if ( cursor == length )
 			{
-				/* timeout every second */
-				if ( this->regular_callback && this->regular_callback() != LIBCLI::OK )
+				if (! append (c))
 				{
-					break;
-				}
-				continue;
-			}
-			int n = client->read_char (c);
-			if ( n <= 0 )
-			{
-				if ( errno == EINTR )
-					continue;
-				l = -1;
-				break;
-			}
-			if ( skip )
-			{
-				skip--;
-				continue;
-			}
-			if ( c == 255 && !is_telnet_option )
-			{
-				is_telnet_option++;
-				continue;
-			}
-			if ( is_telnet_option )
-			{
-				if ( c >= 251 && c <= 254 )
-				{
-					is_telnet_option = c;
-					continue;
-				}
-				if ( c != 255 )
-				{
-					is_telnet_option = 0;
-					continue;
-				}
-				is_telnet_option = 0;
-			}
-			/* handle ANSI arrows */
-			if ( esc )
-			{
-				if ( esc == '[' )
-				{
-					/* remap to readline control codes */
-					switch ( c )
-					{
-					case 'A': /* Up */
-						c = CTRL ( 'P' );
-						break;
-					case 'B': /* Down */
-						c = CTRL ( 'N' );
-						break;
-					case 'C': /* Right */
-						c = CTRL ( 'F' );
-						break;
-					case 'D': /* Left */
-						c = CTRL ( 'B' );
-						break;
-					default:
-						c = 0;
-					}
-					esc = 0;
-				}
-				else
-				{
-					esc = ( c == '[' ) ? c : 0;
-					continue;
-				}
-			}
-			if ( ( c == '\n' ) && ( sockfd == 0 ) )
-			{
-				if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-				{
-					client->write_str ("\r\n");
-				}
-				break;
-			}
-			if ( ( c == 0 ) || ( c == '\n' ) )
-			{
-				continue;
-			}
-			if ( c == '\r' )
-			{
-				if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-				{
-					client->write_str ("\r\n");
-				}
-				break;
-			}
-			if ( c == 27 )
-			{
-				esc = 1;
-				continue;
-			}
-			if ( c == CTRL ( 'C' ) )
-			{
-				client->write_char ('\a');
-				continue;
-			}
-			/* back word, backspace/delete */
-			if ( c == CTRL ( 'W' ) || c == CTRL ( 'H' ) || c == 0x7f )
-			{
-				int back = 0;
-				if ( c == CTRL ( 'W' ) ) /* word */
-				{
-					int nc = cursor;
-					if ( l == 0 || cursor == 0 )
-					{
-						continue;
-					}
-					while ( nc && cmd[nc - 1] == ' ' )
-					{
-						nc--;
-						back++;
-					}
-					while ( nc && cmd[nc - 1] != ' ' )
-					{
-						nc--;
-						back++;
-					}
-				}
-				else /* char */
-				{
-					if ( l == 0 || cursor == 0 )
-					{
-						client->write_char ('\a');
-						continue;
-					}
-					back = 1;
-				}
-				if ( back )
-				{
-					while ( back-- )
-					{
-						if ( l == cursor )
-						{
-							cmd[--cursor] = 0;
-							if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-							{
-								client->write_str ("\b \b");
-							}
-						}
-						else
-						{
-							int i;
-							cursor--;
-							if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-							{
-								for ( i = cursor; i <= l; i++ ) cmd[i] = cmd[i+1]
-									                /* intentionally empty */;
-								client->write_char ('\b');
-								client->write_str (cmd + cursor);
-								client->write_char (' ');
-								for ( i = 0; i <= ( int ) strlen ( cmd + cursor ); i++ )
-								{
-									client->write_char ('\b');
-								}
-							}
-						}
-						l--;
-					}
-					continue;
-				}
-			}
-			/* redraw */
-			if ( c == CTRL ( 'L' ) )
-			{
-				int i;
-				int cursorback = l - cursor;
-				if ( this->state == STATE_PASSWORD || this->state == STATE_ENABLE_PASSWORD )
-				{
-					continue;
-				}
-				client->write_str ("\r\n");
-				show_prompt ();
-				client->write_str (cmd);
-				for ( i = 0; i < cursorback; i++ )
-				{
-					client->write_char ('\b');
-				}
-				continue;
-			}
-			/* clear line */
-			if ( c == CTRL ( 'U' ) )
-			{
-				if ( this->state == STATE_PASSWORD || this->state == STATE_ENABLE_PASSWORD )
-				{
-					memset ( cmd, 0, l );
-				}
-				else
-				{
-					clear_line ( cmd, l, cursor );
-				}
-				l = cursor = 0;
-				continue;
-			}
-			/* kill to EOL */
-			if ( c == CTRL ( 'K' ) )
-			{
-				if ( cursor == l )
-				{
-					continue;
-				}
-				if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-				{
-					int c;
-					for ( c = cursor; c < l; c++ )
-					{
-						client->write_char (' ');
-					}
-					for ( c = cursor; c < l; c++ )
-					{
-						client->write_char ('\b');
-					}
-				}
-				memset ( cmd + cursor, 0, l - cursor );
-				l = cursor;
-				continue;
-			}
-			/* EOT */
-			if ( c == CTRL ( 'D' ) )
-			{
-				if ( this->state == STATE_PASSWORD || this->state == STATE_ENABLE_PASSWORD )
-				{
-					break;
-				}
-				if ( l )
-				{
-					continue;
-				}
-				strcpy ( cmd, "quit" );
-				l = cursor = strlen ( cmd );
-				client->write_str ("quit\r\n");
-				break;
-			}
-			/* disable */
-			if ( c == CTRL ( 'Z' ) )
-			{
-				if ( this->mode != MODE_EXEC )
-				{
-					clear_line ( cmd, l, cursor );
-					set_configmode ( MODE_EXEC, NULL );
-					this->showprompt = 1;
-				}
-				continue;
-			}
-			/* TAB completion */
-			if ( c == CTRL ( 'I' ) )
-			{
-				char* completions[128];
-				int num_completions = 0;
-				if ( this->state == STATE_PASSWORD || this->state == STATE_ENABLE_PASSWORD )
-				{
-					continue;
-				}
-				if ( cursor != l )
-				{
-					continue;
-				}
-				num_completions = get_completions ( cmd, completions, 128 );
-				this->showprompt = 1;
-				if ( num_completions == 1 )
-				{	// Single completion
-					for ( ; l > 0; l--, cursor-- )
-					{
-						if ( cmd[l-1] == ' ' || cmd[l-1] == '|' )
-						{
-							break;
-						}
-						client->write_char ('\b');
-					}
-					strcpy ( ( cmd + l ), completions[0] );
-					l += strlen ( completions[0] );
-					cmd[l++] = ' ';
-					cursor = l;
-					client->write_str ("\r\n");
-				}
-				if ( num_completions == 0 )
-					client->write_str ("\r\n");
-				continue;
-			}
-			/* history */
-			if ( c == CTRL ( 'P' ) || c == CTRL ( 'N' ) )
-			{
-				int history_found = 0;
-				if ( this->state == STATE_PASSWORD || this->state == STATE_ENABLE_PASSWORD )
-				{
-					continue;
-				}
-				if ( c == CTRL ( 'P' ) ) // Up
-				{
-					in_history--;
-					if ( in_history < 0 )
-					{
-						for ( in_history = MAX_HISTORY-1; in_history >= 0; in_history-- )
-						{
-							if ( this->history[in_history] )
-							{
-								history_found = 1;
-								break;
-							}
-						}
-					}
-					else
-					{
-						if ( this->history[in_history] )
-						{
-							history_found = 1;
-						}
-					}
-				}
-				else // Down
-				{
-					in_history++;
-					if ( in_history >= MAX_HISTORY || !this->history[in_history] )
-					{
-						int i = 0;
-						for ( i = 0; i < MAX_HISTORY; i++ )
-						{
-							if ( this->history[i] )
-							{
-								in_history = i;
-								history_found = 1;
-								break;
-							}
-						}
-					}
-					else
-					{
-						if ( this->history[in_history] )
-						{
-							history_found = 1;
-						}
-					}
-				}
-				if ( history_found && this->history[in_history] )
-				{
-					// Show history item
-					clear_line ( cmd, l, cursor );
-					memset ( cmd, 0, 4096 );
-					strncpy ( cmd, this->history[in_history], 4095 );
-					l = cursor = strlen ( cmd );
-					client->write_str (cmd);
-				}
-				continue;
-			}
-			/* left/right cursor motion */
-			if ( c == CTRL ( 'B' ) || c == CTRL ( 'F' ) )
-			{
-				if ( c == CTRL ( 'B' ) ) /* Left */
-				{
-					if ( cursor )
-					{
-						if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-						{
-							client->write_char ('\b');
-						}
-						cursor--;
-					}
-				}
-				else /* Right */
-				{
-					if ( cursor < l )
-					{
-						if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-						{
-							client->write_char (cmd[cursor]);
-						}
-						cursor++;
-					}
-				}
-				continue;
-			}
-			/* start of line */
-			if ( c == CTRL ( 'A' ) )
-			{
-				if ( cursor )
-				{
-					if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-					{
-						client->write_char ('\r');
-						show_prompt ();
-					}
-					cursor = 0;
-				}
-				continue;
-			}
-			/* end of line */
-			if ( c == CTRL ( 'E' ) )
-			{
-				if ( cursor < l )
-				{
-					if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-					{
-						client->write_str (cmd + cursor);
-					}
-					cursor = l;
-				}
-				continue;
-			}
-			/* normal character typed */
-			if ( cursor == l )
-			{
-				/* append to end of line */
-				cmd[cursor] = c;
-				if ( l < 4095 )
-				{
-					l++;
-					cursor++;
-				}
-				else
-				{
-					client->write_char ('\a');
 					continue;
 				}
 			}
 			else
-			{
-				// Middle of text
-				if ( insertmode )
-				{
-					int i;
-					// Move everything one character to the right
-					if ( l >= 4094 )
-					{
-						l--;
-					}
-					for ( i = l; i >= cursor; i-- )
-					{
-						cmd[i + 1] = cmd[i];
-					}
-					// Write what we've just added
-					cmd[cursor] = c;
-					client->write_str (cmd + cursor);
-					for ( i = 0; i < ( l - cursor + 1 ); i++ )
-					{
-						client->write_char ('\b');
-					}
-					l++;
-				}
-				else
-				{
-					cmd[cursor] = c;
-				}
-				cursor++;
+			{	// Middle of text
+				insert (c);
 			}
 			if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
 			{
-				if ( c == '?' && cursor == l )
+				if ( (c == '?') && (cursor == length) )
 				{
-					client->write_str ("\r\n");
-					oldcmd = cmd;
-					oldl = cursor = l - 1;
+					client << CRLF;
+					remember_command = true;
+					showprompt = true;
 					break;
 				}
-				client->write_char (c);
+				client.put_char (c);
 			}
-			oldcmd = 0;
-			oldl = 0;
-			// lastchar = c;
-		}
-		if ( l < 0 )
-		{
-			break;
-		}
+			continue;
+		} // switch
 		if ( !strcasecmp ( cmd, "quit" ) )
 		{
 			break;
 		}
 		if ( this->state == STATE_LOGIN )
 		{
-			if ( l == 0 )
+			if ( length == 0 )
 			{
 				continue;
 			}
@@ -2074,107 +2153,23 @@ CLI::loop
 				return 0;
 			}
 			this->state = STATE_PASSWORD;
-			this->showprompt = 1;
+			showprompt = true;
 		}
 		else if ( this->state == STATE_PASSWORD )
 		{
-			/* require password */
-			int allowed = 0;
-			free_z ( password );
-			if ( ! ( password = strdup ( cmd ) ) )
-			{
-				return 0;
-			}
-			if ( this->auth_callback )
-			{
-				if ( this->auth_callback ( username, password ) == LIBCLI::OK )
-				{
-					allowed++;
-				}
-			}
-			else if ( this->cpp_auth_callback )
-			{
-				if ( CALL_MEMBER_FN ((*this), cpp_auth_callback)  ( username, password ) == LIBCLI::OK )
-				{
-					allowed++;
-				}
-			}
-			if ( ! allowed )
-			{
-				unp* u;
-				for ( u = this->users; u; u = u->next )
-				{
-					if ( !strcmp ( u->username, username ) && pass_matches ( u->password, password ) )
-					{
-						allowed++;
-						break;
-					}
-				}
-			}
-			if ( allowed )
-			{
-				error ( "-ok-" );
-				this->state = STATE_NORMAL;
-				error ("type '?' or 'help' for help.");
-				error (" ");
-			}
-			else
-			{
-				error ( "\n\nAccess denied" );
-				free_z ( username );
-				free_z ( password );
-				this->state = LIBCLI::STATE_LOGIN;
-			}
-			this->showprompt = 1;
+			check_user_auth (username, cmd);
 		}
 		else if ( this->state == LIBCLI::STATE_ENABLE_PASSWORD )
 		{
-			int allowed = 0;
-			if ( this->enable_password )
-			{
-				/* check stored static enable password */
-				if ( pass_matches ( this->enable_password, cmd ) )
-				{
-					allowed++;
-				}
-			}
-			if ( !allowed )
-			{
-				/* check callback */
-				if (this->enable_callback)
-				{
-					if ( this->enable_callback ( cmd ) )
-					{
-						allowed++;
-					}
-				}
-				else if (this->cpp_enable_callback)
-				{
-					if ( CALL_MEMBER_FN ((*this), cpp_enable_callback) ( cmd ) )
-					{
-						allowed++;
-					}
-				}
-			}
-			if ( allowed )
-			{
-				error ( "-ok-" );
-				this->state = LIBCLI::STATE_ENABLE;
-				set_privilege ( LIBCLI::PRIVILEGED );
-			}
-			else
-			{
-				error ( "\n\nAccess denied" );
-				this->state = LIBCLI::STATE_NORMAL;
-			}
+			check_enable (cmd);
 		}
 		else
 		{
-			if ( l == 0 )
+			if ( length == 0 )
 			{
 				continue;
 			}
-			if ( cmd[l - 1] != '?' && strcasecmp ( cmd, "history" ) != 0 )
+			if ( cmd[length - 1] != '?' && strcasecmp ( cmd, "history" ) != 0 )
 			{
 				add_history ( cmd );
 			}
@@ -2182,10 +2177,22 @@ CLI::loop
 			{
 				break;
 			}
+			if ( (c == '?') && (cursor == length) )
+			{
+				cursor = length -1;
+				length = cursor;
+				cmd[length] = 0;
+			}
+			showprompt = true;
+		}
+		if (remember_command == false)
+		{
+			memset ( cmd, 0, 4096 );
+			length = 0;
+			cursor = 0;
 		}
 	}
 	free_z ( username );
-	free_z ( password );
 	free_z ( cmd );
 	return LIBCLI::OK;
 }
@@ -2200,7 +2207,7 @@ CLI::file
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	int oldpriv = set_privilege ( privilege );
-	int oldmode = set_configmode ( mode, NULL );
+	int oldmode = set_configmode ( mode, "" );
 	char buf[4096];
 	while ( 1 )
 	{
@@ -2242,7 +2249,7 @@ CLI::file
 		}
 	}
 	set_privilege ( oldpriv );
-	set_configmode ( oldmode, NULL /* didn't save desc */ );
+	set_configmode ( oldmode, "" /* didn't save desc */ );
 	return LIBCLI::OK;
 }
 
@@ -2252,15 +2259,15 @@ CLI::pager
 {
 	unsigned char c;
 	bool done = false;
-	client->write_str ("--- more ---");
+	client << "--- more ---" << commit;
 	c = ' ';
 	while ( done == false )
 	{
-		client->read_char (c);
+		client.read_char (c);
 		if (c == 'q')
 		{
 			this->lines_out = 0;
-			client->write_char ('\r');
+			client.put_char ('\r');
 			return 1;
 		}
 		if (c == ' ')
@@ -2273,111 +2280,8 @@ CLI::pager
 			done = true;
 		}
 	}
-	client->write_char ('\r');
+	client.put_char ('\r');
 	return 0;
-}
-
-int
-CLI::_print
-(
-        int print_mode,
-        const char* format,
-        va_list ap
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	static char* buffer;
-	static int size, len;
-	char* p;
-	int n;
-	buffer = this->buffer;
-	size = this->buf_size;
-	len = strlen ( buffer );
-	while ( ( n = vsnprintf ( buffer+len, size-len, format, ap ) ) >= size-len )
-	{
-		if ( ! ( buffer = ( char* ) realloc ( buffer, size += 1024 ) ) )
-		{
-			return 0;
-		}
-		this->buffer = buffer;
-		this->buf_size = size;
-	}
-	if ( n < 0 ) // vaprintf failed
-	{
-		return 0;
-	}
-	p = buffer;
-	do
-	{
-		char* next = strchr ( p, '\n' );
-		filter_t* f = ( print_mode&PRINT_FILTERED ) ? this->filters : 0;
-		int print = 1;
-		if ( next )
-		{
-			*next++ = 0;
-		}
-		else if ( print_mode&PRINT_BUFFERED )
-		{
-			break;
-		}
-		while ( print && f )
-		{
-			print = ( f->exec ( *this, p, f->data ) == LIBCLI::OK );
-			f = f->next;
-		}
-		if ( print )
-		{
-			if ( this->print_callback )
-			{
-				this->print_callback ( p );
-				this->lines_out++;
-			}
-			else if ( this->client )
-			{
-				client->write_str (p);
-				client->write_str ("\r\n");
-				this->lines_out++;
-			}
-		}
-		p = next;
-	} while ( p );
-	if ( p && *p )
-	{
-		if ( p != buffer )
-		{
-			memmove (buffer, p, strlen (p));
-		}
-	}
-	else
-	{
-		*buffer = 0;
-	}
-	return 0;
-}
-
-void
-CLI::bufprint
-(
-        const char* format,
-        ...
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	va_list ap;
-	va_start ( ap, format );
-	_print ( PRINT_BUFFERED|PRINT_FILTERED, format, ap );
-	va_end ( ap );
-}
-
-void
-CLI::vabufprint
-(
-        const char* format,
-        va_list ap
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	_print ( PRINT_BUFFERED, format, ap );
 }
 
 int
@@ -2388,10 +2292,17 @@ CLI::print
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
+	if (! format)
+	{
+		return 0;
+	}
 	va_list ap;
 	va_start ( ap, format );
-	_print ( PRINT_FILTERED, format, ap );
+	char buf[5000];
+	vsprintf (buf, format, ap);
 	va_end ( ap );
+	client << buf << CRLF;
+	lines_out++;
 	// ask for a key after 20 lines of output
 	// FIXME: make this configurable
 	if (this->lines_out > this->max_screen_lines)
@@ -2402,20 +2313,6 @@ CLI::print
 		}
 	}
 	return 0;
-}
-
-void
-CLI::error
-(
-        const char* format,
-        ...
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	va_list ap;
-	va_start ( ap, format );
-	_print ( PRINT_PLAIN, format, ap );
-	va_end ( ap );
 }
 
 int
@@ -2430,10 +2327,7 @@ CLI::match_filter_init
 	match_filter_state* state;
 	if ( argc < 2 )
 	{
-		if ( this->client )
-		{
-			client->write_str ("Match filter requires an argument\r\n");
-		}
+		client << "Match filter requires an argument" << CRLF;
 		return LIBCLI::ERROR_ANY;
 	}
 	filt->filter = &CLI::match_filter;
@@ -2498,10 +2392,7 @@ CLI::range_filter_init
 	{
 		if ( argc < 3 )
 		{
-			if ( this->client )
-			{
-				client->write_str ("Between filter requires 2 arguments\r\n");
-			}
+			client << "Between filter requires 2 arguments" << CRLF;
 			return LIBCLI::ERROR_ANY;
 		}
 		if ( ! ( from = strdup ( argv[1] ) ) )
@@ -2514,10 +2405,7 @@ CLI::range_filter_init
 	{
 		if ( argc < 2 )
 		{
-			if ( this->client )
-			{
-				client->write_str ("Begin filter requires an argument\r\n");
-			}
+			client << "Begin filter requires an argument" << CRLF;
 			return LIBCLI::ERROR_ANY;
 		}
 		from = join_words ( argc-1, argv+1 );
@@ -2574,10 +2462,7 @@ CLI::count_filter_init
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	if ( argc > 1 )
 	{
-		if ( this->client )
-		{
-			client->write_str ("Count filter does not take arguments\r\n");
-		}
+		client << "Count filter does not take arguments" << CRLF;
 		return LIBCLI::ERROR_ANY;
 	}
 	filt->filter = &CLI::count_filter;
@@ -2601,11 +2486,7 @@ CLI::count_filter
 	if ( !cmd ) // clean up
 	{
 		// print count
-		if ( this->client )
-		{
-			client->write_str (NumToStr (*count, 0));
-			client->write_str ("\r\n");
-		}
+		client << NumToStr (*count, 0) << CRLF;
 		free ( count );
 		return LIBCLI::OK;
 	}
@@ -2618,16 +2499,6 @@ CLI::count_filter
 		( *count ) ++;        // only count non-blank lines
 	}
 	return LIBCLI::ERROR_ANY; // no output
-}
-
-void
-CLI::set_print_callback
-(
-        void ( *callback ) ( char* )
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	this->print_callback = callback;
 }
 
 }; // namespace LIBCLI

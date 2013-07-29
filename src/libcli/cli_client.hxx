@@ -16,8 +16,8 @@
 // Copyright (C) 2011  Oliver Schroeder
 //
 
-#ifndef CLI_COMMON_H
-#define CLI_COMMON_H
+#ifndef CLI_CLIENT_H
+#define CLI_CLIENT_H
 
 #include <string>
 #include <sstream>
@@ -25,7 +25,6 @@
 #ifndef _MSC_VER
 	#include <termios.h>
 #endif
-
 
 namespace LIBCLI
 {
@@ -35,21 +34,36 @@ class Client
 public:
 	Client ( int fd );
 	~Client ();
-	int wait_for_input ();	// select()
-	void close ();
-	template <class T>
-	Client& operator << ( T v );
-	Client& operator << ( const char& c );
+	int wait_for_input ( int seconds );	// select()
+	int read_char ( unsigned char& c );
+	void put_char ( const char& c );
+	template <class T> Client& operator << ( T v );
 	Client& operator << ( Client& (*f) (Client&) );
-	friend Client& endl ( Client& );
-private:
-	netSocket*		socket;
+	friend Client& commit ( Client& );
+	friend Client& CRLF ( Client& );
+protected:
+	netSocket*		m_socket;
 	std::ostringstream	m_output;
 	#ifndef _MSC_VER
-	struct termios NewModes;
+	struct termios OldModes;
 	#endif
 };
 
+//////////////////////////////////////////////////////////////////////
+//
+//////////////////////////////////////////////////////////////////////
+template <class T>
+Client& Client::operator << ( T v )
+{
+	m_output << v;
+	return *this;
+} // operator << ( class T );
+//////////////////////////////////////////////////////////////////////
+
+Client& commit ( Client& );
+Client& CRLF ( Client& out );
+
 }; // namespace LIBCLI
+
 
 #endif

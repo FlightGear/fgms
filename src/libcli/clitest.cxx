@@ -34,9 +34,9 @@ private:
 int  my_cli::check_auth (const string& username, const string& password)
 {
 	if (username != "fred")
-		return LIBCLI::ERROR;
+		return LIBCLI::ERROR_ANY;
 	if (password != "fred")
-		return LIBCLI::ERROR;
+		return LIBCLI::ERROR_ANY;
 	return LIBCLI::OK;
 }
 
@@ -177,7 +177,6 @@ int main( int argc, char** argv )
                         close(x);
                         if (argc == 1)
                         {
-                            cli->done();
                             return 0;
                         }
                         continue;
@@ -188,6 +187,5 @@ int main( int argc, char** argv )
                 cli->loop(x);
                 exit(0);
         }
-        cli->done();
         return 0;
 }
