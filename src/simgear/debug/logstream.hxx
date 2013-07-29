@@ -402,7 +402,7 @@ sglog()
 # define SG_ALERT(C,P,M)
 #elif defined( __MWERKS__ )
 # define SG_LOG(C,P,M) ::sglog() << ::loglevel(C,P) << M << std::endl
-# define SG_ALERT(C,P,M)::sglog() << ::loglevel(C,P) << M << std::endl;  std::cerr << M << std::endl
+# define SG_CONSOLE(C,P,M) ::sglog() << ::loglevel((sgDebugClass) (C|SG_CONSOLE),P) << ::sglog().datestr() << M << std::endl;
 #else
 # define SG_LOG(C,P,M) sglog()   << loglevel(C,P) << sglog().datestr() << M << std::endl
 # define SG_CONSOLE(C,P,M) sglog() << loglevel((sgDebugClass) (C|SG_CONSOLE),P) << sglog().datestr() << M << endl;
