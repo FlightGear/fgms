@@ -259,7 +259,6 @@ FG_TRACKER::Loop ()
 
 	pthread_mutex_init ( &msg_mutex, 0 ); 
 	pthread_cond_init  ( &condition_var, 0 ); 
-	// tracklog().setLogLevels ( SG_FGTRACKER, SG_INFO );
 	length = 0;
 	/*Infinite loop*/
 	for ( ; ; )
