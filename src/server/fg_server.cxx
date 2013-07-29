@@ -285,7 +285,7 @@ FG_SERVER::Init
 		m_DataSocket = new netSocket();
 		if ( m_DataSocket->open ( false ) == 0 ) // UDP-Socket
 		{
-			SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
+			SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
 			           << "failed to create listener socket" );
 			return ( ERROR_CREATE_SOCKET );
 		}
@@ -293,9 +293,9 @@ FG_SERVER::Init
 		m_DataSocket->setSockOpt ( SO_REUSEADDR, true );
 		if ( m_DataSocket->bind ( m_BindAddress.c_str(), m_ListenPort ) != 0 )
 		{
-			SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
+			SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
 			           << "failed to bind to port " << m_ListenPort );
-			SG_LOG ( SG_FGMS, SG_ALERT, "already in use?" );
+			SG_CONSOLE ( SG_FGMS, SG_ALERT, "already in use?" );
 			return ( ERROR_COULDNT_BIND );
 		}
 		m_ReinitData = false;
@@ -313,7 +313,7 @@ FG_SERVER::Init
 			m_TelnetSocket = new netSocket;
 			if ( m_TelnetSocket->open ( true ) == 0 ) // TCP-Socket
 			{
-				SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
+				SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
 				           << "failed to create telnet socket" );
 				return ( ERROR_CREATE_SOCKET );
 			}
@@ -321,14 +321,14 @@ FG_SERVER::Init
 			m_TelnetSocket->setSockOpt ( SO_REUSEADDR, true );
 			if ( m_TelnetSocket->bind ( m_BindAddress.c_str(), m_TelnetPort ) != 0 )
 			{
-				SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
+				SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
 				           << "failed to bind telnet socket " << m_TelnetPort );
-				SG_LOG ( SG_FGMS, SG_ALERT, "already in use?" );
+				SG_CONSOLE ( SG_FGMS, SG_ALERT, "already in use?" );
 				return ( ERROR_COULDNT_BIND );
 			}
 			if ( m_TelnetSocket->listen ( MAX_TELNETS ) != 0 )
 			{
-				SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
+				SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
 				           << "failed to listen to telnet port" );
 				return ( ERROR_COULDNT_LISTEN );
 			}
@@ -347,7 +347,7 @@ FG_SERVER::Init
 			m_AdminSocket = new netSocket;
 			if ( m_AdminSocket->open ( true ) == 0 ) // TCP-Socket
 			{
-				SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
+				SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
 				           << "failed to create admin socket" );
 				return ( ERROR_CREATE_SOCKET );
 			}
@@ -355,14 +355,14 @@ FG_SERVER::Init
 			m_AdminSocket->setSockOpt ( SO_REUSEADDR, true );
 			if ( m_AdminSocket->bind ( m_BindAddress.c_str(), m_AdminPort ) != 0 )
 			{
-				SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
+				SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
 				           << "failed to bind admin socket " << m_AdminPort );
-				SG_LOG ( SG_FGMS, SG_ALERT, "already in use?" );
+				SG_CONSOLE ( SG_FGMS, SG_ALERT, "already in use?" );
 				return ( ERROR_COULDNT_BIND );
 			}
 			if ( m_AdminSocket->listen ( MAX_TELNETS ) != 0 )
 			{
-				SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
+				SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
 				           << "failed to listen to admin port" );
 				return ( ERROR_COULDNT_LISTEN );
 			}
@@ -514,8 +514,8 @@ FG_SERVER::HandleAdmin
 {
 	FG_CLI*	MyCLI;
 	errno = 0;
-	MyCLI = new FG_CLI ( this );
-	MyCLI->loop ( Fd );
+	MyCLI = new FG_CLI ( this, Fd );
+	MyCLI->loop ();
 	if (Fd == 0)
 	{	// reading from stdin
 		WantExit();
@@ -600,6 +600,10 @@ FG_SERVER::HandleTelnet
 		else
 		{
 			break;
+		}
+		if (CurrentPlayer.Name.compare (0, 2, "obs") == 0)
+		{
+			continue;
 		}
 		sgCartToGeod ( CurrentPlayer.LastPos, PlayerPosGeod );
 		Message = CurrentPlayer.Name + "@";
@@ -1342,7 +1346,7 @@ FG_SERVER::HandlePacket
 		//
 		//////////////////////////////////////////////////
 		if ( ( Distance ( SenderPosition, CurrentPlayer->LastPos ) > m_PlayerIsOutOfReach )
-		&&   ( CurrentPlayer->Name.compare ( 0, 3, "obs", 3 ) != 0 ) )
+		&&   (CurrentPlayer->Name.compare (0, 2, "obs") != 0 ) )
 		{
 			CurrentPlayer++;
 			continue;
