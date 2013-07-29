@@ -616,12 +616,12 @@ main ( int argc, char* argv[] )
 	}
 #endif
 	I = Servant.Init ();
-	SG_CONSOLE ( SG_SYSTEMS, SG_ALERT, "Main server started!" );
 	if ( I != 0 )
 	{
 		Servant.CloseTracker();
 		return ( I );
 	}
+	SG_CONSOLE ( SG_SYSTEMS, SG_ALERT, "Main server started!" );
 	I = Servant.Loop();
 	Servant.CloseTracker();
 	Servant.Done();
