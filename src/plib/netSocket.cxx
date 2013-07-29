@@ -58,15 +58,6 @@
 #define INADDR_NONE ((unsigned long)-1)
 #endif
 
-#ifdef _MSC_VER
-int recoverable_wsa_error()
-{
-    int wsa_errno = WSAGetLastError();
-    WSASetLastError(0); // clear the error
-    return (wsa_errno == WSAEINTR) ? 1 : 0;
-}
-#endif
-
 using namespace std;
 
 netAddress::netAddress ( const char* host, int port )
@@ -343,28 +334,16 @@ int netSocket::write_str ( const char* str, int len )
 	int left	= len;
 	int written	= 0;
 
-	errno = 0;
 	while (left > 0)
 	{
-#ifdef _MSC_VER
 		written = ::send (handle, p, left, 0);
 		if (written == SOCKET_ERROR)
 		{
-			if (recoverable_wsa_error())
+			if (RECOVERABLE_ERROR)
 				written = 0;
 			else
 				return -1;
 		}
-#else // !_MSC_VER
-		written = ::write (handle, p, left);
-		if (written <= 0)
-		{
-			if (errno == EINTR)
-				written = 0;
-			else
-				return -1;
-		}
-#endif // _MSC_VER y/n
 		left -= written;
 		p += written;
 	}
@@ -378,11 +357,7 @@ int netSocket::write_str ( const string&  str )
 
 int netSocket::write_char ( const char&  c )
 {
-#ifdef _MSC_VER
-	return send ((const void *)c, 1 )
-#else
-	return write (handle, &c, 1);
-#endif
+	return ::send (handle, &c, 1, 0);
 }
 
 int netSocket::send (const void * buffer, int size, int flags)
@@ -402,12 +377,19 @@ int netSocket::sendto ( const void * buffer, int size,
 
 int netSocket::read_char ( unsigned char& c )
 {
-#ifdef _MSC_VER
-    int n = recv ( (void *)c, 1 );
-#else // !_MSC_VER
-    int n = read ( handle, &c, 1 );
-#endif
-    return n;
+	int n;
+	while (1)
+	{
+		n = ::recv (handle, &c, 1, 0 );
+		if (n == SOCKET_ERROR)
+		{
+			if (RECOVERABLE_ERROR)
+				continue;
+			return -1;
+		}
+		return n;
+	}
+	return n;
 }
 
 int netSocket::recv (void * buffer, int size, int flags)
@@ -493,7 +475,7 @@ bool netSocket::isNonBlockingError ()
 
 //////////////////////////////////////////////////////////////////////
 //
-//	modified version by os
+//	
 //
 //////////////////////////////////////////////////////////////////////
 int netSocket::select ( netSocket** reads, netSocket** writes, int timeout )
@@ -504,8 +486,8 @@ int netSocket::select ( netSocket** reads, netSocket** writes, int timeout )
   FD_ZERO (&w);
   int i;
   int num = 0 ;
-//  if ((reads == 0) || (reads[0] == 0))
-//    return (0);
+  if ((reads == 0) || (reads[0] == 0))
+    return (0);
   if (reads)
   {
     for ( i=0; reads[i]; i++ )
@@ -542,10 +524,8 @@ int netSocket::select ( netSocket** reads, netSocket** writes, int timeout )
   // thing I have ever seen it used for is to detect urgent data -
   // which is an unportable feature anyway.
   retval = ::select (FD_SETSIZE, &r, &w, 0, &tv);
-  if (retval == 0) // timeout
-    return 0;
-  if (retval == -1)// error
-    return (-1);
+  if (retval <= 0) // timeout or error
+    return retval;
   //remove sockets that had no activity
   num = 0 ;
   if (reads)

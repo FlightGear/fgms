@@ -61,7 +61,20 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <string>
-#include <fg_util.hxx>
+#include <server/fg_util.hxx>
+
+#ifdef _MSC_VER
+	int recoverable_wsa_error()
+	{
+	    int wsa_errno = WSAGetLastError();
+	    WSASetLastError(0); // clear the error
+	    return (wsa_errno == WSAEINTR) ? 1 : 0;
+	}
+	#define RECOVERABLE_ERROR recoverable_wsa_error()
+#else
+	#define RECOVERABLE_ERROR (errno == EINTR)
+	#define SOCKET_ERROR -1
+#endif
 
 /**
  * @class netAddress
