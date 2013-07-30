@@ -66,7 +66,7 @@ option( BUILD_SERVER2 "Build a server with different defaults" OFF )
 option( ENABLE_TRACKER_LOG "Enable a tracker message log." OFF )
 option( USE_POSTGRESQL "Use a PostgreSQL database in the tracking server." ON )
 if(UNIX)
-    option( ENABLED_DEBUG_SYMBOLS "Add debug symbols into the binary." OFF )
+    option( ENABLE_DEBUG_SYMBOLS "Add debug symbols into the binary." OFF )
 endif(UNIX)
 option( ENABLE_DEBUG_OUTPUT "Enable some extra debug output in fg_tracker.cxx." OFF )
 # this should not be confused with the fact that pthread is used in fgms by default. This is in the fgt_server server.c
