@@ -21,6 +21,7 @@
 
 #include <string>
 #include <sstream>
+#include <iomanip>
 #include <plib/netSocket.h>
 #ifndef _MSC_VER
 	#include <termios.h>
@@ -37,10 +38,14 @@ public:
 	int wait_for_input ( int seconds );	// select()
 	int read_char ( unsigned char& c );
 	void put_char ( const char& c );
+
 	template <class T> Client& operator << ( T v );
 	Client& operator << ( Client& (*f) (Client&) );
+
 	friend Client& commit ( Client& );
 	friend Client& CRLF ( Client& );
+	size_t  lines_out;
+	size_t  max_screen_lines;
 protected:
 	netSocket*		m_socket;
 	std::ostringstream	m_output;

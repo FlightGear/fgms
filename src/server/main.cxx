@@ -43,10 +43,6 @@
 #include "fg_util.hxx"
 
 using namespace std;
-/*DEF_TRACKER_CHILDS (Was 3 but now set to 1 due to a bug on unproper handling of out-of-sequence messages)*/
-#ifndef DEF_TRACKER_CHILDS
-#define DEF_TRACKER_CHILDS 1
-#endif
 
 /** @brief The running  ::FG_SERVER server process */
 FG_SERVER       Servant;

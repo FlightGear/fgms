@@ -183,7 +183,7 @@ protected:
 	size_t		mT_RelayMagic, mT_NotPosData;
 	size_t		m_CrossFeedFailed, m_CrossFeedSent;
 	size_t		mT_CrossFeedFailed, mT_CrossFeedSent;
-	size_t		m_TrackerConnect, m_TrackerDisconnect,m_TrackerPostion;
+	size_t		m_TrackerConnect, m_TrackerDisconnect,m_TrackerPosition;
 	time_t		m_Uptime;
 
 	//////////////////////////////////////////////////

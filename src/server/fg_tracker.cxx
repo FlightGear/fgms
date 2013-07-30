@@ -100,7 +100,6 @@ FG_TRACKER::~FG_TRACKER ()
 void
 FG_TRACKER::ReadQueue ()
 {
-	
 	//////////////////////////////////////////////////
 	// FIXME: this needs a better mechanism.
 	// This is fire and forget, and forgets
@@ -134,11 +133,15 @@ FG_TRACKER::WriteQueue ()
 
 	pthread_mutex_lock ( &msg_mutex ); // give up the lock
 	if (msg_queue.size() == 0)
+	{
+		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
 		return;
+	}
 	queue_file.open ( "queue_file", ios::out|ios::app );
 	if (! queue_file)
 	{
 		cout << "could not open queuefile!" << endl;
+		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
 		return;
 	}
 	CurrentMessage = msg_queue.begin(); // get first message
@@ -188,6 +191,7 @@ FG_TRACKER::AddMessage
 	if (msg_queue.size () > 512)
 	{
 		TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER queue full, writeing backlog...");
+		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
 		WriteQueue ();
 		msg_queue.clear();
 	}
@@ -275,6 +279,7 @@ FG_TRACKER::Loop ()
 					<< "not connected, will slepp for 30 seconds"
 				);
 				sleep (30);
+				continue;
 			}
 			ReadQueue (); 	// read backlog, if any
 		}

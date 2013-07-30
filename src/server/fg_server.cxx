@@ -220,7 +220,7 @@ FG_SERVER::FG_SERVER
 	mT_CrossFeedSent	= 0;
 	m_TrackerConnect	= 0;
 	m_TrackerDisconnect	= 0;
-	m_TrackerPostion	= 0; // Tracker messages queued
+	m_TrackerPosition	= 0; // Tracker messages queued
 	m_Uptime		= time(0);
 	m_WantExit		= false;
 	SetLog (SG_FGMS|SG_FGTRACKER, SG_INFO);
@@ -433,7 +433,8 @@ FG_SERVER::Init
 		if (Entry.ID == FG_ListElement::NONE_EXISTANT)
 			continue;
 		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# relay " << Entry.Name
-		           << ":" << Entry.Address.getPort() );
+		           << ":" << Entry.Address.getPort()
+			   << " (" << Entry.Address.getHost() << ")");
 	}
 	//////////////////////////////////////////////////
 	// print list of all crossfeeds
@@ -799,6 +800,12 @@ FG_SERVER::AddRelay
 			"could not resolve '" << Server << "'");
 		return;
 	}
+	if ((B.Address.getIP() >= 0x7F000001) &&  (B.Address.getIP() <= 0x7FFFFFFF))
+	{
+		SG_LOG ( SG_FGMS, SG_ALERT,
+			"relay points back to me '" << Server << "'");
+		return;
+	}
 	m_RelayList.Lock ();
 	ItList CurrentEntry = m_RelayList.Find ( B.Address, "" );
 	m_RelayList.Unlock ();
@@ -1129,12 +1136,14 @@ FG_SERVER::DropClient
 	{
 		Origin = "LOCAL";
 	}
-	SG_LOG (SG_FGMS, SG_INFO, "TTL exceeded, dropping pilot "
-		<< CurrentPlayer->Name << "@" << Origin
-		<< " after " << time(0)-CurrentPlayer->JoinTime << " seconds."
+		/*
 		<< " Usage #packets in: " << CurrentPlayer->PktsRcvd
 		<< " out: " << CurrentPlayer->PktsSent
-		<< ". Current clients: "
+		*/
+	SG_LOG (SG_FGMS, SG_INFO, "TTL exceeded, dropping pilot "
+		<< CurrentPlayer->Name << "@" << Origin
+		<< " after " << time(0)-CurrentPlayer->JoinTime << " seconds. "
+		<< "Current clients: "
 		<< m_PlayerList.Size() << " max: " << m_NumMaxClients
 	);
 	m_PlayerList.Delete (CurrentPlayer);
@@ -1431,7 +1440,7 @@ void FG_SERVER::Show_Stats ( void )
 	           mT_NotPosData <<  " CF=" <<
 	           mT_CrossFeedSent << "/" << mT_CrossFeedFailed << " TN=" <<
 	           mT_TelnetReceived << " TC/D/P=" <<
-	           m_TrackerConnect << "/" << m_TrackerDisconnect << "/" << m_TrackerPostion
+	           m_TrackerConnect << "/" << m_TrackerDisconnect << "/" << m_TrackerPosition
 	         );
 	// restart 'since' last stat counter
 	m_PacketsReceived = m_BlackRejected = m_PacketsInvalid = 0;
@@ -2020,7 +2029,7 @@ FG_SERVER::UpdateTracker
 			Message += TimeStr;
 			// queue the message
 			m_Tracker->AddMessage (Message);
-			m_TrackerPostion++; // count a POSITION messge queued
+			m_TrackerPosition++; // count a POSITION messge queued
 		}
 		Message.erase ( 0 );
 	} // while

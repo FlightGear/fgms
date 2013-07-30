@@ -43,22 +43,32 @@ namespace LIBCLI
 //////////////////////////////////////////////////////////////////////
 //
 //////////////////////////////////////////////////////////////////////
-Client::Client ( int fd )
+Client::Client
+(
+	int fd
+)
 {
+	lines_out = 0;
+	max_screen_lines = 22;
 	if (fd == fileno ( stdin ))
 	{	// setup terminal attributes
 		m_socket = 0;
 		#ifndef _MSC_VER
-		struct termios NewModes;
-	        setbuf ( stdin, ( char* ) 0 );
-	        (void) tcgetattr (fileno (stdin), &OldModes);
-	        NewModes = OldModes;
-	        NewModes.c_lflag &= ~ ( ICANON );
-	        NewModes.c_lflag &= ~ ( ECHO | ECHOE | ECHOK );
-	        NewModes.c_lflag |= ECHONL;
-	        NewModes.c_cc[VMIN]  = 0;
-	        NewModes.c_cc[VTIME] = 1;
-	        ( void ) tcsetattr ( fileno ( stdin ), TCSANOW, &NewModes );
+			struct termios NewModes;
+			setbuf ( stdin, ( char* ) 0 );
+			(void) tcgetattr (fileno (stdin), &OldModes);
+			NewModes = OldModes;
+			NewModes.c_lflag &= ~ ( ICANON );
+			NewModes.c_lflag &= ~ ( ECHO | ECHOE | ECHOK );
+			NewModes.c_lflag |= ECHONL;
+			NewModes.c_cc[VMIN]  = 0;
+			NewModes.c_cc[VTIME] = 1;
+			( void ) tcsetattr ( fileno ( stdin ), TCSANOW, &NewModes );
+		#else
+			AllocConsole();
+			freopen ( "conin$", "r", stdin );
+			freopen ( "conout$", "w", stdout );
+			freopen ( "conout$", "w", stderr );
 		#endif
 	}
 	else
@@ -78,7 +88,8 @@ Client::Client ( int fd )
 //////////////////////////////////////////////////////////////////////
 //
 //////////////////////////////////////////////////////////////////////
-Client::~Client ()
+Client::~Client
+()
 {
 	if (m_socket == 0)
 	{	// restore terminal attributes
@@ -101,7 +112,10 @@ Client::~Client ()
 //	return <0:	error
 //////////////////////////////////////////////////////////////////////
 int
-Client::wait_for_input ( int seconds )
+Client::wait_for_input
+(
+	int seconds
+)
 {
 #ifdef _MSC_VER
 	if (m_socket != 0)
@@ -133,7 +147,10 @@ Client::wait_for_input ( int seconds )
 //
 //////////////////////////////////////////////////////////////////////
 int
-Client::read_char ( unsigned char& c )
+Client::read_char
+(
+	unsigned char& c
+)
 {
 	if (m_socket != 0)
 	{
@@ -148,7 +165,10 @@ Client::read_char ( unsigned char& c )
 //
 //////////////////////////////////////////////////////////////////////
 void
-Client::put_char ( const char& c )
+Client::put_char
+(
+	const char& c
+)
 {
 	if (m_socket != 0)
 	{
@@ -167,7 +187,10 @@ Client::put_char ( const char& c )
 //
 //////////////////////////////////////////////////////////////////////
 Client&
-Client::operator << ( Client& (*f) (Client&) )
+Client::operator <<
+(
+	Client& (*f) (Client&)
+)
 {
 	return ((*f)(*this));
 } // operator << ( Client& (*f) )
@@ -176,7 +199,10 @@ Client::operator << ( Client& (*f) (Client&) )
 //////////////////////////////////////////////////////////////////////
 //
 //////////////////////////////////////////////////////////////////////
-Client& commit ( Client& out )
+Client& commit
+(
+	Client& out
+)
 {
 	if (out.m_socket != 0)
 	{
@@ -197,9 +223,13 @@ Client& commit ( Client& out )
 //////////////////////////////////////////////////////////////////////
 //
 //////////////////////////////////////////////////////////////////////
-Client& CRLF ( Client& out )
+Client& CRLF
+(
+	Client& out
+)
 {
 	out.m_output << "\r\n";
+	out.lines_out++;
 	return commit (out);
 } // CRLF()
 //////////////////////////////////////////////////////////////////////

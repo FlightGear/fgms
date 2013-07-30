@@ -44,7 +44,7 @@ using namespace std;
 class FG_CLI : public CLI
 {
 public:
-	FG_CLI ( FG_SERVER*  fgms );
+	FG_CLI ( FG_SERVER*  fgms, int fd);
 private:
 	void setup ();
 	//////////////////////////////////////////////////

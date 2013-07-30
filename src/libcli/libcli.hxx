@@ -21,6 +21,7 @@
 #define __LIBCLI_H__
 
 #include <string>
+#include <map>
 #include <stdarg.h>
 #ifndef _MSC_VER
 	#include <termios.h>
@@ -36,15 +37,8 @@ namespace LIBCLI
 class CLI
 {
 public:
-
-	class unp
-	{
-	public:
-		char* username;
-		char* password;
-		unp* next;
-	};
-
+	typedef std::map<string,string> unp;
+	typedef std::map<string,string>::iterator unp_it;
 	typedef int (*c_auth_func) ( const string& , const string& );
 	typedef int (CLI::*cpp_auth_func) ( const string&, const string& );
 	typedef int (*c_enable_func) ( const string& );
@@ -62,10 +56,7 @@ public:
 	int     mode;
 	int     state;
 	Client  client;
-	/* internal buffers */
-	char*   buffer;
-	unsigned buf_size;
-	unp*    users;
+	unp	users;
 	Command<CLI>*   commands;
 	filter_t*   filters;
 
@@ -87,9 +78,9 @@ public:
 	void    set_auth_callback ( cpp_auth_func callback );
 	void    set_enable_callback ( c_enable_func callback );
 	void    set_enable_callback ( cpp_enable_func callback );
-	void    allow_user ( const char* username, const char* password );
+	void    allow_user ( const string& username, const string& password );
 	void    allow_enable ( const string& password );
-	void    deny_user ( char* username );
+	void    deny_user ( const string& username );
 	void    set_banner ( const string& banner );
 	void    set_hostname ( const string& hostname );
 	void    set_prompt ( const string& prompt );
@@ -133,7 +124,7 @@ protected:
 	void	handle_telnet_option ();
 	int	get_input ( unsigned char& c );
 	void	check_enable ( const char* pass );
-	void	check_user_auth ( char* username, char* password );
+	void	check_user_auth ( const string& username, const string& password );
 	void	delete_backwards ( const unsigned char c );
 	void	prompt_user ();
 	void	redraw_line ();
@@ -149,16 +140,15 @@ protected:
 	void	jump_end_of_line ();
 	bool	append ( const unsigned char& c );
 	void	insert ( const unsigned char& c );
+	bool	check_pager ();
 	unsigned char	map_esc ();
 	// Variables
 	bool	from_socket;
 	int	my_sock;
-	size_t	lines_out;
-	size_t	max_screen_lines;
 	int	length;		// length of current input line
 	int	cursor;		// cursor position within input line
 	char*	cmd;		// content of current input line
-	char*	username;	// login name of user
+	string	username;	// login name of user
 #ifndef _MSC_VER
 	struct termios  OldModes;
 #endif

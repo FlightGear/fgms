@@ -20,7 +20,6 @@
 #endif
 
 #include <exception>
-#include <iomanip>
 #include <stdio.h>
 #include <errno.h>
 #include <stdarg.h>
@@ -125,46 +124,18 @@ CLI::set_enable_callback
 void
 CLI::allow_user
 (
-        const char* username,
-        const char* password
+        const string& username,
+        const string& password
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	unp* u, *n;
-	if ( ! ( n = ( unp* ) malloc ( sizeof ( unp ) ) ) )
+	unp_it u = users.find (username);
+	if (u != users.end())
 	{
-		cerr << "Couldn't allocate memory for user: " << strerror ( errno ) << std::endl;
+		cerr << "user '" << username << "' already exists!" << endl;
 		return;
 	}
-	if ( ! ( n->username = strdup ( username ) ) )
-	{
-		cerr << "Couldn't allocate memory for username: " << strerror ( errno ) << endl;
-		free_z ( n );
-		return;
-	}
-	if ( ! ( n->password = strdup ( password ) ) )
-	{
-		cerr << "Couldn't allocate memory for password: " << strerror ( errno ) << endl;
-		free_z ( n->username );
-		free_z ( n );
-		return;
-	}
-	n->next = NULL;
-	if ( ! this->users )
-	{
-		this->users = n;
-	}
-	else
-	{
-		for ( u = this->users; u && u->next; u = u->next )
-		{
-			/* intentionally empty */
-		}
-		if ( u )
-		{
-			u->next = n;
-		}
-	}
+	users[username] = password;
 }
 
 void
@@ -180,34 +151,16 @@ CLI::allow_enable
 void
 CLI::deny_user
 (
-        char* username
+        const string& username
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	unp* u, *p = NULL;
-	if ( ! this->users )
-	{
+	if (users.empty())
 		return;
-	}
-	for ( u = this->users; u; u = u->next )
-	{
-		if ( strcmp ( username, u->username ) == 0 )
-		{
-			if ( p )
-			{
-				p->next = u->next;
-			}
-			else
-			{
-				this->users = u->next;
-			}
-			free_z ( u->username );
-			free_z ( u->password );
-			free_z ( u );
-			break;
-		}
-		p = u;
-	}
+	unp_it u = users.find (username);
+	if (u == users.end())
+		return;
+	users.erase (u);
 }
 
 void
@@ -626,8 +579,6 @@ CLI::CLI
 	length	= 0;
 	cursor	= 0;
 	cmd	= 0;
-	this->buffer		= 0;
-	this->users		= 0;
 	this->commands		= 0;
 	this->filters		= 0;
 	this->auth_callback	= 0;
@@ -636,41 +587,33 @@ CLI::CLI
 	this->enable_callback	= 0;
 	this->cpp_enable_callback	= 0;
 	this->from_socket	= false;
-	this->lines_out		= 0;
-	this->max_screen_lines	= 22;
 	int i;
 	for ( i = 0; i < MAX_HISTORY; i++ )
 	{
 		this->history[i] = 0;
 	}
-	this->buf_size = 1024;
-	if ( ! ( this->buffer = ( char* ) calloc ( this->buf_size, 1 ) ) )
-	{
-		throw mem_error ();
-	}
-
 	register_command ( new Command<CLI> (
 	                           this,
 	                           "help",
 	                           & CLI::internal_help,
 	                           LIBCLI::UNPRIVILEGED,
 	                           LIBCLI::MODE_ANY,
-	                           "show available commands"
+	                           "Description of the interactive help system"
 	                   ) );
 	register_command ( new Command<CLI> (
 	                           this,
 	                           "whoami",
 	                           & CLI::internal_whoami,
 	                           LIBCLI::UNPRIVILEGED,
-	                           LIBCLI::MODE_ANY,
-	                           "show who you are"
+	                           LIBCLI::MODE_EXEC,
+	                           "Show who you are"
 	                   ) );
 	register_command ( new Command<CLI> (
 	                           this,
 	                           "quit",
 	                           & CLI::internal_quit,
 	                           LIBCLI::UNPRIVILEGED,
-	                           LIBCLI::MODE_ANY,
+	                           LIBCLI::MODE_EXEC,
 	                           "Disconnect"
 	                   ) );
 	register_command ( new Command<CLI> (
@@ -686,7 +629,7 @@ CLI::CLI
 	                           "history",
 	                           & CLI::internal_history,
 	                           LIBCLI::UNPRIVILEGED,
-	                           LIBCLI::MODE_ANY,
+	                           LIBCLI::MODE_EXEC,
 	                           "Show a list of previously run commands"
 	                   ) );
 	register_command ( new Command<CLI> (
@@ -729,26 +672,9 @@ CLI::CLI
 CLI::~CLI
 ()
 {
-	unp* u = this->users, *n;
+	users.clear();
 	free_history();
-	// Free all users
-	while ( u )
-	{
-		if ( u->username )
-		{
-			free_z ( u->username );
-		}
-		if ( u->password )
-		{
-			free_z ( u->password );
-		}
-		n = u->next;
-		free_z ( u );
-		u = n;
-	}
-	/* free all commands */
 	unregister_all ( 0 );
-	free_z ( this->buffer );
 }
 
 void
@@ -978,6 +904,7 @@ CLI::find_command
 			&& this->privilege >= c->privilege
 			&& ( c->mode == this->mode || c->mode == MODE_ANY ) )
 			{
+				
 				client << "  "
 				  << left << setfill(' ') << setw(20)
 				  << c->command
@@ -1432,7 +1359,7 @@ CLI::show_prompt
 	{
 		client << modestring << commit;
 	}
-	this->lines_out = 0;
+	client.lines_out = 0;
 	client << prompt << commit;
 }
 
@@ -1562,8 +1489,8 @@ CLI::check_enable ( const char* pass )
 void
 CLI::check_user_auth
 (
-	char* username,
-	char* password
+	const string& username,
+	const string& password
 )
 {
 	/* require password */
@@ -1584,14 +1511,11 @@ CLI::check_user_auth
 	}
 	if ( ! allowed )
 	{
-		unp* u;
-		for ( u = this->users; u; u = u->next )
+		unp_it u = users.find (username);
+		if (u != users.end())
 		{
-			if ( !strcmp ( u->username, username ) && pass_matches ( u->password, password ) )
-			{
+			if (pass_matches (u->second, password))
 				allowed++;
-				break;
-			}
 		}
 	}
 	if ( allowed )
@@ -2032,7 +1956,7 @@ CLI::loop
 	set_privilege ( LIBCLI::UNPRIVILEGED );
 	set_configmode ( LIBCLI::MODE_EXEC, "" );
 	/* no auth required? */
-	if ( !this->users && !this->auth_callback && !this->cpp_auth_callback )
+	if ( users.empty() && !this->auth_callback && !this->cpp_auth_callback )
 	{
 		this->state = STATE_NORMAL;
 	}
@@ -2147,11 +2071,7 @@ CLI::loop
 				continue;
 			}
 			/* require login */
-			free_z ( username );
-			if ( ! ( username = strdup ( cmd ) ) )
-			{
-				return 0;
-			}
+			username = cmd;
 			this->state = STATE_PASSWORD;
 			showprompt = true;
 		}
@@ -2192,7 +2112,6 @@ CLI::loop
 			cursor = 0;
 		}
 	}
-	free_z ( username );
 	free_z ( cmd );
 	return LIBCLI::OK;
 }
@@ -2266,13 +2185,13 @@ CLI::pager
 		client.read_char (c);
 		if (c == 'q')
 		{
-			this->lines_out = 0;
+			client.lines_out = 0;
 			client.put_char ('\r');
 			return 1;
 		}
 		if (c == ' ')
 		{
-			this->lines_out = 0;
+			client.lines_out = 0;
 			done = true;
 		}
 		if ((c == '\r') || (c == '\n'))
@@ -2281,6 +2200,22 @@ CLI::pager
 		}
 	}
 	client.put_char ('\r');
+	return 0;
+}
+
+bool
+CLI::check_pager
+()
+{
+	// ask for a key after 20 lines of output
+	// FIXME: make this configurable
+	if (client.lines_out > client.max_screen_lines)
+	{
+		if (pager ())
+		{
+			return 1;
+		}
+	}
 	return 0;
 }
 
@@ -2302,17 +2237,7 @@ CLI::print
 	vsprintf (buf, format, ap);
 	va_end ( ap );
 	client << buf << CRLF;
-	lines_out++;
-	// ask for a key after 20 lines of output
-	// FIXME: make this configurable
-	if (this->lines_out > this->max_screen_lines)
-	{
-		if (pager ())
-		{
-			return 1;
-		}
-	}
-	return 0;
+	return check_pager();
 }
 
 int
