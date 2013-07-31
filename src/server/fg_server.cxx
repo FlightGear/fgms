@@ -696,7 +696,7 @@ FG_SERVER::AddBadClient
 	NewPlayer.HasErrors     = true;
 	NewPlayer.Error         = ErrorMsg;
 	SG_LOG ( SG_FGMS, SG_WARN, "FG_SERVER::AddBadClient() - " << ErrorMsg );
-	m_PlayerList.Add (NewPlayer, 0);
+	m_PlayerList.Add (NewPlayer, m_PlayerExpires);
 } // FG_SERVER::AddBadClient ()
 
 //////////////////////////////////////////////////////////////////////
@@ -2015,7 +2015,7 @@ FG_SERVER::UpdateTracker
 		CurrentPlayer = m_PlayerList[i];
 		if (CurrentPlayer.ID == FG_ListElement::NONE_EXISTANT)
 			continue;
-		if ( CurrentPlayer.IsLocal )
+		if ((CurrentPlayer.IsLocal) && (CurrentPlayer.HasErrors == false))
 		{
 			sgCartToGeod ( CurrentPlayer.LastPos, PlayerPosGeod );
 			Message =  "POSITION ";
