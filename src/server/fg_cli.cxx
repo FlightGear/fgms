@@ -1353,6 +1353,7 @@ FG_CLI::cmd_tracker_show
 	}
 	client << "last seen " << timestamp_to_days (fgms->m_Tracker->LastSeen) << " ago, ";
 	client << "last sent " << timestamp_to_days (fgms->m_Tracker->LastSent) << " ago" << CRLF;
+	client << "I had " << fgms->m_Tracker->LostConnections << " lost connections" << CRLF;
 	client << CRLF;
 	client << "Counters:" << CRLF;
 	client << "  sent    : " << fgms->m_Tracker->PktsSent << " packets";

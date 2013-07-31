@@ -110,14 +110,26 @@ FG_TRACKER::ReadQueue ()
 	if (! queue_file)
 		return;
 	string line;
+	int    line_number = 0;
 	while ( getline (queue_file, line, '\n') )
 	{
+		line_number++;
+		pthread_mutex_lock ( &msg_mutex );	 // set the lock
+		msg_queue.push_back ( line ); // queue the message
+		pthread_mutex_unlock ( &msg_mutex );	 // give up the lock
+		#if 0	
 		if (TrackerWrite (line) < 0)
 		{
+			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::FG_TRACKER: "
+				<< "lost connection while sending queue after " << line_number
+				<< " entries"
+			);
 			m_connected = false;
 			queue_file.close();
 			return;
 		}
+		TrackerRead ();
+		#endif
 	}
 	queue_file.close();
 	remove ("queue_file");
@@ -131,7 +143,7 @@ FG_TRACKER::WriteQueue ()
 	VI CurrentMessage;
 	ofstream queue_file;
 
-	pthread_mutex_lock ( &msg_mutex ); // give up the lock
+	pthread_mutex_lock ( &msg_mutex ); // set the lock
 	if (msg_queue.size() == 0)
 	{
 		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
@@ -150,7 +162,7 @@ FG_TRACKER::WriteQueue ()
 		queue_file << (*CurrentMessage) << endl;
 		CurrentMessage++;
 	}
-	pthread_mutex_unlock ( &msg_mutex ); // give up the lock
+	pthread_mutex_unlock ( &msg_mutex ); // set the lock
 	queue_file.close ();
 }
 //////////////////////////////////////////////////////////////////////
@@ -188,6 +200,7 @@ FG_TRACKER::AddMessage
 )
 {
 	pthread_mutex_lock ( &msg_mutex ); // acquire the lock 
+	#if 0
 	if (msg_queue.size () > 512)
 	{
 		TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER queue full, writeing backlog...");
@@ -195,9 +208,10 @@ FG_TRACKER::AddMessage
 		WriteQueue ();
 		msg_queue.clear();
 	}
+	#endif
 	msg_queue.push_back ( message.c_str() ); // queue the message
-	pthread_cond_signal ( &condition_var ); // wake up the worker
-	pthread_mutex_unlock ( &msg_mutex ); // give up the lock
+	pthread_cond_signal ( &condition_var );  // wake up the worker
+	pthread_mutex_unlock ( &msg_mutex );	 // give up the lock
 } // FG_TRACKER::AddMessage()
 //////////////////////////////////////////////////////////////////////
 
@@ -207,7 +221,23 @@ FG_TRACKER::TrackerWrite (const string& str)
 {
 	size_t l   = str.size() + 1;
 	LastSent   = time(0);
-	size_t s   = m_TrackerSocket->send (str.c_str(), l, MSG_NOSIGNAL);
+	errno      = 0;
+	size_t s   = -1;
+	while (s < 0)
+	{
+		s = m_TrackerSocket->send (str.c_str(), l, MSG_NOSIGNAL);
+		if (s < 0)
+		{
+			if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR))
+				continue;
+			m_connected = false;
+			LostConnections++;
+			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyToServer: "
+				<< "lost connection to server"
+			);
+			return -1;
+		}
+	}
 	BytesSent += s;
 	PktsSent++;
 	return s;
@@ -230,11 +260,6 @@ FG_TRACKER::ReplyToServer (const string& str)
 		reply = "PONG STATUS OK";
 		if (TrackerWrite (reply) < 0)
 		{
-			m_connected = false;
-			LostConnections++;
-			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyToServer: "
-				<< "lost connection to server"
-			);
 			return;
 		}
 		TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::ReplyToServer: "
@@ -249,6 +274,35 @@ FG_TRACKER::ReplyToServer (const string& str)
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+void
+FG_TRACKER::TrackerRead ()
+{
+	char	res[MSGMAXLINE];	/*Msg from/to server*/
+	errno = 0;
+	int i = m_TrackerSocket->recv (res, MSGMAXLINE, MSG_NOSIGNAL);
+	if (i <= 0)
+	{	// error
+		if ((errno != EAGAIN) && (errno != EWOULDBLOCK) && (errno != EINTR))
+		{
+			m_connected = false;
+			LostConnections++;
+			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyToServer: "
+				<< "lost connection to server"
+			);
+		}
+	}
+	else
+	{	// something received from tracker server
+		res[i]='\0';
+		LastSeen = time (0);
+		PktsRcvd++;
+		BytesRcvd += i;
+		ReplyToServer (res);
+	}
+}
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
 /**
  * @brief Send the messages to the tracker server
  */
@@ -256,10 +310,8 @@ int
 FG_TRACKER::Loop ()
 {
 	VI	CurrentMessage;
-	int 	i=0;
 	size_t	length;
 	string	Msg;
-	char	res[MSGMAXLINE];	/*Msg from/to server*/
 
 	pthread_mutex_init ( &msg_mutex, 0 ); 
 	pthread_cond_init  ( &condition_var, 0 ); 
@@ -312,37 +364,12 @@ FG_TRACKER::Loop ()
 			);
 			if ( TrackerWrite (Msg) < 0 )
 			{
-				TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
-					<< "Can't write to server..."
-				);
-				LostConnections++;
-				m_connected = false;
 				AddMessage (Msg);	// requeue message
 				length = 0;
 				continue;
 			}
 			Msg = "";
-			errno = 0;
-			i = m_TrackerSocket->recv (res, MSGMAXLINE, MSG_NOSIGNAL);
-			if (i <= 0)
-			{	// error
-				if ((errno != EAGAIN) && (errno != EWOULDBLOCK) && (errno != EINTR))
-				{
-					m_connected = false;
-					LostConnections++;
-					TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyToServer: "
-						<< "lost connection to server"
-					);
-				}
-			}
-			else
-			{	// something received from tracker server
-				res[i]='\0';
-				LastSeen = time (0);
-				PktsRcvd++;
-				BytesRcvd += i;
-				ReplyToServer (res);
-			}
+			TrackerRead ();
 		}
 	}
 	return ( 0 );

@@ -78,6 +78,7 @@ public:
 	int	GetTrackerPort () { return m_TrackerPort; };
 	void	Disconnect ();
 	int	TrackerWrite (const string& str);
+	void	TrackerRead ();
 	void	ReplyToServer (const string& str);
 	void	WriteQueue ();
 	void	ReadQueue ();
