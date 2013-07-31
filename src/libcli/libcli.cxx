@@ -1892,6 +1892,7 @@ CLI::append
 	{
 		length++;
 		cursor++;
+		cmd[cursor] = 0;
 		return true;
 	}
 	client.put_char ('\a');
@@ -1926,6 +1927,7 @@ CLI::insert
 			client.put_char ('\b');
 		}
 		length++;
+		cmd[length] = 0;
 	}
 	else
 	{
