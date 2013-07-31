@@ -1,14 +1,8 @@
+I moved the list of known bugs to sourceforge:
 
-1) kill -HUP <pid> does not reload the config file.
+https://sourceforge.net/p/fgms/bugs/?source=navbar
 
-That's a bit complicated to implement. FGMS must store the name of the
-config file and the values of all command line arguments. After a SIGHUP,
-reload config file, apply the switch values and reinitialise fgms. The
-configfile parser must be moved to fg_server.
+If you find a yet unknown bug, please report it there. Note however that I
+have disabled anonymous posts (I want to know who is writing ;), so you
+have to register first.
 
-2) strange behavior if 'localhost' is configured as a relay
-
-If you run a second instance of fgms on the same host and configure it as a
-relay of the first instance, the first instance also receives the sent
-packets and thinks it has a new user, adding him to the list. Could not
-find out why.

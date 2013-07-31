@@ -173,6 +173,7 @@ ProcessConfig ( const string& ConfigName )
 		return ( false );
 	}
 	cout << "processing " << ConfigName << endl;
+	Servant.ConfigFile =  ConfigName;
 	Val = Config.Get ( "server.name" );
 	if ( Val != "" )
 	{
@@ -569,10 +570,22 @@ ReadConfigs ( bool ReInit = false )
 void SigHUPHandler ( int SigType )
 {
 	Servant.PrepareInit();
-	if ( !ReadConfigs ( true ) )
+	bHadConfig = false;
+	if (Servant.ConfigFile == "")
 	{
-		SG_LOG ( SG_SYSTEMS, SG_ALERT, "received HUP signal, but read config file failed!" );
-		exit ( 1 );
+		if ( !ReadConfigs ( true ) )
+		{
+			SG_LOG ( SG_SYSTEMS, SG_ALERT, "received HUP signal, but read config file failed!" );
+			exit ( 1 );
+		}
+	}
+	else
+	{
+		if ( ProcessConfig ( Servant.ConfigFile ) == false )
+		{
+			SG_LOG ( SG_SYSTEMS, SG_ALERT, "received HUP signal, but read config file failed!" );
+			exit ( 1 );
+		}
 	}
 	if ( Servant.Init () != 0 )
 	{
