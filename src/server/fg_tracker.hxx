@@ -60,8 +60,6 @@ public:
 	//  public methods
 	//
 	//////////////////////////////////////////////////
-	int	InitTracker ();
-	int	TcpConnect (char *server_address, int server_port);
 	int	Loop ();
 	void	AddMessage ( const string & message );
 	

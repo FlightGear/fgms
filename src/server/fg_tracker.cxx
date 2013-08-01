@@ -133,31 +133,6 @@ FG_TRACKER::WriteQueue ()
 }
 //////////////////////////////////////////////////////////////////////
 
-void* func_Tracker ( void* vp )
-{
-	FG_TRACKER* pt = ( FG_TRACKER* ) vp;
-	pt->Loop();
-	return ( ( void* ) 0xdead );
-}
-
-//////////////////////////////////////////////////////////////////////
-/**
- * @brief  Initialize the tracker as a new process
- * @param pPIDS -- to do --
- */
-int
-FG_TRACKER::InitTracker ()
-{
-	pthread_t thread;
-	if ( pthread_create ( &thread, NULL, func_Tracker, ( void* ) this ) )
-	{
-		TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::InitTracker: can't create thread..." );
-		return 1;
-	}
-	return ( 0 );
-} // InitTracker ()
-//////////////////////////////////////////////////////////////////////
-
 //////////////////////////////////////////////////////////////////////
 void
 FG_TRACKER::AddMessage
@@ -324,7 +299,6 @@ FG_TRACKER::Loop ()
 	size_t	length;
 	string	Msg;
 	int	MsgCounter;
-	pthread_detach ( pthread_self() );
 	pthread_mutex_init ( &msg_mutex, 0 );
 	pthread_cond_init  ( &condition_var, 0 );
 	length = 0;

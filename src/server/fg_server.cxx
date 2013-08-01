@@ -238,6 +238,43 @@ FG_SERVER::~FG_SERVER
 	Done();
 } // FG_SERVER::~FG_SERVER()
 
+static void*
+telnet_helper
+(
+        void* context
+)
+{
+	pthread_detach ( pthread_self() );
+	st_telnet* t = reinterpret_cast<st_telnet*> ( context );
+	FG_SERVER* tmp_server = t->Instance;
+	tmp_server->HandleTelnet ( t->Fd );
+	delete t;
+	return 0;
+}
+
+void*
+admin_helper
+(
+        void* context
+)
+{
+	st_telnet* t = reinterpret_cast<st_telnet*> ( context );
+	FG_SERVER* tmp_server = t->Instance;
+	pthread_detach ( pthread_self() );
+	tmp_server->HandleAdmin ( t->Fd );
+	delete t;
+	return 0;
+}
+
+void* detach_tracker ( void* vp )
+{
+	FG_TRACKER* pt = reinterpret_cast<FG_TRACKER*> (vp);
+	pthread_detach ( pthread_self() );
+	pt->Loop();
+	delete pt;
+	return ( ( void* ) 0xdead );
+}
+
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief Basic initialization
@@ -404,6 +441,10 @@ FG_SERVER::Init
 	}
 	if (( m_IsTracked ) && (m_Tracker != 0))
 	{
+		pthread_t th;
+		pthread_create ( &th, NULL, &detach_tracker, m_Tracker );
+#if 0
+
 		if ( m_Tracker->InitTracker () )
 		{
 			SG_CONSOLE ( SG_FGMS, SG_ALERT, "# InitTracker FAILED! Disabling tracker!" );
@@ -411,11 +452,12 @@ FG_SERVER::Init
 		}
 		else
 		{
+#endif
 		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# tracked to "
 			   << m_Tracker->GetTrackerServer ()
 			   << ":" << m_Tracker->GetTrackerPort ()
 			   << ", using a thread." );
-		}
+//		}
 	}
 	else
 	{
@@ -467,6 +509,11 @@ FG_SERVER::PrepareInit
 	if ( ! m_IsParent )
 		return;
 	SG_LOG ( SG_FGMS, SG_ALERT, "# caught SIGHUP, doing reinit!" );
+	if (( m_IsTracked ) && (m_Tracker != 0))
+	{
+		m_IsTracked = false;
+		delete m_Tracker;
+	}
 	// release all locks
 	m_PlayerList.Unlock ();
 	m_RelayList.Unlock ();
@@ -480,34 +527,6 @@ FG_SERVER::PrepareInit
 	CloseTracker ();
 } // FG_SERVER::PrepareInit ()
 //////////////////////////////////////////////////////////////////////
-
-static void*
-telnet_helper
-(
-        void* context
-)
-{
-	pthread_detach ( pthread_self() );
-	st_telnet* t = reinterpret_cast<st_telnet*> ( context );
-	FG_SERVER* tmp_server = t->Instance;
-	tmp_server->HandleTelnet ( t->Fd );
-	delete t;
-	return 0;
-}
-
-void*
-admin_helper
-(
-        void* context
-)
-{
-	st_telnet* t = reinterpret_cast<st_telnet*> ( context );
-	FG_SERVER* tmp_server = t->Instance;
-	pthread_detach ( pthread_self() );
-	tmp_server->HandleAdmin ( t->Fd );
-	delete t;
-	return 0;
-}
 
 //////////////////////////////////////////////////////////////////////
 /**

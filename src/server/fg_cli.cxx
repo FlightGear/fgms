@@ -321,31 +321,24 @@ FG_CLI::cmd_show_stats
 		<< CRLF; if (check_pager()) return 0;
 	client << "Receive counters:" << CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
+		<< "errors:"
 		<< "invalid packets:" << fgms->m_PacketsInvalid
+		<< " rejected:" << fgms->m_BlackRejected
+		<< " unknown relay:" << fgms->m_UnknownRelay
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
-		<< "rejected:" << fgms->m_BlackRejected
-		<< CRLF; if (check_pager()) return 0;
-	client << "  " << left << setfill(' ') << setw(22)
-		<< "unknown relay:" << fgms->m_UnknownRelay
-		<< CRLF; if (check_pager()) return 0;
-	client << "  " << left << setfill(' ') << setw(22)
+		<< "valid data:"
 		<< "pos data:" << fgms->m_PositionData
+		<< " other:" << fgms->m_NotPosData
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
-		<< "other data:" << fgms->m_NotPosData
+		<< "tracker:"
+		<< "connects:" << fgms->m_TrackerConnect
+		<< " disconnects:" << fgms->m_TrackerDisconnect
+		<< " positions:" << fgms->m_TrackerPosition
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "admin connections:" << fgms->m_AdminReceived
-		<< CRLF; if (check_pager()) return 0;
-	client << "  " << left << setfill(' ') << setw(22)
-		<< "tracker connections:" << fgms->m_TrackerConnect
-		<< CRLF; if (check_pager()) return 0;
-	client << "  " << left << setfill(' ') << setw(22)
-		<< "tracker disconnects:" << fgms->m_TrackerDisconnect
-		<< CRLF; if (check_pager()) return 0;
-	client << "  " << left << setfill(' ') << setw(22)
-		<< "tracker positions:" << fgms->m_TrackerPosition
 		<< CRLF; if (check_pager()) return 0;
 	float telnet_per_second;
 	if (fgms->m_TelnetReceived)
