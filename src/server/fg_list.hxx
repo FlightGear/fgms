@@ -20,15 +20,11 @@
 // Copyright (C) 2005-2013  Oliver Schroeder
 //
 
-//////////////////////////////////////////////////////////////////////
-/** 
- * @class FG_ListElement
- * @brief Represent a Player
- * 
- * * Player objects are stored in the FG_SERVER::mT_PlayerList
- * * They are created and added in FG_SERVER::AddClient
- * * They are dropped with FG_SERVER::DropClient after expiry time
- * * Clients are added even if they have bad data, see FG_SERVER::AddBadClient
+/**
+ * @file fg_list.hxx
+ * @author Oliver Schroeder
+ *
+ * Implementation of a thread-safe list.
  */
 
 #if !defined FG_LIST_HXX
@@ -41,6 +37,13 @@
 #include <fg_geometry.hxx>
 #include <fg_common.hxx>
 
+
+//////////////////////////////////////////////////////////////////////
+/** 
+ * @class FG_ListElement
+ * @brief Represent a generic list element
+ * 
+ */
 class FG_ListElement
 {
 public:
@@ -58,7 +61,7 @@ public:
 	string		Name;
 	/** @brief The network address of this element */
 	netAddress	Address;
-	/** @brief The time this player joined the sessin in utc */
+	/** @brief The time this entry was added to the list */
 	time_t		JoinTime;
 	/** @brief timestamp of last seen packet from this element */
 	time_t		LastSeen;
@@ -86,7 +89,7 @@ protected:
  * @class FG_Player
  * @brief Represent a Player
  * 
- * Player objects are stored in the FG_SERVER::mT_PlayerList
+ * Player objects are stored in the FG_SERVER::m_PlayerList
  * They are created and added in FG_SERVER::AddClient
  * They are dropped with FG_SERVER::DropClient after expiry time
  * Clients are added even if they have bad data, see FG_SERVER::AddBadClient
@@ -107,7 +110,7 @@ public:
 	Point3D	LastOrientation;
 	/** @brief \b true is this client is directly connected to this \ref fgms instance */
 	bool	IsLocal;
-	/** @brief The last error message is any 
+	/** @brief in case of errors the reason is stored here 
 	 * @see FG_SERVER::AddBadClient
 	 */
 	string	Error;    // in case of errors
@@ -115,7 +118,9 @@ public:
 	 * @see FG_SERVER::AddBadClient
 	 */
 	bool	HasErrors;
+	/** when did we sent updates of this player to inactive relays */
 	time_t	LastRelayedToInactive;
+	/** \b true if we need to send updates to inactive relays */
 	bool	DoUpdate;
 	FG_Player ();
 	FG_Player ( const string& Name );
@@ -127,28 +132,51 @@ private:
 	void assign ( const FG_Player& P );
 }; // FG_Player
 
+/** 
+ * @class mT_FG_List
+ * @brief a generic list implementation for fgms
+ * 
+ */
 template <class T>
 class mT_FG_List
 {
 public:
 	typedef vector<T> ListElements;
 	typedef typename vector<T>::iterator ListIterator;
+	/** constructor, must supply a Name */
 	mT_FG_List   ( const string& Name );
 	~mT_FG_List  ();
+	/** return the number of elements in this list */
 	size_t Size  ();
+	/** delete all elements of this list */
 	void   Clear ();
+	/** add an element to this list */
 	size_t Add   ( T& Element, time_t TTL );
+	/** delete an element of this list */
 	ListIterator Delete	( const ListIterator& Element );
+	/** find an element by its IP address */
 	ListIterator Find	( const netAddress& Address, const string& Name = "" );
-	ListIterator FindByID( size_t ID );
+	/** find an element by its Name */
+	ListIterator FindByName	( const string& Name = "" );
+	/** find an element by its ID */
+	ListIterator FindByID	( size_t ID );
+	/** return an iterator of the first element */
 	ListIterator Begin	();
+	/** iterator of the end of the list */
 	ListIterator End	();
+	/** update sent counter of an element and of the list */
 	void UpdateSent ( ListIterator& Element, size_t bytes );
+	/** update receive counter of an element and of the list */
 	void UpdateRcvd ( ListIterator& Element, size_t bytes );
+	/** update sent counter of the list */
 	void UpdateSent ( size_t bytes );
+	/** update receive counter of the list */
 	void UpdateRcvd ( size_t bytes );
+	/** thread lock the list */
 	void Lock();
+	/** thread unlock the list */
 	void Unlock();
+	/** return a copy of an element at position x (thread safe) */
 	T operator []( const size_t& Index );
 	/** @brief maximum entries this list ever had */
 	size_t		MaxID;
@@ -160,14 +188,16 @@ public:
 	uint64_t	BytesRcvd;  
 	/** @brief Count of bytes sent to client */
 	uint64_t	BytesSent;        
+	/** the name (or description) of this element */
 	string		Name;
 private:
 	/** @brief mutex for thread safty */
 	pthread_mutex_t   m_ListMutex;
 	/** @brief timestamp of last cleanup */
 	time_t	LastRun;
-	/** not defined */
+	/** do not allow standard constructor */
 	mT_FG_List ();
+	/** the actual storage of elements */
 	ListElements	Elements;
 };
 
@@ -177,6 +207,10 @@ typedef vector<FG_ListElement>::iterator	ItList;
 typedef vector<FG_Player>::iterator		PlayerIt;
 
 //////////////////////////////////////////////////////////////////////
+/**
+ *
+ * construct an element and initialise counters
+ */
 template <class T>
 mT_FG_List<T>::mT_FG_List
 (
@@ -202,20 +236,30 @@ mT_FG_List<T>::~mT_FG_List
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+/** NOT thread safe
+ *
+ * Return the number of elements of this list.
+ * If working with threads make sure to * use Lock() and Unlock()
+ * @see Lock()
+ * @see Unlock()
+ */
 template <class T>
 size_t
 mT_FG_List<T>::Size
 ()
 {
-	int size;
-//	pthread_mutex_lock   ( & m_ListMutex );
-	size = Elements.size ();
-//	pthread_mutex_unlock ( & m_ListMutex );
-	return size;
+	return Elements.size ();
 }
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+/** thread safe
+ *
+ * Add an element to the list
+ * @param Element the FG_ListElement to add
+ * @param TTL automatic expiry of the element (time-to-live)
+ * @see Find()
+ */
 template <class T>
 size_t
 mT_FG_List<T>::Add
@@ -227,14 +271,19 @@ mT_FG_List<T>::Add
 	this->MaxID++;
 	Element.ID	= this->MaxID;
 	Element.Timeout	= TTL;
-	pthread_mutex_lock ( & m_ListMutex );
-	Elements.push_back ( Element );
+	pthread_mutex_lock   ( & m_ListMutex );
+	Elements.push_back   ( Element );
 	pthread_mutex_unlock ( & m_ListMutex );
-	return this->MaxID++;
+	return this->MaxID;
 }
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+/** thread safe
+ *
+ * Delete an entry from the list
+ * @param Element iterator pointing to the element to delete
+ */
 template <class T>
 typename vector<T>::iterator
 mT_FG_List<T>::Delete
@@ -251,6 +300,16 @@ mT_FG_List<T>::Delete
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+/** NOT thread safe
+ *
+ * Find an element by IP-address (and optionally Name). Automatically
+ * removes entries which TTL is expired, with the exception of the 'users'
+ * list which entries are deleted in FG_SERVER::HandlePacket()
+ * @param Address IP address of the element
+ * @param Name The name (or description) of the element
+ * @return iterator pointing to the found element, or End() if element
+ *         could not be found
+ */
 template <class T>
 typename vector<T>::iterator
 mT_FG_List<T>::Find
@@ -309,6 +368,47 @@ mT_FG_List<T>::Find
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+/** NOT thread safe
+ *
+ * Find an element by Name.
+ * @param Name The name (or description) of the element
+ * @return iterator pointing to the found element, or End() if element
+ *         could not be found
+ */
+template <class T>
+typename vector<T>::iterator
+mT_FG_List<T>::FindByName
+(
+	const string& Name
+)
+{
+	ListIterator Element;
+	ListIterator RetElem;
+
+	this->LastRun = time (0);
+	RetElem = Elements.end();
+	Element = Elements.begin();
+	while (Element != Elements.end())
+	{
+		if (Element->Name == Name)
+		{
+			Element->LastSeen = this->LastRun;
+			return Element;
+		}
+		Element++;
+	}
+	return RetElem;
+}
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/** NOT thread safe
+ *
+ * Find an element by ID.
+ * @param ID The ID of the element
+ * @return iterator pointing to the found element, or End() if element
+ *         could not be found
+ */
 template <class T>
 typename vector<T>::iterator
 mT_FG_List<T>::FindByID
@@ -335,6 +435,14 @@ mT_FG_List<T>::FindByID
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+/** NOT thread safe
+ *
+ * In general iterators are not thread safe. If you use them you have
+ * to ensure propper locking youself!
+ *
+ * @return the first element of the list. If the list is empty this
+ *         equals End()
+ */
 template <class T>
 typename vector<T>::iterator
 mT_FG_List<T>::Begin
@@ -345,6 +453,10 @@ mT_FG_List<T>::Begin
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+/**
+ *
+ * @return the end of the list (which is not a valid entry!) 
+ */
 template <class T>
 typename vector<T>::iterator
 mT_FG_List<T>::End
@@ -355,6 +467,12 @@ mT_FG_List<T>::End
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+/**
+ *
+ * Set a mutex lock on the list, so concurrent operations are blocked
+ * until the lock is released.
+ * @see Unlock()
+ */
 template <class T>
 void
 mT_FG_List<T>::Lock
@@ -365,6 +483,10 @@ mT_FG_List<T>::Lock
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+/**
+ *
+ * Release a mutex lock
+ */
 template <class T>
 void
 mT_FG_List<T>::Unlock
@@ -375,6 +497,14 @@ mT_FG_List<T>::Unlock
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+/** thread safe
+ *
+ * Use this for element access whenever possible. However, if you 
+ * need to modify the element you have to use iterators which are not
+ * thread safe and make sure to use Lock() and Unlock() yourself.
+ * @param Index index of the element
+ * @return a copy the the element at index Index
+ */
 template <class T>
 T
 mT_FG_List<T>::operator []
@@ -392,6 +522,14 @@ mT_FG_List<T>::operator []
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+/**
+ *
+ * Update sent-counters of the list and of an element. Every call of
+ * this method means we sent a single packet (and the packet counter
+ * is increased by 1).
+ * @param Element The element to which data was sent
+ * @param bytes The number of bytes sent
+ */
 template <class T>
 void
 mT_FG_List<T>::UpdateSent
@@ -407,6 +545,14 @@ mT_FG_List<T>::UpdateSent
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+/**
+ *
+ * Update receive-counters of the list and of an element. Every call of
+ * this method means we received a single packet (and the packet counter
+ * is increased by 1).
+ * @param Element The element from which data was received
+ * @param bytes The number of bytes received
+ */
 template <class T>
 void
 mT_FG_List<T>::UpdateRcvd
@@ -422,6 +568,13 @@ mT_FG_List<T>::UpdateRcvd
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+/**
+ *
+ * Update sent-counters of the list. Every call of
+ * this method means we sent a single packet (and the packet counter
+ * is increased by 1).
+ * @param bytes The number of bytes sent
+ */
 template <class T>
 void
 mT_FG_List<T>::UpdateSent
@@ -435,6 +588,13 @@ mT_FG_List<T>::UpdateSent
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+/**
+ *
+ * Update received-counters of the list. Every call of
+ * this method means we received a single packet (and the packet counter
+ * is increased by 1).
+ * @param bytes The number of bytes received.
+ */
 template <class T>
 void
 mT_FG_List<T>::UpdateRcvd
@@ -448,12 +608,18 @@ mT_FG_List<T>::UpdateRcvd
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+/**
+ *
+ * Delete all entries of the list.
+ */
 template <class T>
 void
 mT_FG_List<T>::Clear
 ()
 {
+	Lock ();
 	Elements.clear ();
+	Unlock ();
 }
 //////////////////////////////////////////////////////////////////////
 

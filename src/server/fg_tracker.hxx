@@ -104,6 +104,7 @@ public:
 	pthread_mutex_t msg_mutex;		/* message queue mutext */
 	pthread_cond_t  condition_var;		/* message queue condition */
 	vMSG    msg_queue;			/* the single message queue */
+	bool	WantExit;
 	//////////////////////////////////////////////////
 	//	stats
 	//////////////////////////////////////////////////

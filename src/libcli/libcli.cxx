@@ -1369,8 +1369,6 @@ CLI::map_esc
 {
 	unsigned char c;
 	client.read_char (c);
-	if (c != '[')
-		return 0;
 	client.read_char (c);
 	/* remap to readline control codes */
 	switch ( c )

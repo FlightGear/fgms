@@ -112,7 +112,7 @@ public:
 	int   AddTracker ( const string& Server, int Port, bool IsTracked );
 	void  AddBlacklist  ( const string& DottedIP, const string& Reason, time_t Timeout = 10 );
 	void  CloseTracker ();
-	int   check_keyboard();
+	int   check_files();
 	void  Show_Stats ( void );
 	void* HandleTelnet  ( int Fd );
 	void* HandleAdmin  ( int Fd );

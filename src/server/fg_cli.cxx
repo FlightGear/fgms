@@ -1351,8 +1351,19 @@ FG_CLI::cmd_tracker_show
 	{
 		client << "state: NOT connected!" << CRLF;
 	}
-	client << "last seen " << timestamp_to_days (fgms->m_Tracker->LastSeen) << " ago, ";
-	client << "last sent " << timestamp_to_days (fgms->m_Tracker->LastSent) << " ago" << CRLF;
+	string A = "NEVER";
+	if (fgms->m_Tracker->LastSeen != 0)
+	{
+		A = timestamp_to_days (fgms->m_Tracker->LastSeen);
+		A += " ago";
+	}
+	string B = "NEVER";
+	if (fgms->m_Tracker->LastSent != 0)
+	{
+		B = timestamp_to_days (fgms->m_Tracker->LastSent);
+		B += " ago";
+	}
+	client << "last seen " << A << ", last sent " << B << CRLF;
 	client << "I had " << fgms->m_Tracker->LostConnections << " lost connections" << CRLF;
 	client << CRLF;
 	client << "Counters:" << CRLF;
@@ -1361,7 +1372,7 @@ FG_CLI::cmd_tracker_show
 	client << " / " << byte_counter (fgms->m_Tracker->BytesSent);
 	client << " (" << byte_counter ((double) fgms->m_Tracker->BytesSent / difftime) << "/s)";
 	client << CRLF;
-	client << "  received: " << fgms->m_Tracker->PktsRcvd << "packets";
+	client << "  received: " << fgms->m_Tracker->PktsRcvd << " packets";
 	client << " (" << fgms->m_Tracker->PktsRcvd / difftime << "/s)";
 	client << " / " << byte_counter (fgms->m_Tracker->BytesRcvd);
 	client << " (" << byte_counter ((double) fgms->m_Tracker->BytesRcvd / difftime) << "/s)";
@@ -1673,10 +1684,11 @@ FG_CLI::cmd_user_show
 			}
 		}
 		FullName = Player.Name + string("@") + Origin;
-		client << left << setfill(' ') << setw(22)
-			<< FullName << " (ID " << Player.ID << ") entered: "
+		client << "ID " << Player.ID << ": "
+			<< FullName << " entered: "
 			<< timestamp_to_days (Player.JoinTime) << " ago"
 			<< CRLF; if (check_pager()) return 0;
+		EntriesFound++;
 		if (Brief == true)
 		{
 			continue;
@@ -1695,30 +1707,32 @@ FG_CLI::cmd_user_show
 			<< "last seen" << timestamp_to_datestr(Player.LastSeen)
 			<< CRLF; if (check_pager()) return 0;
 		client << "         " << left << setfill(' ') << setw(15)
-			<< "expires in" << expires
-			<< CRLF; if (check_pager()) return 0;
-		client << "         " << left << setfill(' ') << setw(15)
 			<< "using model" << Player.ModelName
 			<< CRLF; if (check_pager()) return 0;
 		client << "         " << left << setfill(' ') << setw(15)
 			<< "real origin" << Player.Origin
 			<< CRLF; if (check_pager()) return 0;
+		if (Player.IsLocal)
+		{
+			client << "         " << left << setfill(' ') << setw(15)
+				<< "sent" << Player.PktsSent << " packets "
+				<< "(" << Player.PktsSent / difftime << "/s)"
+				<< " / " << byte_counter (Player.BytesSent)
+				<< " (" << byte_counter ((double) Player.BytesSent / difftime) << "/s)"
+				<< CRLF; if (check_pager()) return 0;
+			client << "         " << left << setfill(' ') << setw(15)
+				<< "rcvd" << Player.PktsRcvd << " packets "
+				<< "(" << Player.PktsRcvd / difftime << "/s)"
+				<< " / " << byte_counter (Player.BytesRcvd)
+				<< " (" << byte_counter ((double) Player.BytesRcvd / difftime) << "/s)"
+				<< CRLF; if (check_pager()) return 0;
+		}
 		client << "         " << left << setfill(' ') << setw(15)
-			<< "sent" << Player.PktsSent << " packets "
-			<< "(" << Player.PktsSent / difftime << "/s)"
-			<< " / " << byte_counter (Player.BytesSent)
-			<< " (" << byte_counter ((double) Player.BytesSent / difftime) << "/s)"
-			<< CRLF; if (check_pager()) return 0;
-		client << "         " << left << setfill(' ') << setw(15)
-			<< "rcvd" << Player.PktsRcvd << " packets "
-			<< "(" << Player.PktsRcvd / difftime << "/s)"
-			<< " / " << byte_counter (Player.BytesRcvd)
-			<< " (" << byte_counter ((double) Player.BytesRcvd / difftime) << "/s)"
+			<< "expires in" << expires
 			<< CRLF; if (check_pager()) return 0;
 		client << "         " << left << setfill(' ') << setw(15)
 			<< "inactive" << now - Player.LastRelayedToInactive
 			<< CRLF; if (check_pager()) return 0;
-		EntriesFound++;
 	}
 	difftime = now - fgms->m_Uptime;
 	client << CRLF;

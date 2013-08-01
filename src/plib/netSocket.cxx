@@ -336,7 +336,7 @@ int netSocket::write_str ( const char* str, int len )
 
 	while (left > 0)
 	{
-		written = ::send (handle, p, left, 0);
+		written = ::send (handle, p, left, MSG_NOSIGNAL);
 		if (written == SOCKET_ERROR)
 		{
 			if (RECOVERABLE_ERROR)

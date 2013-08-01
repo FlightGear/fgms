@@ -402,7 +402,7 @@ FG_SERVER::Init
 	{
 		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# I am a HUB Server" );
 	}
-	if ( m_IsTracked )
+	if (( m_IsTracked ) && (m_Tracker != 0))
 	{
 		if ( m_Tracker->InitTracker () )
 		{
@@ -464,11 +464,20 @@ void
 FG_SERVER::PrepareInit
 ()
 {
+	if ( ! m_IsParent )
+		return;
 	SG_LOG ( SG_FGMS, SG_ALERT, "# caught SIGHUP, doing reinit!" );
+	// release all locks
+	m_PlayerList.Unlock ();
+	m_RelayList.Unlock ();
+	m_CrossfeedList.Unlock ();
+	m_BlackList.Unlock ();
+	// and clear all but the player list
 	m_RelayList.Clear ();
 	m_BlackList.Clear ();
 	m_CrossfeedList.Clear ();
 	m_RelayMap.clear ();	// clear(): is a std::map (NOT a FG_List)
+	CloseTracker ();
 } // FG_SERVER::PrepareInit ()
 //////////////////////////////////////////////////////////////////////
 
@@ -771,7 +780,7 @@ FG_SERVER::AddClient
 		}
 	}
 	SG_LOG ( SG_FGMS, SG_INFO, Message
-	         << NewPlayer.Name << " "
+	         << NewPlayer.Name << "@"
 	         << Origin << ":" << Sender.getPort()
 	         << " (" << NewPlayer.ModelName << ")"
 	         << " current clients: "
@@ -788,23 +797,23 @@ FG_SERVER::AddClient
 void
 FG_SERVER::AddRelay
 (
-        const string& Server,
+        const string& Relay,
         int Port
 )
 {
-	FG_ListElement  B (Server);
+	FG_ListElement  B (Relay);
 
-	B.Address.set ( ( char* ) Server.c_str(), Port );
+	B.Address.set ( ( char* ) Relay.c_str(), Port );
 	if (B.Address.getIP() == 0)
 	{
 		SG_LOG ( SG_FGMS, SG_ALERT,
-			"could not resolve '" << Server << "'");
+			"could not resolve '" << Relay << "'");
 		return;
 	}
 	if ((B.Address.getIP() >= 0x7F000001) &&  (B.Address.getIP() <= 0x7FFFFFFF))
 	{
 		SG_LOG ( SG_FGMS, SG_ALERT,
-			"relay points back to me '" << Server << "'");
+			"relay points back to me '" << Relay << "'");
 		return;
 	}
 	m_RelayList.Lock ();
@@ -813,26 +822,26 @@ FG_SERVER::AddRelay
 	if ( CurrentEntry == m_RelayList.End() )
 	{	
 		m_RelayList.Add (B, 0);
-	}
-	string S;
-	if (B.Address.getHost() == Server)
-	{
-		S = Server;
-	}
-	else
-	{
-		unsigned I;
-		I = Server.find ( "." );
-		if ( I != string::npos )
+		string S;
+		if (B.Address.getHost() == Relay)
 		{
-			S = Server.substr ( 0, I );
+			S = Relay;
 		}
 		else
 		{
-			S = Server;
+			unsigned I;
+			I = Relay.find ( "." );
+			if ( I != string::npos )
+			{
+				S = Relay.substr ( 0, I );
+			}
+			else
+			{
+				S = Relay;
+			}
 		}
+		m_RelayMap[B.Address.getIP()] = S;
 	}
-	m_RelayMap[B.Address.getIP()] = S;
 } // FG_SERVER::AddRelay()
 
 //////////////////////////////////////////////////////////////////////
@@ -882,11 +891,8 @@ FG_SERVER::AddTracker
         bool IsTracked
 )
 {
+	CloseTracker();
 	m_IsTracked = IsTracked;
-	if ( m_Tracker )
-	{
-		delete m_Tracker;
-	}
 	m_Tracker = new FG_TRACKER ( Port, Server, 0 );
 	return ( SUCCESS );
 } // FG_SERVER::AddTracker()
@@ -960,7 +966,7 @@ bool
 FG_SERVER::PacketIsValid
 (
         int        Bytes,
-        T_MsgHdr*   MsgHdr,
+        T_MsgHdr*  MsgHdr,
         const netAddress& SenderAddress
 )
 {
@@ -975,10 +981,11 @@ FG_SERVER::PacketIsValid
 		int16_t     High;
 		int16_t     Low;
 	} converter;
-	Origin = SenderAddress.getHost();
+
+	Origin   = SenderAddress.getHost();
 	MsgMagic = XDR_decode<uint32_t> ( MsgHdr->Magic );
-	MsgId  = XDR_decode<uint32_t> ( MsgHdr->MsgId );
-	MsgLen = XDR_decode<uint32_t> ( MsgHdr->MsgLen );
+	MsgId    = XDR_decode<uint32_t> ( MsgHdr->MsgId );
+	MsgLen   = XDR_decode<uint32_t> ( MsgHdr->MsgLen );
 	if ( Bytes < ( int ) sizeof ( MsgHdr ) )
 	{
 		ErrorMsg  = SenderAddress.getHost();
@@ -1094,9 +1101,9 @@ FG_SERVER::SendToRelays
 	while ( CurrentRelay != m_RelayList.End() )
 	{
 
-		if ( SendingPlayer.DoUpdate || IsInRange ( *CurrentRelay, SendingPlayer ) )
+		if ( CurrentRelay->Address.getIP() != SendingPlayer.Address.getIP() )
 		{
-			if ( CurrentRelay->Address.getIP() != SendingPlayer.Address.getIP() )
+			if ( SendingPlayer.DoUpdate || IsInRange ( *CurrentRelay, SendingPlayer ) )
 			{
 				m_DataSocket->sendto ( Msg, Bytes, 0, &CurrentRelay->Address );
 				m_RelayList.UpdateSent (CurrentRelay, Bytes);
@@ -1137,10 +1144,6 @@ FG_SERVER::DropClient
 	{
 		Origin = "LOCAL";
 	}
-		/*
-		<< " Usage #packets in: " << CurrentPlayer->PktsRcvd
-		<< " out: " << CurrentPlayer->PktsSent
-		*/
 	SG_LOG (SG_FGMS, SG_INFO, "TTL exceeded, dropping pilot "
 		<< CurrentPlayer->Name << "@" << Origin
 		<< " after " << time(0)-CurrentPlayer->JoinTime << " seconds. "
@@ -1255,7 +1258,7 @@ FG_SERVER::HandlePacket
 	//
 	//////////////////////////////////////////////////
 	m_PlayerList.Lock();
-	CurrentPlayer = m_PlayerList.Find ( SenderAddress, MsgHdr->Name );
+	CurrentPlayer = m_PlayerList.FindByName ( MsgHdr->Name );
 	m_PlayerList.Unlock();
 	if (CurrentPlayer == m_PlayerList.End () )
 	{
@@ -1266,6 +1269,19 @@ FG_SERVER::HandlePacket
 			return;
 		}
 		AddClient ( SenderAddress, Msg );
+	}
+	else
+	{
+		if ( CurrentPlayer->Address != SenderAddress )
+		{
+			bool l = true;
+			if ( MsgMagic == RELAY_MAGIC ) // not a local client
+				l = false;
+			string s = MsgHdr->Name;
+			s += " user is already known from different source";
+			AddBadClient (SenderAddress, s, l);
+			return;
+		}
 	}
 	//////////////////////////////////////////
 	//
@@ -1321,10 +1337,6 @@ FG_SERVER::HandlePacket
 			{
 				CurrentPlayer->LastRelayedToInactive = Now;
 			}
-			else
-			{
-				CurrentPlayer->DoUpdate = false;
-			}
 			SendingPlayer = *CurrentPlayer;
 			CurrentPlayer++;
 			continue; // don't send packet back to sender
@@ -1344,8 +1356,7 @@ FG_SERVER::HandlePacket
 		//      chat messages anyway
 		//      FIXME: MAGIC = SFGF!
 		//////////////////////////////////////////////////
-		if ( ( strncasecmp ( MsgHdr->Name, "obs", 3 ) == 0 )
-		&&   ( MsgId != CHAT_MSG_ID ) )
+		if ( strncasecmp ( MsgHdr->Name, "obs", 3 ) == 0 )
 		{
 			return;
 		}
@@ -1451,10 +1462,10 @@ void FG_SERVER::Show_Stats ( void )
 }
 
 /**
- * @brief Check Keyboard ?
+ * @brief Check stats file etc
  */
 int
-FG_SERVER::check_keyboard
+FG_SERVER::check_files
 ()
 {
 	struct stat buf;
@@ -1496,37 +1507,6 @@ FG_SERVER::check_keyboard
 		}
 		Show_Stats();
 	}
-#ifdef _MSC_VER
-	if ( _kbhit() )
-	{
-		int ch = _getch ();
-		if ( ch == 0x1b )
-		{
-			Show_Stats();   // show stats beofre exit
-			printf ( "Got ESC key to exit...\n" );
-			return 1;
-		}
-		else if ( ( ch == 'R' ) || ( ch == 'r' ) )
-		{
-			printf ( "Got 'R' - Reset key...\n" );
-			m_Initialized	= true; // Init() will do it
-			m_ReinitData	= true; // init the data port
-			m_ReinitTelnet	= true; // init the telnet port
-			m_ReinitAdmin	= true; // init the admin port
-			m_Listening	= false;
-			SigHUPHandler ( 0 );
-		}
-		else if ( ( ch == 'S' ) || ( ch == 's' ) )
-		{
-			printf ( "Show stats\n" );
-			Show_Stats();
-		}
-		else
-		{
-			printf ( "Got UNKNOWN keyboard! %#X - Only ESC, to exit, R/r reset, S/s stats.\n", ch );
-		}
-	}
-#endif
 	return 0;
 }
 
@@ -1556,7 +1536,6 @@ FG_SERVER::Loop
 	netSocket*  ListenSockets[3 + MAX_TELNETS];
 	time_t      LastTrackerUpdate;
 	time_t      CurrentTime;
-	PlayerIt    fg_Player;
 	LastTrackerUpdate = time ( 0 );
 	m_IsParent = true;
 	if ( m_Listening == false )
@@ -1604,7 +1583,7 @@ FG_SERVER::Loop
 				// regularly (tracker)
 				UpdateTracker ("" , "", "", LastTrackerUpdate, UPDATE );
 			}
-			if ( check_keyboard() )
+			if ( check_files() )
 			{
 				break;
 			}
@@ -1911,12 +1890,11 @@ FG_SERVER::Done
 		delete m_DataSocket;
 		m_DataSocket = 0;
 	}
-	if ( m_IsTracked )
-	{
-		delete m_Tracker;
-	}
+	CloseTracker ();
 	m_RelayList.Clear ();
 	m_BlackList.Clear ();
+	m_CrossfeedList.Clear ();
+	m_RelayMap.clear ();	// clear(): is a std::map (NOT a FG_List)
 	m_Listening = false;
 } // FG_SERVER::Done()
 //////////////////////////////////////////////////////////////////////
@@ -2050,7 +2028,7 @@ FG_SERVER::CloseTracker
 	{
 		if ( m_Tracker )
 		{
-			// delete only if enabled
+			m_Tracker->WantExit = true;
 			delete m_Tracker;
 		}
 		m_Tracker = 0;
