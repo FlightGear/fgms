@@ -45,20 +45,6 @@
 #include "daemon.hxx"
 #include <libcli/debug.hxx>
 
-logstream* fgms_logstream = NULL;
-inline logstream&
-tracklog()
-{
-	if ( fgms_logstream == NULL )
-	{
-		fgms_logstream = new logstream ( cerr );
-	}
-	return *fgms_logstream;
-}
-
-// #define TRACK_LOG(C,P,M) tracklog()   << loglevel(C,P) << tracklog().datestr() << M << std::endl
-#define TRACK_LOG(C,P,M) sglog()   << loglevel(C,P) << sglog().datestr() << M << std::endl
-
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief Initialize to standard values
@@ -71,7 +57,7 @@ FG_TRACKER::FG_TRACKER ( int port, string server, int id )
 	m_TrackerPort	= port;
 	m_TrackerServer = server;
 	m_TrackerSocket = 0;
-	TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::FG_TRACKER:"
+	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::FG_TRACKER:"
 	            << m_TrackerServer << ", Port: " << m_TrackerPort
 	          );
 	LastSeen	= 0;
@@ -127,7 +113,7 @@ FG_TRACKER::WriteQueue ()
 	queue_file.open ( "queue_file", ios::out|ios::app );
 	if ( ! queue_file )
 	{
-		TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::WriteQueue: "
+		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::WriteQueue: "
 		            << "could not open queuefile!" );
 		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
 		return;
@@ -154,7 +140,7 @@ FG_TRACKER::AddMessage
 #if 0
 	if ( msg_queue.size () > 512 )
 	{
-		TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER queue full, writeing backlog..." );
+		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER queue full, writeing backlog..." );
 		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
 		WriteQueue ();
 		msg_queue.clear();
@@ -185,7 +171,7 @@ FG_TRACKER::TrackerWrite ( const string& str )
 			}
 			m_connected = false;
 			LostConnections++;
-			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerWrite: "
+			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerWrite: "
 			            << "lost connection to server"
 			          );
 			return -1;
@@ -214,12 +200,12 @@ FG_TRACKER::ReplyToServer ( const string& str )
 		{
 			return;
 		}
-		TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::ReplyToServer: "
+		SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::ReplyToServer: "
 		            << "PING from server received"
 		          );
 		return;
 	}
-	TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyToServer: "
+	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyToServer: "
 	            << "Responce not recognized. Msg: '" << str
 	          );
 }
@@ -251,7 +237,7 @@ FG_TRACKER::ReadQueue ()
 #if 0
 		if ( TrackerWrite ( line ) < 0 )
 		{
-			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::FG_TRACKER: "
+			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::FG_TRACKER: "
 			            << "lost connection while sending queue after " << line_number
 			            << " entries"
 			          );
@@ -281,7 +267,7 @@ FG_TRACKER::TrackerRead ()
 		{
 			m_connected = false;
 			LostConnections++;
-			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerRead: "
+			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerRead: "
 			            << "lost connection to server"
 			          );
 		}
@@ -319,13 +305,13 @@ FG_TRACKER::Loop ()
 	{
 		if (! m_connected)
 		{
-			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
+			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
 			            << "trying to connect"
 			          );
 			m_connected = Connect();
 			if ( ! m_connected )
 			{
-				TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
+				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
 				            << "not connected, will slepp for 10 seconds"
 				          );
 				struct timeval now;
@@ -362,7 +348,7 @@ FG_TRACKER::Loop ()
 #ifdef ADD_TRACKER_LOG
 			write_msg_log ( Msg.c_str(), Msg.size(), ( char* ) "OUT: " );
 #endif // #ifdef ADD_TRACKER_LOG
-			TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Loop: "
+			SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Loop: "
 			            << "sending msg " << Msg.size() << "  bytes: " << Msg
 			          );
 			if ( TrackerWrite ( Msg ) < 0 )
@@ -401,11 +387,11 @@ FG_TRACKER::Connect()
 		m_TrackerSocket = 0;
 	}
 	m_TrackerSocket = new netSocket();
-	TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect: "
+	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect: "
 	            << "Server: " << m_TrackerServer << ", Port: " << m_TrackerPort );
 	if ( m_TrackerSocket->open ( true ) == false )
 	{
-		TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect: "
+		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect: "
 		            << "Can't get socket..."
 		          );
 		delete m_TrackerSocket;
@@ -414,7 +400,7 @@ FG_TRACKER::Connect()
 	}
 	if ( m_TrackerSocket->connect ( m_TrackerServer.c_str(), m_TrackerPort ) < 0 )
 	{
-		TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect: "
+		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect: "
 		            << "Connect failed!"
 		          );
 		delete m_TrackerSocket;
@@ -422,14 +408,14 @@ FG_TRACKER::Connect()
 		return false;
 	}
 	m_TrackerSocket->setBlocking ( false );
-	TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect: "
+	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect: "
 	            << "success"
 	          );
 	LastConnected	= time ( 0 );
 	m_TrackerSocket->write_char ( '\0' );
 	sleep ( 2 );
 	TrackerWrite ( "NOWAIT" );
-	TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect: "
+	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect: "
 	            << "Written 'NOWAIT'"
 	          );
 	sleep ( 1 );

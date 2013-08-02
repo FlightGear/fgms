@@ -1345,7 +1345,8 @@ FG_SERVER::HandlePacket
 		//	Drop Users if they did'nt send data
 		//	within TTL
 		//////////////////////////////////////////////////
-		if ( (Now - CurrentPlayer->LastSeen) > CurrentPlayer->Timeout )
+		if (((Now - CurrentPlayer->LastSeen) > CurrentPlayer->Timeout )
+		&&  ((Now - CurrentPlayer->JoinTime) > 30)) // give 30 seconds gracetime on startup
 		{
 			DropClient (CurrentPlayer); // ###
 			continue;
@@ -1899,9 +1900,10 @@ FG_SERVER::Done
 		m_DataSocket = 0;
 	}
 	CloseTracker ();
-	m_RelayList.Clear ();
-	m_BlackList.Clear ();
-	m_CrossfeedList.Clear ();
+	m_PlayerList.Unlock ();		m_PlayerList.Clear ();
+	m_RelayList.Unlock ();		m_RelayList.Clear ();
+	m_CrossfeedList.Unlock ();	m_CrossfeedList.Clear ();
+	m_BlackList.Unlock ();		m_BlackList.Clear ();
 	m_RelayMap.clear ();	// clear(): is a std::map (NOT a FG_List)
 	m_Listening = false;
 } // FG_SERVER::Done()
@@ -2038,7 +2040,7 @@ FG_SERVER::CloseTracker
 		{
 			m_Tracker->WantExit = true;
 			pthread_cond_signal ( &m_Tracker->condition_var );  // wake up the worker
-			int ret = pthread_join (m_Tracker->GetThreadID(), 0);
+			pthread_join (m_Tracker->GetThreadID(), 0);
 		}
 		m_Tracker = 0;
 		m_IsTracked = false;
