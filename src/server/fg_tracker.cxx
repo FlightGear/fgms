@@ -98,8 +98,18 @@ FG_TRACKER::~FG_TRACKER ()
 	{
 		m_TrackerSocket->close ();
 		delete m_TrackerSocket;
+		m_TrackerSocket = 0;
 	}
 } // ~FG_TRACKER()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+pthread_t
+FG_TRACKER::GetThreadID
+()
+{
+	return MyThreadID;
+}
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -175,7 +185,7 @@ FG_TRACKER::TrackerWrite ( const string& str )
 			}
 			m_connected = false;
 			LostConnections++;
-			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyToServer: "
+			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerWrite: "
 			            << "lost connection to server"
 			          );
 			return -1;
@@ -271,7 +281,7 @@ FG_TRACKER::TrackerRead ()
 		{
 			m_connected = false;
 			LostConnections++;
-			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyToServer: "
+			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerRead: "
 			            << "lost connection to server"
 			          );
 		}
@@ -303,10 +313,11 @@ FG_TRACKER::Loop ()
 	pthread_cond_init  ( &condition_var, 0 );
 	length = 0;
 	MsgCounter = 0;
+	MyThreadID = pthread_self();
 	/*Infinite loop*/
 	while ( ! WantExit )
 	{
-		while ( ! m_connected )
+		if (! m_connected)
 		{
 			TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
 			            << "trying to connect"
@@ -315,28 +326,32 @@ FG_TRACKER::Loop ()
 			if ( ! m_connected )
 			{
 				TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
-				            << "not connected, will slepp for 30 seconds"
+				            << "not connected, will slepp for 10 seconds"
 				          );
-				sleep ( 30 );
+				struct timeval now;
+				struct timespec timeout;
+				gettimeofday(&now, 0);
+				timeout.tv_sec  = now.tv_sec + 10;
+				timeout.tv_nsec = now.tv_usec * 1000;
+				pthread_mutex_lock ( &msg_mutex );
+				pthread_cond_timedwait ( &condition_var, &msg_mutex, &timeout );
+				pthread_mutex_unlock ( &msg_mutex );
 				continue;
 			}
 			ReadQueue (); 	// read backlog, if any
 		}
-		while ( length == 0 )
+		pthread_mutex_lock ( &msg_mutex );
+		length = msg_queue.size ();
+		pthread_mutex_unlock ( &msg_mutex );
+		if (length == 0)
 		{
+			// wait for data
 			pthread_mutex_lock ( &msg_mutex );
+			pthread_cond_wait ( &condition_var, &msg_mutex );
 			length = msg_queue.size ();
 			pthread_mutex_unlock ( &msg_mutex );
-			if ( length == 0 )
-			{
-				// wait for data
-				pthread_mutex_lock ( &msg_mutex );
-				pthread_cond_wait ( &condition_var, &msg_mutex );
-				length = msg_queue.size ();
-				pthread_mutex_unlock ( &msg_mutex );
-			}
 		}
-		while ( length )
+		while ( length && m_connected )
 		{
 			pthread_mutex_lock ( &msg_mutex );
 			CurrentMessage = msg_queue.begin(); // get first message
@@ -383,6 +398,7 @@ FG_TRACKER::Connect()
 	{
 		m_TrackerSocket->close ();
 		delete m_TrackerSocket;
+		m_TrackerSocket = 0;
 	}
 	m_TrackerSocket = new netSocket();
 	TRACK_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect: "
@@ -392,6 +408,8 @@ FG_TRACKER::Connect()
 		TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect: "
 		            << "Can't get socket..."
 		          );
+		delete m_TrackerSocket;
+		m_TrackerSocket = 0;
 		return false;
 	}
 	if ( m_TrackerSocket->connect ( m_TrackerServer.c_str(), m_TrackerPort ) < 0 )
@@ -399,6 +417,8 @@ FG_TRACKER::Connect()
 		TRACK_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect: "
 		            << "Connect failed!"
 		          );
+		delete m_TrackerSocket;
+		m_TrackerSocket = 0;
 		return false;
 	}
 	m_TrackerSocket->setBlocking ( false );
@@ -415,43 +435,6 @@ FG_TRACKER::Connect()
 	sleep ( 1 );
 	return true;
 } // Connect ()
-
-//////////////////////////////////////////////////////////////////////
-/**
- * @brief Disconnect the tracker from its server
- */
-void
-FG_TRACKER::Disconnect ()
-{
-	if ( m_TrackerSocket )
-	{
-		m_TrackerSocket->close ();
-		delete m_TrackerSocket;
-	}
-} // Disconnect ()
-//////////////////////////////////////////////////////////////////////
-
-#ifdef _MSC_VER
-#if !defined(NTDDI_VERSION) || !defined(NTDDI_VISTA) || (NTDDI_VERSION < NTDDI_VISTA)   // if less than VISTA, provide alternative
-#ifndef EAFNOSUPPORT
-#define EAFNOSUPPORT    97      /* not present in errno.h provided with VC */
-#endif
-int inet_aton ( const char* cp, struct in_addr* addr )
-{
-	addr->s_addr = inet_addr ( cp );
-	return ( addr->s_addr == INADDR_NONE ) ? -1 : 0;
-}
-int inet_pton ( int af, const char* src, void* dst )
-{
-	if ( af != AF_INET )
-	{
-		errno = EAFNOSUPPORT;
-		return -1;
-	}
-	return inet_aton ( src, ( struct in_addr* ) dst );
-}
-#endif // #if (NTDDI_VERSION < NTDDI_VISTA)
-#endif // _MSC_VER
 
 //////////////////////////////////////////////////////////////////////
 /**

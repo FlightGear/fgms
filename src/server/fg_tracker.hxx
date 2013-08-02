@@ -74,12 +74,12 @@ public:
 	 * @retval int Port Number
 	 */
 	int	GetTrackerPort () { return m_TrackerPort; };
-	void	Disconnect ();
 	int	TrackerWrite (const string& str);
 	void	TrackerRead ();
 	void	ReplyToServer (const string& str);
 	void	WriteQueue ();
 	void	ReadQueue ();
+	pthread_t GetThreadID();
 
 	//////////////////////////////////////////////////
 	//
@@ -114,6 +114,7 @@ public:
 	uint64_t	PktsSent;
 	uint64_t	PktsRcvd;
 	size_t		LostConnections;
+	pthread_t 	MyThreadID;
 };
 #endif
 

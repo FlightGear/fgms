@@ -172,7 +172,7 @@ FG_SERVER::FG_SERVER
 		int16_t     Low;
 	} converter;
 	converter*    tmp;
-	m_Initialized		= true; // Init() will do it
+	m_Initialized		= false;// Init() will do it
 	m_ReinitData		= true; // init the data port
 	m_ReinitTelnet		= true; // init the telnet port
 	m_ReinitAdmin		= true; // init the telnet port
@@ -269,7 +269,6 @@ admin_helper
 void* detach_tracker ( void* vp )
 {
 	FG_TRACKER* pt = reinterpret_cast<FG_TRACKER*> (vp);
-	pthread_detach ( pthread_self() );
 	pt->Loop();
 	delete pt;
 	return ( ( void* ) 0xdead );
@@ -298,19 +297,16 @@ FG_SERVER::Init
 		sglog().enable_with_date ( true );
 		sglog().set_output ( m_LogFile );
 	}
-	if ( m_Initialized == true )
+	if ( m_Initialized == false )
 	{
 		if ( m_Listening )
 		{
 			Done();
 		}
-		m_Initialized       = false;
+		m_Initialized       = true;
 		m_Listening         = false;
 		m_DataSocket        = 0;
 		m_NumMaxClients     = 0;
-	}
-	if ( m_ReinitData || m_ReinitTelnet || m_ReinitAdmin )
-	{
 		netInit (); // WinSocket initialisation
 	}
 	if ( m_ReinitData )
@@ -443,21 +439,11 @@ FG_SERVER::Init
 	{
 		pthread_t th;
 		pthread_create ( &th, NULL, &detach_tracker, m_Tracker );
-#if 0
-
-		if ( m_Tracker->InitTracker () )
-		{
-			SG_CONSOLE ( SG_FGMS, SG_ALERT, "# InitTracker FAILED! Disabling tracker!" );
-			m_IsTracked = false;
-		}
-		else
-		{
-#endif
 		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# tracked to "
 			   << m_Tracker->GetTrackerServer ()
 			   << ":" << m_Tracker->GetTrackerPort ()
-			   << ", using a thread." );
-//		}
+			   << ", using a thread."
+		);
 	}
 	else
 	{
@@ -509,11 +495,6 @@ FG_SERVER::PrepareInit
 	if ( ! m_IsParent )
 		return;
 	SG_LOG ( SG_FGMS, SG_ALERT, "# caught SIGHUP, doing reinit!" );
-	if (( m_IsTracked ) && (m_Tracker != 0))
-	{
-		m_IsTracked = false;
-		delete m_Tracker;
-	}
 	// release all locks
 	m_PlayerList.Unlock ();
 	m_RelayList.Unlock ();
@@ -1508,11 +1489,9 @@ FG_SERVER::check_files
 			SG_LOG ( SG_FGMS, SG_ALERT, "ERROR: Unable to delete reset file! Doing hard exit..." );
 			exit ( 1 );
 		}
-		m_Initialized	= true; // Init() will do it
 		m_ReinitData	= true; // init the data port
 		m_ReinitTelnet	= true; // init the telnet port
 		m_ReinitAdmin	= true; // init the admin port
-		m_Listening	= false;
 		SigHUPHandler ( 0 );
 	}
 	else if ( stat ( stat_file,&buf ) == 0 )
@@ -1591,6 +1570,16 @@ FG_SERVER::Loop
 	//////////////////////////////////////////////////
 	while ( m_WantExit == false )
 	{
+		if (! m_Listening )
+		{
+			cout << "bummer 1!" << endl;
+			return 1;
+		}
+		if (m_DataSocket == 0)
+		{
+			cout << "bummer 2!" << endl;
+			return 2;
+		}
 		CurrentTime = time ( 0 );
 		// Update some things every (default) 10 secondes
 		if ( ( CurrentTime - LastTrackerUpdate ) >= m_UpdateTrackerFreq )
@@ -2048,9 +2037,11 @@ FG_SERVER::CloseTracker
 		if ( m_Tracker )
 		{
 			m_Tracker->WantExit = true;
-			delete m_Tracker;
+			pthread_cond_signal ( &m_Tracker->condition_var );  // wake up the worker
+			int ret = pthread_join (m_Tracker->GetThreadID(), 0);
 		}
 		m_Tracker = 0;
+		m_IsTracked = false;
 	}
 } // CloseTracker ( )
 //////////////////////////////////////////////////////////////////////

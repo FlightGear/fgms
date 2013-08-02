@@ -240,7 +240,7 @@ logbuf::overflow ( int c )
 	}
 #else
 	if ((logging_enabled) && (console_enabled))
-		cerr << (char) c;
+		cout << (char) c;
 	return logging_enabled ? sbuf->sputc ( c ) : ( EOF == 0 ? 1: 0 );
 #endif
 }
@@ -402,10 +402,10 @@ sglog()
 # define SG_ALERT(C,P,M)
 #elif defined( __MWERKS__ )
 # define SG_LOG(C,P,M) ::sglog() << ::loglevel(C,P) << M << std::endl
-# define SG_CONSOLE(C,P,M) ::sglog() << ::loglevel((sgDebugClass) (C|SG_CONSOLE),P) << ::sglog().datestr() << M << std::endl;
+# define SG_CONSOLE(C,P,M) ::sglog() << ::loglevel((sgDebugClass) (C|SG_CONSOLE),P) << ::sglog().datestr() << M << "\r\n";
 #else
 # define SG_LOG(C,P,M) sglog()   << loglevel(C,P) << sglog().datestr() << M << std::endl
-# define SG_CONSOLE(C,P,M) sglog() << loglevel((sgDebugClass) (C|SG_CONSOLE),P) << sglog().datestr() << M << endl;
+# define SG_CONSOLE(C,P,M) sglog() << loglevel((sgDebugClass) (C|SG_CONSOLE),P) << sglog().datestr() << M << "\r\n";
 #endif
 
 #endif // _LOGSTREAM_H
