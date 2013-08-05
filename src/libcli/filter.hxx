@@ -1,4 +1,3 @@
-//                                                                                                                           
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -31,7 +30,8 @@ struct filter_cmds_t
 };
 
 class CLI;
-typedef int (CLI::*filter_callback_func) (char *cmd, void *data);
+class Client;
+typedef int (Client::*filter_callback_func) (char *cmd, void *data);
 
 class filter_t
 {
@@ -39,10 +39,9 @@ public:
 	filter_callback_func filter;
 	void *data;
 	filter_t *next;
-	int exec (CLI& Instance, char *cmd);
-	int exec (CLI& Instance, char *cmd, void *data);
+	int exec (Client& Instance, char *cmd);
+	int exec (Client& Instance, char *cmd, void *data);
 };
-
 
 }; // namespace LIBCLI
 

@@ -52,21 +52,6 @@ using namespace std;
 	CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
 #endif
 
-class match_filter_state
-{
-public:
-	int flags;
-	char* str;
-};
-
-class range_filter_state
-{
-public:
-	int matched;
-	char* from;
-	char* to;
-};
-
 filter_cmds_t filter_cmds[] =
 {
 	{ "begin",   "Begin with lines that match" },
@@ -468,6 +453,7 @@ CLI::internal_help
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
+	client << CRLF;
 	client <<
 		"Help may be requested at any point in a command by entering\r\n"
 		"a question mark '?'.  If nothing matches, the help list will\r\n"
@@ -579,8 +565,8 @@ CLI::CLI
 	length	= 0;
 	cursor	= 0;
 	cmd	= 0;
+	in_history = 0;
 	this->commands		= 0;
-	this->filters		= 0;
 	this->auth_callback	= 0;
 	this->cpp_auth_callback	= 0;
 	this->regular_callback	= 0;
@@ -733,10 +719,14 @@ CLI::add_history
 		if ( !this->history[i] )
 		{
 			if ( i == 0 || strcasecmp ( this->history[i-1], cmd ) )
+			{
 				if ( ! ( this->history[i] = strdup ( cmd ) ) )
 				{
+					in_history = i + 1;
 					return LIBCLI::ERROR_ANY;
 				}
+			}
+			in_history = i + 1;
 			return LIBCLI::OK;
 		}
 	}
@@ -748,6 +738,7 @@ CLI::add_history
 	}
 	if ( ! ( this->history[MAX_HISTORY - 1] = strdup ( cmd ) ) )
 	{
+		in_history = MAX_HISTORY;
 		return LIBCLI::ERROR_ANY;
 	}
 	return LIBCLI::OK;
@@ -840,38 +831,6 @@ CLI::parse_line
 	return nwords;
 }
 
-char*
-CLI::join_words
-(
-        int argc,
-        char** argv
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	char* p;
-	int len = 0;
-	int i;
-	for ( i = 0; i < argc; i++ )
-	{
-		if ( i )
-		{
-			len += 1;
-		}
-		len += strlen ( argv[i] );
-	}
-	p = ( char* ) malloc ( len + 1 );
-	p[0] = 0;
-	for ( i = 0; i < argc; i++ )
-	{
-		if ( i )
-		{
-			strcat ( p, " " );
-		}
-		strcat ( p, argv[i] );
-	}
-	return p;
-}
-
 int
 CLI::find_command
 (
@@ -939,14 +898,14 @@ AGAIN:
 		{
 			int rc = LIBCLI::OK;
 			int f;
-			filter_t** filt = &this->filters;
+			filter_t** filt = &client.filters;
 			// Found a word!
 			if ( ! c->children )
 			{
 				// Last word
 				if ( ! c->have_callback )
 				{
-					client << "No callback for '" << c->command << "'" << CRLF;
+					client << UNFILTERED << "No callback for '" << c->command << "'" << CRLF;
 					return LIBCLI::ERROR_ANY;
 				}
 			}
@@ -958,7 +917,7 @@ AGAIN:
 					{
 						goto CORRECT_CHECKS;
 					}
-					client << "Incomplete command" << CRLF;
+					client << UNFILTERED << "Incomplete command" << CRLF;
 					return LIBCLI::ERROR_ANY;
 				}
 				rc = find_command ( c->children, num_words, words, start_word + 1, filters );
@@ -971,7 +930,7 @@ AGAIN:
 					}
 					else
 					{
-						client << "Invalid argument '" << words[start_word + 1] << "'"
+						client << UNFILTERED << "Invalid argument '" << words[start_word + 1] << "'"
 						  << CRLF;
 					}
 				}
@@ -979,7 +938,7 @@ AGAIN:
 			}
 			if ( ! c->have_callback )
 			{
-				client << "Internal server error processing '" << c->command << "'"
+				client << UNFILTERED << "Internal server error processing '" << c->command << "'"
 				  << CRLF;
 				return LIBCLI::ERROR_ANY;
 			}
@@ -996,7 +955,7 @@ CORRECT_CHECKS:
 				}
 				if ( filters[f] == n - 1 )
 				{
-					client << "Missing filter" << CRLF;
+					client << UNFILTERED << "Missing filter" << CRLF;
 					return LIBCLI::ERROR_ANY;
 				}
 				argv = words + filters[f] + 1;
@@ -1030,27 +989,27 @@ CORRECT_CHECKS:
 				}
 				if ( argv[0][0] == 'b' && len < 3 ) // [beg]in, [bet]ween
 				{
-					client << "Ambiguous filter '" << argv[0] << "' (begin, between)" << CRLF;
+					client << UNFILTERED << "Ambiguous filter '" << argv[0] << "' (begin, between)" << CRLF;
 					return LIBCLI::ERROR_ANY;
 				}
 				*filt = ( filter_t* ) calloc ( sizeof ( filter_t ), 1 );
 				if ( !strncmp ( "include", argv[0], len )
 				||  !strncmp ( "exclude", argv[0], len ) )
 				{
-					rc = match_filter_init ( argc, argv, *filt );
+					rc = client.match_filter_init ( argc, argv, *filt );
 				}
 				else if ( !strncmp ( "begin", argv[0], len )
 				|| !strncmp ( "between", argv[0], len ) )
 				{
-					rc = range_filter_init ( argc, argv, *filt );
+					rc = client.range_filter_init ( argc, argv, *filt );
 				}
 				else if ( !strncmp ( "count", argv[0], len ) )
 				{
-					rc = count_filter_init ( argc, argv, *filt );
+					rc = client.count_filter_init ( argc, argv, *filt );
 				}
 				else
 				{
-					client << "Invalid filter '" << argv[0] << "'" << CRLF;
+					client << UNFILTERED << "Invalid filter '" << argv[0] << "'" << CRLF;
 					rc = LIBCLI::ERROR_ANY;
 				}
 				if ( rc == LIBCLI::OK )
@@ -1067,12 +1026,12 @@ CORRECT_CHECKS:
 			{
 				rc = c->exec ( c->command, words + start_word + 1, c_words - start_word - 1 );
 			}
-			while ( this->filters )
+			while ( client.filters )
 			{
-				filter_t* filt = this->filters;
+				filter_t* filt = client.filters;
 				// call one last time to clean up
-				filt->exec ( *this, NULL );
-				this->filters = filt->next;
+				filt->exec ( client, NULL );
+				client.filters = filt->next;
 				free_z ( filt );
 			}
 			return rc;
@@ -1093,7 +1052,7 @@ CORRECT_CHECKS:
 	}
 	if ( start_word == 0 )
 	{
-		client << "Invalid " << (commands->parent ? "argument" : "command")
+		client << UNFILTERED << "Invalid " << (commands->parent ? "argument" : "command")
 		  << " '" << words[start_word] << "'" << CRLF;
 	}
 	return LIBCLI::ERROR_ARG;
@@ -1757,7 +1716,6 @@ CLI::do_history
 	const unsigned char& c
 )
 {
-	static signed int in_history = 0;
 	int history_found = 0;
 	if ( this->state == STATE_PASSWORD || this->state == STATE_ENABLE_PASSWORD )
 	{
@@ -2178,7 +2136,7 @@ CLI::pager
 {
 	unsigned char c;
 	bool done = false;
-	client << "--- more ---" << commit;
+	client << UNFILTERED << "--- more ---" << commit;
 	c = ' ';
 	while ( done == false )
 	{
@@ -2195,10 +2153,15 @@ CLI::pager
 			done = true;
 		}
 		if ((c == '\r') || (c == '\n'))
-		{
+		{	// show next line and reprompt for more
+			client.lines_out--;
 			done = true;
 		}
 	}
+	#if 0
+	client.put_char ('\r');
+	client << UNFILTERED << "            " << commit;
+	#endif
 	client.put_char ('\r');
 	return 0;
 }
@@ -2238,192 +2201,6 @@ CLI::print
 	va_end ( ap );
 	client << buf << CRLF;
 	return check_pager();
-}
-
-int
-CLI::match_filter_init
-(
-        int argc,
-        char** argv,
-        filter_t* filt
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	match_filter_state* state;
-	if ( argc < 2 )
-	{
-		client << "Match filter requires an argument" << CRLF;
-		return LIBCLI::ERROR_ANY;
-	}
-	filt->filter = &CLI::match_filter;
-	state = new match_filter_state;
-	filt->data = state;
-	state->flags = MATCH_NORM;
-	if ( argv[0][0] == 'e' )
-	{
-		state->flags = MATCH_INVERT;
-	}
-	state->str = join_words ( argc-1, argv+1 );
-	return LIBCLI::OK;
-}
-
-int
-CLI::match_filter
-(
-        char* cmd,
-        void* data
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	match_filter_state* state = reinterpret_cast<match_filter_state*> ( data );
-	int r = LIBCLI::ERROR_ANY;
-	if ( !cmd ) // clean up
-	{
-		free ( state->str );
-		free ( state );
-		return LIBCLI::OK;
-	}
-	if ( strstr ( cmd, state->str ) )
-	{
-		r = LIBCLI::OK;
-	}
-	if ( state->flags & MATCH_INVERT )
-	{
-		if ( r == LIBCLI::OK )
-		{
-			r = LIBCLI::ERROR_ANY;
-		}
-		else
-		{
-			r = LIBCLI::OK;
-		}
-	}
-	return r;
-}
-
-int
-CLI::range_filter_init
-(
-        int argc,
-        char** argv,
-        filter_t* filt
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	range_filter_state* state;
-	char* from = 0;
-	char* to = 0;
-	if ( !strncmp ( argv[0], "bet", 3 ) ) // between
-	{
-		if ( argc < 3 )
-		{
-			client << "Between filter requires 2 arguments" << CRLF;
-			return LIBCLI::ERROR_ANY;
-		}
-		if ( ! ( from = strdup ( argv[1] ) ) )
-		{
-			return LIBCLI::ERROR_ANY;
-		}
-		to = join_words ( argc-2, argv+2 );
-	}
-	else // begin
-	{
-		if ( argc < 2 )
-		{
-			client << "Begin filter requires an argument" << CRLF;
-			return LIBCLI::ERROR_ANY;
-		}
-		from = join_words ( argc-1, argv+1 );
-	}
-	filt->filter = &CLI::range_filter;
-	state = new range_filter_state;
-	filt->data = state;
-	state->matched = 0;
-	state->from = from;
-	state->to = to;
-	return LIBCLI::OK;
-}
-
-int
-CLI::range_filter
-(
-        char* cmd,
-        void* data
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	range_filter_state* state = ( range_filter_state* ) data;
-	int r = LIBCLI::ERROR_ANY;
-	if ( !cmd ) // clean up
-	{
-		free_z ( state->from );
-		free_z ( state->to );
-		free_z ( state );
-		return LIBCLI::OK;
-	}
-	if ( !state->matched )
-	{
-		state->matched = !!strstr ( cmd, state->from );
-	}
-	if ( state->matched )
-	{
-		r = LIBCLI::OK;
-		if ( state->to && strstr ( cmd, state->to ) )
-		{
-			state->matched = 0;
-		}
-	}
-	return r;
-}
-
-int
-CLI::count_filter_init
-(
-        int argc,
-        UNUSED ( char** argv ),
-        filter_t* filt
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if ( argc > 1 )
-	{
-		client << "Count filter does not take arguments" << CRLF;
-		return LIBCLI::ERROR_ANY;
-	}
-	filt->filter = &CLI::count_filter;
-	filt->data = new int(0);
-	if ( ! filt->data )
-	{
-		return LIBCLI::ERROR_ANY;
-	}
-	return LIBCLI::OK;
-}
-
-int
-CLI::count_filter
-(
-        char* cmd,
-        void* data
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	int* count = ( int* ) data;
-	if ( !cmd ) // clean up
-	{
-		// print count
-		client << NumToStr (*count, 0) << CRLF;
-		free ( count );
-		return LIBCLI::OK;
-	}
-	while ( isspace ( *cmd ) )
-	{
-		cmd++;
-	}
-	if ( *cmd )
-	{
-		( *count ) ++;        // only count non-blank lines
-	}
-	return LIBCLI::ERROR_ANY; // no output
 }
 
 }; // namespace LIBCLI

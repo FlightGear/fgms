@@ -29,7 +29,6 @@
 #include "cli_client.hxx"
 #include "common.hxx"
 #include "command.hxx"
-#include "filter.hxx"
 
 namespace LIBCLI
 {
@@ -58,7 +57,7 @@ public:
 	Client  client;
 	unp	users;
 	Command<CLI>*   commands;
-	filter_t*   filters;
+	// filter_t*   filters;
 
 	int		(*regular_callback)();
 	c_auth_func	auth_callback;
@@ -92,17 +91,10 @@ public:
 	void    free_history();
 
 protected:
-	int     match_filter_init ( int argc, char** argv, filter_t* filt );
-	int     range_filter_init ( int argc, char** argv, filter_t* filt );
-	int     count_filter_init ( int argc, char** argv, filter_t* filt );
-	int     match_filter ( char* cmd, void* data );
-	int     range_filter ( char* cmd, void* data );
-	int     count_filter ( char* cmd, void* data );
 	void    free_command ( Command<CLI> *cmd );
 	int     build_shortest ( Command<CLI>* commands );
 	int     add_history ( char* cmd );
 	int     parse_line ( char* line, char* words[], int max_words );
-	char*   join_words ( int argc, char** argv );
 	int     find_command ( Command<CLI> *commands, int num_words, char* words[], int start_word, int filters[] );
 	int     get_completions ( char* command, char** completions, int max_completions );
 	void    clear_line ( char* cmd, int l, int cursor );
@@ -149,6 +141,7 @@ protected:
 	int	cursor;		// cursor position within input line
 	char*	cmd;		// content of current input line
 	string	username;	// login name of user
+	int	in_history;
 #ifndef _MSC_VER
 	struct termios  OldModes;
 #endif

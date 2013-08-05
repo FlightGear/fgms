@@ -31,7 +31,7 @@ using namespace std;
 int
 filter_t::exec
 (
-	CLI& Instance,
+	Client& Instance,
 	char *cmd
 )
 {
@@ -42,7 +42,7 @@ filter_t::exec
 int
 filter_t::exec
 (
-	CLI& Instance,
+	Client& Instance,
 	char *cmd,
 	void *data
 )

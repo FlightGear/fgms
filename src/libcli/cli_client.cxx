@@ -21,6 +21,7 @@
 #endif
 
 #include <iostream>
+#include "common.hxx"
 #include "cli_client.hxx"
 
 #ifdef _MSC_VER
@@ -49,7 +50,9 @@ Client::Client
 )
 {
 	lines_out = 0;
+	filters   = 0;
 	max_screen_lines = 22;
+	m_print_mode	 = PRINT_FILTERED;
 	if (fd == fileno ( stdin ))
 	{	// setup terminal attributes
 		m_socket = 0;
@@ -196,6 +199,224 @@ Client::operator <<
 } // operator << ( Client& (*f) )
 //////////////////////////////////////////////////////////////////////
 
+char*
+Client::join_words
+(
+	int argc,
+	char** argv
+)
+{
+	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
+	char* p;
+	int len = 0;
+	int i;  
+	for ( i = 0; i < argc; i++ )
+	{
+		if ( i )
+		{
+			len += 1;
+		}
+		len += strlen ( argv[i] );
+	}
+	p = ( char* ) malloc ( len + 1 );
+	p[0] = 0;
+	for ( i = 0; i < argc; i++ ) 
+	{
+		if ( i )
+		{
+			strcat ( p, " " );
+		}
+		strcat ( p, argv[i] );
+	}
+	return p;
+}       
+
+int
+Client::match_filter_init
+(
+	int argc,
+	char** argv,
+	filter_t* filt
+)
+{
+	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
+	match_filter_state* state;
+	if ( argc < 2 )
+	{
+		*this << UNFILTERED << "Match filter requires an argument" << CRLF;
+		return LIBCLI::ERROR_ANY;
+	}
+	filt->filter = &Client::match_filter;
+	state = new match_filter_state;
+	filt->data = state;
+	state->flags = MATCH_NORM;
+	if ( argv[0][0] == 'e' )
+	{
+		state->flags = MATCH_INVERT;
+	}
+	state->str = join_words ( argc-1, argv+1 );
+	return LIBCLI::OK;
+}
+
+int
+Client::range_filter_init
+(
+	int argc,
+	char** argv,
+	filter_t* filt
+)
+{
+	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
+	range_filter_state* state;
+	char* from = 0;
+	char* to = 0;
+	if ( !strncmp ( argv[0], "bet", 3 ) ) // between
+	{
+		if ( argc < 3 )
+		{
+			*this << UNFILTERED << "Between filter requires 2 arguments" << CRLF;
+			return LIBCLI::ERROR_ANY;
+		}
+		if ( ! ( from = strdup ( argv[1] ) ) )
+		{
+			return LIBCLI::ERROR_ANY;
+		}
+		to = join_words ( argc-2, argv+2 );
+	}
+	else // begin
+	{
+		if ( argc < 2 )
+		{
+			*this << UNFILTERED << "Begin filter requires an argument" << CRLF;
+			return LIBCLI::ERROR_ANY;
+		}
+		from = join_words ( argc-1, argv+1 );
+	}
+	filt->filter = &Client::range_filter;
+	state = new range_filter_state;
+	filt->data = state;
+	state->matched = 0;
+	state->from = from;
+	state->to = to;
+	return LIBCLI::OK;
+}
+
+int
+Client::count_filter_init
+(
+	int argc,
+	UNUSED ( char** argv ),
+	filter_t* filt
+)
+{
+	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
+	if ( argc > 1 )
+	{
+		*this << UNFILTERED << "Count filter does not take arguments" << CRLF;
+		return LIBCLI::ERROR_ANY;
+	}
+	filt->filter = &Client::count_filter;
+	filt->data = new int(0);
+	if ( ! filt->data )
+	{
+		return LIBCLI::ERROR_ANY;
+	}
+	return LIBCLI::OK;
+}
+
+int
+Client::match_filter
+(
+	char* cmd,
+	void* data
+)
+{
+	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
+	match_filter_state* state = reinterpret_cast<match_filter_state*> ( data );
+	int r = LIBCLI::ERROR_ANY;
+	if ( !cmd ) // clean up
+	{
+		free ( state->str );
+		free ( state );
+		return LIBCLI::OK;
+	}
+	if ( strstr ( cmd, state->str ) )
+	{
+		r = LIBCLI::OK;
+	}
+	if ( state->flags & MATCH_INVERT )
+	{
+		if ( r == LIBCLI::OK )
+		{
+			r = LIBCLI::ERROR_ANY;
+		}
+		else
+		{
+			r = LIBCLI::OK;
+		}
+	}
+	return r;
+}
+
+int
+Client::range_filter
+(
+	char* cmd,
+	void* data
+)
+{
+	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
+	range_filter_state* state = ( range_filter_state* ) data;
+	int r = LIBCLI::ERROR_ANY;
+	if ( !cmd ) // clean up
+	{
+		free_z ( state->from );
+		free_z ( state->to );
+		free_z ( state );
+		return LIBCLI::OK;
+	}
+	if ( !state->matched )
+	{
+		state->matched = !!strstr ( cmd, state->from );
+	}
+	if ( state->matched )
+	{
+		r = LIBCLI::OK;
+		if ( state->to && strstr ( cmd, state->to ) )
+		{
+			state->matched = 0;
+		}
+	}
+	return r;
+}
+
+int     
+Client::count_filter
+(
+	char* cmd,
+	void* data
+)
+{
+	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
+	int* count = ( int* ) data;
+	if ( !cmd ) // clean up
+	{
+		// print count
+		*this << UNFILTERED << NumToStr (*count, 0) << CRLF;
+		free ( count ); 
+	return LIBCLI::OK; 
+	}
+	while ( isspace ( *cmd ) )
+	{
+		cmd++;
+	}
+	if ( *cmd )
+	{
+		( *count ) ++;        // only count non-blank lines
+	}
+	return LIBCLI::ERROR_ANY; // no output
+}
+
 //////////////////////////////////////////////////////////////////////
 //
 //////////////////////////////////////////////////////////////////////
@@ -204,18 +425,35 @@ Client& commit
 	Client& out
 )
 {
-	if (out.m_socket != 0)
+	filter_t* f = (out.m_print_mode & PRINT_FILTERED) ? out.filters : 0;
+	bool print = true;
+
+	char* p = (char*) out.m_output.str().c_str();
+	while (print && f)
 	{
-		string s = out.m_output.str();
-		size_t l = s.size();
-		out.m_socket->send (s.c_str(), l);
+		print = ( f->exec ( out, p, f->data ) == LIBCLI::OK );
+		f = f->next;
 	}
-	else
+	if (print)
 	{
-		cout << out.m_output.str();
-		cout.flush();
+		if (out.m_socket != 0)
+		{
+			string s = out.m_output.str();
+			size_t l = s.size();
+			out.m_socket->send (s.c_str(), l);
+		}
+		else
+		{
+			cout << out.m_output.str();
+			cout.flush();
+		}
+		if (out.m_print_mode == PRINT_FILTERED)
+		{	// only count lines in filtered mode
+			out.lines_out++;
+		}
 	}
 	out.m_output.str ("");
+	out.m_print_mode = PRINT_FILTERED;
 	return out;
 } // Client& commit()
 //////////////////////////////////////////////////////////////////////
@@ -229,8 +467,21 @@ Client& CRLF
 )
 {
 	out.m_output << "\r\n";
-	out.lines_out++;
-	return commit (out);
+	commit (out);
+	return out;
+} // CRLF()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+//
+//////////////////////////////////////////////////////////////////////
+Client& UNFILTERED
+(
+	Client& out
+)
+{
+	out.m_print_mode = PRINT_PLAIN;
+	return out;
 } // CRLF()
 //////////////////////////////////////////////////////////////////////
 

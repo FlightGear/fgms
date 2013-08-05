@@ -26,13 +26,33 @@
 #ifndef _MSC_VER
 	#include <termios.h>
 #endif
+#include "common.hxx"
+#include "filter.hxx"
 
 namespace LIBCLI
 {
 
+class CLI;
+
+class match_filter_state                                                                                                     
+{       
+public: 
+	int flags;
+	char* str;
+};      
+
+class range_filter_state
+{       
+public: 
+	int matched;
+	char* from;
+	char* to;
+};      
+
 class Client
 {
 public:
+	friend CLI;
 	Client ( int fd );
 	~Client ();
 	int wait_for_input ( int seconds );	// select()
@@ -44,9 +64,19 @@ public:
 
 	friend Client& commit ( Client& );
 	friend Client& CRLF ( Client& );
+	friend Client& UNFILTERED ( Client& );
 	size_t  lines_out;
 	size_t  max_screen_lines;
+	filter_t*   filters;
 protected:
+	char*	join_words ( int argc, char** argv );
+	int     match_filter_init ( int argc, char** argv, filter_t* filt );
+	int     range_filter_init ( int argc, char** argv, filter_t* filt );
+	int     count_filter_init ( int argc, char** argv, filter_t* filt );                                                 
+	int     match_filter ( char* cmd, void* data );
+	int     range_filter ( char* cmd, void* data );
+	int     count_filter ( char* cmd, void* data );
+	PRINT_MODE		m_print_mode;
 	netSocket*		m_socket;
 	std::ostringstream	m_output;
 	#ifndef _MSC_VER
@@ -67,8 +97,8 @@ Client& Client::operator << ( T v )
 
 Client& commit ( Client& );
 Client& CRLF ( Client& out );
+Client& UNFILTERED ( Client& out );
 
 }; // namespace LIBCLI
-
 
 #endif
