@@ -677,7 +677,8 @@ FG_SERVER::AddBadClient
 (
         const netAddress& Sender,
         string&	ErrorMsg,
-        bool	IsLocal
+        bool	IsLocal,
+	int	Bytes
 )
 {
 	string		Message;
@@ -690,7 +691,8 @@ FG_SERVER::AddBadClient
 	CurrentPlayer = m_PlayerList.Find (Sender);
 	if ( CurrentPlayer != m_PlayerList.End () )
 	{
-		CurrentPlayer->LastSeen = time ( 0 );
+		CurrentPlayer->UpdateRcvd (Bytes);
+		m_PlayerList.UpdateRcvd (Bytes);
 		m_PlayerList.Unlock();
 		return;
 	}
@@ -705,8 +707,10 @@ FG_SERVER::AddBadClient
 	NewPlayer.IsLocal       = IsLocal;
 	NewPlayer.HasErrors     = true;
 	NewPlayer.Error         = ErrorMsg;
+	NewPlayer.UpdateRcvd (Bytes);
 	SG_LOG ( SG_FGMS, SG_WARN, "FG_SERVER::AddBadClient() - " << ErrorMsg );
 	m_PlayerList.Add (NewPlayer, m_PlayerExpires);
+	m_PlayerList.UpdateRcvd (Bytes);
 } // FG_SERVER::AddBadClient ()
 
 //////////////////////////////////////////////////////////////////////
@@ -990,7 +994,7 @@ FG_SERVER::PacketIsValid
 	{
 		ErrorMsg  = SenderAddress.getHost();
 		ErrorMsg += " packet size is too small!";
-		AddBadClient ( SenderAddress, ErrorMsg, true );
+		AddBadClient ( SenderAddress, ErrorMsg, true, Bytes );
 		return ( false );
 	}
 	if ( ( MsgMagic != MSG_MAGIC ) && ( MsgMagic != RELAY_MAGIC ) )
@@ -1001,7 +1005,7 @@ FG_SERVER::PacketIsValid
 		ErrorMsg  = Origin;
 		ErrorMsg += " BAD magic number: ";
 		ErrorMsg += m;
-		AddBadClient ( SenderAddress, ErrorMsg, true );
+		AddBadClient ( SenderAddress, ErrorMsg, true, Bytes );
 		return ( false );
 	}
 	if ( XDR_decode<uint32_t> ( MsgHdr->Version ) != PROTO_VER )
@@ -1017,7 +1021,7 @@ FG_SERVER::PacketIsValid
 		tmp = ( converter* ) ( & MsgHdr->Version );
 		ErrorMsg += NumToStr ( tmp->Low, 0 );
 		ErrorMsg += "." + NumToStr ( tmp->High, 0 );
-		AddBadClient ( SenderAddress, ErrorMsg, true );
+		AddBadClient ( SenderAddress, ErrorMsg, true, Bytes );
 		return ( false );
 	}
 	if ( MsgId == POS_DATA_ID )
@@ -1029,7 +1033,7 @@ FG_SERVER::PacketIsValid
 			ErrorMsg += "should be ";
 			ErrorMsg += NumToStr ( sizeof ( T_MsgHdr ) +sizeof ( T_PositionMsg ) );
 			ErrorMsg += " is: " + NumToStr ( MsgHdr->MsgLen );
-			AddBadClient ( SenderAddress, ErrorMsg, true );
+			AddBadClient ( SenderAddress, ErrorMsg, true, Bytes );
 			return ( false );
 		}
 	}
@@ -1274,12 +1278,16 @@ FG_SERVER::HandlePacket
 	{
 		if ( CurrentPlayer->Address != SenderAddress )
 		{
-			bool l = true;
+			#if 0
 			if ( MsgMagic == RELAY_MAGIC ) // not a local client
-				l = false;
+				return;	// silently ignore
+		cout  << CurrentPlayer->Name << " " << CurrentPlayer->IsLocal << " " << CurrentPlayer->Address.getHost()
+			<< " == " << MsgHdr->Name << " " << " " << SenderAddress.getHost() << endl;
+
 			string s = MsgHdr->Name;
 			s += " user is already known from different source";
-			AddBadClient (SenderAddress, s, l);
+			AddBadClient (SenderAddress, s, true, Bytes);
+			#endif
 			return;
 		}
 	}

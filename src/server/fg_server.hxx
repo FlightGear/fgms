@@ -200,7 +200,7 @@ protected:
 	//////////////////////////////////////////////////
 	void  AddClient     ( const netAddress& Sender, char* Msg );
 	void  AddBadClient  ( const netAddress& Sender, string& ErrorMsg,
-	                      bool IsLocal );
+	                      bool IsLocal, int Bytes );
 	bool  IsKnownRelay ( const netAddress& SenderAddress, size_t Bytes );
 	bool  PacketIsValid ( int Bytes, T_MsgHdr* MsgHdr,
 	                      const netAddress& SenderAddress );

@@ -612,10 +612,10 @@ FG_CLI::cmd_blacklist_show
 	if (EntriesFound)
 	{
 		client << "Total rcvd: "
-			<< fgms->m_BlackList.PktsSent << " packets"
-			<< " (" << fgms->m_BlackList.PktsSent / difftime << "/s)"
-			<< " / " << byte_counter (fgms->m_BlackList.BytesSent)
-			<< " (" << byte_counter ((double) (fgms->m_BlackList.BytesSent/difftime)) << "/s)"
+			<< fgms->m_BlackList.PktsRcvd << " packets"
+			<< " (" << fgms->m_BlackList.PktsRcvd / difftime << "/s)"
+			<< " / " << byte_counter (fgms->m_BlackList.BytesRcvd)
+			<< " (" << byte_counter ((double) (fgms->m_BlackList.BytesRcvd/difftime)) << "/s)"
 			<< CRLF; if (check_pager()) return 0;
 	}
 	return 0;
@@ -1146,6 +1146,7 @@ FG_CLI::cmd_relay_show
 	netAddress	Address ("0.0.0.0", 0);
 	bool		Brief = false;
 	size_t		EntriesFound = 0;
+	string		Name;
 	for (int i=0; i < argc; i++)
 	{
 		ID  = StrToNum<size_t> ( argv[0], ID_invalid );
@@ -1163,6 +1164,8 @@ FG_CLI::cmd_relay_show
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "IP" << "show entry with IP-address" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
+					<< "NAME" << "show user with NAME" << CRLF;
+				client << "  " << left << setfill(' ') << setw(22)
 					<< "<cr>" << "show log listing" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "|" << "output modifier" << CRLF;
@@ -1177,8 +1180,11 @@ FG_CLI::cmd_relay_show
 				Address.set (argv[0], 0);
 				if (Address.getIP() == 0)
 				{
-					client << "% invalid IP address" << CRLF;
-					return (1);
+					Name = argv[0];
+#if 0
+			//		client << "% invalid IP address" << CRLF;
+			//		return (1);
+#endif
 				}
 			}
 			break;
@@ -1225,6 +1231,11 @@ FG_CLI::cmd_relay_show
 		else if (ID)
 		{
 			if (Entry.ID != ID)
+				continue;
+		}
+		else if (Name != "")
+		{
+			if (Entry.Name.find(Name) == string::npos)
 				continue;
 		}
 		EntriesFound++;
@@ -1656,7 +1667,7 @@ FG_CLI::cmd_user_show
 		}
 		else if (Name != "")
 		{
-			if (Player.Name != Name)
+			if (Player.Name.find(Name) == string::npos)
 				continue;
 		}
 		sgCartToGeod ( Player.LastPos, PlayerPosGeod );
