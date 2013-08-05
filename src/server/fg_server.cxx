@@ -1150,7 +1150,7 @@ FG_SERVER::DropClient
 		<< "Current clients: "
 		<< m_PlayerList.Size() << " max: " << m_NumMaxClients
 	);
-	m_PlayerList.Delete (CurrentPlayer);
+	CurrentPlayer = m_PlayerList.Delete (CurrentPlayer);
 } // FG_SERVER::DropClient()
 //////////////////////////////////////////////////////////////////////
 
