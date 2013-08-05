@@ -1303,7 +1303,14 @@ FG_SERVER::HandlePacket
 		//////////////////////////////////////////////////
 		if ( CurrentPlayer->HasErrors )
 		{
-			CurrentPlayer++;
+			if ((Now - CurrentPlayer->LastSeen) > CurrentPlayer->Timeout )
+			{
+				DropClient (CurrentPlayer); 
+			}
+			else
+			{
+				CurrentPlayer++;
+			}
 			continue;
 		}
 		//////////////////////////////////////////////////
