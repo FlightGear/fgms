@@ -52,7 +52,7 @@ public:
 class Client
 {
 public:
-	friend CLI;
+	friend class CLI;
 	Client ( int fd );
 	~Client ();
 	int wait_for_input ( int seconds );	// select()
