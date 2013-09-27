@@ -1618,9 +1618,16 @@ FG_SERVER::Loop
 		ListenSockets[2] = m_AdminSocket;
 		ListenSockets[3] = 0;
 		Bytes = m_DataSocket->select ( ListenSockets, 0, m_PlayerExpires );
-		if ( Bytes <= 0 )
-		{
+		if ( Bytes < 0 )
+		{	// error
 			continue;
+		}
+		else if (Bytes == 0)
+		{	// timeout
+			m_PlayerList.CheckTTL ();
+			m_BlackList.CheckTTL ();
+			m_RelayList.CheckTTL ();
+			m_CrossfeedList.CheckTTL ();
 		}
 		if ( ListenSockets[0] > 0 )
 		{

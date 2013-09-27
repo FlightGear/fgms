@@ -176,6 +176,8 @@ public:
 	void Lock();
 	/** thread unlock the list */
 	void Unlock();
+	/** Check if TTL of entries is expired and remove those from list */
+	void CheckTTL ();
 	/** return a copy of an element at position x (thread safe) */
 	T operator []( const size_t& Index );
 	/** @brief maximum entries this list ever had */
@@ -492,6 +494,44 @@ void
 mT_FG_List<T>::Unlock
 ()
 {
+	pthread_mutex_unlock ( & m_ListMutex );
+}
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/** thread safe
+ *
+ * Check entries for expired TTL. All expired entries are removed
+ * from the list.
+ */
+template <class T>
+void
+mT_FG_List<T>::CheckTTL
+()
+{
+	pthread_mutex_lock ( & m_ListMutex );
+	ListIterator Element;
+	this->LastRun = time (0);
+	Element = Elements.begin();
+	while (Element != Elements.end())
+	{
+		if (Element->Timeout == 0)
+		{	// never timeouts
+			continue;
+		}
+		if ( (this->LastRun - Element->LastSeen) > Element->Timeout )
+		{
+			SG_LOG ( SG_FGMS, SG_INFO,
+			  this->Name << ": TTL exceeded for "
+			  << Element->Name << " "
+			  << Element->Address.getHost() << " "
+			  << "after " << diff_to_days (Element->LastSeen - Element->JoinTime)
+			  );
+			Element = Elements.erase (Element);
+			continue;
+		}
+
+	}
 	pthread_mutex_unlock ( & m_ListMutex );
 }
 //////////////////////////////////////////////////////////////////////
