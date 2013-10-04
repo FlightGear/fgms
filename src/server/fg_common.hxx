@@ -31,9 +31,6 @@
 	#include <unistd.h>
 	#include <sys/ipc.h>
 	#include <sys/msg.h>
-	#ifndef MSG_NOSIGNAL
-		#define MSG_NOSIGNAL 0
-	#endif
 #endif // !_MSC_VER
 
 #ifdef HAVE_SYS_SELECT_H
@@ -79,6 +76,10 @@
 #ifdef  HAVE_NETINET_SCTP_H 
 	#include     <netinet/sctp.h> 
 #endif 
+
+#ifndef MSG_NOSIGNAL
+	#define MSG_NOSIGNAL 0
+#endif
 
 /* OSF/1 actually disables recv() and send() in <sys/socket.h> */ 
 #ifdef  __osf__ 
