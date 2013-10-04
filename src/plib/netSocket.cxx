@@ -58,6 +58,10 @@
 #define INADDR_NONE ((unsigned long)-1)
 #endif
 
+#ifndef MSG_NOSIGNAL
+	#define MSG_NOSIGNAL 0
+#endif
+
 using namespace std;
 
 netAddress::netAddress ( const char* host, int port )
@@ -380,7 +384,7 @@ int netSocket::read_char ( unsigned char& c )
 	int n;
 	while (1)
 	{
-		n = ::recv (handle, &c, 1, 0 );
+		n = ::recv (handle, (char *)&c, 1, 0 );
 		if (n == SOCKET_ERROR)
 		{
 			if (RECOVERABLE_ERROR)
