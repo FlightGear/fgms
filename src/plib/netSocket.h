@@ -64,7 +64,7 @@
 #include <server/fg_util.hxx>
 
 #ifdef _MSC_VER
-	int recoverable_wsa_error()
+	static int recoverable_wsa_error()
 	{
 	    int wsa_errno = WSAGetLastError();
 	    WSASetLastError(0); // clear the error
