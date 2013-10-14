@@ -24,6 +24,7 @@
 #if defined(_MSC_VER) || defined(USE_PTHREAD)
 #include <pthread.h>
 #endif // _MSC_VER or USE_PTHREAD
+#define FGT_VERSION "1.5"
 
 // static int run_as_daemon = RUN_AS_DAEMON;
 static int run_as_daemon = 0;
@@ -1020,7 +1021,7 @@ char *get_base_name(char *name)
 void give_help(char *name)
 {
     char *bn = get_base_name(name);
-    printf("%s - version 1.3, compiled %s, at %s\n", bn, __DATE__, __TIME__);
+    printf("%s - version %s. Compiled at %s %s\n", bn, FGT_VERSION, __DATE__, __TIME__);
 #ifndef NO_POSTGRESQL
     printf("PostgreSQL Database Information\n");
     printf(" --db database (-d) = Set the database name. (def=%s)\n",database);
