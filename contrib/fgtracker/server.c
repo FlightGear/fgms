@@ -5,14 +5,25 @@
  *   License: GPL
  *
  *   $Log: server.c,v $
- *   Revision 1.2  2006/05/10 21:22:34  koversrac
+ *   Version 1.2 2006/05/10 21:22:34  koversrac
  *   	Comment with author and license has been added.
- *   Revision 1.3 2012/07/04 geoff (reports _at_ geoffair _dot_ info)
+ *   Version 1.3 2012/07/04 geoff (reports _at_ geoffair _dot_ info)
  *      Add user configuration and help
- *   Revision 1.4 2012/08/06 geoff (reports _at_ geoffair _dot_ info)
+ *   Version 1.4 2012/08/06 geoff (reports _at_ geoffair _dot_ info)
  *      Fix missing -D y|n options, and chop PostgreSQL help if not compiled
- *   Revision 1.5 2012/11/09 hazuki (hstsuki_a-ie _at_ yahoo _dot_ com _dot_ hk)
+ *   Version 1.5 2012/11/09 hazuki (hstsuki_a-ie _at_ yahoo _dot_ com _dot_ hk)
  *      Better resistance on DoS attack. (Still a lot to be done though)
+ *   Version 1.6 2013/10/15 hazuki (hstsuki_a-ie _at_ yahoo _dot_ com _dot_ hk)
+ *      Code cleanup, some minor fixes and better resistance on DoS attack.
+ *		[FIX] msg count overflow if count > 4294967295 (No counter stops when count = 4294967295)
+ *		[FIX] Stop retry on PQ connect when fail count <120, but keeps receiving msg (msg lost)
+ *		Starting from this version, older version of fgms which do not require FGTracker reply "OK" will not be supported.
+ *		Please use FGTracker version 1.5 if your fgms client is below 0.10.23 or between 0.11 and 0.11.5
+ *
+ *
+ *	Current version (Version 1.6) supports the following fgms:
+ *	v0.10 : v0.10.23 and above
+ *	v0.11 :	v0.11.6 and above
  */
 
 #include "fgt_common.h"
@@ -24,7 +35,8 @@
 #if defined(_MSC_VER) || defined(USE_PTHREAD)
 #include <pthread.h>
 #endif // _MSC_VER or USE_PTHREAD
-#define FGT_VERSION "1.5"
+#define FGT_VERSION "1.6"
+#define PORT_SCAN_SPEED 20; /* 1000000/PORT_SCAN_SPEED must be integer*/
 
 // static int run_as_daemon = RUN_AS_DAEMON;
 static int run_as_daemon = 0;
@@ -595,7 +607,7 @@ void doit(int fd)
 	int pg_reconn_counter;
 	short int time_out_counter_l=1;
 	unsigned int time_out_counter_u=0;
-	short int time_out_fraction=20; /* 1000000/time_out_fraction must be integer*/
+	short int time_out_fraction=PORT_SCAN_SPEED;
     int len;
     pid_t mypid;
     struct sockaddr_in clientaddr;
@@ -731,7 +743,9 @@ void doit(int fd)
 		sockect_read_completed=0;
 		time_out_counter_l=1;
 		time_out_counter_u=0;
-		no_of_line++;
+		
+		if (no_of_line!=4294967295)/*Prevent unsigned long overflow and return to zero count*/
+			no_of_line++;
         snprintf(debugstr,MAXLINE,"[%d] %s:%d: Read %d bytes",mypid,clientip,clientport,len);
         debug(3,debugstr);
 
@@ -756,7 +770,7 @@ void doit(int fd)
 #ifdef NO_POSTGRESQL
         write_message_log(msg,strlen(msg));
 #else // !#ifdef NO_POSTGRESQL
-        while ( (PQstatus(conn) != CONNECTION_OK) && (pg_reconn_counter<120) ) 
+        while ( (PQstatus(conn) != CONNECTION_OK) && (no_of_line>2) ) /*line 1 =>ignore; line 2=REPLY/NOWAIT; line 3 and above=real stuff*/
 		{
             sprintf(debugstr,"[%d] %s:%d: (Re)Connnet loop - %d",mypid,clientip,clientport,pg_reconn_counter);
             debug(3,debugstr);
@@ -776,29 +790,35 @@ void doit(int fd)
                     sprintf(debugstr,"[%d] %s:%d: Reconnected to PQ failed after %d tries",mypid,clientip,clientport,pg_reconn_counter);
                     debug(1,debugstr);
                 }
+				if (pg_reconn_counter==120)
+				{
+					sprintf(debugstr,"[%d] %s:%d: Too much retries to PQ. Force Exit...",mypid,clientip,clientport);
+					debug(1,debugstr);
+					exit(0);
+				}
             }
         }
 #endif // #ifdef NO_POSTGRESQL
         pg_reconn_counter=0;
 
-        sendok = 0; // some messages require an 'OK' reply, if a 'REPLY' command was received
+        sendok = 0; /* some messages require an 'OK' reply, if a 'REPLY' command was received*/
 
 		switch (res) 
 		{
-			case MT_NOWAIT: /*starting from 0.10.22 */
-				reply = 1;  // Client want REPLY to each message
-				nowait = 1;// Client will not wait ACK before sending another message
+			case MT_NOWAIT: /*Introduced in fgms v0.10.22 */
+				reply = 1;  /* Client want REPLY to each message*/
+				nowait = 1;/* Client will not wait ACK before sending another message*/
 				sprintf(debugstr,"[%d] %s:%d: NOWAIT mode is ON", mypid, clientip,clientport);
 				debug(1,debugstr);
 				break;
-			case MT_REPLY: /*0.10.21 and below*/
-				reply = 1;  // Client want REPLY to each message
+			case MT_REPLY: /*fgms v0.10.21 and below*/
+				reply = 1;  /*Client want REPLY to each message*/
 				sprintf(debugstr,"[%d] %s:%d: REPLY mode is ON", mypid, clientip,clientport);
 				debug(1,debugstr);
 				break;
 			case MT_UNKNOWN:
 			        if (no_of_line!=1)
-					{ 	//first line from fgms will be ignored.
+					{ 	/*first line from fgms will be ignored*/
 						sprintf(debugstr,"[%d] %s:%d: Unknown msg received", mypid, clientip,clientport);
 						debug(1,debugstr);
 					}
@@ -848,160 +868,17 @@ void doit(int fd)
                 debug(3,debugstr);
             }
         }
+		if (!reply && no_of_line!=1)
+		{	/*Force exit if the secord message does not flip reply switch*/
+			sprintf(debugstr,"[%d] %s:%d: Invalid message sequence. Exiting...",mypid,clientip,clientport);
+			debug(1,debugstr);
+			exit(0);
+		}
 		strcpy(msg,""); /*clear message*/
     }
     sprintf(debugstr,"[%d] %s:%d: Connection timeout after %d seconds. Exiting...", mypid, clientip,clientport,time_out_counter_u);
     debug(1,debugstr);
 }
-
-#if 0 // code to be removed when replacement found to be working
-
-void doit2(int fd)
-{
-  int pg_reconn_counter;
-  int len;
-  char debugstr[MAXLINE];
-  char msg[MAXLINE];
-  char event[MAXLINE];
-  char callsign[MAXLINE];
-  char passwd[MAXLINE];
-  char model[MAXLINE];
-  char time1[MAXLINE];
-  char time2[MAXLINE];
-  char time[MAXLINE];
-  char lon[MAXLINE];
-  char lat[MAXLINE];
-  char alt[MAXLINE];
-  pid_t mypid;
-  struct sockaddr_in clientaddr;
-  socklen_t clientaddrlen;
-  PGconn *conn=NULL;
-  int reply=0;
-
-  mypid=getpid();
-
-  getpeername(fd, (SA *) &clientaddr, &clientaddrlen);
-
-#if defined(_MSC_VER) && (!defined(NTDDI_VERSION) || !defined(NTDDI_VISTA) || (NTDDI_VERSION < NTDDI_VISTA))   // if less than VISTA, need alternative
-  sprintf(debugstr,"connection on port %d", ntohs(clientaddr.sin_port));
-#else
-  sprintf(debugstr,"connection from %s, port %d", inet_ntop(AF_INET, &clientaddr.sin_addr, msg, sizeof(msg)), ntohs(clientaddr.sin_port));
-#endif
-  debug(2,debugstr);
-
-  while ( (len = SREAD(fd, msg, MAXLINE)) >0)
-  {
-       	msg[len]='\0';
-
-	snprintf(debugstr,MAXLINE,"Children [%5d] read %d bytes\n",mypid,len);
-
-	debug(3,debugstr);
-
-  	bzero(event,MAXLINE);
-  	bzero(callsign,MAXLINE);
-  	bzero(passwd,MAXLINE);
-  	bzero(model,MAXLINE);
-  	bzero(time1,MAXLINE);
-  	bzero(time2,MAXLINE);
-  	bzero(time,MAXLINE);
-  	bzero(lon,MAXLINE);
-  	bzero(lat,MAXLINE);
-  	bzero(alt,MAXLINE);
-
-	if (len>0)
-	{	
-
-		sscanf(msg,"%s ",event);
-		sprintf(debugstr,"msg: %s",msg);
-		debug(3,debugstr);
-
-		pg_reconn_counter=0;
-#ifdef NO_POSTGRESQL
-        write_message_log(msg,len);
-#else // !#ifdef NO_POSTGRESQL
-		while ( (PQstatus(conn)!=CONNECTION_OK) && (pg_reconn_counter<120) )
-                {
-			sprintf(debugstr,"Reconn loop %d",pg_reconn_counter);
-                        debug(3,debugstr);
-
-			pg_reconn_counter++;
-			PQfinish(conn);
-			ConnectDB(&conn);
-			sleep(1);
-			if (PQstatus(conn)==CONNECTION_OK)
-			{
-				sprintf(debugstr,"Reconnected to PQ successful after %d tries",pg_reconn_counter);
-				debug(1,debugstr);
-			}
-			else
-			{
-				if (pg_reconn_counter%10==0)
-				{
-					sprintf(debugstr,"Reconnected to PQ failed after %d tries",pg_reconn_counter);
-					debug(1,debugstr);
-				}
-			}
-
-                }
-#endif // #ifdef NO_POSTGRESQL
-		pg_reconn_counter=0;
-
-		if (strncmp("REPLY",event,5)==0)
-		{
-			
-			reply=1;
-		}
-
-		if (strncmp("PING",event,4)==0)
-		{
-			if (SWRITE(fd,"PONG",5) != 5)
-                debug(1,"write PONG failed");
-		}
-
-		if (strncmp("CONNECT",event,7)==0)
-		{
-       			sscanf(msg,"%s %s %s %s %s %s",event,callsign,passwd,model,time1,time2);
-       			sprintf(time,"%s %s Z",time1,time2);
-       			if (strncmp("mpdummy",callsign,7)!=0 && strncmp("obscam",callsign,6)!=0) logFlight(conn,callsign,model,time,1);
-			if (reply)
-			{
-				if (SWRITE(fd,"OK",3) != 3)
-                    debug(1,"write OK (CONNECT) failed");
-                else
-                    debug(3,"reply sent");
-			}
-		}
-		else if (strncmp("DISCONNECT",event,10)==0)
-		{
-       			sscanf(msg,"%s %s %s %s %s %s",event,callsign,passwd,model,time1,time2);
-       			sprintf(time,"%s %s Z",time1,time2);
-       			if (strncmp("mpdummy",callsign,7)!=0 && strncmp("obscam",callsign,6)!=0) logFlight(conn,callsign,model,time,0);
-			if (reply)
-			{
-				if (SWRITE(fd,"OK",3) != 3)
-                    debug(1,"write OK (DISCONNECT) failed");
-                else
-                    debug(3,"reply sent");
-			}
-		}
-       		else if (strncmp("POSITION",event,8)==0)
-		{
-       			sscanf(msg,"%s %s %s %s %s %s %s %s",event,callsign,passwd,lat,lon,alt,time1,time2);
-       			sprintf(time,"%s %s Z",time1,time2);
-       			if (strncmp("mpdummy",callsign,7)!=0 && strncmp("obscam",callsign,6)!=0) logPosition(conn,callsign,time,lon,lat,alt);
-			if (reply)
-			{
-				if (SWRITE(fd,"OK",3) != 3)
-                    debug(1,"write OK (POSITION) failed");
-                else
-                    debug(3,"reply sent");
-			}
-		}
-	}
-  }
-}
-
-#endif // 0 - code to be removed when replacement tested
 
 char *get_base_name(char *name)
 {
@@ -1296,8 +1173,8 @@ int main (int argc, char **argv)
 
     if (test_db_connection()) 
 	{
-        printf("PostgreSQL connection FAILED on [%s], port [%s], database [%s], user [%s], pwd [%s]. Aborting...\n",
-            ip_address, port, database, user, pwd );
+        printf("PostgreSQL connection FAILED on [%s], port [%s], database [%s]. Aborting...\n",
+            ip_address, port, database);
         return 1;
     }
 	printf("PostgreSQL connection test finished.\n");
