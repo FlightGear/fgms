@@ -15,7 +15,7 @@
  *      Better resistance on DoS attack. (Still a lot to be done though)
  *   Version 1.6 2013/10/15 hazuki (hstsuki_a-ie _at_ yahoo _dot_ com _dot_ hk)
  *      Code cleanup, some minor fixes and better resistance on DoS attack.
- *		[FIX] msg count overflow if count > 4294967295 (No counter stops when count = 4294967295)
+ *		[FIX] msg count overflow if count > 4294967295 (Now counter stops when count = 4294967295)
  *		[FIX] Stop retry on PQ connect when fail count <120, but keeps receiving msg (msg lost)
  *		Starting from this version, older version of fgms which do not require FGTracker reply "OK" will not be supported.
  *		Please use FGTracker version 1.5 if your fgms client is below 0.10.23 or between 0.11 and 0.11.5
