@@ -166,7 +166,7 @@ ProcessConfig ( const string& ConfigName )
 	}
 	if ( Config.Read ( ConfigName ) )
 	{
-		bHadConfig = true;
+		// bHadConfig = true;
 		SG_LOG ( SG_SYSTEMS, SG_ALERT,
 		  "Could not read config file '" << ConfigName
 		  << "' => using defaults");

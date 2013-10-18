@@ -1181,10 +1181,6 @@ FG_CLI::cmd_relay_show
 				if (Address.getIP() == 0)
 				{
 					Name = argv[0];
-#if 0
-			//		client << "% invalid IP address" << CRLF;
-			//		return (1);
-#endif
 				}
 			}
 			break;
@@ -1246,16 +1242,9 @@ FG_CLI::cmd_relay_show
 		{
 			continue;
 		}
-		string A = timestamp_to_datestr (Entry.JoinTime);
-		string B = "NEVER";
-		if (Entry.JoinTime != Entry.LastSeen)
-		{
-			B = timestamp_to_days    (Entry.LastSeen);
-			B += " ago";
-		}
 		client << "  entered   : " << timestamp_to_datestr (Entry.JoinTime)
 			<< CRLF; if (check_pager()) return 0;
-		client << "  last seen : " << timestamp_to_datestr (Entry.JoinTime)
+		client << "  last seen : " << timestamp_to_datestr (Entry.LastSeen)
 			<< CRLF; if (check_pager()) return 0;
 		client << "  sent      : "
 			<< Entry.PktsSent << " packets"

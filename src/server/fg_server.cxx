@@ -1628,6 +1628,7 @@ FG_SERVER::Loop
 			m_BlackList.CheckTTL ();
 			m_RelayList.CheckTTL ();
 			m_CrossfeedList.CheckTTL ();
+			continue;
 		}
 		if ( ListenSockets[0] > 0 )
 		{

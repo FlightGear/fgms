@@ -1919,6 +1919,7 @@ CLI::loop
 		this->state = STATE_NORMAL;
 	}
 	showprompt = true;
+	cmd[0] = 0; // clear command buffer
 	while ( 1 )
 	{
 		remember_command = false;

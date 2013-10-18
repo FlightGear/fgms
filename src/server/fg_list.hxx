@@ -517,6 +517,7 @@ mT_FG_List<T>::CheckTTL
 	{
 		if (Element->Timeout == 0)
 		{	// never timeouts
+			Element++;
 			continue;
 		}
 		if ( (this->LastRun - Element->LastSeen) > Element->Timeout )
@@ -530,7 +531,7 @@ mT_FG_List<T>::CheckTTL
 			Element = Elements.erase (Element);
 			continue;
 		}
-
+		Element++;
 	}
 	pthread_mutex_unlock ( & m_ListMutex );
 }
