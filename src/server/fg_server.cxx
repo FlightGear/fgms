@@ -1626,8 +1626,6 @@ FG_SERVER::Loop
 		{	// timeout
 			m_PlayerList.CheckTTL ();
 			m_BlackList.CheckTTL ();
-			m_RelayList.CheckTTL ();
-			m_CrossfeedList.CheckTTL ();
 			continue;
 		}
 		if ( ListenSockets[0] > 0 )
