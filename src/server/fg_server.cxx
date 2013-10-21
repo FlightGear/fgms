@@ -1152,7 +1152,7 @@ FG_SERVER::DropClient
 		<< CurrentPlayer->Name << "@" << Origin
 		<< " after " << time(0)-CurrentPlayer->JoinTime << " seconds. "
 		<< "Current clients: "
-		<< m_PlayerList.Size() << " max: " << m_NumMaxClients
+		<< m_PlayerList.Size()-1 << " max: " << m_NumMaxClients
 	);
 	CurrentPlayer = m_PlayerList.Delete (CurrentPlayer);
 } // FG_SERVER::DropClient()
