@@ -551,6 +551,12 @@ CLI::int_configure_terminal
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
+	if (argv[argc-1][0] == '?')
+	{
+		client << "  " << left << setfill(' ') << setw(22)
+			<< "<cr>" << "switch to configure mode" << CRLF;
+		return LIBCLI::OK;
+	}
 	set_configmode ( MODE_CONFIG, "" );
 	return LIBCLI::OK;
 }
@@ -561,7 +567,6 @@ CLI::CLI
 ): client (fd)
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	Command<CLI> *c;
 	length	= 0;
 	cursor	= 0;
 	cmd	= 0;
@@ -579,77 +584,69 @@ CLI::CLI
 		this->history[i] = 0;
 	}
 	register_command ( new Command<CLI> (
-	                           this,
-	                           "help",
-	                           & CLI::internal_help,
-	                           LIBCLI::UNPRIVILEGED,
-	                           LIBCLI::MODE_ANY,
-	                           "Description of the interactive help system"
-	                   ) );
+				this,
+				"help",
+				& CLI::internal_help,
+				LIBCLI::UNPRIVILEGED,
+				LIBCLI::MODE_ANY,
+				"Description of the interactive help system"
+	) );
 	register_command ( new Command<CLI> (
-	                           this,
-	                           "whoami",
-	                           & CLI::internal_whoami,
-	                           LIBCLI::UNPRIVILEGED,
-	                           LIBCLI::MODE_EXEC,
-	                           "Show who you are"
-	                   ) );
+				this,
+				"whoami",
+				& CLI::internal_whoami,
+				LIBCLI::UNPRIVILEGED,
+				LIBCLI::MODE_EXEC,
+				"Show who you are"
+	) );
 	register_command ( new Command<CLI> (
-	                           this,
-	                           "quit",
-	                           & CLI::internal_quit,
-	                           LIBCLI::UNPRIVILEGED,
-	                           LIBCLI::MODE_EXEC,
-	                           "Disconnect"
-	                   ) );
+				this,
+				"quit",
+				& CLI::internal_quit,
+				LIBCLI::UNPRIVILEGED,
+				LIBCLI::MODE_EXEC,
+				"Disconnect"
+	) );
 	register_command ( new Command<CLI> (
-	                           this,
-	                           "exit",
-	                           & CLI::internal_exit,
-	                           LIBCLI::UNPRIVILEGED,
-	                           LIBCLI::MODE_ANY,
-	                           "Exit from current mode"
-	                   ) );
+				this,
+				"exit",
+				& CLI::internal_exit,
+				LIBCLI::UNPRIVILEGED,
+				LIBCLI::MODE_ANY,
+				"Exit from current mode"
+	) );
 	register_command ( new Command<CLI> (
-	                           this,
-	                           "history",
-	                           & CLI::internal_history,
-	                           LIBCLI::UNPRIVILEGED,
-	                           LIBCLI::MODE_EXEC,
-	                           "Show a list of previously run commands"
-	                   ) );
+				this,
+				"history",
+				& CLI::internal_history,
+				LIBCLI::UNPRIVILEGED,
+				LIBCLI::MODE_EXEC,
+				"Show a list of previously run commands"
+	) );
 	register_command ( new Command<CLI> (
-	                           this,
-	                           "enable",
-	                           & CLI::internal_enable,
-	                           LIBCLI::UNPRIVILEGED,
-	                           LIBCLI::MODE_EXEC,
-	                           "Turn on privileged commands"
-	                   ) );
+				this,
+				"enable",
+				& CLI::internal_enable,
+				LIBCLI::UNPRIVILEGED,
+				LIBCLI::MODE_EXEC,
+				"Turn on privileged commands"
+	) );
 	register_command ( new Command<CLI> (
-	                           this,
-	                           "disable",
-	                           & CLI::internal_disable,
-	                           LIBCLI::PRIVILEGED,
-	                           LIBCLI::MODE_EXEC,
-	                           "Turn off privileged commands"
-	                   ) );
-	c = new Command<CLI> (
-	        this,
-	        "configure",
-	        LIBCLI::PRIVILEGED,
-	        LIBCLI::MODE_EXEC,
-	        "Enter configuration mode"
-	);
-	register_command ( c );
+				this,
+				"disable",
+				& CLI::internal_disable,
+				LIBCLI::PRIVILEGED,
+				LIBCLI::MODE_EXEC,
+				"Turn off privileged commands"
+	) );
 	register_command ( new Command<CLI> (
-	                           this,
-	                           "terminal",
-	                           & CLI::int_configure_terminal,
-	                           LIBCLI::PRIVILEGED,
-	                           LIBCLI::MODE_EXEC,
-	                           "Configure from the terminal"
-	                   ), c );
+				this,
+				"configure",
+				& CLI::int_configure_terminal,
+				LIBCLI::PRIVILEGED,
+				LIBCLI::MODE_EXEC,
+				"Enter configuration mode"
+	) );
 	this->privilege = this->mode = -1;
 	set_privilege ( LIBCLI::UNPRIVILEGED );
 	set_configmode ( LIBCLI::MODE_EXEC, "" );
