@@ -1622,13 +1622,6 @@ FG_SERVER::Loop
 		{	// error
 			continue;
 		}
-		else if (Bytes == 0)
-		{	// timeout
-			m_PlayerList.CheckTTL ();
-			m_BlackList.CheckTTL ();
-			m_RelayList.CheckTTL ();
-			m_CrossfeedList.CheckTTL ();
-		}
 		if ( ListenSockets[0] > 0 )
 		{
 			// something on the wire (clients)
