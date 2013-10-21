@@ -295,7 +295,10 @@ FG_CLI::cmd_show_stats
 		<< CRLF; if (check_pager()) return 0;
 	client << "I have " << fgms->m_RelayList.Size () << " relays"
 		<< CRLF; if (check_pager()) return 0;
-	client << "I have " << fgms->m_PlayerList.Size () << " users (" << fgms->m_NumMaxClients << " max)"
+	client << "I have " << fgms->m_PlayerList.Size () << " users ("
+		<< fgms->m_LocalClients << " local, "
+		<< fgms->m_RemoteClients << " remote, "
+		<< fgms->m_NumMaxClients << " max)"
 		<< CRLF; if (check_pager()) return 0;
 	client << "Sent counters:" << CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)

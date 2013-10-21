@@ -151,6 +151,8 @@ protected:
 	string		m_LogFileName;
 	string		m_BindAddress;
 	size_t		m_NumMaxClients;
+	size_t		m_LocalClients;
+	size_t		m_RemoteClients;
 	int16_t		m_ProtoMinorVersion;
 	int16_t		m_ProtoMajorVersion;
 	bool		m_IsParent;

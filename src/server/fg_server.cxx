@@ -221,6 +221,8 @@ FG_SERVER::FG_SERVER
 	m_TrackerConnect	= 0;
 	m_TrackerDisconnect	= 0;
 	m_TrackerPosition	= 0; // Tracker messages queued
+	m_LocalClients		= 0;
+	m_RemoteClients		= 0;
 	m_Uptime		= time(0);
 	m_WantExit		= false;
 	ConfigFile		= "";
@@ -766,8 +768,13 @@ FG_SERVER::AddClient
 	}
 	if ( IsLocal )
 	{
+		m_LocalClients++;
 		UpdateTracker ( NewPlayer.Name, NewPlayer.Passwd,
 		                NewPlayer.ModelName, NewPlayer.LastSeen, CONNECT );
+	}
+	else
+	{
+		m_RemoteClients++;
 	}
 	Origin  = NewPlayer.Origin;
 	if ( IsLocal )
@@ -1139,6 +1146,10 @@ FG_SERVER::DropClient
 			DISCONNECT
 		);
 	}
+	if (CurrentPlayer->IsLocal)
+		m_LocalClients--;
+	else
+		m_RemoteClients--;
 	mT_RelayMapIt Relay = m_RelayMap.find ( CurrentPlayer->Address.getIP() );
 	if ( Relay != m_RelayMap.end() )
 	{
