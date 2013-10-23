@@ -963,7 +963,7 @@ FG_SERVER::IsKnownRelay
 	string ErrorMsg;
 	ErrorMsg  = SenderAddress.getHost();
 	ErrorMsg += " is not a valid relay!";
-	AddBlacklist ( SenderAddress.getHost(), "not a valid relay" );
+	AddBlacklist ( SenderAddress.getHost(), "not a valid relay", 0);
 	SG_LOG ( SG_FGMS, SG_ALERT, "UNKNOWN RELAY: " << ErrorMsg );
 	return ( false );
 } // FG_SERVER::IsKnownRelay ()
