@@ -702,6 +702,10 @@ FG_SERVER::AddBadClient
 	//////////////////////////////////////////////////
 	//      new client, add to the list
 	//////////////////////////////////////////////////
+	if (IsLocal)
+		m_LocalClients++;
+	else
+		m_RemoteClients++;
 	NewPlayer.Name      = "* Bad Client *";
 	NewPlayer.ModelName     = "* unknown *";
 	NewPlayer.Origin        = Sender.getHost ();
