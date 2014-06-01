@@ -36,7 +36,7 @@
 #include <pthread.h>
 #endif // _MSC_VER or USE_PTHREAD
 #define FGT_VERSION "1.6"
-#define PORT_SCAN_SPEED 20; /* 1000000/PORT_SCAN_SPEED must be integer*/
+#define PORT_SCAN_SPEED 20 /* 1000000/PORT_SCAN_SPEED must be integer*/
 
 // static int run_as_daemon = RUN_AS_DAEMON;
 static int run_as_daemon = 0;
