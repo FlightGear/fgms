@@ -614,7 +614,7 @@ FG_SERVER::HandleTelnet
 		{
 			break;
 		}
-		if (CurrentPlayer.Name.compare (0, 2, "obs") == 0)
+		if (CurrentPlayer.Name.compare (0, 3, "obs", 3) == 0)
 		{
 			continue;
 		}
@@ -1395,10 +1395,10 @@ FG_SERVER::HandlePacket
 		//
 		//      do not send packet to clients which
 		//      are out of reach.
-		//
+		//      FIX20140603 - compare fix by Markus Pargmann
 		//////////////////////////////////////////////////
 		if ( ( Distance ( SenderPosition, CurrentPlayer->LastPos ) > m_PlayerIsOutOfReach )
-		&&   (CurrentPlayer->Name.compare (0, 2, "obs") != 0 ) )
+		&&   (CurrentPlayer->Name.compare (0, 3, "obs", 3) != 0 ) )
 		{
 			CurrentPlayer++;
 			continue;
