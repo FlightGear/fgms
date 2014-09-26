@@ -128,7 +128,7 @@ Client::wait_for_input
 #endif
 	if (m_socket != 0)
 	{
-		netSocket*  ListenSockets[1];
+		netSocket*  ListenSockets[2];
 		ListenSockets[0] = m_socket;
 		ListenSockets[1] = 0;
 		return m_socket->select ( ListenSockets, 0, seconds );
