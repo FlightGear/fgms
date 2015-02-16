@@ -57,6 +57,8 @@
 #endif
 
 bool    RunAsDaemon = false;
+bool    AddCLI = true;
+
 #ifndef DEF_SERVER_LOG
 	#define DEF_SERVER_LOG "fg_server.log"
 #endif
@@ -1536,6 +1538,21 @@ FG_SERVER::check_files
 		}
 		Show_Stats();
 	}
+#ifdef _MSC_VER
+	if (!AddCLI && _kbhit())
+	{
+		int ch = _getch ();
+		if ( ch == 0x1b )
+		{
+			printf("Got ESC key to exit...\n");
+			return 1;
+		}
+		else
+		{
+			printf("Got UNKNOWN keyboard! %#X - Only ESC, to exit\n", ch);
+		}
+	}
+#endif // _MSC_VER
 	return 0;
 }
 
@@ -1586,7 +1603,7 @@ FG_SERVER::Loop
 			SG_CONSOLE (SG_FGMS, SG_ALERT, "# Admin port disabled, please set user and password");
 		}
 	}
-	if (! RunAsDaemon)
+	if (! RunAsDaemon && AddCLI )
 	{	// Run admin CLI in foreground reading from stdin
 		st_telnet* t = new st_telnet;
 		t->Instance = this;
