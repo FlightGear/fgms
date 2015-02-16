@@ -1613,7 +1613,7 @@ FG_CLI::cmd_user_show
 	bool		OnlyRemote = false;
 	size_t		EntriesFound = 0;
 	time_t		difftime;
-	time_t		now;
+	time_t		now = time(0);
 	for (int i=0; i < argc; i++)
 	{
 		ID  = StrToNum<size_t> ( argv[0], ID_invalid );
