@@ -110,6 +110,10 @@ void netAddress::set ( const char* host, int port )
   }
 }
 
+void netAddress::setPort ( int port )
+{
+  sin_port = htons (port);
+}
 
 /**
  * @brief Create a string object representing an IP address.

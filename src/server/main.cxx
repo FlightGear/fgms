@@ -49,6 +49,7 @@ FG_SERVER       Servant;
 
 /** @brief Flag whether instance is a Daemon  */
 extern  bool    RunAsDaemon;
+extern  bool    AddCLI;
 #ifdef _MSC_VER
 #define M_IS_DIR _S_IFDIR
 #else // !_MSC_VER
@@ -74,6 +75,20 @@ static bool     bHadConfig = false;
 #define SYSCONFDIR "/usr/etc"
 #endif
 
+#ifndef DEF_LOG_LEVEL
+#define DEF_LOG_LEVEL SG_INFO
+#endif
+#ifndef DEF_LOG_CLASS
+#ifdef _MSC_VER
+#define DEF_LOG_CLASS (SG_FGMS|SG_FGTRACKER|SG_CONSOLE)
+#else
+#define DEF_LOG_CLASS (SG_FGMS|SG_FGTRACKER)
+#endif
+#endif
+
+sgDebugPriority curr_priority = DEF_LOG_LEVEL;
+sgDebugClass curr_class = (sgDebugClass)DEF_LOG_CLASS;
+
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief Print a help screen for command line parameters, see \ref command_line
@@ -91,7 +106,7 @@ PrintHelp ()
 	     "-t TTL        Time a client is active while not sending packets\n"
 	     "-o OOR        nautical miles two players must be apart to be out of reach\n"
 	     "-l LOGFILE    Log to LOGFILE\n"
-	     "-v LEVEL      verbosity (loglevel) in range 1 (few) and 5 (much)\n"
+	     "-v LEVEL      verbosity (loglevel) in range 0 (few) and 4 (much). 5 to disable. (def=" << curr_priority << ")\n"
 	     "-d            do _not_ run as a daemon (stay in foreground)\n"
 	     "-D            do run as a daemon\n"
 	     "\n"
@@ -166,7 +181,7 @@ ProcessConfig ( const string& ConfigName )
 	}
 	if ( Config.Read ( ConfigName ) )
 	{
-		bHadConfig = true;
+		// bHadConfig = true;
 		SG_LOG ( SG_SYSTEMS, SG_ALERT,
 		  "Could not read config file '" << ConfigName
 		  << "' => using defaults");
@@ -205,6 +220,23 @@ ProcessConfig ( const string& ConfigName )
 			exit ( 1 );
 		}
 	}
+    Val = Config.Get ( "server.admin_cli" );
+	if ( Val != "" )
+	{
+		if ( ( Val == "on" ) || ( Val == "true" ) )
+		{
+			AddCLI = true;
+		}
+		else if ( ( Val == "off" ) || ( Val == "false" ) )
+		{
+			AddCLI = false;
+		}
+		else
+		{
+			SG_LOG ( SG_SYSTEMS, SG_ALERT, "unknown value for 'server.admin_cli'!" << " in file " << ConfigName );
+		}
+    }
+
 	Val = Config.Get ( "server.admin_port" );
 	if ( Val != "" )
 	{
@@ -478,7 +510,8 @@ ParseParams ( int argcount, char* argvars[] )
 			}
 			break;
 		case 'v':
-			Servant.SetLog ( SG_FGMS, StrToNum<int>  ( optarg, E ) );
+            curr_priority = (sgDebugPriority) StrToNum<int>  ( optarg, E );
+			Servant.SetLog ( curr_class, curr_priority );
 			if ( E )
 			{
 				cerr << "invalid value for Loglevel: '"

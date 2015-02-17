@@ -26,7 +26,9 @@
 #include <string>
 #include <string.h>
 #include <sstream>
-#ifndef _MSC_VER
+#ifdef _MSC_VER
+#include <sys/timeb.h>
+#else
 #include <errno.h>
 #include <time.h>
 #include <stdint.h>
@@ -45,33 +47,20 @@
 #include "daemon.hxx"
 #include <libcli/debug.hxx>
 
+#ifndef DEF_CONN_SECS
+#define DEF_CONN_SECS 30
+#endif
+
+int tracker_conn_secs = DEF_CONN_SECS;
+
 #if defined(_MSC_VER) || defined(__MINGW32__)
 /* windows work around for gettimeofday() */
 int gettimeofday(struct timeval* tp, void* tzp) 
 {
-    LARGE_INTEGER t;
-
-    if(QueryPerformanceCounter(&t)) {
-        /* hardware supports a performance counter */
-        static int been_here = 0;
-        static LARGE_INTEGER f;
-        if( !been_here ) {
-            been_here = 1;
-            QueryPerformanceFrequency(&f);
-        }
-        tp->tv_sec = t.QuadPart/f.QuadPart;
-        tp->tv_usec = ((float)t.QuadPart/f.QuadPart*1000*1000)
-                  - (tp->tv_sec*1000*1000);
-    } else {
-        /* hardware doesn't support a performance counter, so get the
-               time in a more traditional way. */
-        DWORD t;
-        t = timeGetTime();
-        tp->tv_sec = t / 1000;
-        tp->tv_usec = t % 1000;
-    }
-
-    /* 0 indicates that the call succeeded. */
+    struct __timeb64 tm;
+    _ftime64_s(&tm); // Time since Epoch, midnight (00:00:00), January 1, 1970, UTC.
+    tp->tv_sec = tm.time;
+    tp->tv_usec = 1000000 * tm.millitm; // milliseconds to nanoseconds
     return 0;
 }
 #endif /* #if defined(_MSC_VER) || defined(__MINGW32__) */
@@ -100,6 +89,7 @@ FG_TRACKER::FG_TRACKER ( int port, string server, int id )
 	LostConnections = 0;
 	LastConnected	= 0;
 	WantExit	= false;
+    m_connected = false;
 } // FG_TRACKER()
 
 //////////////////////////////////////////////////////////////////////
@@ -346,12 +336,12 @@ FG_TRACKER::Loop ()
 			if ( ! m_connected )
 			{
 				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
-				            << "not connected, will slepp for 10 seconds"
+				            << "not connected, will sleep for " << tracker_conn_secs << " seconds"
 				          );
 				struct timeval now;
 				struct timespec timeout;
 				gettimeofday(&now, 0);
-				timeout.tv_sec  = now.tv_sec + 10;
+				timeout.tv_sec  = now.tv_sec + tracker_conn_secs;
 				timeout.tv_nsec = now.tv_usec * 1000;
 				pthread_mutex_lock ( &msg_mutex );
 				pthread_cond_timedwait ( &condition_var, &msg_mutex, &timeout );

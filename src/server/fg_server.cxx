@@ -57,6 +57,8 @@
 #endif
 
 bool    RunAsDaemon = false;
+bool    AddCLI = true;
+
 #ifndef DEF_SERVER_LOG
 	#define DEF_SERVER_LOG "fg_server.log"
 #endif
@@ -221,6 +223,8 @@ FG_SERVER::FG_SERVER
 	m_TrackerConnect	= 0;
 	m_TrackerDisconnect	= 0;
 	m_TrackerPosition	= 0; // Tracker messages queued
+	m_LocalClients		= 0;
+	m_RemoteClients		= 0;
 	m_Uptime		= time(0);
 	m_WantExit		= false;
 	ConfigFile		= "";
@@ -612,7 +616,7 @@ FG_SERVER::HandleTelnet
 		{
 			break;
 		}
-		if (CurrentPlayer.Name.compare (0, 2, "obs") == 0)
+		if (CurrentPlayer.Name.compare (0, 3, "obs", 3) == 0)
 		{
 			continue;
 		}
@@ -699,6 +703,10 @@ FG_SERVER::AddBadClient
 	//////////////////////////////////////////////////
 	//      new client, add to the list
 	//////////////////////////////////////////////////
+	if (IsLocal)
+		m_LocalClients++;
+	else
+		m_RemoteClients++;
 	NewPlayer.Name      = "* Bad Client *";
 	NewPlayer.ModelName     = "* unknown *";
 	NewPlayer.Origin        = Sender.getHost ();
@@ -766,8 +774,13 @@ FG_SERVER::AddClient
 	}
 	if ( IsLocal )
 	{
+		m_LocalClients++;
 		UpdateTracker ( NewPlayer.Name, NewPlayer.Passwd,
 		                NewPlayer.ModelName, NewPlayer.LastSeen, CONNECT );
+	}
+	else
+	{
+		m_RemoteClients++;
 	}
 	Origin  = NewPlayer.Origin;
 	if ( IsLocal )
@@ -952,7 +965,7 @@ FG_SERVER::IsKnownRelay
 	string ErrorMsg;
 	ErrorMsg  = SenderAddress.getHost();
 	ErrorMsg += " is not a valid relay!";
-	AddBlacklist ( SenderAddress.getHost(), "not a valid relay" );
+	AddBlacklist ( SenderAddress.getHost(), "not a valid relay", 0);
 	SG_LOG ( SG_FGMS, SG_ALERT, "UNKNOWN RELAY: " << ErrorMsg );
 	return ( false );
 } // FG_SERVER::IsKnownRelay ()
@@ -1139,6 +1152,10 @@ FG_SERVER::DropClient
 			DISCONNECT
 		);
 	}
+	if (CurrentPlayer->IsLocal)
+		m_LocalClients--;
+	else
+		m_RemoteClients--;
 	mT_RelayMapIt Relay = m_RelayMap.find ( CurrentPlayer->Address.getIP() );
 	if ( Relay != m_RelayMap.end() )
 	{
@@ -1152,7 +1169,7 @@ FG_SERVER::DropClient
 		<< CurrentPlayer->Name << "@" << Origin
 		<< " after " << time(0)-CurrentPlayer->JoinTime << " seconds. "
 		<< "Current clients: "
-		<< m_PlayerList.Size() << " max: " << m_NumMaxClients
+		<< m_PlayerList.Size()-1 << " max: " << m_NumMaxClients
 	);
 	CurrentPlayer = m_PlayerList.Delete (CurrentPlayer);
 } // FG_SERVER::DropClient()
@@ -1371,10 +1388,10 @@ FG_SERVER::HandlePacket
 		//
 		//      do not send packet to clients which
 		//      are out of reach.
-		//
+		//      FIX20140603 - compare fix by Markus Pargmann
 		//////////////////////////////////////////////////
 		if ( ( Distance ( SenderPosition, CurrentPlayer->LastPos ) > m_PlayerIsOutOfReach )
-		&&   (CurrentPlayer->Name.compare (0, 2, "obs") != 0 ) )
+		&&   (CurrentPlayer->Name.compare (0, 3, "obs", 3) != 0 ) )
 		{
 			CurrentPlayer++;
 			continue;
@@ -1511,6 +1528,21 @@ FG_SERVER::check_files
 		}
 		Show_Stats();
 	}
+#ifdef _MSC_VER
+	if (!AddCLI && _kbhit())
+	{
+		int ch = _getch ();
+		if ( ch == 0x1b )
+		{
+			printf("Got ESC key to exit...\n");
+			return 1;
+		}
+		else
+		{
+			printf("Got UNKNOWN keyboard! %#X - Only ESC, to exit\n", ch);
+		}
+	}
+#endif // _MSC_VER
 	return 0;
 }
 
@@ -1561,7 +1593,7 @@ FG_SERVER::Loop
 			SG_CONSOLE (SG_FGMS, SG_ALERT, "# Admin port disabled, please set user and password");
 		}
 	}
-	if (! RunAsDaemon)
+	if (! RunAsDaemon && AddCLI )
 	{	// Run admin CLI in foreground reading from stdin
 		st_telnet* t = new st_telnet;
 		t->Instance = this;
@@ -1610,6 +1642,12 @@ FG_SERVER::Loop
 		Bytes = m_DataSocket->select ( ListenSockets, 0, m_PlayerExpires );
 		if ( Bytes < 0 )
 		{	// error
+			continue;
+		}
+		else if (Bytes == 0)
+		{	// timeout
+			m_PlayerList.CheckTTL ();
+			m_BlackList.CheckTTL ();
 			continue;
 		}
 		if ( ListenSockets[0] > 0 )
