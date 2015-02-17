@@ -10,7 +10,7 @@
 # 20120723 - Add ENABLE_DEBUG_OUTPUT, which defines DEF_DEBUG_OUTPUT in fg_tracker.cxx
 # and add USE_PTHREAD_IN_TRACKER server, replacing fork()
 
-cmake_minimum_required( VERSION 2.6 )
+cmake_minimum_required( VERSION 2.8.8 )
 
 project( fgms )
 
