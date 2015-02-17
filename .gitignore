@@ -2,4 +2,6 @@
 build/
 build_docs/
 *.bak
+temp*
+*~
 
