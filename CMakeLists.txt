@@ -103,6 +103,7 @@ else(WIN32)
         list(APPEND EXTRA_FLAGS "-g")
     endif(ENABLE_DEBUG_SYMBOLS)
     list(APPEND EXTRA_LD_FLAGS -L.)
+    set( WARNING_FLAGS "${WARNING_FLAGS} -Wno-unused-local-typedefs -Wno-unused-but-set-variable" )
 endif(WIN32)
 
 if(ENABLE_TRACKER_LOG)
