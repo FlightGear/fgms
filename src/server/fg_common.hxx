@@ -201,18 +201,12 @@ typedef void Sigfunc (int);     /* for signal handlers */
 #define max(a,b)    ((a) > (b) ? (a) : (b)) 
 #endif
 
-#ifndef __CYGWIN__
-#ifndef HAVE_IF_NAMEINDEX_STRUCT
-
-// ***ATTENTION*** this define should be added here theoretically, although not necessary at all at present
-// #define HAVE_IF_NAMEINDEX_STRUCT
-// (HAVE_IF_NAMEINDEX_STRUCT only appears inside this header, _at_present_ in cygwin at least, not elsewhere in this project and not in /usr/include, and this header is already protected against re-parsing)
-
+#if !defined(HAVE_IF_NAMEINDEX_STRUCT) && !defined(__CYGWIN__)
+    #define HAVE_IF_NAMEINDEX_STRUCT
 	struct if_nameindex { 
 	    unsigned int if_index;      /* 1, 2, ... */ 
 	    char *if_name;              /* null-terminated name: "le0", ... */ 
 	}; 
-#endif
 #endif
 
 extern void write_msg_log(const char *msg, int len, char *src = 0); // write to 'tracker' log

@@ -26,6 +26,7 @@
 
 #ifdef __CYGWIN__
 #include <sys/select.h>
+#include <_timeval.h>
 #endif
 
 
@@ -41,10 +42,6 @@
 			timeout_ms
 		) == WAIT_OBJECT_0;
 	}
-#endif
-
-#ifdef __CYGWIN__
-#include <_timeval.h>
 #endif
 
 namespace LIBCLI
