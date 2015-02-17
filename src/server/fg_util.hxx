@@ -20,7 +20,7 @@ using namespace std;
 
 typedef long long t_longlong;
 
-#if __FreeBSD__
+#if __FreeBSD__ || defined(__CYGWIN__)
 	namespace std {
 		template < typename T >
 		T abs(T x) {

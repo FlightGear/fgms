@@ -49,9 +49,13 @@
 #ifndef NET_SOCKET_H
 #define NET_SOCKET_H
 
-#if __FreeBSD__
+#if __FreeBSD__ || defined(__CYGWIN__)
   #include <sys/types.h>
   #include <sys/socket.h>
+#endif
+
+#ifdef __CYGWIN__
+#include <netinet/in.h>
 #endif
 
 #include <errno.h>

@@ -24,6 +24,11 @@
 #include "common.hxx"
 #include "cli_client.hxx"
 
+#ifdef __CYGWIN__
+#include <sys/select.h>
+#endif
+
+
 #ifdef _MSC_VER
 	#include <conio.h> // for _kbhit(), _getch
 	#define kbhit	_kbhit
@@ -36,6 +41,10 @@
 			timeout_ms
 		) == WAIT_OBJECT_0;
 	}
+#endif
+
+#ifdef __CYGWIN__
+#include <_timeval.h>
 #endif
 
 namespace LIBCLI

@@ -31,9 +31,11 @@
 #include <server/fg_util.hxx>
 #include "libcli.hxx"
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__CYGWIN__)
 	// some windows quick fixes
+#ifndef __CYGWIN__	
 	#define CTRL(a)  ( a & 037 )
+#endif	
 	#ifdef __cplusplus
 		extern "C" {
 	#endif
