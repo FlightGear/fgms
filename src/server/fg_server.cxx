@@ -696,7 +696,6 @@ FG_SERVER::AddBadClient
 		m_PlayerList.Unlock();
 		return;
 	}
-	m_PlayerList.Unlock();
 	//////////////////////////////////////////////////
 	//      new client, add to the list
 	//////////////////////////////////////////////////
@@ -711,6 +710,7 @@ FG_SERVER::AddBadClient
 	SG_LOG ( SG_FGMS, SG_WARN, "FG_SERVER::AddBadClient() - " << ErrorMsg );
 	m_PlayerList.Add (NewPlayer, m_PlayerExpires);
 	m_PlayerList.UpdateRcvd (Bytes);
+	m_PlayerList.Unlock();
 } // FG_SERVER::AddBadClient ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1263,13 +1263,13 @@ FG_SERVER::HandlePacket
 	//////////////////////////////////////////////////
 	m_PlayerList.Lock();
 	CurrentPlayer = m_PlayerList.FindByName ( MsgHdr->Name );
-	m_PlayerList.Unlock();
 	if (CurrentPlayer == m_PlayerList.End () )
 	{
 		// unknown, add to the list
 		if ( MsgId != POS_DATA_ID )
 		{
 			// ignore clients until we have a valid position
+			m_PlayerList.Unlock();
 			return;
 		}
 		AddClient ( SenderAddress, Msg );
@@ -1278,19 +1278,11 @@ FG_SERVER::HandlePacket
 	{
 		if ( CurrentPlayer->Address != SenderAddress )
 		{
-			#if 0
-			if ( MsgMagic == RELAY_MAGIC ) // not a local client
-				return;	// silently ignore
-		cout  << CurrentPlayer->Name << " " << CurrentPlayer->IsLocal << " " << CurrentPlayer->Address.getHost()
-			<< " == " << MsgHdr->Name << " " << " " << SenderAddress.getHost() << endl;
-
-			string s = MsgHdr->Name;
-			s += " user is already known from different source";
-			AddBadClient (SenderAddress, s, true, Bytes);
-			#endif
+			m_PlayerList.Unlock();
 			return;
 		}
 	}
+	m_PlayerList.Unlock();
 	//////////////////////////////////////////
 	//
 	//      send the packet to all clients.
@@ -1300,7 +1292,6 @@ FG_SERVER::HandlePacket
 	//
 	//////////////////////////////////////////////////
 	MsgHdr->Magic = XDR_encode<uint32_t> ( MSG_MAGIC );
-	// m_PlayerList.Lock();
 	CurrentPlayer = m_PlayerList.Begin();
 	while ( CurrentPlayer != m_PlayerList.End() )
 	{
@@ -1401,7 +1392,6 @@ FG_SERVER::HandlePacket
 		}
 		CurrentPlayer++;
 	}
-	// m_PlayerList.Unlock();
 	if ( SendingPlayer.ID ==  FG_ListElement::NONE_EXISTANT )
 	{
 		// player not yet in our list

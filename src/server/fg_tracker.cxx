@@ -331,6 +331,9 @@ FG_TRACKER::Loop ()
 	length = 0;
 	MsgCounter = 0;
 	MyThreadID = pthread_self();
+	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
+		    << "started, thread ID " << MyThreadID
+		    );
 	/*Infinite loop*/
 	while ( ! WantExit )
 	{
