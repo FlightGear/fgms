@@ -1,4 +1,6 @@
 *.tar.gz
 build/
 build_docs/
+temp*
+*.bak
 
