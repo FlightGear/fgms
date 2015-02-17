@@ -85,9 +85,11 @@ if(WIN32)
     if(MSVC)
         # turn off various warnings
         set(WARNING_FLAGS "${WARNING_FLAGS} /wd4996")
+        # C4146: unary minus operator applied to unsigned type, result still unsigned
         # foreach(warning 4244 4251 4267 4275 4290 4786 4305)
-        #     set(WARNING_FLAGS "${WARNING_FLAGS} /wd${warning}")
-        # endforeach(warning)
+        foreach(warning 4146)
+            set(WARNING_FLAGS "${WARNING_FLAGS} /wd${warning}")
+        endforeach()
 
         set( EXTRA_FLAGS "-DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS" )
         # if (${MSVC_VERSION} EQUAL 1600)
