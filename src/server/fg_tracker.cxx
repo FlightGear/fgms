@@ -321,9 +321,15 @@ FG_TRACKER::Loop ()
 	length = 0;
 	MsgCounter = 0;
 	MyThreadID = pthread_self();
+#ifdef WIN32
+	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
+		    << "started, thread ID " << MyThreadID.p
+		    );
+#else
 	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
 		    << "started, thread ID " << MyThreadID
 		    );
+#endif
 	/*Infinite loop*/
 	while ( ! WantExit )
 	{
