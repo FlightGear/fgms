@@ -152,6 +152,8 @@ public:
 	void   Clear ();
 	/** add an element to this list */
 	size_t Add   ( T& Element, time_t TTL );
+	/** Check entries for expired TTL */
+	void CheckTTL ();
 	/** delete an element of this list */
 	ListIterator Delete	( const ListIterator& Element );
 	/** find an element by its IP address */
@@ -498,7 +500,44 @@ mT_FG_List<T>::Unlock
 
 //////////////////////////////////////////////////////////////////////
 /** thread safe
- *
+ * Check entries for expired TTL. All expired entries are removed
+ * from the list.
+ */
+template <class T>
+void
+mT_FG_List<T>::CheckTTL
+()
+{
+	pthread_mutex_lock ( & m_ListMutex );
+	ListIterator Element;
+	this->LastRun = time (0);
+	Element = Elements.begin();
+	while (Element != Elements.end())
+	{
+		if (Element->Timeout == 0)
+		{	// never timeouts
+			Element++;
+			continue;
+		}
+		if ( (this->LastRun - Element->LastSeen) > Element->Timeout )
+		{
+			SG_LOG ( SG_FGMS, SG_INFO,
+			  this->Name << ": TTL exceeded for "
+			  << Element->Name << " "
+			  << Element->Address.getHost() << " "
+			  << "after " << diff_to_days (Element->LastSeen - Element->JoinTime)
+			  );
+			Element = Elements.erase (Element);
+			continue;
+		}
+		Element++;
+	}
+	pthread_mutex_unlock ( & m_ListMutex );
+}
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/** thread safe
  * Use this for element access whenever possible. However, if you 
  * need to modify the element you have to use iterators which are not
  * thread safe and make sure to use Lock() and Unlock() yourself.

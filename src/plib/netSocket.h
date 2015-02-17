@@ -100,6 +100,7 @@ public:
   netAddress ( const char* host, int port ) ;
 
   void set ( const char* host, int port ) ;
+  void setPort ( int port );
   const std::string getHost () const ;
   unsigned int getPort() const ;
   unsigned int getIP () const ;

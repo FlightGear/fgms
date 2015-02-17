@@ -295,7 +295,10 @@ FG_CLI::cmd_show_stats
 		<< CRLF; if (check_pager()) return 0;
 	client << "I have " << fgms->m_RelayList.Size () << " relays"
 		<< CRLF; if (check_pager()) return 0;
-	client << "I have " << fgms->m_PlayerList.Size () << " users (" << fgms->m_NumMaxClients << " max)"
+	client << "I have " << fgms->m_PlayerList.Size () << " users ("
+		<< fgms->m_LocalClients << " local, "
+		<< fgms->m_RemoteClients << " remote, "
+		<< fgms->m_NumMaxClients << " max)"
 		<< CRLF; if (check_pager()) return 0;
 	client << "Sent counters:" << CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
@@ -913,7 +916,7 @@ FG_CLI::cmd_crossfeed_delete
  *
  *  possible arguments:
  *  crossfeed add ?
- *  crossfeed add IP-Address Name
+ *  crossfeed add IP-Address Port Name
  *  crossfeed add [...] <cr>
  */
 int
@@ -926,6 +929,8 @@ FG_CLI::cmd_crossfeed_add
 {
 	netAddress	Address;
 	string		Name;
+	int		Port;
+	int		I;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
 	{
@@ -942,6 +947,20 @@ FG_CLI::cmd_crossfeed_add
 			if (Address.getIP() == 0)
 			{
 				client << "% invalid IP address" << CRLF;
+				return (1);
+			}
+			break;
+		case 1: // Port or '?'
+			if ( need_help (argv[i]) )
+			{
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "Port" << "Port of the relay" << CRLF;
+				return (0);
+			}
+			Port  = StrToNum<int> ( argv[i], I );
+			if (I)
+			{
+				client << "% invalid port " << Port << CRLF;
 				return (1);
 			}
 			break;
@@ -968,11 +987,12 @@ FG_CLI::cmd_crossfeed_add
 	}
 	FG_ListElement E (Name);
 	E.Address = Address;
+	E.Address.setPort (Port);
 	size_t NewID;
 	ItList CurrentEntry = fgms->m_CrossfeedList.Find ( E.Address, "" );
 	if ( CurrentEntry == fgms->m_CrossfeedList.End() )
 	{       
-		NewID = fgms->m_CrossfeedList.Add (E, 0);
+		NewID = fgms->m_CrossfeedList.Add (E, Port);
 	}
 	else
 	{
@@ -1090,7 +1110,8 @@ FG_CLI::cmd_crossfeed_show
 		}
 		EntriesFound++;
 		client << "ID " << Entry.ID << ": "
-			<< Entry.Address.getHost() << " : " << Entry.Name
+			<< Entry.Address.getHost() << ":" << Entry.Address.getPort()
+			<< " : " << Entry.Name
 			<< CRLF; if (check_pager()) return 0;
 		if (Brief == true)
 		{
@@ -1181,10 +1202,6 @@ FG_CLI::cmd_relay_show
 				if (Address.getIP() == 0)
 				{
 					Name = argv[0];
-#if 0
-			//		client << "% invalid IP address" << CRLF;
-			//		return (1);
-#endif
 				}
 			}
 			break;
@@ -1240,22 +1257,16 @@ FG_CLI::cmd_relay_show
 		}
 		EntriesFound++;
 		client << "ID " << Entry.ID << ": "
-			<< Entry.Address.getHost() << " : " << Entry.Name
+			<< Entry.Address.getHost() << ":" << Entry.Address.getPort()
+			<< " : " << Entry.Name
 			<< CRLF; if (check_pager()) return 0;
 		if (Brief == true)
 		{
 			continue;
 		}
-		string A = timestamp_to_datestr (Entry.JoinTime);
-		string B = "NEVER";
-		if (Entry.JoinTime != Entry.LastSeen)
-		{
-			B = timestamp_to_days    (Entry.LastSeen);
-			B += " ago";
-		}
 		client << "  entered   : " << timestamp_to_datestr (Entry.JoinTime)
 			<< CRLF; if (check_pager()) return 0;
-		client << "  last seen : " << timestamp_to_datestr (Entry.JoinTime)
+		client << "  last seen : " << timestamp_to_datestr (Entry.LastSeen)
 			<< CRLF; if (check_pager()) return 0;
 		client << "  sent      : "
 			<< Entry.PktsSent << " packets"
@@ -1488,7 +1499,7 @@ FG_CLI::cmd_relay_delete
  *
  *  possible arguments:
  *  relay add ?
- *  relay add IP-Address [Name]
+ *  relay add IP-Address Port [Name]
  *  relay add [...] <cr>
  */
 int
@@ -1501,6 +1512,8 @@ FG_CLI::cmd_relay_add
 {
 	netAddress	Address;
 	string		Name;
+	int		Port;
+	int		I;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
 	{
@@ -1520,7 +1533,21 @@ FG_CLI::cmd_relay_add
 				return (1);
 			}
 			break;
-		default:
+		case 1: // Port or '?'
+			if ( need_help (argv[i]) )
+			{
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "Port" << "Port of the relay" << CRLF;
+				return (0);
+			}
+			Port  = StrToNum<int> ( argv[i], I );
+			if (I)
+			{
+				client << "% invalid port " << Port << CRLF;
+				return (1);
+			}
+			break;
+		default: // '?' or <CR>
 			if ( need_help (argv[i]) )
 			{
 				if (Name == "")
@@ -1539,6 +1566,7 @@ FG_CLI::cmd_relay_add
 	}
 	FG_ListElement E (Name);
 	E.Address = Address;
+	E.Address.setPort (Port);
 	size_t NewID;
 	ItList CurrentEntry = fgms->m_RelayList.Find ( E.Address, "" );
 	if ( CurrentEntry == fgms->m_RelayList.End() )
@@ -1547,7 +1575,7 @@ FG_CLI::cmd_relay_add
 	}
 	else
 	{
-		client << "entry already exists (ID " << CurrentEntry->ID << CRLF;
+		client << "entry already exists (ID " << CurrentEntry->ID << ")" << CRLF;
 		return 1;
 	}
 	client << "added with ID " << NewID << CRLF;
@@ -1564,6 +1592,8 @@ FG_CLI::cmd_relay_add
  *  show user ID <cr>
  *  show user IP-Address <cr>
  *  show user Name <cr>
+ *  show user local <cr>
+ *  show user remote <cr>
  *  show user [...] brief <cr>
  */
 int
@@ -1579,6 +1609,8 @@ FG_CLI::cmd_user_show
 	netAddress	Address ("0.0.0.0", 0);
 	string		Name;
 	bool		Brief = false;
+	bool		OnlyLocal = false;
+	bool		OnlyRemote = false;
 	size_t		EntriesFound = 0;
 	time_t		difftime;
 	time_t		now = time(0);
@@ -1600,6 +1632,10 @@ FG_CLI::cmd_user_show
 					<< "IP" << "show user with IP-Address" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "NAME" << "show user with NAME" << CRLF;
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "local" << "show only local users" << CRLF;
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "remote" << "show only local users" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "<cr>" << "show long listing" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
@@ -1650,6 +1686,16 @@ FG_CLI::cmd_user_show
 	string		FullName;
 	client << fgms->m_PlayerList.Name << ":" << CRLF;
 	client << CRLF;
+	if (Name == "local")
+	{
+		OnlyLocal = true;
+		Name = "";
+	}
+	if (Name == "remote")
+	{
+		OnlyRemote = true;
+		Name = "";
+	}
 	for (int i = 0; i < Count; i++)
 	{
 		now = time(0);
@@ -1668,6 +1714,16 @@ FG_CLI::cmd_user_show
 		else if (Name != "")
 		{
 			if (Player.Name.find(Name) == string::npos)
+				continue;
+		}
+		else if (OnlyLocal == true)
+		{
+			if (Player.IsLocal == false)
+				continue;
+		}
+		else if (OnlyRemote == true)
+		{
+			if (Player.IsLocal == true)
 				continue;
 		}
 		sgCartToGeod ( Player.LastPos, PlayerPosGeod );

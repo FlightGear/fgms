@@ -68,11 +68,11 @@ Client::Client
 			NewModes.c_cc[VTIME] = 1;
 			( void ) tcsetattr ( fileno ( stdin ), TCSANOW, &NewModes );
 		#else
-			AllocConsole();
-			freopen ( "conin$", "r", stdin );
-			freopen ( "conout$", "w", stdout );
-			freopen ( "conout$", "w", stderr );
-		#endif
+			AllocConsole(); // not required, but does not seem to harm
+			freopen ( "conin$", "r", stdin ); // needed to use WaitForSingleObject(GetStdHandle( STD_INPUT_HANDLE ),timeout_ms);
+			freopen ( "conout$", "w", stdout ); // only required IFF console output redirected
+			freopen ( "conout$", "w", stderr ); // this break the redirection, so CLI can be always seen
+ 		#endif
 	}
 	else
 	{	// setup telnet session
@@ -121,7 +121,7 @@ Client::wait_for_input
 )
 {
 #ifdef _MSC_VER
-	if (m_socket != 0)
+	if (m_socket == 0)
 	{
 		return wait_for_key (seconds * 1000);
 	}

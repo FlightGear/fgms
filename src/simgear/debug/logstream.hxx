@@ -404,8 +404,14 @@ sglog()
 # define SG_LOG(C,P,M) ::sglog() << ::loglevel(C,P) << M << std::endl
 # define SG_CONSOLE(C,P,M) ::sglog() << ::loglevel((sgDebugClass) (C|SG_CONSOLE),P) << ::sglog().datestr() << M << "\r\n";
 #else
+#ifdef _MSC_VER
+# define SG_CONSOLE(C,P,M) sglog() << loglevel((sgDebugClass) (C|SG_CONSOLE),P) << sglog().datestr() << M << "\r\n"; \
+    cerr << sglog().datestr() << M << "\r\n";
+# define SG_LOG(C,P,M) SG_CONSOLE(C,P,M)
+#else
 # define SG_LOG(C,P,M) sglog()   << loglevel(C,P) << sglog().datestr() << M << std::endl
 # define SG_CONSOLE(C,P,M) sglog() << loglevel((sgDebugClass) (C|SG_CONSOLE),P) << sglog().datestr() << M << "\r\n";
+#endif
 #endif
 
 #endif // _LOGSTREAM_H
