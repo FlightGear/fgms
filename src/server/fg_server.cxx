@@ -1854,7 +1854,7 @@ FG_SERVER::SetLogfile
 {
 	m_LogFileName = LogfileName;
 	SG_LOG ( SG_FGMS, SG_ALERT,"# using logfile " << m_LogFileName );
-	if ( ( m_LogFile ) && (m_LogFile != cerr) )
+	if ( m_LogFile.is_open() )
 	{
 		m_LogFile.close ();
 	}
