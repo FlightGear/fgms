@@ -86,8 +86,9 @@ if(WIN32)
         # turn off various warnings
         set(WARNING_FLAGS "${WARNING_FLAGS} /wd4996")
         # C4146: unary minus operator applied to unsigned type, result still unsigned
+        # C4267: '=' : conversion from 'size_t' to 'int', possible loss of data
         # foreach(warning 4244 4251 4267 4275 4290 4786 4305)
-        foreach(warning 4146)
+        foreach(warning 4146 4267)
             set(WARNING_FLAGS "${WARNING_FLAGS} /wd${warning}")
         endforeach()
 
