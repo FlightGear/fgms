@@ -294,12 +294,21 @@ FG_SERVER::Init
 	//      all connections and re-init all
 	//      variables
 	//////////////////////////////////////////////////
-	if ( !m_LogFile )
+	if ( !m_LogFile.is_open() )
 	{
 		m_LogFile.open ( m_LogFileName.c_str(), ios::out|ios::app );
 		sglog().setLogLevels ( SG_FGMS, SG_INFO );
 		sglog().enable_with_date ( true );
-		sglog().set_output ( m_LogFile );
+        if (m_LogFile.is_open()) 
+        {
+    		sglog().set_output ( m_LogFile );
+        }
+        else
+        {
+			SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
+			           << "Failed to open log file "
+                       << m_LogFileName );
+        }
 	}
 	if ( m_Initialized == false )
 	{
