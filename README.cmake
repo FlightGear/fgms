@@ -1,4 +1,4 @@
-file: README.cmake - 20150216 - created 20120704
+file: README.cmake - 20150307 - 20150216 - created 20120704
 
 This project is now only configured by cmake, and then using 
 either the default or the chosen build generation.
@@ -7,6 +7,13 @@ Due to the BIG difficulty of maintaining multiple
 versions of the windows MSVC build files, previously 
 in the 'msvc' folder, this folder has been deleted,
 and a CMakeLists.txt added instead.
+
+Prerequisites:
+
+1. git - http://git-scm.com/
+2. cmake - http://www.cmake.org/
+3. pthread - http://en.wikipedia.org/wiki/POSIX_Threads
+4. PostgreSQL - [optional] http://www.postgresql.org/ - only for tracker build
 
 Building:
 
@@ -43,15 +50,6 @@ then when the list looks clean, push [ Generate ].
 Special Requirements for Windows ONLY:
 ======================================
 
-Specifically, and ONLY for Windows, you MUST copy 
-the fgms source file config.h.msvc to your build 
-directory, naming it config.h. This is NOT required 
-in any unix system, and may cause problems if done.
-
-In your build directory, CREATE one blank file,
-'unistd.h'. Note this does NOT apply to say a cygwin
-build, since that is in fact a pseudo UNIX environment.
-
 Further fgms has a requirement of pthreads for 
 windows - see http://sourceware.org/pthreads-win32/
 During the compile of fgms it must find the 'pthread.h' 
@@ -76,9 +74,11 @@ Installing:
 
 If you want a system wide install, then this is 
 by the classic -
-$ make install
+$ [sudo] make install
 
 Or the cmake way -
+$ cmake --build . --config Release
+or
 $ cmake -DBUILD_TYPE=Release -P cmake_install.cmake
 
 Or in the MSVC IDE, running the 'INSTALL' project 
@@ -169,6 +169,6 @@ Have fun!
 
 Geoff.
 reports _at_ geoffair _dot_ info
-20150216
+20150307
 
 # eof
