@@ -43,7 +43,7 @@
  * 
  * \subsection ExtermalLinks Links
  * 
- * - \b Source:  <a href="https://gitorious.org/fgms/fgms-0-x">gitorious.org/fgms/fgms-0-x</a>
- * - \b Home:    <a href="http://fgms.sourceforge.net/">fgms.sourceforge.net/</a>
+ * - \b Source:  <a href="https://gitlab.com/fgms/fgms-0-x">gitlab.com/fgms/fgms-0-x</a>
+ * - \b Home:    <a href="http://fgms.freeflightsim.org/">fgms.freeflightsim.org</a>
  * - \b Wiki:   <a href="http://wiki.flightgear.org/Fgms">wiki.flightgear.org/Fgms</a>
  */

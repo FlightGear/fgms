@@ -31,7 +31,7 @@
  * \endcode
  * - Now clone the source code with git
  * \code 
- *  git clone git://gitorious.org/fgms/fgms-0-x.git
+ *  git clone https://gitlab.com/fgms/fgms-0-x.git
  *  \endcode
  * - Create and enter a temp directory (this is where all the compilers working files will be written to) and 
  *   configure using cmake

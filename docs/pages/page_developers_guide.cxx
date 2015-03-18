@@ -5,12 +5,12 @@
  * 
  * \section the_code Source Code
  * * The source for the project is versioned using git
- * * The repository is hosted at gitorious.org
- * 	- https://gitorious.org/fgms/fgms-0-x
+ * * The repository is hosted at gitlab.com
+ * 	- https://gitlab.com/fgms/fgms-0-x
  * 
  * To checkout the source code run
  * \code 
- * 		git clone git://gitorious.org/fgms/fgms-0-x.git 
+ * 		git clone https://gitlab.com/fgms/fgms-0-x.git
  * \endcode
  * 
  * 
