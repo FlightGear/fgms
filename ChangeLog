@@ -1,3 +1,52 @@
+commit 5271ec7bedbee8ee7305808a93cc1ca7c7603dbd
+Author: Oliver Schroeder <gitorious@postrobot.de>
+Date:   Fri Apr 10 09:37:11 2015 +0200
+
+    added a ChangeLog generator
+
+commit feb6dd8348c713f62b9fa63b6c0a4639d82993d7
+Merge: f95fb3a 4ded859
+Author: Oliver Schröder <gitorious@postrobot.de>
+Date:   Wed Mar 18 06:43:36 2015 +0000
+
+    Merge branch 'docs' into 'master'
+    
+    Docs update
+    
+    Changing links to gitlab.com
+    
+    See merge request !1
+
+commit 4ded859045bff4028ccf99122b0d583e0d2671fa
+Author: Pedro <pete@daffodil.uk.com>
+Date:   Wed Mar 11 00:30:54 2015 +0000
+
+    Add README
+
+commit 64c1bd52e5cedbf81369fa5815edbe228bd0e548
+Author: Pedro <pete@daffodil.uk.com>
+Date:   Tue Mar 10 23:08:07 2015 +0000
+
+    oops wrong repos
+
+commit f2abde1789ed5a916b884431f8f30e6f47be197d
+Author: Pedro <pete@daffodil.uk.com>
+Date:   Tue Mar 10 22:59:00 2015 +0000
+
+    change links to gitlab
+
+commit f95fb3a099cfedb9aea21580951fcbad840e0639
+Author: Geoff McLane <ubuntu@geffair.info>
+Date:   Sat Mar 7 14:55:29 2015 +0100
+
+    update README.cmake
+
+commit 611364256405e9ce08ca933532ad068551e6dc11
+Author: Oliver Schroeder <gitorious@postrobot.de>
+Date:   Fri Mar 6 08:28:23 2015 +0100
+
+    gitlab test
+
 commit e1ef4627eafe6c1fd0ecc4231e0842ba2ec144f4
 Author: Geoff McLane <ubuntu@geffair.info>
 Date:   Tue Mar 3 14:19:25 2015 +0100
