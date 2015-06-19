@@ -1949,6 +1949,7 @@ FG_SERVER::Done
 	{
 		return;
 	}
+	Show_Stats();   // 20150619:0.11.9: Add stats to the LOG on exit
 	SG_LOG ( SG_FGMS, SG_ALERT, "FG_SERVER::Done() - exiting" );
 	m_LogFile.close();
 	if ( m_Listening == false )
