@@ -173,6 +173,9 @@ protected:
 	bool		m_IamHUB;
 	time_t		m_UpdateTrackerFreq;
 	bool		m_WantExit;
+
+    //////////////////////////////////////////////////
+    bool    m_useExitFile, m_useResetFile, m_useStatFile; // 20150619:0.11.9: be able to disable these functions
 	//////////////////////////////////////////////////
 	//
 	//  statistics

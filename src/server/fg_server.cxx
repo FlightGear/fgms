@@ -225,6 +225,14 @@ FG_SERVER::FG_SERVER
 	m_TrackerPosition	= 0; // Tracker messages queued
 	m_LocalClients		= 0;
 	m_RemoteClients		= 0;
+
+    // Be able to enable/disable file interface
+    // On start-up if the file already exists, disable
+    struct stat buf;
+    m_useExitFile       = ( stat ( exit_file,&buf ) ) ? true : false;
+    m_useResetFile      = ( stat ( reset_file,&buf ) ) ? true : false; // caution: this has failed in the past
+    m_useStatFile       = ( stat ( stat_file,&buf ) ) ? true : false;
+
 	m_Uptime		= time(0);
 	m_WantExit		= false;
 	ConfigFile		= "";
@@ -492,7 +500,12 @@ FG_SERVER::Init
 		           << ":" << Entry.Address.getPort() );
 	}
 	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# I have " << m_BlackList.Size() << " blacklisted IPs" );
-	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# Files: exit=[" << exit_file << "] stat=[" << stat_file << "]" );
+
+    if (m_useExitFile && m_useStatFile) // only show this IFF both are enabled
+    {
+        SG_CONSOLE ( SG_FGMS, SG_ALERT, "# Files: exit=[" << exit_file << "] stat=[" << stat_file << "]" );
+    }
+
 	m_Listening = true;
 	return ( SUCCESS );
 } // FG_SERVER::Init()
@@ -1494,46 +1507,55 @@ void FG_SERVER::Show_Stats ( void )
 }
 
 /**
- * @brief Check stats file etc
+ * @brief Check exit and stat files
+ *
+ * Do not think this is used by many, but is a convenient way to output some stats
+ * to the LOG, or request an exit. In the past the reset action has failed, and 
+ * although some fixes have been put in place, a caution about using this reset.
+ *
+ * 20150619:0.11.9: If running instance can NOT delete a detected file, usually due to wrong permissions,
+ * that particular file interface will be disabled. Also if any of these files exist at start-up, again 
+ * that file interface will be disable. This also gives a way to disable this file interface actions.
+ *
  */
 int
 FG_SERVER::check_files
 ()
 {
 	struct stat buf;
-	if ( stat ( exit_file,&buf ) == 0 )
+	if ( m_useExitFile && (stat ( exit_file,&buf ) == 0) )
 	{
 		SG_LOG ( SG_FGMS, SG_ALERT, "## Got EXIT file : " << exit_file );
 		unlink ( exit_file );
 		if ( stat ( exit_file,&buf ) == 0 )
 		{
-			SG_LOG ( SG_FGMS, SG_ALERT, "ERROR: Unable to delete exit file! Doing hard exit..." );
-			exit ( 1 );
+			SG_LOG ( SG_FGMS, SG_ALERT, "WARNING: Unable to delete exit file " << exit_file << "! Disabled interface..." );
+            m_useExitFile = false;
 		}
 		return 1;
 	}
-	else if ( stat ( reset_file,&buf ) == 0 )
+	else if ( m_useResetFile && ( stat ( reset_file,&buf ) == 0 ) )
 	{
 		SG_LOG ( SG_FGMS, SG_ALERT, "## Got RESET file " << reset_file );
 		unlink ( reset_file );
 		if ( stat ( reset_file,&buf ) == 0 )
 		{
-			SG_LOG ( SG_FGMS, SG_ALERT, "ERROR: Unable to delete reset file! Doing hard exit..." );
-			exit ( 1 );
+			SG_LOG ( SG_FGMS, SG_ALERT, "WARNING: Unable to delete reset file " << reset_file << "! Disabled interface..." );
+			m_useResetFile = false;
 		}
 		m_ReinitData	= true; // init the data port
 		m_ReinitTelnet	= true; // init the telnet port
 		m_ReinitAdmin	= true; // init the admin port
 		SigHUPHandler ( 0 );
 	}
-	else if ( stat ( stat_file,&buf ) == 0 )
+	else if ( m_useStatFile && ( stat ( stat_file,&buf ) == 0 ) )
 	{
 		SG_LOG ( SG_FGMS, SG_ALERT, "## Got STAT file " << stat_file );
 		unlink ( stat_file );
 		if ( stat ( stat_file,&buf ) == 0 )
 		{
-			SG_LOG ( SG_FGMS, SG_ALERT, "ERROR: Unable to delete stat file! Doing hard exit..." );
-			exit ( 1 );
+			SG_LOG ( SG_FGMS, SG_ALERT, "WARNING: Unable to delete stat file " << stat_file << "! Disabled interface..." );
+			m_useStatFile = false;
 		}
 		Show_Stats();
 	}
