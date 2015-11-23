@@ -1,0 +1,5 @@
+Migration Instructions of fgtracker
+
+From v1.6 to v2.0
+[program]	Fully replaced
+[db]		table fgt_servers added
