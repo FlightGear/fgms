@@ -2,7 +2,7 @@
 // signal handler function
 function sig_handler($signo)
 {
-	global $var,$fgt_error_report,$fgt_postgres;
+	global $var,$fgt_error_report,$fgt_sql;
      switch ($signo) {
 		case SIGTERM:
 			$message="SIGTERM received";
@@ -27,8 +27,8 @@ function sig_handler($signo)
 		case SIGUSR1:
 			break;
 		case SIGALRM:
-			if ($fgt_postgres->connected===false)
-				$fgt_postgres->connectmaster();
+			if ($fgt_sql->connected===false)
+				$fgt_sql->connectmaster();
 			break;
 		default:
 			// handle all other signals
@@ -38,14 +38,20 @@ function sig_handler($signo)
 
 }
 
+if (IS_WINDOWS)
+{
+	$message="Skipping the Installation of signal handler - OS not supported";
+	$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);
+}else
+{
+	// setup signal handlers
+	pcntl_signal(SIGCHLD, "sig_handler");
+	pcntl_signal(SIGALRM, "sig_handler");
+	pcntl_signal(SIGTERM, "sig_handler");
+	pcntl_signal(SIGINT, "sig_handler");
+	pcntl_signal(SIGQUIT, "sig_handler");
+	$message="Installing signal handler...";
+	$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);
+}
 
-$message="Installing signal handler...";
-$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);
-
-// setup signal handlers
-pcntl_signal(SIGCHLD, "sig_handler");
-pcntl_signal(SIGALRM, "sig_handler");
-pcntl_signal(SIGTERM, "sig_handler");
-pcntl_signal(SIGINT, "sig_handler");
-pcntl_signal(SIGQUIT, "sig_handler");
 ?>

@@ -42,9 +42,9 @@ class fgt_postgres{
 		$this->conn=$conn1;
 		return true;
 	}
-	
+	/*Not necessary to be called as connection is non-presistent
 	function __destruct()
-	{	/*Not necessary to be called as connection is non-presistent*/
+	{	
 		if($this->connected===false)
 			return;
 		
@@ -61,7 +61,7 @@ class fgt_postgres{
 			return false;
 		}
 			
-	}
+	}*/
 }
 
 ?>
