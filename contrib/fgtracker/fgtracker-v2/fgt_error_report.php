@@ -4,7 +4,7 @@ class fgt_error_report
 	var $handle_core;/*Core log file pointer*/
 	var $handle_access;/*Access log file pointer*/
 	
-	function fgt_error_report()
+	function  __construct ()
 	{
 		print $this->make_date_str()."Initializing Error reporting Manager\n";
 		$this->handle_core = fopen(dirname(__FILE__)."/log.txt", "a+");
@@ -13,7 +13,7 @@ class fgt_error_report
 			print $this->make_date_str()."Failed to Initialize Error reporting Manager. Exiting...\n";
 			exit();
 		}
-		$message="Error reporting Manager Initialized";
+		$message="Error reporting Manager initialized";
 		$this->fgt_set_error_report("CORE",$message,E_WARNING);
 		$message="Log location:".dirname(__FILE__);
 		$this->fgt_set_error_report("CORE",$message,E_ALL);		

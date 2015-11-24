@@ -1,6 +1,8 @@
 <?php
 class fgt_postgres{
-	
+	/*Postgres manager
+	Manage connections to postgresSQL
+	*/
 	var $conn;
 	var $connected;
 	
@@ -9,13 +11,19 @@ class fgt_postgres{
 		global $var;
 		$this->connected=false;
 		$this->connectmaster();
+		while ($this->connected!==true)
+		{
+			sleep(1);
+			if($var['exitflag']===true)
+				exit;
+		}
 	}
 	
 	public function connectmaster()
 	{
 		global $var,$fgt_error_report;
 		/*connect to Server 1*/
-		$message="Connecting to postgres server - ".$var['postgre_conn']['desc']."...";
+		$message="Connecting to postgres server - ".$var['postgre_conn']['desc'];
 		$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);	
 
 		if ($var['postgre_conn']['host']=="")

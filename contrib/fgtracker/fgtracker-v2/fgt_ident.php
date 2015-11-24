@@ -3,7 +3,7 @@ class fgt_ident
 {
 	function fgt_ident()
 	{
-		global $fgt_error_report,$var;
+		global $fgt_error_report;
 		$message="Server Ident Manager initalized";
 		$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);		
 	}
@@ -11,18 +11,24 @@ class fgt_ident
 	function check_ident($uuid)
 	{
 		global $fgt_error_report,$var,$clients,$fgt_sql;
-		print $clients[$uuid]['read_buffer'];
-		$protocal_version=null;
+		//print $clients[$uuid]['read_buffer'];
+
 		/*check if whole message received*/
 		$slash_n_pos = strpos($clients[$uuid]['read_buffer'], "\0");
 		if($slash_n_pos===false)
 			return;
-		socket_getpeername( $clients[$uuid]['socket'] ,$address);
-		
-		/*obtain the ident information*/
+		/*read line*/
 		$lines=explode("\0", $clients[$uuid]['read_buffer'],2);
 		$line=$lines[0];
 		$clients[$uuid]['read_buffer']=$lines[1];
+		
+		/*check if first message (first line from fgms will be ignored)*/
+		if($clients[$uuid]['protocal_version']==null)
+		{
+			$clients[$uuid]['protocal_version']="Unknown";
+			return;
+		}
+		socket_getpeername( $clients[$uuid]['socket'] ,$address);
 		
 		/*check the version*/
 		$ver_test=strpos($line, "NOWAIT");
@@ -56,6 +62,7 @@ class fgt_ident
 			$clients[$uuid]['identified']=true;
 			$clients[$uuid]['protocal_version']=$protocal_version;
 			$clients[$uuid]['read_class']=new fgt_read_NOWAIT($uuid);
+			$clients[$uuid]['msg_process_class']=new fgt_msg_process($uuid);
 			$clients[$uuid]['write_buffer'].="OK\0";
 			return;
 		}

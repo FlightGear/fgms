@@ -23,9 +23,10 @@ $var['os'] = strtoupper(PHP_OS);
 $var['fgt_ver']="2.0INCOMPLETE";
 $var['php_ver']=phpversion ();
 $var['exitflag']=false;
+$var['ping_interval']=10;/*check timeout interval*/
 
-$message="FGTrcker Version ".$var['fgt_ver']." in ".$var['os']." with PHP ".$var['php_ver'];
-$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);
+$message="FGTracker Version ".$var['fgt_ver']." in ".$var['os']." with PHP ".$var['php_ver'];
+$fgt_error_report->fgt_set_error_report("CORE",$message,E_ERROR);
 	
 if(substr($var['os'],0,3) != "WIN")
 {
@@ -38,28 +39,17 @@ if(substr($var['os'],0,3) != "WIN")
 require("fgt_read_NOWAIT.php");
 require("fgt_ident.php");
 require("fgt_postgres.php");
+require("fgt_msg_process.php");
+require("fgt_connection_mgr.php");
 
 $fgt_ident=new fgt_ident();
-
-/*check connection with Postgresql*/
 $fgt_sql=new fgt_postgres();
-while ($fgt_sql->connected!==true)
-{
-	sleep(1);
-	if($var['exitflag']===true)
-	return;
-}
-
-// create socket
-$socket=socket_create_listen($var['port']) or die("Could not Create socket\n");
-$message="Started listening port ".$var['port'];
-$fgt_error_report->fgt_set_error_report("CORE",$message,E_WARNING);
-socket_set_nonblock($socket);
+$fgt_conn=new fgt_connection_mgr();
 
 $clients=Array();
 while (1)
 {
-	/*$socket_array[$uuid]=Array(
+	/*$clients[$uuid]=Array(
 	[res socket],
 	[bool connected],
 	[bool identified],
@@ -67,69 +57,40 @@ while (1)
 	[str server_ident],
 	[str read_buffer],
 	[class read_class],
+	[class msg_process_class],
+	[int last_reception],
+	[int timeout_stage],
 	[str write_buffer])
 	*/
+	
 	// accept incoming connections
-	// spawn another socket to handle communication
-	$newc = socket_accept($socket);
-	if($newc !== false and $newc !=null)
-    {
-        socket_getpeername( $newc ,$address);
-		$uuid=uniqid();
-		$message="Received connection with $newc from $address. UUID=$uuid";
-		$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);
-		
-        $clients[$uuid] = Array("socket"=>$newc,'connected'=>TRUE,'identified'=>FALSE,'read_buffer'=>NULL,'write_buffer'=>NULL);
-		socket_set_nonblock($clients[$uuid]['socket']);
-    }
-	$i=0;
+	$fgt_conn->accept_connection();
+	
 	foreach($clients as $uuid=>$client)
 	{
-		/*Check the connected flag. If false then close the connection and unset*/
-		if($client['connected']===false)
-		{
-			
-			socket_close($client['socket']);
-			$message="Stopped connection with".$client['socket']." (UUID=$uuid)";
-			$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);
-			unset($clients[$uuid]);
+		/*Check the connected flag.*/
+		if( $fgt_conn->close_connection($uuid)===true)
 			continue;
-		}
 		
 		// read client input
-		if(socket_recv ( $clients[$uuid]['socket'] , $buft , 2048 , MSG_DONTWAIT )===false)
-		{
-			if(socket_last_error ($clients[$uuid]['socket'])!=11)
-				print socket_strerror(socket_last_error ($clients[$uuid]['socket']))."\n";
-		}else
-		{
-			$clients[$uuid]['read_buffer'].=$buft;
-		}
+		if( $fgt_conn->read_connection($uuid)===false)
+			continue;
 		
 		/*Process the read buffer (if needed)*/
 		if(strlen ($clients[$uuid]['read_buffer'])>2)
 		{	
-			$clients[$uuid]['last_connection']=time();
+			$clients[$uuid]['last_reception']=time();
 			if($client['identified']===false)
 				$fgt_ident->check_ident($uuid);
 			else $clients[$uuid]['read_class']->read_buffer();
 		}
 		
-		/*Process the write buffer*/
-		if(strlen ($clients[$uuid]['write_buffer'])!=0)
-		{
-			$clients[$uuid]['last_connection']=time();
-			$bytes_written=socket_write($clients[$uuid]['socket'], $clients[$uuid]['write_buffer'], strlen ($clients[$uuid]['write_buffer']));
-			if($bytes_written===false)
-			{
-				$message="Failed sending buffer to ".$client['socket'].": ".socket_strerror(socket_last_error ($clients[$uuid]['socket']));
-				$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);
-				$clients[$uuid]['connected']=false;
-			}else
-				$clients[$uuid]['write_buffer'] = substr($clients[$uuid]['write_buffer'], $bytes_written);
-		}
-		
 		/*check timeout*/
+		$fgt_conn->check_timeout($uuid);
+		
+		/*Process the write buffer*/
+		$fgt_conn->write_connection($uuid);
+		
 	}
 	if($var['exitflag']===true)
 	{
@@ -140,16 +101,7 @@ while (1)
 	usleep(200000);
 }
 // close sockets
-foreach($clients as $uuid=>$client)
-{
-	socket_close($client['socket']);
-	$message="Stopped connection with ".$client['socket']." (UUID=$uuid)";
-	$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);
-}
-
-socket_close($socket);
-$message="Stopped listening socket on port ".$var['port'];
-$fgt_error_report->fgt_set_error_report("CORE",$message,E_WARNING);
+$fgt_conn->close_all_connection();
 $fgt_error_report->terminate();
 ?>
 
