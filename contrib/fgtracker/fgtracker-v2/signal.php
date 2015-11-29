@@ -27,8 +27,8 @@ function sig_handler($signo)
 		case SIGUSR1:
 			break;
 		case SIGALRM:
-			if ($fgt_sql->connected===false)
-				$fgt_sql->connectmaster();
+			$message="SIGALRM received";
+			$fgt_error_report->fgt_set_error_report("CORE",$message,E_ERROR);
 			break;
 		default:
 			// handle all other signals

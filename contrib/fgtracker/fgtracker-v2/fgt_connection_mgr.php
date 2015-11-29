@@ -8,6 +8,7 @@ class fgt_connection_mgr
 	
 	function __construct ()
 	{
+		/*This function will never exit until a socket is successfully created*/
 		global $fgt_error_report,$var;
 		$this->socket_seq=0;
 		$message="Connection Manager initalized";
@@ -16,9 +17,21 @@ class fgt_connection_mgr
 		$socket=socket_create_listen($var['port']);
 		if($socket===false)
 		{
-			$message="Could not create socket on port ".$var['port'];
-			$fgt_error_report->fgt_set_error_report("CORE",$message,E_ERROR);
-			exit;
+			$message="Could not create socket on port ".$var['port'].". Retry in 10 seconds";
+			$fgt_error_report->fgt_set_error_report("CORE",$message,E_WARNING);
+			$last_failed=time();
+			while (1)
+			{
+				sleep(1);
+				if(time()-$last_failed>10)
+				{
+					$this->__construct();
+					break;
+				}
+				if($var['exitflag']===true)
+					exit;
+			}
+			return;
 		}
 		$message="Started listening port ".$var['port'];
 		$fgt_error_report->fgt_set_error_report("CORE",$message,E_WARNING);
@@ -83,12 +96,13 @@ class fgt_connection_mgr
 		return false;
 	}
 	
-	function close_all_connection()
+	function close_all_connections()
 	{
 		/*Close all connections*/
 		global $fgt_error_report,$clients,$var;
 		foreach($clients as $uuid=>$client)
 		{
+			$clients[$uuid]['connected']=false;
 			$clients[$uuid]['write_buffer'].="Error : Fgtracker is closing your connection\0";
 			$this->write_connection($uuid);
 			socket_close($clients[$uuid]['socket']);

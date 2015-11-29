@@ -13,7 +13,7 @@ class fgt_read_NOWAIT
 	
 	function read_buffer()
 	{
-		global $fgt_error_report,$var,$clients;
+		global $fgt_error_report,$var,$clients,$fgt_sql;
 		$i=0;
 		while(1)
 		{
@@ -59,7 +59,7 @@ class fgt_read_NOWAIT
 				$clients[$this->uuid]['msg_process_class']->msg_process($msg_array,$this->uuid);
 			}else if($data[0]=="CONNECT" or $data[0]=="DISCONNECT")
 			{
-				$msg_array=Array('nature'=>$data[0],'callsign'=>$data[1],'type'=>$data[3],'date'=>$data[4],'time'=>$data[5]);
+				$msg_array=Array('nature'=>$data[0],'callsign'=>$data[1],'model'=>$data[3],'date'=>$data[4],'time'=>$data[5]);
 				$clients[$this->uuid]['msg_process_class']->msg_process($msg_array,$this->uuid);
 			}	else
 			{
@@ -67,9 +67,9 @@ class fgt_read_NOWAIT
 				$fgt_error_report->fgt_set_error_report("CORE",$message,E_ERROR);
 				$clients[$this->uuid]['write_buffer'].="Failed : Message not recognized\0";
 				$clients[$this->uuid]['connected']=false;
-				return;
 			}
-			
+			if($clients[$this->uuid]['connected']===false or $fgt_sql->connected===false)
+				return;
 			$i++;
 		}
 	}

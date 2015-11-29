@@ -1,18 +1,40 @@
 <?php
-/*variable setup*/
+/*
+FGTracker Version 2.0INCOMPLETE
 
+Author								: Hazuki Amamiya <FlightGear forum nick Hazuki>
+License								: GPL
+OS requirement 						: Linux 
+DB requirement						: PostgreSQL v8 or above
+PHP requirement						: PHP 5.1 or above (With php-cli module installed)
+Developed and tested under this env	: Debian 8.2/php 5.6.14+dfsg-0+deb8u1/PostgreSQL 9.4.5-0+deb8u1
+
+Current version (Version 2.0INCOMPLETE) does NOT support any version of fgms. When it is done, it 
+will support the following fgms:
+v0.10 : v0.10.23 and above
+v0.11 :	v0.11.6 and above
+v0.12 : v0.12.0 and above
+
+NOTICE to Windows user
+This program should be able to run in Windows environemt. However, the exit routine is not 
+implemented because of lack of signal handling (SIGINT). Unless at the time of quit the sockets are
+idle, otherwise data discrepancy may occur.
+*/
+
+/*variable setup*/
 $var['port'] = 5000; /*Port to bind*/
 $var['error_reporting_level'] = E_ALL; /*Set Error reporting level (E_ERROR, E_WARNING, E_NOTICE, E_ALL). Default E_ALL*/
 
 /*Postgresql information*/
-$var['postgre_conn']['host'] = ""; /*(Linux only: leave blank for using unix socket*/
-$var['postgre_conn']['port'] = 5432;
-$var['postgre_conn']['desc'] = "AC-SERVER";
+$var['postgre_conn']['host'] = ""; /*(Linux only: empty sting for using unix socket*/
+$var['postgre_conn']['port'] = 5432; /*(Linux only: lgnored if using unix socket*/
+$var['postgre_conn']['desc'] = "AC-VSERVER";
 $var['postgre_conn']['uname'] = "fgtracker";
 $var['postgre_conn']['pass'] = "fgtracker";
 $var['postgre_conn']['db'] = "fgtracker";
 
 /*Do not amend below unless in development*/
+
 if(!defined('MSG_DONTWAIT')) define('MSG_DONTWAIT', 0x40);
 set_time_limit(0);
 
@@ -21,12 +43,18 @@ $fgt_error_report=new fgt_error_report();
 
 $var['os'] = strtoupper(PHP_OS);
 $var['fgt_ver']="2.0INCOMPLETE";
-$var['php_ver']=phpversion ();
+$var['min_php_ver']='5.1';
 $var['exitflag']=false;
 $var['ping_interval']=10;/*check timeout interval*/
 
-$message="FGTracker Version ".$var['fgt_ver']." in ".$var['os']." with PHP ".$var['php_ver'];
+$message="FGTracker Version ".$var['fgt_ver']." in ".$var['os']." with PHP ".PHP_VERSION;
 $fgt_error_report->fgt_set_error_report("CORE",$message,E_ERROR);
+
+if (version_compare(PHP_VERSION, $var['min_php_ver'], '<')) {
+	$message="PHP is not new enough to support FGTracker. FGTracker is now exiting";
+	$fgt_error_report->fgt_set_error_report("CORE",$message,E_ERROR);
+	return;
+}
 	
 if(substr($var['os'],0,3) != "WIN")
 {
@@ -43,8 +71,9 @@ require("fgt_msg_process.php");
 require("fgt_connection_mgr.php");
 
 $fgt_ident=new fgt_ident();
+$fgt_conn=NULL; /*to be called by $fgt_sql->connectmaster*/
 $fgt_sql=new fgt_postgres();
-$fgt_conn=new fgt_connection_mgr();
+
 
 $clients=Array();
 while (1)
@@ -68,11 +97,14 @@ while (1)
 	
 	foreach($clients as $uuid=>$client)
 	{
-		/*Check the connected flag.*/
+		/*Check the connection*/
+		if ($fgt_sql->connectmaster()===true)
+			break;
+		
 		if( $fgt_conn->close_connection($uuid)===true)
 			continue;
 		
-		// read client input
+		/*Read client input*/
 		if( $fgt_conn->read_connection($uuid)===false)
 			continue;
 		
@@ -101,7 +133,7 @@ while (1)
 	usleep(200000);
 }
 // close sockets
-$fgt_conn->close_all_connection();
+$fgt_conn->close_all_connections();
 $fgt_error_report->terminate();
 ?>
 

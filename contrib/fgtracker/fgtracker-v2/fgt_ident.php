@@ -39,16 +39,18 @@ class fgt_ident
 			
 			$sql="select name from fgt_servers where key='NOWAIT' and ip='$address'";
 			$res=pg_query($fgt_sql->conn,$sql);
-			$nr=pg_num_rows($res);
-			if($nr!=0)
-				$clients[$uuid]['server_ident']=$serv_ident=pg_result($res,0,"name");
-			else if ($res===false or $res==NULL)
+			if ($res===false or $res==NULL)
 			{
 				$message="Client from $address could not be identified due to DB problem";
 				$fgt_error_report->fgt_set_error_report("CORE",$message,E_ERROR);
 				$clients[$uuid]['connected']=false;
+				$fgt_sql->connected=false;
 				return;
-			}else
+			}
+			$nr=pg_num_rows($res);
+			if($nr!=0)
+				$clients[$uuid]['server_ident']=$serv_ident=pg_result($res,0,"name");
+			else
 			{
 				$message="Client from $address could not be identified";
 				$fgt_error_report->fgt_set_error_report("CORE",$message,E_WARNING);
