@@ -85,7 +85,7 @@ class fgt_connection_mgr
 		global $fgt_error_report,$clients;
 		if($clients[$uuid]['connected']===false)
 		{
-			$clients[$uuid]['write_buffer'].="Error : Fgtracker is closing your connection\0";
+			$clients[$uuid]['write_buffer'].="Error : FGTracker is closing your connection\0";
 			$this->write_connection($uuid);
 			socket_close($clients[$uuid]['socket']);
 			$message="Stopped connection with ".$clients[$uuid]['server_ident']." (UUID=$uuid)";
