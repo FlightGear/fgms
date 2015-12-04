@@ -161,7 +161,7 @@ FG_TRACKER::AddMessage
 #if 0
 	if ( msg_queue.size () > 512 )
 	{
-		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER queue full, writeing backlog..." );
+		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER queue full, writing backlog..." );
 		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
 		WriteQueue ();
 		msg_queue.clear();

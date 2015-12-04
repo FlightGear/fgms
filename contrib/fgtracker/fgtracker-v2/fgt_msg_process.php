@@ -10,7 +10,7 @@ class fgt_msg_process
 		$this->uuid=$uuid;
 		
 		/*Get opening flights*/
-		$sql="select flights.id,callsign, count(*) as cnt from flights join waypoints on waypoints.flight_id=flights.id where status='OPEN' AND server='".$clients[$this->uuid]['server_ident'] ."' group by flights.id, callsign";
+		$sql="select flights.id,callsign, count(*) as cnt from flights join waypoints on waypoints.flight_id=flights.id where status='OPEN' AND (server='".$clients[$this->uuid]['server_ident'] ."' or server is NULL) group by flights.id, callsign";
 		$res=pg_query($fgt_sql->conn,$sql);
 		if ($res===false or $res==NULL)
 		{
@@ -116,9 +116,10 @@ class fgt_msg_process
 				if($this->open_flight_array[$msg_array['callsign']]['waypoints']!=2)
 					break;
 				$merge_speed_threshold=60; /*in KM/h*/
+				$flightid=$this->open_flight_array[$msg_array['callsign']]['id'];
 				$message="Splited flight detection on callsign ".$msg_array['callsign'];
 				$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_ALL);
-				$sql_parm=Array($msg_array['callsign'],$this->open_flight_array[$msg_array['callsign']]['id']);
+				$sql_parm=Array($msg_array['callsign'],$flightid);
 				$sql="select * from flights where callsign=$1 and (select extract(epoch from start_time) from flights where id=$2)-extract(epoch from end_time) <120 and (select extract(epoch from start_time) from flights where id=$2)- extract(epoch from end_time) > 0 and model=(select model from flights where id=$2) order by end_time desc limit 1";
 				$res=$this->fgt_pg_query_params($sql,$sql_parm);
 				if ($res===false or $res==NULL)
@@ -130,7 +131,7 @@ class fgt_msg_process
 				$p_flightid=pg_result($res,0,"id");
 				$message="First phase pass on callsign ".$msg_array['callsign']." (Previous flight id: $p_flightid). Conduct second phase check";
 				$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_ALL);
-				$sql_parm=Array($this->open_flight_array[$msg_array['callsign']]['id'],$p_flightid);
+				$sql_parm=Array($flightid,$p_flightid);
 				$sql='(select flight_id, extract(epoch from "time") AS time, latitude, longitude from waypoints where flight_id=$1 order by time desc) UNION all (select flight_id, extract(epoch from "time") AS time, latitude, longitude from waypoints where flight_id=$2 order by time desc limit 2)';						
 				$res=$this->fgt_pg_query_params($sql,$sql_parm);
 				if ($res===false or $res==NULL)
@@ -180,8 +181,42 @@ class fgt_msg_process
 					$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_ALL);
 					break;
 				}
-				$message="Splited flight second phase check pass on callsign ".$msg_array['callsign']." - Perform merging";
+				
+				$message="Splited flight second phase check pass on callsign ".$msg_array['callsign']." - Perform merging flight id $flightid to $p_flightid";
 				$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_NOTICE);
+				
+				$sql="START TRANSACTION;";
+				pg_query_params($fgt_sql->conn,$sql,Array());
+				/*update waypoints and no of wpts. Delete Effective_flight_time,start_icao, end_icao. Set status to open if the flight still active*/
+				$sql_parm=Array($p_flightid,$clients[$this->uuid]['server_ident']);
+				$sql2="update flights set end_time=NULL, effective_flight_time=NULL,start_icao=NULL, end_icao=NULL,status='OPEN', server=$2 where id=$1;";
+				pg_query_params($fgt_sql->conn,$sql2,$sql_parm);
+				
+				$sql_parm=Array($p_flightid,$flightid);
+				$sql3="update waypoints set flight_id=$1 where flight_id=$2;";
+				pg_query_params($fgt_sql->conn,$sql3,$sql_parm);
+				
+				/*delete flight*/
+				$sql_parm=Array($flightid);
+				$sql4="delete from flights where id=$1;";
+				pg_query_params($fgt_sql->conn,$sql4,$sql_parm);
+				
+				$sql_parm=Array($clients[$this->uuid]['server_ident'],$msg_array['callsign']);
+				$sql5="INSERT into log (username,\"table\",action,\"when\",callsign,usercomments,flight_id,flight_id2) VALUES ($1, 'flights', 'FGTracker auto merge flight $flightid to $p_flightid', NOW(), $2,NULL,$p_flightid,$flightid);";
+				pg_query_params($fgt_sql->conn,$sql5,$sql_parm);
+				
+				$sql6="COMMIT;";
+				$res=pg_query_params($fgt_sql->conn,$sql6,Array());
+				if ($res===FALSE)
+				{
+					$phpErr=error_get_last();
+					$message="Could not merge flight due to Internal DB Error - ".pg_last_error ($fgt_sql->conn);
+					$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_ERROR);
+					$message="PHP feedback of last error: ".$phpErr['message'];
+					$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_ERROR);
+					pg_query_params($fgt_sql->conn,"rollback;",Array());
+				}
+				$this->open_flight_array[$msg_array['callsign']]['id']=$p_flightid;
 			break;
 			case "CONNECT":
 				$err_prefix="Could not CONNECT for callsign \"".$msg_array['callsign']."\" from ".$clients[$this->uuid]['server_ident'].".";
@@ -197,7 +232,7 @@ class fgt_msg_process
 					pg_free_result($res);
 					
 					$sql_parm=Array($close_time,$this->open_flight_array[$msg_array['callsign']]['id']);
-					$sql="UPDATE flights SET status='CLOSED',end_time=$1 WHERE id=$2 AND status='OPEN';";
+					$sql="UPDATE flights SET status='CLOSED',end_time=$1 WHERE id=$2;";
 					$res=$this->fgt_pg_query_params($sql,$sql_parm);
 					if ($res===false or $res==NULL)
 						return;

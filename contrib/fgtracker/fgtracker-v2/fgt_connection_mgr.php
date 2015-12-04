@@ -52,7 +52,7 @@ class fgt_connection_mgr
 			$message="Received connection with $newc from $address. UUID=$uuid";
 			$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);
 			
-			$clients[$uuid] = Array("socket"=>$newc,'connected'=>TRUE,'identified'=>FALSE,'read_buffer'=>NULL,'write_buffer'=>NULL,'protocal_version'=>NULL,'server_ident'=>NULL,'timeout_stage'=>0);
+			$clients[$uuid] = Array("socket"=>$newc,'connected'=>TRUE,'identified'=>FALSE,'read_buffer'=>NULL,'write_buffer'=>NULL,'protocal_version'=>NULL,'server_ident'=>NULL,'last_reception'=>time(),'timeout_stage'=>0);
 			socket_set_nonblock($clients[$uuid]['socket']);
 		}
 	}
@@ -60,6 +60,7 @@ class fgt_connection_mgr
 	function check_timeout($uuid)
 	{
 		global $fgt_error_report,$clients,$var;
+		
 		if(time()-$clients[$uuid]['last_reception']-$var['ping_interval']*$clients[$uuid]['timeout_stage']>$var['ping_interval'])
 		{
 			$clients[$uuid]['timeout_stage']++;
@@ -73,7 +74,8 @@ class fgt_connection_mgr
 			}
 			$message="PING Client ".$clients[$uuid]['server_ident']." (No input for $timeout seconds)";
 			$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);
-			$clients[$uuid]['write_buffer'].="PING\0";
+			if($clients[$uuid]['identified']===true) /*Only write ping when identified*/
+				$clients[$uuid]['write_buffer'].="PING\0";
 		}
 	}
 	
@@ -127,7 +129,7 @@ class fgt_connection_mgr
 			{
 				$message="Socket Error - ".socket_strerror(socket_last_error ($clients[$uuid]['socket']));
 				$fgt_error_report->fgt_set_error_report("CORE",$message,E_ERROR);
-				$this->close_connection($uuid);
+				$clients[$uuid]['connected']=false;
 				return false;
 			}
 			return true;
@@ -155,6 +157,8 @@ class fgt_connection_mgr
 			$i++;	
 			/*check if stuck in write buffer too long. If so break*/
 			$bytes_written=socket_write($clients[$uuid]['socket'], $clients[$uuid]['write_buffer'], strlen ($clients[$uuid]['write_buffer']));
+			$message="Wrote $bytes_written bytes to ".$clients[$uuid]['server_ident'];
+			$fgt_error_report->fgt_set_error_report("CORE",$message,E_ALL);
 			if($bytes_written===false)
 			{
 				$message="Failed sending buffer to ".$clients[$uuid]['server_ident'].": ".socket_strerror(socket_last_error ($clients[$uuid]['socket']));

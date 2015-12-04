@@ -5,5 +5,5 @@ From v1.6 to v2.0
 [db]		table fgt_servers added
 [db]		table log altered. Added "usercomments","flight_id","flight_id2"
 [db]		table flights altered. Drop "distance","max_altimeter","max_speed". Added "server","start_icao","end_icao","effective_flight_time"
-[db]		table flights_archive altered. Drop "distance","max_altimeter","max_speed". Added "server","start_icao","end_icao","effective_flight_time"
-[db]		view flights_all altered. Drop "distance","max_altimeter","max_speed". Added "server","start_icao","end_icao","effective_flight_time"
+[db]		table flights_archive altered. Drop "distance","max_altimeter","max_speed". Added "start_icao","end_icao","effective_flight_time"
+[db]		view flights_all altered. Drop "distance","max_altimeter","max_speed". Added "start_icao","end_icao","effective_flight_time"

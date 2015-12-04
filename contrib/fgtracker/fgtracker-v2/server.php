@@ -22,7 +22,7 @@ idle, otherwise data discrepancy may occur.
 */
 
 /*variable setup*/
-$var['port'] = 5000; /*Port to bind*/
+$var['port'] = 8000; /*Port to bind*/
 $var['error_reporting_level'] = E_ALL; /*Set Error reporting level (E_ERROR, E_WARNING, E_NOTICE, E_ALL). Default E_ALL*/
 
 /*Postgresql information*/
@@ -45,7 +45,7 @@ $var['os'] = strtoupper(PHP_OS);
 $var['fgt_ver']="2.0INCOMPLETE";
 $var['min_php_ver']='5.1';
 $var['exitflag']=false;
-$var['ping_interval']=10;/*check timeout interval*/
+$var['ping_interval']=60;/*check timeout interval. Default(=60)*/
 
 $message="FGTracker Version ".$var['fgt_ver']." in ".$var['os']." with PHP ".PHP_VERSION;
 $fgt_error_report->fgt_set_error_report("CORE",$message,E_ERROR);
@@ -109,8 +109,9 @@ while (1)
 			continue;
 		
 		/*Process the read buffer (if needed)*/
+		//print strlen ($clients[$uuid]['read_buffer'])."-";
 		if(strlen ($clients[$uuid]['read_buffer'])>2)
-		{	
+		{
 			$clients[$uuid]['last_reception']=time();
 			if($client['identified']===false)
 				$fgt_ident->check_ident($uuid);

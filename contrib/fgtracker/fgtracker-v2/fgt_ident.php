@@ -65,7 +65,7 @@ class fgt_ident
 			$clients[$uuid]['protocal_version']=$protocal_version;
 			$clients[$uuid]['read_class']=new fgt_read_NOWAIT($uuid);
 			$clients[$uuid]['msg_process_class']=new fgt_msg_process($uuid);
-			$clients[$uuid]['write_buffer'].="OK\0";
+			//$clients[$uuid]['write_buffer'].="OK\0";
 			return;
 		}
 		/*$ver_test=strpos($line, "V20151118");

@@ -19,7 +19,7 @@ $msgArray=Array(
 /* Check separated flight */
 $msgArray=Array(
 	"FIRST LINE to be ignored",
-	"NOWAIT",
+	"NOWAIT"/*,
 	"CONNECT Quofei test B777 2012-06-23 22:16:25",
 	"POSITION Quofei test 44.943923 -73.097986 234.202738 2012-06-23 22:16:27",
 	"POSITION Quofei test 44.943923 -73.097986 234.425422 2012-06-23 22:16:47",
@@ -78,7 +78,7 @@ $msgArray=Array(
 	"POSITION Quofei test 45.056108 -73.370483 11568.34163 2012-06-23 22:25:27",
 	"POSITION Quofei test 45.067884 -73.369743 11801.97904 2012-06-23 22:25:37",
 	"POSITION Quofei test 45.079166 -73.368217 12100.25364 2012-06-23 22:25:47",
-	"POSITION Quofei test 45.090602 -73.366656 11851.31497 2012-06-23 22:25:57",*/
+	"POSITION Quofei test 45.090602 -73.366656 11851.31497 2012-06-23 22:25:57",/
 	"CONNECT Quofei test B777 2012-06-23 22:26:05",
 	"POSITION Quofei test 45.102261 -73.364654 11622.85805 2012-06-23 22:26:07",
 	"POSITION Quofei test 45.113836 -73.365151 11629.69913 2012-06-23 22:26:17",
@@ -166,12 +166,21 @@ $msgArray=Array(
 	"POSITION Quofei test 45.466399 -73.756468 110.012213 2012-06-23 22:39:57",
 	"POSITION Quofei test 45.466399 -73.756468 110.012213 2012-06-23 22:40:07",
 	"DISCONNECT Quofei test B777 2012-06-23 22:40:09",
-	"PING");
+	"PING"*/);
+function strToHex($string){
+    $hex = '';
+    for ($i=0; $i<strlen($string); $i++){
+        $ord = ord($string[$i]);
+        $hexCode = dechex($ord);
+        $hex .= substr('0'.$hexCode, -2);
+    }
+    return strToUpper($hex);
+}
 
 $socket=socket_create ( AF_INET , SOCK_STREAM , SOL_TCP );
 if ($socket===false)
 	die("could not create socket\n");
-socket_connect ( $socket , "127.0.0.1",5000);
+socket_connect ( $socket , "127.0.0.1",8000);
 
 foreach ($msgArray AS $msg)
 {
@@ -179,14 +188,22 @@ foreach ($msgArray AS $msg)
 	print "SEND: $msg\n";
 	socket_send($socket, $msg, strLen($msg), 0);
 	if($msg!="FIRST LINE to be ignored\0")
-		print "RECV: ".socket_read ( $socket , 2048 )."\n";
+	{
+		$reply=socket_read ( $socket , 2048 );
+		$replyhx=strToHex($reply);
+		print "FORECV: $reply\n";
+		print "FORECV: $replyhx\n";
+	}
+		
 }
 while (1)
 {
 	$reply=socket_read ( $socket , 2048 );
+	$replyhx=strToHex($reply);
 	if ($reply===false or $reply=="")
 		break;
 	print "PORECV: $reply\n";
+	print "PXRECV: $replyhx\n";
 }
 	
 socket_close ( $socket );
