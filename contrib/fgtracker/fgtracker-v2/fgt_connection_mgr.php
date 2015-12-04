@@ -148,7 +148,7 @@ class fgt_connection_mgr
 		{
 			if($i>3)
 			{
-				$message="Buffer write stuck in ".$clients[$this->uuid]['server_ident'] ." too long, moving out";
+				$message="Buffer write stuck in ".$clients[$uuid]['server_ident'] ." too long, moving out";
 				$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);
 				break;
 			}

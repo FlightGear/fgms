@@ -5,7 +5,7 @@ class fgt_ident
 	{
 		global $fgt_error_report;
 		$message="Server Ident Manager initalized";
-		$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);		
+		$fgt_error_report->fgt_set_error_report("IDENT",$message,E_NOTICE);		
 	}
 	
 	function check_ident($uuid)
@@ -42,7 +42,7 @@ class fgt_ident
 			if ($res===false or $res==NULL)
 			{
 				$message="Client from $address could not be identified due to DB problem";
-				$fgt_error_report->fgt_set_error_report("CORE",$message,E_ERROR);
+				$fgt_error_report->fgt_set_error_report("IDENT",$message,E_ERROR);
 				$clients[$uuid]['connected']=false;
 				$fgt_sql->connected=false;
 				return;
@@ -53,14 +53,14 @@ class fgt_ident
 			else
 			{
 				$message="Client from $address could not be identified";
-				$fgt_error_report->fgt_set_error_report("CORE",$message,E_WARNING);
+				$fgt_error_report->fgt_set_error_report("IDENT",$message,E_WARNING);
 				$clients[$uuid]['connected']=false;
 				return;
 			}
 			pg_free_result($res);
 			
 			$message="Client from $address identified as $serv_ident via protocal version $protocal_version";
-			$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);
+			$fgt_error_report->fgt_set_error_report("IDENT",$message,E_NOTICE);
 			$clients[$uuid]['identified']=true;
 			$clients[$uuid]['protocal_version']=$protocal_version;
 			$clients[$uuid]['read_class']=new fgt_read_NOWAIT($uuid);
@@ -74,7 +74,7 @@ class fgt_ident
 		{
 			$protocal_version="V20151118";
 			$message="Client from $address identified via protocal version $protocal_version";
-			$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);
+			$fgt_error_report->fgt_set_error_report("IDENT",$message,E_NOTICE);
 			$clients[$uuid]['identified']=true;
 			$clients[$uuid]['protocal_version']=$protocal_version;
 			return;
@@ -82,7 +82,7 @@ class fgt_ident
 		
 		/*could not be identified*/
 		$message="Client from $address could not be identified. Setting close connection flag";
-		$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);
+		$fgt_error_report->fgt_set_error_report("IDENT",$message,E_NOTICE);
 		$clients[$uuid]['socket']=false;
 	}
 }

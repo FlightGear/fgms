@@ -42,10 +42,12 @@ class fgt_error_report
 		
 		if($to_log===TRUE)
 		{
-			$message=$this->make_date_str().$message."\n";
+			$messageArr=explode ( "\n" , $message );
+			$message="";
+			foreach($messageArr as $messageElements)
+				$message.=$this->make_date_str().$loc."\t".$messageElements."\n";
 			print $message;
-			if($loc=="CORE")
-				fwrite($this->handle_core,$message);
+			fwrite($this->handle_core,$message);
 		}	
 		
 	}

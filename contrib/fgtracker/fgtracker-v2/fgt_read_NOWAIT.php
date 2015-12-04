@@ -8,7 +8,7 @@ class fgt_read_NOWAIT
 		
 		$this->uuid=$uuid;
 		$message="Subroutine \"NOWAIT\" for ".$clients[$this->uuid]['server_ident'] ." initialized";
-		$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);		
+		$fgt_error_report->fgt_set_error_report("R_NOWAIT",$message,E_NOTICE);		
 	}
 	
 	function read_buffer()
@@ -21,7 +21,7 @@ class fgt_read_NOWAIT
 			if($i==100)
 			{
 				$message="Buffer read stuck in ".$clients[$this->uuid]['server_ident'] ." too long, moving to another server";
-				$fgt_error_report->fgt_set_error_report("CORE",$message,E_NOTICE);
+				$fgt_error_report->fgt_set_error_report("R_NOWAIT",$message,E_NOTICE);
 				break;
 			}
 			
@@ -44,7 +44,7 @@ class fgt_read_NOWAIT
 			if(stripos ( $line , "* Bad Client *"  )!==false or stripos ( $line , ". . ."  )!==false)
 			{
 				$message="Unrecognized Message from ".$clients[$this->uuid]['server_ident'] ."($line). Message ignored";
-				$fgt_error_report->fgt_set_error_report("CORE",$message,E_WARNING);
+				$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_WARNING);
 				$clients[$this->uuid]['write_buffer'].="OK\0";
 				continue;
 			}
@@ -64,12 +64,12 @@ class fgt_read_NOWAIT
 			}	else
 			{
 				$message="Unrecognized Message from ".$clients[$this->uuid]['server_ident'] ."($line). Setting close connection flag";
-				$fgt_error_report->fgt_set_error_report("CORE",$message,E_ERROR);
+				$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_ERROR);
 				$clients[$this->uuid]['write_buffer'].="Failed : Message not recognized\0";
 				$clients[$this->uuid]['connected']=false;
 			}
 			if($clients[$this->uuid]['connected']===false or $fgt_sql->connected===false)
-				return;
+				return false;
 			$i++;
 		}
 	}
