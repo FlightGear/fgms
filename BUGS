@@ -7,8 +7,6 @@ have disabled anonymous posts (I want to know who is writing ;), so you
 have to register first.
 
 ===============================================================
-Bugs not registered in above bug tracker:
+Updated 2015-12-05
 
-1. [fgms v0.11.9] When the last pilot leaves, DISCONNECT packet becomes POSITION packet, leading the flight never ends
-2. [fgms v0.11.9] Failed to reply PING message, leading unnecessary disconnection with FGTracker
-3. [fgms v0.11.9] After disconnection because of bug 2, fgms will reconnect to FGTracker once there is pilot joining. However, the first CONNECT packet is missing, leading the flight cannot be tracked
+Please use new bug tracker here: https://gitlab.com/fgms/fgms-0-x/issues

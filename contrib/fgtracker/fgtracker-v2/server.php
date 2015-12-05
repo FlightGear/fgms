@@ -45,7 +45,7 @@ $var['os'] = strtoupper(PHP_OS);
 $var['fgt_ver']="2.0INCOMPLETE";
 $var['min_php_ver']='5.1';
 $var['exitflag']=false;
-$var['ping_interval']=60;/*check timeout interval. Default(=60)*/
+$var['ping_interval']=10;/*check timeout interval. Default(=60)*/
 
 $message="FGTracker Version ".$var['fgt_ver']." in ".$var['os']." with PHP ".PHP_VERSION;
 $fgt_error_report->fgt_set_error_report("CORE",$message,E_ERROR);
@@ -113,6 +113,7 @@ while (1)
 		if(strlen ($clients[$uuid]['read_buffer'])>2)
 		{
 			$clients[$uuid]['last_reception']=time();
+			$clients[$uuid]['timeout_stage']=0;
 			if($client['identified']===false)
 				$fgt_ident->check_ident($uuid);
 			else $clients[$uuid]['read_class']->read_buffer();
