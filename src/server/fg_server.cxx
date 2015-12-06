@@ -14,7 +14,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, US
 //
 
 #define FGMS_USE_THREADS
@@ -244,17 +244,13 @@ FG_SERVER::FG_SERVER
 /**
  * @brief Standard destructor
  */
-FG_SERVER::~FG_SERVER
-()
+FG_SERVER::~FG_SERVER()
 {
 	Done();
 } // FG_SERVER::~FG_SERVER()
 
 static void*
-telnet_helper
-(
-        void* context
-)
+telnet_helper( void* context )
 {
 	pthread_detach ( pthread_self() );
 	st_telnet* t = reinterpret_cast<st_telnet*> ( context );
@@ -265,10 +261,7 @@ telnet_helper
 }
 
 void*
-admin_helper
-(
-        void* context
-)
+admin_helper( void* context )
 {
 	st_telnet* t = reinterpret_cast<st_telnet*> ( context );
 	FG_SERVER* tmp_server = t->Instance;
@@ -294,8 +287,7 @@ void* detach_tracker ( void* vp )
  *  all connections and re-init all variables
  */
 int
-FG_SERVER::Init
-()
+FG_SERVER::Init()
 {
 	//////////////////////////////////////////////////
 	//      if we are already initialized, close
@@ -515,8 +507,7 @@ FG_SERVER::Init
  * @brief Do anything necessary to (re-) init the server  used to handle kill -HUP
  */
 void
-FG_SERVER::PrepareInit
-()
+FG_SERVER::PrepareInit()
 {
 	if ( ! m_IsParent )
 		return;
@@ -544,10 +535,7 @@ FG_SERVER::PrepareInit
  * @param Fd -- docs todo --
  */
 void*
-FG_SERVER::HandleAdmin
-(
-        int Fd
-)
+FG_SERVER::HandleAdmin( int Fd )
 {
 	FG_CLI*	MyCLI;
 	errno = 0;
@@ -568,10 +556,7 @@ FG_SERVER::HandleAdmin
  * @param Fd -- docs todo --
  */
 void*
-FG_SERVER::HandleTelnet
-(
-        int Fd
-)
+FG_SERVER::HandleTelnet( int Fd )
 {
 	errno = 0;
 	string		Message;
@@ -700,12 +685,7 @@ FG_SERVER::HandleTelnet
  */
 void
 FG_SERVER::AddBadClient
-(
-        const netAddress& Sender,
-        string&	ErrorMsg,
-        bool	IsLocal,
-	int	Bytes
-)
+( const netAddress& Sender, string&	ErrorMsg, bool IsLocal, int Bytes)
 {
 	string		Message;
 	FG_Player	NewPlayer;
@@ -715,7 +695,7 @@ FG_SERVER::AddBadClient
 	//////////////////////////////////////////////////
 	m_PlayerList.Lock ();
 	CurrentPlayer = m_PlayerList.Find (Sender);
-	if ( CurrentPlayer != m_PlayerList.End () )
+	if ( CurrentPlayer != m_PlayerList.End () ) /*FIX me! - Any problem if I am the last one!?*/
 	{
 		CurrentPlayer->UpdateRcvd (Bytes);
 		m_PlayerList.UpdateRcvd (Bytes);
@@ -750,11 +730,7 @@ FG_SERVER::AddBadClient
  * @param Msg
  */
 void
-FG_SERVER::AddClient
-(
-        const netAddress& Sender,
-        char* Msg
-)
+FG_SERVER::AddClient( const netAddress& Sender,char* Msg )
 {
 	uint32_t	MsgMagic;
 	string		Message;
@@ -797,8 +773,7 @@ FG_SERVER::AddClient
 	if ( IsLocal )
 	{
 		m_LocalClients++;
-		UpdateTracker ( NewPlayer.Name, NewPlayer.Passwd,
-		                NewPlayer.ModelName, NewPlayer.LastSeen, CONNECT );
+		UpdateTracker ( NewPlayer.Name, NewPlayer.Passwd, NewPlayer.ModelName, NewPlayer.LastSeen, CONNECT );
 	}
 	else
 	{
@@ -834,11 +809,7 @@ FG_SERVER::AddClient
  * @param Port
  */
 void
-FG_SERVER::AddRelay
-(
-        const string& Relay,
-        int Port
-)
+FG_SERVER::AddRelay( const string& Relay, int Port )
 {
 	FG_ListElement  B (Relay);
 
@@ -890,11 +861,7 @@ FG_SERVER::AddRelay
  * @param Port int with port number
  */
 void
-FG_SERVER::AddCrossfeed
-(
-        const string& Server,
-        int Port
-)
+FG_SERVER::AddCrossfeed( const string& Server, int Port )
 {
 	string s = Server;
 #ifdef _MSC_VER
@@ -923,12 +890,7 @@ FG_SERVER::AddCrossfeed
  * @retval int -1 for fail or SUCCESS
  */
 int
-FG_SERVER::AddTracker
-(
-        const string& Server,
-        int Port,
-        bool IsTracked
-)
+FG_SERVER::AddTracker( const string& Server, int Port, bool IsTracked )
 {
 	CloseTracker();
 	m_IsTracked = IsTracked;
@@ -942,12 +904,7 @@ FG_SERVER::AddTracker
  * @param FourDottedIP IP to add to blacklist
  */
 void
-FG_SERVER::AddBlacklist
-(
-        const string& DottedIP,
-	const string& Reason,
-	time_t Timeout
-)
+FG_SERVER::AddBlacklist( const string& DottedIP, const string& Reason, time_t Timeout)
 {
 
 	FG_ListElement B (Reason);
@@ -968,11 +925,7 @@ FG_SERVER::AddBlacklist
  * @retval bool true if known relay
  */
 bool
-FG_SERVER::IsKnownRelay
-(
-        const netAddress& SenderAddress,
-	size_t Bytes
-)
+FG_SERVER::IsKnownRelay( const netAddress& SenderAddress, size_t Bytes)
 {
 	ItList CurrentEntry;
 	m_RelayList.Lock ();
@@ -1002,12 +955,7 @@ FG_SERVER::IsKnownRelay
  * @brief
  */
 bool
-FG_SERVER::PacketIsValid
-(
-        int        Bytes,
-        T_MsgHdr*  MsgHdr,
-        const netAddress& SenderAddress
-)
+FG_SERVER::PacketIsValid( int Bytes, T_MsgHdr*  MsgHdr, const netAddress& SenderAddress)
 {
 	uint32_t        MsgMagic;
 	uint32_t        MsgLen;
@@ -1083,12 +1031,7 @@ FG_SERVER::PacketIsValid
  *         mainly used for testing and debugging
  */
 void
-FG_SERVER::SendToCrossfeed
-(
-        char* Msg,
-        int Bytes,
-        const netAddress& SenderAddress
-)
+FG_SERVER::SendToCrossfeed( char* Msg, int Bytes, const netAddress& SenderAddress)
 {
 	T_MsgHdr*       MsgHdr;
 	uint32_t        MsgMagic;
@@ -1116,12 +1059,7 @@ FG_SERVER::SendToCrossfeed
  * @brief  Send message to all relay servers
  */
 void
-FG_SERVER::SendToRelays
-(
-        char* Msg,
-        int Bytes,
-        FG_Player& SendingPlayer
-)
+FG_SERVER::SendToRelays( char* Msg, int Bytes,FG_Player& SendingPlayer )
 {
 	T_MsgHdr*       MsgHdr;
 	uint32_t        MsgMagic;
@@ -1159,20 +1097,12 @@ FG_SERVER::SendToRelays
 //////////////////////////////////////////////////////////////////////
 //	Remove Player from list
 void
-FG_SERVER::DropClient
-(
-	PlayerIt& CurrentPlayer
-)
+FG_SERVER::DropClient( PlayerIt& CurrentPlayer )
 {
 	string Origin;
 	if ((CurrentPlayer->IsLocal) && (CurrentPlayer->HasErrors == false))
 	{
-		UpdateTracker (CurrentPlayer->Name,
-			CurrentPlayer->Passwd,
-			CurrentPlayer->ModelName,
-			CurrentPlayer->LastSeen,
-			DISCONNECT
-		);
+		UpdateTracker (CurrentPlayer->Name, CurrentPlayer->Passwd, CurrentPlayer->ModelName, CurrentPlayer->LastSeen, DISCONNECT);
 	}
 	if (CurrentPlayer->IsLocal)
 		m_LocalClients--;
@@ -1205,12 +1135,7 @@ FG_SERVER::DropClient
  * @param SenderAddress
  */
 void
-FG_SERVER::HandlePacket
-(
-        char* Msg,
-        int   Bytes,
-        const netAddress& SenderAddress
-)
+FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 {
 	T_MsgHdr*       MsgHdr;
 	T_PositionMsg*  PosMsg;
@@ -1519,8 +1444,7 @@ void FG_SERVER::Show_Stats ( void )
  *
  */
 int
-FG_SERVER::check_files
-()
+FG_SERVER::check_files()
 {
 	struct stat buf;
 	if ( m_useExitFile && (stat ( exit_file,&buf ) == 0) )
@@ -1582,8 +1506,7 @@ FG_SERVER::check_files
  * @brief allow the Admin CLI to shut down fgms
  */
 void
-FG_SERVER::WantExit
-()
+FG_SERVER::WantExit()
 {
 	m_WantExit = true;
 }
@@ -1594,8 +1517,7 @@ FG_SERVER::WantExit
  * @brief Main loop of the server
  */
 int
-FG_SERVER::Loop
-()
+FG_SERVER::Loop()
 {
 	int         Bytes;
 	char        Msg[MAX_PACKET_SIZE];
@@ -1743,10 +1665,7 @@ FG_SERVER::Loop
  * @brief  Set listening port for incoming clients
  */
 void
-FG_SERVER::SetDataPort
-(
-        int Port
-)
+FG_SERVER::SetDataPort( int Port)
 {
 	if ( Port != m_ListenPort )
 	{
@@ -1761,10 +1680,7 @@ FG_SERVER::SetDataPort
  * @brief Set listening port for telnets
  */
 void
-FG_SERVER::SetTelnetPort
-(
-        int Port
-)
+FG_SERVER::SetTelnetPort( int Port )
 {
 	if ( m_TelnetPort != Port )
 	{
@@ -1778,10 +1694,7 @@ FG_SERVER::SetTelnetPort
  * @brief Set listening port for admin connections
  */
 void
-FG_SERVER::SetAdminPort
-(
-        int Port
-)
+FG_SERVER::SetAdminPort( int Port )
 {
 	if ( m_AdminPort != Port )
 	{
@@ -1795,10 +1708,7 @@ FG_SERVER::SetAdminPort
  * @brief Set User for admin connections
  */
 void
-FG_SERVER::SetAdminUser
-(
-        string User
-)
+FG_SERVER::SetAdminUser( string User )
 {
 	m_AdminUser = User;
 } // FG_SERVER::SetAdminUser ( unsigned int iPort )
@@ -1808,10 +1718,7 @@ FG_SERVER::SetAdminUser
  * @brief Set Password for admin connections
  */
 void
-FG_SERVER::SetAdminPass
-(
-        string Pass
-)
+FG_SERVER::SetAdminPass( string Pass )
 {
 	m_AdminPass = Pass;
 } // FG_SERVER::SetAdminPass ( unsigned int iPort )
@@ -1821,10 +1728,7 @@ FG_SERVER::SetAdminPass
  * @brief Set enable password for admin connections
  */
 void
-FG_SERVER::SetAdminEnable
-(
-        string Enable
-)
+FG_SERVER::SetAdminEnable( string Enable )
 {
 	m_AdminEnable = Enable;
 } // FG_SERVER::SetAdminPass ( unsigned int iPort )
@@ -1835,10 +1739,7 @@ FG_SERVER::SetAdminEnable
  *        within this time, the connection is dropped.
  */
 void
-FG_SERVER::SetPlayerExpires
-(
-        int Seconds
-)
+FG_SERVER::SetPlayerExpires( int Seconds )
 {
 	m_PlayerExpires = Seconds;
 } // FG_SERVER::SetPlayerExpires ( int iSeconds )
@@ -1849,10 +1750,7 @@ FG_SERVER::SetPlayerExpires
  * @brief Set nautical miles two players must be apart to be out of reach
  */
 void
-FG_SERVER::SetOutOfReach
-(
-        int OutOfReach
-)
+FG_SERVER::SetOutOfReach( int OutOfReach)
 {
 	m_PlayerIsOutOfReach = OutOfReach;
 } // FG_SERVER::SetOutOfReach ( int iOutOfReach )
@@ -1863,11 +1761,7 @@ FG_SERVER::SetOutOfReach
  * @brief Set the default loglevel
  */
 void
-FG_SERVER::SetLog
-(
-        int Facility,
-        int Priority
-)
+FG_SERVER::SetLog( int Facility, int Priority)
 {
 	sglog().setLogLevels ( (sgDebugClass) Facility, (sgDebugPriority) Priority );
 } // FG_SERVER::SetLoglevel ()
@@ -1878,10 +1772,7 @@ FG_SERVER::SetLog
  * @brief  Set the logfile
  */
 void
-FG_SERVER::SetLogfile
-(
-        const std::string& LogfileName
-)
+FG_SERVER::SetLogfile( const std::string& LogfileName )
 {
 	m_LogFileName = LogfileName;
 	SG_LOG ( SG_FGMS, SG_ALERT,"# using logfile " << m_LogFileName );
@@ -1900,10 +1791,7 @@ FG_SERVER::SetLogfile
  * @brief Set if we are running as a Hubserver
  */
 void
-FG_SERVER::SetHub
-(
-        bool IamHUB
-)
+FG_SERVER::SetHub( bool IamHUB)
 {
 	m_IamHUB = IamHUB;
 } // FG_SERVER::SetHub ( int iLoglevel )
@@ -1914,10 +1802,7 @@ FG_SERVER::SetHub
  * @brief  Set the server name
  */
 void
-FG_SERVER::SetServerName
-(
-        const std::string& ServerName
-)
+FG_SERVER::SetServerName( const std::string& ServerName )
 {
 	m_ServerName = ServerName;
 } // FG_SERVER::SetServerName ( const std::string &ServerName )
@@ -1928,10 +1813,7 @@ FG_SERVER::SetServerName
  * @brief Set the address this server listens on
  */
 void
-FG_SERVER::SetBindAddress
-(
-        const std::string& BindAddress
-)
+FG_SERVER::SetBindAddress( const std::string& BindAddress )
 {
 	m_BindAddress = BindAddress;
 } // FG_SERVER::SetBindAddress ( const std::string &BindAddress )
@@ -1942,8 +1824,7 @@ FG_SERVER::SetBindAddress
  * @brief  Close sockets, logfile etc.
  */
 void
-FG_SERVER::Done
-()
+FG_SERVER::Done()
 {
 	if ( ! m_IsParent )
 	{
@@ -1989,14 +1870,7 @@ FG_SERVER::Done
  * @brief Updates the remote tracker web server
  */
 int
-FG_SERVER::UpdateTracker
-(
-        const string& Name,
-        const string& Passwd,
-        const string& Modelname,
-        const time_t Timestamp,
-        const int    type
-)
+FG_SERVER::UpdateTracker( const string& Name,const string& Passwd,const string& Modelname, const time_t Timestamp,const int type)
 {
 	char            TimeStr[100];
 	FG_Player	CurrentPlayer;
@@ -2073,8 +1947,7 @@ FG_SERVER::UpdateTracker
 		return ( 0 );
 	}
 	// we only arrive here if type!=CONNECT and !=DISCONNECT
-	size_t pilot_cnt = m_PlayerList.Size ();
-	for (size_t i = 0; i < pilot_cnt; i++)
+	for (size_t i = 0; i < m_PlayerList.Size(); i++)
 	{
 		CurrentPlayer = m_PlayerList[i];
 		if (CurrentPlayer.ID == FG_ListElement::NONE_EXISTANT)
@@ -2106,8 +1979,7 @@ FG_SERVER::UpdateTracker
  * @brief Cleanly closes the tracker
  */
 void
-FG_SERVER::CloseTracker
-()
+FG_SERVER::CloseTracker()
 {
 	if ( m_IsTracked )
 	{
@@ -2132,11 +2004,7 @@ FG_SERVER::CloseTracker
  * @retval true is within range
  */
 bool
-FG_SERVER::IsInRange
-(
-        FG_ListElement& Relay,
-        FG_Player& SendingPlayer
-)
+FG_SERVER::IsInRange( FG_ListElement& Relay, FG_Player& SendingPlayer )
 {
 	FG_Player CurrentPlayer;
 	size_t	 Cnt;

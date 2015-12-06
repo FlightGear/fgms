@@ -13,7 +13,6 @@ Current version (Version 2.0INCOMPLETE) does NOT support any version of fgms. Wh
 will support the following fgms:
 v0.10 : v0.10.23 and above
 v0.11 :	v0.11.6 and above
-v0.12 : v0.12.0 and above
 
 NOTICE to Windows user
 This program should be able to run in Windows environemt. However, the exit routine is not 
@@ -45,7 +44,7 @@ $var['os'] = strtoupper(PHP_OS);
 $var['fgt_ver']="2.0INCOMPLETE";
 $var['min_php_ver']='5.1';
 $var['exitflag']=false;
-$var['ping_interval']=10;/*check timeout interval. Default(=60)*/
+$var['ping_interval']=60;/*check timeout interval. Default(=60)*/
 
 $message="FGTracker Version ".$var['fgt_ver']." in ".$var['os']." with PHP ".PHP_VERSION;
 $fgt_error_report->fgt_set_error_report("CORE",$message,E_ERROR);
