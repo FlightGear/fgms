@@ -72,11 +72,12 @@ int gettimeofday(struct timeval* tp, void* tzp)
  * @param server ip or domain
  * @param fgms name
  */
-FG_TRACKER::FG_TRACKER ( int port, string server, string m_ServerName )
+FG_TRACKER::FG_TRACKER ( int port, string server, string m_ServerName, string domain )
 {
 	m_TrackerPort	= port;
 	m_TrackerServer = server;
 	m_FgmsName = m_ServerName;
+	m_domain = domain;
 	m_TrackerSocket = 0;
 	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::FG_TRACKER:"
 	            << m_TrackerServer << ", Port: " << m_TrackerPort
@@ -471,7 +472,7 @@ FG_TRACKER::Connect()
 	sleep ( 2 );
 	/*Write Version header to FGTracker*/
 	std::stringstream ss;
-	ss << "V20151207 " << VERSION << " " << m_FgmsName;
+	ss << "V20151207 " << VERSION << " "<< m_domain << " " << m_FgmsName;
 	std::string s = ss.str();
 	TrackerWrite ( s );
 	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect: "

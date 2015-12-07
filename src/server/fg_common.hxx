@@ -176,9 +176,9 @@ struct unp_in_pktinfo {
 #define LISTENQ     1024         /* 2nd argument to listen () */ 
 
 /* Miscellaneous constants */ 
-#define MAXLINE     4096        /* max text line length */ 
-#define MSGMAXLINE	504 		/*Maximun character in msg: 503. char in [504] = '\0'. Note that MSGMAXLINE should be 512n-8 bytes. The "reserved" 8 bytes is for 64 bit pointer.*/
-#define BUFFSIZE    8192        /* buffer size for reads and writes */ 
+//#define MAXLINE     4096        /* max text line length */ 
+#define MSGMAXLINE	504 		/*Maximun character in msg from FGTracker: 503. char in [504] = '\0'. Note that MSGMAXLINE should be 512n-8 bytes. The "reserved" 8 bytes is for 64 bit pointer.*/
+//#define BUFFSIZE    8192        /* buffer size for reads and writes */ 
 
 /* Define some port number that can be used for our examples */ 
 #define SERV_PORT        9877    /* TCP and UDP */ 

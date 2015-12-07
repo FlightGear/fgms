@@ -52,7 +52,7 @@ public:
 	//  constructors
 	//
 	//////////////////////////////////////////////////
-	FG_TRACKER (int port, string server, string m_ServerName);
+	FG_TRACKER (int port, string server, string m_ServerName, string m_domain);
 	~FG_TRACKER ();
 
 	//////////////////////////////////////////////////
@@ -95,6 +95,7 @@ public:
 	int	m_TrackerPort;
 	string	m_TrackerServer;
 	string	m_FgmsName;
+	string	m_domain;
 	bool	m_connected; /*If connected to fgtracker*/
 	netSocket* m_TrackerSocket;
 

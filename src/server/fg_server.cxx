@@ -189,6 +189,7 @@ FG_SERVER::FG_SERVER
 	m_IsParent		= false;
 	m_ServerName		= "* Server *";
 	m_BindAddress		= "";
+	m_domain	= "";
 	tmp			= ( converter* ) ( & PROTO_VER );
 	m_ProtoMinorVersion	= tmp->High;
 	m_ProtoMajorVersion	= tmp->Low;
@@ -894,7 +895,7 @@ FG_SERVER::AddTracker( const string& Server, int Port, bool IsTracked )
 {
 	CloseTracker();
 	m_IsTracked = IsTracked;
-	m_Tracker = new FG_TRACKER ( Port, Server, m_ServerName );
+	m_Tracker = new FG_TRACKER ( Port, Server, m_ServerName, m_domain );
 	return ( SUCCESS );
 } // FG_SERVER::AddTracker()
 
@@ -1312,16 +1313,6 @@ FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 			continue; // don't send packet back to sender
 		}
 		//////////////////////////////////////////////////
-		//	Drop Users if they did'nt send data
-		//	within TTL
-		//////////////////////////////////////////////////
-		if (((Now - CurrentPlayer->LastSeen) > CurrentPlayer->Timeout )
-		&&  ((Now - CurrentPlayer->JoinTime) > 30)) // give 30 seconds gracetime on startup
-		{
-			DropClient (CurrentPlayer); // ###
-			continue;
-		}
-		//////////////////////////////////////////////////
 		//      do not send packets to clients if the
 		//      origin is an observer, but do send
 		//      chat messages anyway
@@ -1573,6 +1564,24 @@ FG_SERVER::Loop()
 			return 2;
 		}
 		CurrentTime = time ( 0 );
+		// check timeout
+		CurrentPlayer = m_PlayerList.Begin();
+		for (size_t i = 0; i < m_PlayerList.Size(); i++)
+		{	
+			if(!m_PlayerList.CheckTTL ( i ) || (((CurrentTime - CurrentPlayer->LastSeen) > CurrentPlayer->Timeout ) &&  ((CurrentTime - CurrentPlayer->JoinTime) > 30)))
+			{
+				DropClient (CurrentPlayer); 
+			}
+			CurrentPlayer++;
+		}
+		for (size_t i = 0; i < m_BlackList.Size(); i++)
+		{
+			if(!m_BlackList.CheckTTL ( i ))
+			{
+				m_BlackList.DeleteByPosition ( i );
+			}
+		}
+		
 		// Update some things every (default) 10 secondes
 		if ( ( CurrentTime - LastTrackerUpdate ) >= m_UpdateTrackerFreq )
 		{
@@ -1599,27 +1608,10 @@ FG_SERVER::Loop()
 			continue;
 		}
 		else if (Bytes == 0)
-		{	// timeout
-			CurrentPlayer = m_PlayerList.Begin();
-			for (size_t i = 0; i < m_PlayerList.Size(); i++)
-			{	
-				if(!m_PlayerList.CheckTTL ( i ))
-				{
-					DropClient (CurrentPlayer); 
-				}
-				CurrentPlayer++;
-			}
-			for (size_t i = 0; i < m_BlackList.Size(); i++)
-			{
-				if(!m_BlackList.CheckTTL ( i ))
-				{
-					m_BlackList.DeleteByPosition ( i );
-				}
-			}
-			
-			//m_BlackList.CheckTTL ( BLACK_LIST, this );
+		{
 			continue;
 		}
+		
 		if ( ListenSockets[0] > 0 )
 		{
 			// something on the wire (clients)
@@ -1838,6 +1830,17 @@ FG_SERVER::SetBindAddress( const std::string& BindAddress )
 
 //////////////////////////////////////////////////////////////////////
 /**
+ * @brief Set the external address this server on
+ */
+void
+FG_SERVER::Setdomain( const std::string& domain )
+{
+	m_domain = domain;
+} // FG_SERVER::Setdomain ( const std::string &domain )
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
  * @brief  Close sockets, logfile etc.
  */
 void
@@ -1964,15 +1967,18 @@ FG_SERVER::UpdateTracker( const string& Name,const string& Passwd,const string& 
 		return ( 0 );
 	}
 	// we only arrive here if type!=CONNECT and !=DISCONNECT
+	Message = "";
 	for (size_t i = 0; i < m_PlayerList.Size(); i++)
 	{
 		CurrentPlayer = m_PlayerList[i];
 		if (CurrentPlayer.ID == FG_ListElement::NONE_EXISTANT)
 			continue;
-		//if ((CurrentPlayer.IsLocal) && (CurrentPlayer.HasErrors == false))
-		//{
+		if ((CurrentPlayer.IsLocal) && (CurrentPlayer.HasErrors == false))
+		{
+			if(i!=0)
+				Message += "\n";
 			sgCartToGeod ( CurrentPlayer.LastPos, PlayerPosGeod );
-			Message =  "POSITION ";
+			Message +=  "POSITION ";
 			Message += CurrentPlayer.Name;
 			Message += " ";
 			Message += CurrentPlayer.Passwd;
@@ -1985,11 +1991,11 @@ FG_SERVER::UpdateTracker( const string& Name,const string& Passwd,const string& 
 			Message += NumToStr ( CurrentPlayer.LastOrientation[Z], 6 ) +" ";
 			Message += TimeStr;
 			// queue the message
-			m_Tracker->AddMessage (Message);
-			m_TrackerPosition++; // count a POSITION messge queued
-		//}
-		Message.erase ( 0 );
+		}
 	} // while
+	m_Tracker->AddMessage (Message);
+	m_TrackerPosition++; // count a POSITION messge queued
+	Message.erase ( 0 );
 	return ( 0 );
 } // UpdateTracker (...)
 //////////////////////////////////////////////////////////////////////

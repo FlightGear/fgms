@@ -7,3 +7,15 @@ From v1.6 to v2.0
 [db]		table flights altered. Drop "distance","max_altimeter","max_speed". Added "server","start_icao","end_icao","effective_flight_time"
 [db]		table flights_archive altered. Drop "distance","max_altimeter","max_speed". Added "start_icao","end_icao","effective_flight_time"
 [db]		view flights_all altered. Drop "distance","max_altimeter","max_speed". Added "start_icao","end_icao","effective_flight_time"
+
+Note: A new table fgt_servers is added which stores the fgms information. You must add entries to the table in order to accept connetion.
+fgt_server:
+name			: Unique name of fgms
+ip				: IP or domain name of fgms
+key	text		: "NOWAIT" if fgms version is v10.0.23 or above; "V20151207" if fgms version is v0.11.10 or above
+maintainer		: Name of the maintainer
+location		: Physical address of fgms
+email			: Email of maintainer (for future auto-notification email)
+receive_email	: Boolean whether the maintainer wish to receive email notification
+last_comm		: Keep NULL (last connection time - for future use)
+enabled			: Boolean if this entry is enabled

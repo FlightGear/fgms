@@ -1,6 +1,6 @@
 <?php
 /*
-FGTracker Version 2.0INCOMPLETE
+FGTracker Version 2.0a
 
 Author								: Hazuki Amamiya <FlightGear forum nick Hazuki>
 License								: GPL
@@ -9,10 +9,9 @@ DB requirement						: PostgreSQL v8 or above
 PHP requirement						: PHP 5.1 or above (With php-cli module installed)
 Developed and tested under this env	: Debian 8.2/php 5.6.14+dfsg-0+deb8u1/PostgreSQL 9.4.5-0+deb8u1
 
-Current version (Version 2.0INCOMPLETE) does NOT support any version of fgms. When it is done, it 
-will support the following fgms:
+Current version (Version 2.0a) support the following fgms:
 v0.10 : v0.10.23 and above
-v0.11 :	v0.11.6 and above
+v0.11 :	v0.11.6 and above (preferbly v0.11.10 as previous versions have bugs)
 
 NOTICE to Windows user
 This program should be able to run in Windows environemt. However, the exit routine is not 

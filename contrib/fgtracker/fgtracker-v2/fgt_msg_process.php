@@ -101,7 +101,7 @@ class fgt_msg_process
 				
 				$res=$this->fgt_pg_query_params($sql,$sql_parm);
 				if ($res===false or $res==NULL)
-					return;
+					return false;
 				$this->open_flight_array[$msg_array['callsign']]['waypoints']++;
 				
 				/* Splited flight detection
@@ -123,7 +123,7 @@ class fgt_msg_process
 				$sql="select * from flights where callsign=$1 and (select extract(epoch from start_time) from flights where id=$2)-extract(epoch from end_time) <120 and (select extract(epoch from start_time) from flights where id=$2)- extract(epoch from end_time) > 0 and model=(select model from flights where id=$2) order by end_time desc limit 1";
 				$res=$this->fgt_pg_query_params($sql,$sql_parm);
 				if ($res===false or $res==NULL)
-					return;
+					return false;
 				$nr=pg_num_rows($res);
 				if($nr!=1)
 					break;
@@ -135,7 +135,7 @@ class fgt_msg_process
 				$sql='(select flight_id, extract(epoch from "time") AS time, latitude, longitude from waypoints where flight_id=$1 order by time desc) UNION all (select flight_id, extract(epoch from "time") AS time, latitude, longitude from waypoints where flight_id=$2 order by time desc limit 2)';						
 				$res=$this->fgt_pg_query_params($sql,$sql_parm);
 				if ($res===false or $res==NULL)
-					return;
+					return false;
 				$nr=pg_num_rows($res);
 				if ($nr!=4)
 				{
@@ -226,7 +226,7 @@ class fgt_msg_process
 					$sql="select time from waypoints where flight_id=".$this->open_flight_array[$msg_array['callsign']]['id']." ORDER BY time DESC LIMIT 1";
 					$res=$this->fgt_pg_query_params($sql,Array());
 					if ($res===false or $res==NULL)
-						return;
+						return false;
 					
 					$close_time=pg_result($res,0,"time");
 					pg_free_result($res);
@@ -235,7 +235,7 @@ class fgt_msg_process
 					$sql="UPDATE flights SET status='CLOSED',end_time=$1 WHERE id=$2;";
 					$res=$this->fgt_pg_query_params($sql,$sql_parm);
 					if ($res===false or $res==NULL)
-						return;
+						return false;
 				}
 
 				/*Insert flight*/
@@ -244,7 +244,7 @@ class fgt_msg_process
 				$sql="INSERT INTO flights (callsign,status,model,start_time,server) VALUES ($1,'OPEN',$2,$3,$4);";
 				$res=$this->fgt_pg_query_params($sql,$sql_parm);
 				if ($res===false or $res==NULL)
-					return;
+					return false;
 				
 				
 				$res=pg_query($fgt_sql->conn,"SELECT currval('flights_id_seq') AS lastinsertid;");
@@ -262,7 +262,7 @@ class fgt_msg_process
 				$sql="UPDATE flights SET status='CLOSED',end_time=$1 WHERE id=$2 AND status='OPEN';";
 				$res=$this->fgt_pg_query_params($sql,$sql_parm);
 					if ($res===false or $res==NULL)
-						return;
+						return false;
 				
 				$message="Callsign \"".$msg_array['callsign']."\" from ".$clients[$this->uuid]['server_ident']." with flight id ".$this->open_flight_array[$msg_array['callsign']]['id']." left";
 				$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_NOTICE);
@@ -272,9 +272,7 @@ class fgt_msg_process
 			/*fgt_read_XX should already handled the unrecognized messages*/
 			return;
 		}
-
-		$clients[$uuid]['write_buffer'].="OK\0";
-		
+		return true;
 	}
 }
 ?>

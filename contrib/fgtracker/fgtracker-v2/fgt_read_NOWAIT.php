@@ -75,6 +75,7 @@ class fgt_read_NOWAIT
 			if($clients[$this->uuid]['connected']===false or $fgt_sql->connected===false)
 				return false;
 			$i++;
+			$clients[$this->uuid]['write_buffer'].="OK\0";
 		}
 	}
 }

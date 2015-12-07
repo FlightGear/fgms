@@ -107,6 +107,7 @@ public:
 	void  SetLogfile ( const std::string& LogfileName );
 	void  SetServerName ( const std::string& ServerName );
 	void  SetBindAddress ( const std::string& BindAddress );
+	void  Setdomain( const std::string& domain );
 	void  AddRelay ( const string& Server, int Port );
 	void  AddCrossfeed ( const string& Server, int Port );
 	int   AddTracker ( const string& Server, int Port, bool IsTracked );
@@ -150,6 +151,7 @@ protected:
 	ofstream	m_LogFile;
 	string		m_LogFileName;
 	string		m_BindAddress;
+	string		m_domain;
 	size_t		m_NumMaxClients;
 	size_t		m_LocalClients;
 	size_t		m_RemoteClients;
