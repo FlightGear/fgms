@@ -30,19 +30,14 @@
 #include <fg_cli.hxx>
 #include <fg_common.hxx>
 
-FG_CLI::FG_CLI
-(
-	FG_SERVER* fgms,
-	int fd
-): CLI(fd)
+FG_CLI::FG_CLI( FG_SERVER* fgms, int fd): CLI(fd)
 {
 	this->fgms = fgms;
 	this->setup ();
 }
 
 void
-FG_CLI::setup
-()
+FG_CLI::setup()
 {
 	typedef Command<CLI>::cpp_callback_func callback_ptr;
 	typedef Command<CLI>::cpp_callback_func callback_ptr;
@@ -920,12 +915,7 @@ FG_CLI::cmd_crossfeed_delete
  *  crossfeed add [...] <cr>
  */
 int
-FG_CLI::cmd_crossfeed_add
-(
-	char *command,
-	char *argv[],
-	int argc
-)
+FG_CLI::cmd_crossfeed_add( char *command, char *argv[],int argc )
 {
 	netAddress	Address;
 	string		Name;

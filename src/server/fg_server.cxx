@@ -695,7 +695,7 @@ FG_SERVER::AddBadClient
 	//////////////////////////////////////////////////
 	m_PlayerList.Lock ();
 	CurrentPlayer = m_PlayerList.Find (Sender);
-	if ( CurrentPlayer != m_PlayerList.End () ) /*FIX me! - Any problem if I am the last one!?*/
+	if ( CurrentPlayer != m_PlayerList.End () )
 	{
 		CurrentPlayer->UpdateRcvd (Bytes);
 		m_PlayerList.UpdateRcvd (Bytes);
@@ -894,7 +894,7 @@ FG_SERVER::AddTracker( const string& Server, int Port, bool IsTracked )
 {
 	CloseTracker();
 	m_IsTracked = IsTracked;
-	m_Tracker = new FG_TRACKER ( Port, Server, 0 );
+	m_Tracker = new FG_TRACKER ( Port, Server, m_ServerName );
 	return ( SUCCESS );
 } // FG_SERVER::AddTracker()
 
@@ -1526,6 +1526,7 @@ FG_SERVER::Loop()
 	time_t      LastTrackerUpdate;
 	time_t      CurrentTime;
 	LastTrackerUpdate = time ( 0 );
+	PlayerIt	CurrentPlayer;
 	m_IsParent = true;
 	if ( m_Listening == false )
 	{
@@ -1599,8 +1600,24 @@ FG_SERVER::Loop()
 		}
 		else if (Bytes == 0)
 		{	// timeout
-			m_PlayerList.CheckTTL ();
-			m_BlackList.CheckTTL ();
+			CurrentPlayer = m_PlayerList.Begin();
+			for (size_t i = 0; i < m_PlayerList.Size(); i++)
+			{	
+				if(!m_PlayerList.CheckTTL ( i ))
+				{
+					DropClient (CurrentPlayer); 
+				}
+				CurrentPlayer++;
+			}
+			for (size_t i = 0; i < m_BlackList.Size(); i++)
+			{
+				if(!m_BlackList.CheckTTL ( i ))
+				{
+					m_BlackList.DeleteByPosition ( i );
+				}
+			}
+			
+			//m_BlackList.CheckTTL ( BLACK_LIST, this );
 			continue;
 		}
 		if ( ListenSockets[0] > 0 )
@@ -1952,8 +1969,8 @@ FG_SERVER::UpdateTracker( const string& Name,const string& Passwd,const string& 
 		CurrentPlayer = m_PlayerList[i];
 		if (CurrentPlayer.ID == FG_ListElement::NONE_EXISTANT)
 			continue;
-		if ((CurrentPlayer.IsLocal) && (CurrentPlayer.HasErrors == false))
-		{
+		//if ((CurrentPlayer.IsLocal) && (CurrentPlayer.HasErrors == false))
+		//{
 			sgCartToGeod ( CurrentPlayer.LastPos, PlayerPosGeod );
 			Message =  "POSITION ";
 			Message += CurrentPlayer.Name;
@@ -1963,11 +1980,14 @@ FG_SERVER::UpdateTracker( const string& Name,const string& Passwd,const string& 
 			Message += NumToStr ( PlayerPosGeod[Lat], 6 ) +" "; //lat
 			Message += NumToStr ( PlayerPosGeod[Lon], 6 ) +" "; //lon
 			Message += NumToStr ( PlayerPosGeod[Alt], 6 ) +" "; //alt
+			Message += NumToStr ( CurrentPlayer.LastOrientation[X], 6 ) +" ";
+			Message += NumToStr ( CurrentPlayer.LastOrientation[Y], 6 ) +" ";
+			Message += NumToStr ( CurrentPlayer.LastOrientation[Z], 6 ) +" ";
 			Message += TimeStr;
 			// queue the message
 			m_Tracker->AddMessage (Message);
 			m_TrackerPosition++; // count a POSITION messge queued
-		}
+		//}
 		Message.erase ( 0 );
 	} // while
 	return ( 0 );

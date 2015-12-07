@@ -70,12 +70,13 @@ int gettimeofday(struct timeval* tp, void* tzp)
  * @brief Initialize to standard values
  * @param port
  * @param server ip or domain
- * @param id  what is id? -- todo --
+ * @param fgms name
  */
-FG_TRACKER::FG_TRACKER ( int port, string server, int id )
+FG_TRACKER::FG_TRACKER ( int port, string server, string m_ServerName )
 {
 	m_TrackerPort	= port;
 	m_TrackerServer = server;
+	m_FgmsName = m_ServerName;
 	m_TrackerSocket = 0;
 	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::FG_TRACKER:"
 	            << m_TrackerServer << ", Port: " << m_TrackerPort
@@ -468,9 +469,13 @@ FG_TRACKER::Connect()
 	LastConnected	= time ( 0 );
 	m_TrackerSocket->write_char ( '\0' );
 	sleep ( 2 );
-	TrackerWrite ( "NOWAIT" );
+	/*Write Version header to FGTracker*/
+	std::stringstream ss;
+	ss << "V20151207 " << VERSION << " " << m_FgmsName;
+	std::string s = ss.str();
+	TrackerWrite ( s );
 	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect: "
-	            << "Written 'NOWAIT'"
+	            << "Written Version header"
 	          );
 	sleep ( 1 );
 	return true;

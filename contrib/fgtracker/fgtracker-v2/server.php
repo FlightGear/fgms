@@ -41,7 +41,7 @@ require("fgt_error_report.php");
 $fgt_error_report=new fgt_error_report();
 
 $var['os'] = strtoupper(PHP_OS);
-$var['fgt_ver']="2.0INCOMPLETE";
+$var['fgt_ver']="2.0a";
 $var['min_php_ver']='5.1';
 $var['exitflag']=false;
 $var['ping_interval']=60;/*check timeout interval. Default(=60)*/
@@ -64,6 +64,7 @@ if(substr($var['os'],0,3) != "WIN")
 	define('IS_WINDOWS', true);
 
 require("fgt_read_NOWAIT.php");
+require("fgt_read_V20151207.php");
 require("fgt_ident.php");
 require("fgt_postgres.php");
 require("fgt_msg_process.php");

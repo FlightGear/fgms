@@ -31,13 +31,18 @@ class fgt_ident
 		socket_getpeername( $clients[$uuid]['socket'] ,$address);
 		
 		/*check the version*/
+		$message=" RECV: $line";
+		$fgt_error_report->fgt_set_error_report("IDENT",$message,E_ALL);
 		$ver_test=strpos($line, "NOWAIT");
-		if($ver_test!==false and $ver_test==0)
-		{
-			/*check the identity*/
+		$ver_test1=strpos($line, "V20151207");
+		if ($ver_test!==false and $ver_test==0) 
 			$protocal_version="NOWAIT";
-			
-			$sql="select name from fgt_servers where key='NOWAIT' and ip='$address'";
+		else if ($ver_test1!==false and $ver_test1==0)
+			$protocal_version="V20151207";
+		if($protocal_version!="Unknown")
+		{
+			/*check the identity*/			
+			$sql="select name from fgt_servers where key='$protocal_version' and ip='$address'";
 			$res=pg_query($fgt_sql->conn,$sql);
 			if ($res===false or $res==NULL)
 			{
@@ -63,9 +68,11 @@ class fgt_ident
 			$fgt_error_report->fgt_set_error_report("IDENT",$message,E_NOTICE);
 			$clients[$uuid]['identified']=true;
 			$clients[$uuid]['protocal_version']=$protocal_version;
-			$clients[$uuid]['read_class']=new fgt_read_NOWAIT($uuid);
+			if ($protocal_version=="NOWAIT")
+				$clients[$uuid]['read_class']=new fgt_read_NOWAIT($uuid);
+			else $clients[$uuid]['read_class']=new fgt_read_V20151207($uuid);
 			$clients[$uuid]['msg_process_class']=new fgt_msg_process($uuid);
-			//$clients[$uuid]['write_buffer'].="OK\0";
+			$clients[$uuid]['write_buffer'].="OK\0";
 			return;
 		}
 		/*$ver_test=strpos($line, "V20151118");
