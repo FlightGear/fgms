@@ -49,7 +49,7 @@ class fgt_ident
 			return;
 		}
 		/*check the identity*/
-		$sql="select name from fgt_servers where key='$protocal_version' and ip='$address' and enabled = 'Y'";		
+		$sql="select name from fgms_servers where key='$protocal_version' and ip='$address' and enabled = 'Y'";		
 		$res=pg_query($fgt_sql->conn,$sql);
 		if ($res===false or $res==NULL)
 		{
@@ -78,7 +78,7 @@ class fgt_ident
 			if(!filter_var($data[2], FILTER_VALIDATE_IP))
 			{	/*FGTracker only accepts client self declare his domain name*/
 				$clientdn=pg_escape_string ($fgt_sql->conn, $data[2]);
-				$sql="select name from fgt_servers where key='$protocal_version' and ip='$clientdn' and enabled = 'Y' ORDER BY ip";
+				$sql="select name from fms_servers where key='$protocal_version' and ip='$clientdn' and enabled = 'Y' ORDER BY ip";
 				$res=pg_query($fgt_sql->conn,$sql);
 				if ($res===false or $res==NULL)
 				{
@@ -120,7 +120,7 @@ class fgt_ident
 			$clients[$uuid]['read_class']=new fgt_read_NOWAIT($uuid);
 		else $clients[$uuid]['read_class']=new fgt_read_V20151207($uuid);
 		$clients[$uuid]['msg_process_class']=new fgt_msg_process($uuid);
-		$clients[$uuid]['write_buffer'].="OK\0";
+		$clients[$uuid]['write_buffer'].="IDENTIFIED $serv_ident\0";
 		return;
 	}
 }

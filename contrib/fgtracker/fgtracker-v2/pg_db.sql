@@ -322,27 +322,10 @@ CREATE TABLE cache_top100_alltime (
 ALTER TABLE public.cache_top100_alltime OWNER TO fgtracker;
 
 --
--- Name: fgsync_log; Type: TABLE; Schema: public; Owner: fgtracker; Tablespace: 
+-- Name: fgms_servers; Type: TABLE; Schema: public; Owner: fgtracker; Tablespace: 
 --
 
-CREATE TABLE fgsync_log (
-    "timestamp" timestamp with time zone DEFAULT now(),
-    fgsync_current_update_freq integer,
-    fgsync_no_of_pilots_tracking integer,
-    fgsync_no_of_new_waypoints integer,
-    fgsync_no_of_new_flights integer,
-    system_load numeric(5,2),
-    fgsync_current_comparetick integer
-);
-
-
-ALTER TABLE public.fgsync_log OWNER TO fgtracker;
-
---
--- Name: fgt_servers; Type: TABLE; Schema: public; Owner: fgtracker; Tablespace: 
---
-
-CREATE TABLE fgt_servers (
+CREATE TABLE fgms_servers (
     name text NOT NULL,
     ip text NOT NULL,
     key text NOT NULL,
@@ -354,7 +337,7 @@ CREATE TABLE fgt_servers (
 );
 
 
-ALTER TABLE public.fgt_servers OWNER TO fgtracker;
+ALTER TABLE public.fgms_servers OWNER TO fgtracker;
 
 --
 -- Name: fixes; Type: TABLE; Schema: public; Owner: fgtracker; Tablespace: 

@@ -38,6 +38,17 @@ class fgt_read_V20151207
 			$clients[$this->uuid]['read_buffer']=$packets[1];
 			$message=" RECV: $packet \\\\EOP";
 			$fgt_error_report->fgt_set_error_report("R_".$this->protocal_version,$message,E_ALL);
+			if($packet=="PONG")
+			{
+				$message="PONG received";
+				$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_ALL);
+				return;
+			}else if($packet=="PING")
+			{
+					$clients[$this->uuid]['write_buffer'].="PONG\0";
+					return;
+			}
+			/*messages other than ping/pong*/
 			$lines=explode("\n",$packet);
 			foreach ($lines as $line )
 			{
@@ -55,13 +66,6 @@ class fgt_read_V20151207
 				{
 					$message="Unrecognized Message from ".$clients[$this->uuid]['server_ident'] ."($line). Message ignored";
 					$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_WARNING);
-				}else if($data[0]=="PING")
-				{
-					$clients[$this->uuid]['write_buffer'].="PONG\0";
-				}else if($data[0]=="PONG")
-				{
-					$message="PONG received";
-					$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_ALL);
 				}else if($data[0]=="POSITION")
 				{
 					$msg_array=Array('nature'=>$data[0],'callsign'=>$data[1],'lat'=>$data[3],'lon'=>$data[4],'alt'=>$data[5],'date'=>$data[9],'time'=>$data[10]);

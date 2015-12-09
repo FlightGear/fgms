@@ -75,8 +75,8 @@ public:
 	 */
 	int	GetTrackerPort () { return m_TrackerPort; };
 	int	TrackerWrite (const string& str);
-	void	TrackerRead ();
-	void	ReplyToServer (const string& str);
+	int	TrackerRead (int MsgCounter);
+	int	ReplyFromServer (const string& str, int MsgCounter);
 	void	WriteQueue ();
 	void	ReadQueue ();
 	pthread_t GetThreadID();
@@ -97,13 +97,16 @@ public:
 	string	m_FgmsName;
 	string	m_domain;
 	bool	m_connected; /*If connected to fgtracker*/
+	bool	m_identified; /*If fgtracker identified this fgms*/
 	netSocket* m_TrackerSocket;
 
 	typedef std::vector<std::string> vMSG;	/* string vector */
 	typedef vMSG::iterator VI;		/* string vector iterator */
 	pthread_mutex_t msg_mutex;		/* message queue mutext */
+	pthread_mutex_t msg_sent_mutex;		/* message queue mutext */
 	pthread_cond_t  condition_var;		/* message queue condition */
 	vMSG    msg_queue;			/* the single message queue */
+	vMSG    msg_sent_queue;			/* the single message queue */
 	bool	WantExit;
 	//////////////////////////////////////////////////
 	//	stats
