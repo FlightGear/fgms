@@ -50,6 +50,8 @@ class fgt_read_NOWAIT
 			}
 			
 			$data=explode(" ", $line);
+			if($clients[$this->uuid]['msg_process_class']->msg_start()===false)
+				return;
 			if($data[0]=="PING")
 			{
 				$clients[$this->uuid]['write_buffer'].="PONG\0";
@@ -72,6 +74,8 @@ class fgt_read_NOWAIT
 				$clients[$this->uuid]['write_buffer'].="Failed : Message not recognized\0";
 				$clients[$this->uuid]['connected']=false;
 			}
+			if($clients[$this->uuid]['msg_process_class']->msg_end()===false)
+				return false;
 			if($clients[$this->uuid]['connected']===false or $fgt_sql->connected===false)
 				return false;
 			$i++;

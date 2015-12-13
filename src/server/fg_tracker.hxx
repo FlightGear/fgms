@@ -75,9 +75,10 @@ public:
 	 */
 	int	GetTrackerPort () { return m_TrackerPort; };
 	int	TrackerWrite (const string& str);
-	int	TrackerRead (int MsgCounter);
-	int	ReplyFromServer (const string& str, int MsgCounter);
+	void	TrackerRead ();
+	void	ReplyFromServer (const string& str);
 	void	WriteQueue ();
+	void 	ReQueueSentMsg ();
 	void	ReadQueue ();
 	pthread_t GetThreadID();
 
@@ -96,6 +97,7 @@ public:
 	string	m_TrackerServer;
 	string	m_FgmsName;
 	string	m_domain;
+	string	m_protocalVersion;
 	bool	m_connected; /*If connected to fgtracker*/
 	bool	m_identified; /*If fgtracker identified this fgms*/
 	netSocket* m_TrackerSocket;

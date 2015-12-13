@@ -69,9 +69,41 @@ class fgt_msg_process
 		}return $res;
 	}
 	
+	function msg_start()
+	{	
+		global $fgt_error_report,$clients,$fgt_sql;
+		if($fgt_sql->inTransaction===true)
+		{
+			$message=" SQL TRANSACTION is called more than once";
+			$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_ERROR);
+			$fgt_sql->connected=false;
+			$clients[$this->uuid]['connected']=false;
+			return false;
+		}
+		/*start a transaction*/
+		$sql="START TRANSACTION;";
+		$res=$this->fgt_pg_query_params($sql,Array());
+		if ($res===false or $res==NULL)
+		{
+			$message="Failed to start SQL TRANSACTION - ".pg_last_error ($fgt_sql->conn);
+			$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_ERROR);
+			return false;
+		}	
+		$fgt_sql->inTransaction=true;
+		return true;
+	}
+	
 	function msg_process($msg_array,$uuid)
 	{
 		global $fgt_error_report,$clients,$var,$fgt_sql;
+		if($fgt_sql->inTransaction===FALSE)
+		{
+			$clients[$this->uuid]['connected']=false;
+			$message="Internal Error: msg_process is called without calling msg_start";
+			$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_ERROR);
+			return false;
+		}
+
 		switch ($msg_array['nature'])
 		{
 			case "POSITION":
@@ -185,8 +217,6 @@ class fgt_msg_process
 				$message="Splited flight second phase check pass on callsign ".$msg_array['callsign']." - Perform merging flight id $flightid to $p_flightid";
 				$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_NOTICE);
 				
-				$sql="START TRANSACTION;";
-				pg_query_params($fgt_sql->conn,$sql,Array());
 				/*update waypoints and no of wpts. Delete Effective_flight_time,start_icao, end_icao. Set status to open if the flight still active*/
 				$sql_parm=Array($p_flightid,$clients[$this->uuid]['server_ident']);
 				$sql2="update flights set end_time=NULL, effective_flight_time=NULL,start_icao=NULL, end_icao=NULL,status='OPEN', server=$2 where id=$1;";
@@ -205,17 +235,6 @@ class fgt_msg_process
 				$sql5="INSERT into log (username,\"table\",action,\"when\",callsign,usercomments,flight_id,flight_id2) VALUES ($1, 'flights', 'FGTracker auto merge flight $flightid to $p_flightid', NOW(), $2,NULL,$p_flightid,$flightid);";
 				pg_query_params($fgt_sql->conn,$sql5,$sql_parm);
 				
-				$sql6="COMMIT;";
-				$res=pg_query_params($fgt_sql->conn,$sql6,Array());
-				if ($res===FALSE)
-				{
-					$phpErr=error_get_last();
-					$message="Could not merge flight due to Internal DB Error - ".pg_last_error ($fgt_sql->conn);
-					$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_ERROR);
-					$message="PHP feedback of last error: ".$phpErr['message'];
-					$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_ERROR);
-					pg_query_params($fgt_sql->conn,"rollback;",Array());
-				}
 				$this->open_flight_array[$msg_array['callsign']]['id']=$p_flightid;
 			break;
 			case "CONNECT":
@@ -230,9 +249,17 @@ class fgt_msg_process
 					
 					$close_time=pg_result($res,0,"time");
 					pg_free_result($res);
-					
-					$sql_parm=Array($close_time,$this->open_flight_array[$msg_array['callsign']]['id']);
-					$sql="UPDATE flights SET status='CLOSED',end_time=$1 WHERE id=$2;";
+
+					if($close_time=="")
+					{
+						$sql_parm=Array($this->open_flight_array[$msg_array['callsign']]['id']);
+						$sql="UPDATE flights SET status='CLOSED',end_time=start_time WHERE id=$1;";
+					}else
+					{
+						$sql_parm=Array($close_time,$this->open_flight_array[$msg_array['callsign']]['id']);
+						$sql="UPDATE flights SET status='CLOSED',end_time=$1 WHERE id=$2;";						
+					}
+
 					$res=$this->fgt_pg_query_params($sql,$sql_parm);
 					if ($res===false or $res==NULL)
 						return false;
@@ -272,6 +299,25 @@ class fgt_msg_process
 			/*fgt_read_XX should already handled the unrecognized messages*/
 			return;
 		}
+		return true;
+	}
+	function msg_end()
+	{	
+		global $fgt_error_report,$clients,$fgt_sql;
+		$sql="COMMIT;";
+		$res=$this->fgt_pg_query_params($sql,Array());
+		if ($res===false or $res==NULL)
+		{
+			$phpErr=error_get_last();
+			$message="SQL Commit failed - ".pg_last_error ($fgt_sql->conn);
+			$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_ERROR);
+			$message="PHP feedback of last error: ".$phpErr['message'];
+			$fgt_error_report->fgt_set_error_report($clients[$this->uuid]['server_ident'],$message,E_ERROR);
+			pg_query_params($fgt_sql->conn,"rollback;",Array());
+			return false;
+			$fgt_sql->inTransaction=false;
+		}
+		$fgt_sql->inTransaction=false;
 		return true;
 	}
 }

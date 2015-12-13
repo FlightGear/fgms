@@ -78,6 +78,7 @@ FG_TRACKER::FG_TRACKER ( int port, string server, string m_ServerName, string do
 	m_TrackerServer = server;
 	m_FgmsName = m_ServerName;
 	m_domain = domain;
+	m_protocalVersion = "20151207";
 	m_TrackerSocket = 0;
 	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::FG_TRACKER:"
 	            << m_TrackerServer << ", Port: " << m_TrackerPort
@@ -123,6 +124,46 @@ FG_TRACKER::GetThreadID ()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+//FG_TRACKER::ReadQueue - Read message in file to cache
+/////////////////////////////////////////////////////////////////////
+void
+FG_TRACKER::ReadQueue ()
+{	
+	/*Any message in msg_sent_queue must be pushed back to msg_queue before calling this function*/
+	ifstream queue_file;
+	queue_file.open ( "queue_file" );
+	if ( ! queue_file )
+	{
+		return;
+	}
+	string line_str("");
+	string Msg ("");
+	int line_cnt;
+	while ( getline ( queue_file, line_str, '\n' ) )
+	{
+		if(line_cnt==25)
+		{
+			pthread_mutex_lock ( &msg_sent_mutex );	 // set the lock
+			msg_sent_queue.push_back ( Msg ); // queue the message
+			pthread_mutex_unlock ( &msg_sent_mutex );	 // give up the lock
+			Msg="";
+			line_cnt=0;
+		}
+		line_str += "\n";
+		Msg += line_str;
+		line_cnt++;
+	}
+	/*fire remaining message to msg_queue*/
+	pthread_mutex_lock ( &msg_sent_mutex );	 // set the lock
+	msg_sent_queue.push_back ( Msg ); // queue the message
+	pthread_mutex_unlock ( &msg_sent_mutex );	 // give up the lock
+	ReQueueSentMsg (); 
+	queue_file.close();
+	remove ( "queue_file" );
+}
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
 //FG_TRACKER::WriteQueue () - Write cached message to a file (only be 
 //used when destructor of this object be called)
 //////////////////////////////////////////////////////////////////////
@@ -157,6 +198,25 @@ FG_TRACKER::WriteQueue ()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+//FG_TRACKER::ReQueueSentMsg () - Requeue the message in msg_sent_queue
+//to msg_queue
+//////////////////////////////////////////////////////////////////////
+void
+FG_TRACKER::ReQueueSentMsg ()
+{
+	pthread_mutex_lock ( &msg_mutex );
+	pthread_mutex_lock ( &msg_sent_mutex );
+	while (msg_sent_queue.begin()!=msg_sent_queue.end())
+	{
+		msg_queue.insert ( msg_queue.begin() , msg_sent_queue.back() );// requeue message at the beginning of queue
+		msg_sent_queue.pop_back();
+	}
+	pthread_cond_signal ( &condition_var );  // wake up the worker
+	pthread_mutex_unlock ( &msg_sent_mutex );
+	pthread_mutex_unlock ( &msg_mutex );
+}
+
+//////////////////////////////////////////////////////////////////////
 //FG_TRACKER::AddMessage - add feedin message to last position of 
 //cache. fg_server.cxx use this to insert messages
 /////////////////////////////////////////////////////////////////////
@@ -171,120 +231,11 @@ FG_TRACKER::AddMessage( const string& message )
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-//FG_TRACKER::TrackerWrite - Write a feedin string to TCP stream
-/////////////////////////////////////////////////////////////////////
-int
-FG_TRACKER::TrackerWrite ( const string& str )
-{
-	size_t l   = str.size() + 1;
-	LastSent   = time ( 0 );
-	errno      = 0;
-	int s   = -1;
-	while ( s < 0 )
-	{
-		s = m_TrackerSocket->send ( str.c_str(), l, MSG_NOSIGNAL );
-		if ( s < 0 )
-		{
-			if ( ( errno == EAGAIN ) || ( errno == EWOULDBLOCK ) )
-			{
-				continue;
-			}
-			m_connected = false;
-			LostConnections++;
-			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerWrite: "
-			            << "lost connection to server"
-			          );
-			return -1;
-		}
-	}
-	BytesSent += s;
-	PktsSent++;
-	return s;
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-//FG_TRACKER::ReplyFromServer - Process the reply from server
-/////////////////////////////////////////////////////////////////////
-int
-FG_TRACKER::ReplyFromServer ( const string& str, int MsgCounter)
-{
-	string reply;
-	
-	size_t pos = str.find("IDENTIFIED");
-	if (pos==0 and pos!=std::string::npos)
-	{
-		m_identified=true;
-	}else if ( str == "OK" )
-	{
-		pthread_mutex_lock ( &msg_sent_mutex ); // acquire the lock
-		msg_sent_queue.erase ( msg_sent_queue.begin() );
-		pthread_mutex_unlock ( &msg_sent_mutex );	 // give up the lock
-		
-		MsgCounter--;
-	}
-	else if ( str == "PING" )
-	{
-		reply = "PONG";
-		if ( TrackerWrite ( reply ) < 0 )
-		{
-			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
-		            << "PING from server received but failed to sent PONG to server" );
-		}else
-		SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::ReplyFromServer: "
-		            << "PING from server received" );
-	} else
-	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
-	            << "Responce not recognized. Msg: '" << str );
-	return MsgCounter;
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-//FG_TRACKER::ReadQueue - Read message in file to cache
-/////////////////////////////////////////////////////////////////////
-void
-FG_TRACKER::ReadQueue ()
-{
-
-	ifstream queue_file;
-	queue_file.open ( "queue_file" );
-	if ( ! queue_file )
-	{
-		return;
-	}
-	string line_str("");
-	string Msg ("");
-	int line_cnt;
-	while ( getline ( queue_file, line_str, '\n' ) )
-	{
-		if(line_cnt==25)
-		{
-			pthread_mutex_lock ( &msg_mutex );	 // set the lock
-			msg_queue.push_back ( Msg ); // queue the message
-			pthread_mutex_unlock ( &msg_mutex );	 // give up the lock
-			Msg="";
-			line_cnt=0;
-		}
-		line_str += "\n";
-		Msg += line_str;
-		line_cnt++;
-	}
-	/*fire remaining message to msg_queue*/
-	pthread_mutex_lock ( &msg_mutex );	 // set the lock
-	msg_queue.push_back ( Msg ); // queue the message
-	pthread_mutex_unlock ( &msg_mutex );	 // give up the lock
-	queue_file.close();
-	remove ( "queue_file" );
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
 //FG_TRACKER::TrackerRead - Read TCP stream (non blocking) and call 
-//FG_TRACKER::ReplyFromServer. Return MsgCounter
+//FG_TRACKER::ReplyFromServer
 //////////////////////////////////////////////////////////////////////
-int
-FG_TRACKER::TrackerRead (int MsgCounter)
+void
+FG_TRACKER::TrackerRead ()
 {
 	char	res[MSGMAXLINE];	/*Msg from/to server*/
 	errno = 0;
@@ -314,9 +265,86 @@ FG_TRACKER::TrackerRead (int MsgCounter)
 		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerRead: "
 			            << "received message from server"
 			          );
-		MsgCounter=ReplyFromServer ( res, MsgCounter );
+		ReplyFromServer ( res );
 	}
-	return MsgCounter;
+}
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+//FG_TRACKER::TrackerWrite - Write a feedin string to TCP stream
+/////////////////////////////////////////////////////////////////////
+int
+FG_TRACKER::TrackerWrite ( const string& str )
+{
+	size_t l   = str.size() + 1;
+	LastSent   = time ( 0 );
+	errno      = 0;
+	int s   = -1;
+	while ( s < 0 )
+	{
+		s = m_TrackerSocket->send ( str.c_str(), l, MSG_NOSIGNAL );
+		if ( s < 0 )
+		{
+			if ( ( errno == EAGAIN ) || ( errno == EWOULDBLOCK ) )
+			{
+				continue;
+			}
+			m_connected = false;
+			LostConnections++;
+			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerWrite: "
+			            << "lost connection to server"
+			          );
+			return -1;
+		}
+	}
+	/*put the sent message to msg_sent_queue*/
+	size_t pos = str.find( m_protocalVersion );
+	if ( pos == 1 )
+	{} else if( str == "PONG" )
+	{} else
+	{
+		pthread_mutex_lock ( &msg_sent_mutex );
+		msg_sent_queue.push_back( str );
+		pthread_mutex_unlock ( &msg_sent_mutex );
+	}
+	BytesSent += s;
+	PktsSent++;
+	return s;
+}
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+//FG_TRACKER::ReplyFromServer - Process the reply from server
+/////////////////////////////////////////////////////////////////////
+void
+FG_TRACKER::ReplyFromServer ( const string& str )
+{
+	string reply;
+	
+	size_t pos = str.find("IDENTIFIED");
+	if (pos==0 and pos!=std::string::npos)
+	{
+		m_identified=true;
+	}else if ( str == "OK" )
+	{
+		pthread_mutex_lock ( &msg_sent_mutex ); // acquire the lock
+		msg_sent_queue.erase ( msg_sent_queue.begin() );
+		pthread_mutex_unlock ( &msg_sent_mutex );	 // give up the lock
+	}
+	else if ( str == "PING" )
+	{
+		reply = "PONG";
+		if ( TrackerWrite ( reply ) < 0 )
+		{
+			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
+		            << "PING from server received but failed to sent PONG to server" );
+		}else
+		SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::ReplyFromServer: "
+		            << "PING from server received" );
+	} else
+	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
+	            << "Responce not recognized. Msg: '" << str );
+	return;
 }
 //////////////////////////////////////////////////////////////////////
 
@@ -326,15 +354,10 @@ FG_TRACKER::TrackerRead (int MsgCounter)
 int
 FG_TRACKER::Loop ()
 {
-	VI	CurrentMessage;
-	size_t	length;
 	string	Msg;
-	int	MsgCounter;
 	pthread_mutex_init ( &msg_mutex, 0 );
 	pthread_mutex_init ( &msg_sent_mutex, 0 );
 	pthread_cond_init  ( &condition_var, 0 );
-	length = 0;
-	MsgCounter = 0;
 	MyThreadID = pthread_self();
 #ifdef WIN32
 	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
@@ -350,6 +373,9 @@ FG_TRACKER::Loop ()
 	{
 		if (! m_connected)
 		{
+			/*requeue the outstanding message to message queue*/
+			ReQueueSentMsg ();
+			
 			m_identified=false;
 			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
 			            << "trying to connect"
@@ -373,9 +399,8 @@ FG_TRACKER::Loop ()
 			ReadQueue (); 	// read backlog, if any
 		}
 		pthread_mutex_lock ( &msg_mutex );
-		length = msg_queue.size ();
 		pthread_mutex_unlock ( &msg_mutex );
-		if (length == 0)
+		if ( !msg_queue.size ())
 		{
 			// wait for data (1 sec at most)
 			struct timeval now;
@@ -384,17 +409,14 @@ FG_TRACKER::Loop ()
 			timeout.tv_sec  = now.tv_sec + 1;
 			pthread_mutex_lock ( &msg_mutex );	
 			pthread_cond_timedwait ( &condition_var, &msg_mutex, &timeout );
-			length = msg_queue.size ();
 			pthread_mutex_unlock ( &msg_mutex );
 		}
-		while ( length && m_connected && m_identified)
+		while ( msg_queue.size () && m_connected && m_identified)
 		{
 			/*Get message from msg_queue*/
 			pthread_mutex_lock ( &msg_mutex );
-			CurrentMessage = msg_queue.begin(); // get first message
-			Msg = ( *CurrentMessage ).c_str();
-			CurrentMessage = msg_queue.erase ( CurrentMessage );
-			length = msg_queue.size ();
+			Msg = msg_queue.front();
+			msg_queue.erase ( msg_queue.begin() );
 			pthread_mutex_unlock ( &msg_mutex );
 			
 			
@@ -410,23 +432,17 @@ FG_TRACKER::Loop ()
 				msg_queue.insert ( msg_queue.begin() , Msg );// requeue message at the beginning of queue
 				pthread_cond_signal ( &condition_var );  // wake up the worker
 				pthread_mutex_unlock ( &msg_mutex );
-				length = 0;
 				break;
 			}
-			/*put the sent message to msg_sent_queue*/
-			pthread_mutex_lock ( &msg_sent_mutex );
-			msg_sent_queue.push_back( Msg );
-			pthread_mutex_unlock ( &msg_sent_mutex );
 			
-			MsgCounter++;
-			TrackerRead (MsgCounter);
+			TrackerRead ();
 			Msg = "";
-			if ( MsgCounter == 25 )
+			if ( msg_sent_queue.size() > 25 )
 			{
 				break; /*too much outstanding packets*/
 			}		
 		}
-		TrackerRead (MsgCounter); /*usually read PING*/
+		TrackerRead (); /*usually read PING*/
 	}
 	return ( 0 );
 } // Loop ()
@@ -477,7 +493,7 @@ FG_TRACKER::Connect()
 	sleep ( 2 );
 	/*Write Version header to FGTracker*/
 	std::stringstream ss;
-	ss << "V20151207 " << VERSION << " "<< m_domain << " " << m_FgmsName;
+	ss << "V" << m_protocalVersion << " " << VERSION << " "<< m_domain << " " << m_FgmsName;
 	std::string s = ss.str();
 	TrackerWrite ( s );
 	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect: "

@@ -5,6 +5,7 @@ class fgt_postgres{
 	*/
 	var $conn;
 	var $connected;
+	var $inTransaction;
 	
 	public function __construct () 
 	{
@@ -12,11 +13,13 @@ class fgt_postgres{
 		$this->connected=false;
 		$this->conn=NULL;
 		$this->connectmaster();
+		$this->inTransaction=FALSE;
 	}
 	
 	public function connectmaster()
 	{
 		/*connect to PostgreSQL. This function will never return until a SQL connection has been successfully made
+		This function will close all connections with fgms before connecting to Database
 		return true if a new SQL connection has been made.
 		return false if SQL connection is untouched
 		*/
@@ -46,13 +49,13 @@ class fgt_postgres{
 		$conn1=pg_connect("host=".$var['postgre_conn']['host']." port=".$var['postgre_conn']['port']." dbname=".$var['postgre_conn']['db']." user=".$var['postgre_conn']['uname']." password=".$var['postgre_conn']['pass'] ." connect_timeout=5",PGSQL_CONNECT_FORCE_NEW);
 		if ($conn1 ===FALSE)
 		{
-			$message="Failed to connect to postgres server - ".$var['postgre_conn']['desc'].". Will retry in 1 minute";
+			$message="Failed to connect to postgres server - ".$var['postgre_conn']['desc'].". Will retry in 30 seconds";
 			$fgt_error_report->fgt_set_error_report("CORE",$message,E_WARNING);	
 			$last_failed=time();
 			while (1)
 			{
 				sleep(1);
-				if(time()-$last_failed>10)
+				if(time()-$last_failed>30)
 				{
 					$this->connectmaster();
 					break;

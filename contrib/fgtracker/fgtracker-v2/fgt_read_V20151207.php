@@ -50,6 +50,8 @@ class fgt_read_V20151207
 			}
 			/*messages other than ping/pong*/
 			$lines=explode("\n",$packet);
+			if($clients[$this->uuid]['msg_process_class']->msg_start()===false)
+				return;
 			foreach ($lines as $line )
 			{
 				$line=trim($line);
@@ -85,6 +87,8 @@ class fgt_read_V20151207
 					return false;
 				$i++;
 			}
+			if($clients[$this->uuid]['msg_process_class']->msg_end()===false)
+				return;
 			$clients[$this->uuid]['write_buffer'].="OK\0";
 		}
 	}
