@@ -138,7 +138,7 @@ FG_TRACKER::ReadQueue ()
 	}
 	string line_str("");
 	string Msg ("");
-	int line_cnt;
+	int line_cnt = 0;
 	while ( getline ( queue_file, line_str, '\n' ) )
 	{
 		if(line_cnt==25)
@@ -322,7 +322,7 @@ FG_TRACKER::ReplyFromServer ( const string& str )
 	string reply;
 	
 	size_t pos = str.find("IDENTIFIED");
-	if (pos==0 and pos!=std::string::npos)
+	if ( pos == 0 )
 	{
 		m_identified=true;
 	}else if ( str == "OK" )
