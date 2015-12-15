@@ -12,10 +12,27 @@
 //  server tracker for FlightGear
 //  (c) 2006 Julien Pierru
 //  (c) 2012 Rob Dosogne ( FreeBSD friendly )
-//
+//	(c) 2015 Hazuki Amamiya
 //  Licenced under GPL
 //
+//	Socket read buffer code is copied from Mark Tolonen's answer at
+//	http://stackoverflow.com/questions/5051701/recv-until-a-nul-byte-is-received
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License as
+// published by the Free Software Foundation; either version 2 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, US
 //////////////////////////////////////////////////////////////////////
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -106,6 +123,7 @@ FG_TRACKER::~FG_TRACKER ()
 	WriteQueue ();
 	msg_queue.clear ();
 	msg_sent_queue.clear ();
+	msg_recv_queue.clear ();
 	if ( m_TrackerSocket )
 	{
 		m_TrackerSocket->close ();
@@ -231,16 +249,30 @@ FG_TRACKER::AddMessage( const string& message )
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+//FG_TRACKER::buffsock_free - Reset the non-data part of 
+//socket read buffer
+/////////////////////////////////////////////////////////////////////
+void 
+FG_TRACKER::buffsock_free(buffsock_t* bs)
+{
+	memset (bs->buf+bs->curlen,0x17, MSGMAXLINE-bs->curlen);
+}
+
+//////////////////////////////////////////////////////////////////////
 //FG_TRACKER::TrackerRead - Read TCP stream (non blocking) and call 
 //FG_TRACKER::ReplyFromServer
 //////////////////////////////////////////////////////////////////////
 void
-FG_TRACKER::TrackerRead ()
+FG_TRACKER::TrackerRead (buffsock_t* bs)
 {
 	char	res[MSGMAXLINE];	/*Msg from/to server*/
+	char * pch;
 	errno = 0;
-	int i = m_TrackerSocket->recv ( res, MSGMAXLINE, MSG_NOSIGNAL );
-	if ( i <= 0 )
+	//int bytes = m_TrackerSocket->recv ( res, MSGMAXLINE, MSG_NOSIGNAL );
+	/* -1 below is used to retain last byte of 0x23*/
+	int bytes = m_TrackerSocket->recv ( bs->buf + bs->curlen, bs->maxlen - bs->curlen -1, MSG_NOSIGNAL ); 
+
+	if ( bytes <= 0 )
 	{
 		/*check if NOT
 		EAGAIN (No data on non blocking socket)
@@ -258,14 +290,39 @@ FG_TRACKER::TrackerRead ()
 	else
 	{
 		// something received from tracker server
-		res[i]='\0';
+		//res[bytes]='\0';
+		bs->curlen += bytes;
 		LastSeen = time ( 0 );
-		PktsRcvd++;
-		BytesRcvd += i;
+		while(1)
+		{
+			if( bs->buf[0] == 0x17 )
+			{	
+				/*nothing to be read. Reset buffer*/
+				bs->curlen=0;
+				buffsock_free( bs );
+				break;
+			}
+			pch = strchr(bs->buf,'\0');
+			if( pch == NULL )
+			{
+				/* Not full packet received. break.*/
+				buffsock_free( bs );
+				break;
+			}
+			int pos=pch-bs->buf+1; /* position of '\0', starting with 1 */
+
+			memcpy( res,bs->buf,pos );
+			bs->curlen -= pos;
+			/*move array element one packet forward*/
+			memmove( bs->buf,bs->buf + pos,MSGMAXLINE-pos ); 
+			msg_recv_queue.push_back( res );
+			PktsRcvd++;	
+		}
+		BytesRcvd += bytes;		
 		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerRead: "
 			            << "received message from server"
 			          );
-		ReplyFromServer ( res );
+		ReplyFromServer ();
 	}
 }
 //////////////////////////////////////////////////////////////////////
@@ -317,33 +374,39 @@ FG_TRACKER::TrackerWrite ( const string& str )
 //FG_TRACKER::ReplyFromServer - Process the reply from server
 /////////////////////////////////////////////////////////////////////
 void
-FG_TRACKER::ReplyFromServer ( const string& str )
+FG_TRACKER::ReplyFromServer ()
 {
 	string reply;
 	
-	size_t pos = str.find("IDENTIFIED");
-	if ( pos == 0 )
+	while (msg_recv_queue.begin() != msg_recv_queue.end())
 	{
-		m_identified=true;
-	}else if ( str == "OK" )
-	{
-		pthread_mutex_lock ( &msg_sent_mutex ); // acquire the lock
-		msg_sent_queue.erase ( msg_sent_queue.begin() );
-		pthread_mutex_unlock ( &msg_sent_mutex );	 // give up the lock
-	}
-	else if ( str == "PING" )
-	{
-		reply = "PONG";
-		if ( TrackerWrite ( reply ) < 0 )
+		string str=msg_recv_queue.front();
+		msg_recv_queue.erase ( msg_recv_queue.begin() );
+		
+		size_t pos = str.find("IDENTIFIED");
+		if ( pos == 0 )
 		{
-			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
-		            << "PING from server received but failed to sent PONG to server" );
-		}else
-		SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::ReplyFromServer: "
-		            << "PING from server received" );
-	} else
-	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
-	            << "Responce not recognized. Msg: '" << str );
+			m_identified=true;
+		}else if ( str == "OK" )
+		{
+			pthread_mutex_lock ( &msg_sent_mutex ); // acquire the lock
+			msg_sent_queue.erase ( msg_sent_queue.begin() );
+			pthread_mutex_unlock ( &msg_sent_mutex );	 // give up the lock
+		}
+		else if ( str == "PING" )
+		{
+			reply = "PONG";
+			if ( TrackerWrite ( reply ) < 0 )
+			{
+				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
+						<< "PING from server received but failed to sent PONG to server" );
+			}else
+			SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::ReplyFromServer: "
+						<< "PING from server received" );
+		} else
+		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
+					<< "Responce not recognized. Msg: '" << str );
+	}
 	return;
 }
 //////////////////////////////////////////////////////////////////////
@@ -357,8 +420,16 @@ FG_TRACKER::Loop ()
 	string	Msg;
 	pthread_mutex_init ( &msg_mutex, 0 );
 	pthread_mutex_init ( &msg_sent_mutex, 0 );
+	pthread_mutex_init ( &msg_recv_mutex, 0 );
 	pthread_cond_init  ( &condition_var, 0 );
 	MyThreadID = pthread_self();
+	
+	/*Initialize socket read buffer*/
+	buffsock_t bs;
+	bs.buf = (char*) malloc( MSGMAXLINE );
+    bs.maxlen = MSGMAXLINE;
+    bs.curlen = 0;
+	
 #ifdef WIN32
 	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
 		    << "started, thread ID " << MyThreadID.p
@@ -375,6 +446,10 @@ FG_TRACKER::Loop ()
 		{
 			/*requeue the outstanding message to message queue*/
 			ReQueueSentMsg ();
+			
+			/*Reset Socket Read Buffer*/
+			bs.curlen=0;
+			buffsock_free(&bs);
 			
 			m_identified=false;
 			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
@@ -435,14 +510,14 @@ FG_TRACKER::Loop ()
 				break;
 			}
 			
-			TrackerRead ();
+			TrackerRead (&bs);
 			Msg = "";
 			if ( msg_sent_queue.size() > 25 )
 			{
 				break; /*too much outstanding packets*/
 			}		
 		}
-		TrackerRead (); /*usually read PING*/
+		TrackerRead (&bs); /*usually read PING*/
 	}
 	return ( 0 );
 } // Loop ()
