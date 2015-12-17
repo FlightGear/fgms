@@ -417,7 +417,7 @@ FG_SERVER::Init()
 		}
 		m_ReinitAdmin = false;
 	}
-	SG_CONSOLE (SG_FGMS, SG_ALERT, "# This is " << m_ServerName );
+	SG_CONSOLE (SG_FGMS, SG_ALERT, "# This is " << m_ServerName << "(" << m_domain << ")");
 	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# FlightGear Multiplayer Server v"
 	           << VERSION << " started" );
 	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# using protocol version v"
