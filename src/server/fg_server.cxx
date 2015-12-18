@@ -48,6 +48,7 @@
 #include "fg_server.hxx"    /* includes pthread.h */
 #include "fg_common.hxx"
 #include "fg_util.hxx"
+#include <simgear/math/SGEuler.hxx>
 
 #ifdef _MSC_VER
 	#include <conio.h> // for _kbhit(), _getch
@@ -1968,6 +1969,7 @@ FG_SERVER::UpdateTracker( const string& Name,const string& Passwd,const string& 
 	}
 	// we only arrive here if type!=CONNECT and !=DISCONNECT
 	Message = "";
+    float heading, pitch, roll;
 	for (size_t i = 0; i < m_PlayerList.Size(); i++)
 	{
 		CurrentPlayer = m_PlayerList[i];
@@ -1986,9 +1988,12 @@ FG_SERVER::UpdateTracker( const string& Name,const string& Passwd,const string& 
 			Message += NumToStr ( PlayerPosGeod[Lat], 6 ) +" "; //lat
 			Message += NumToStr ( PlayerPosGeod[Lon], 6 ) +" "; //lon
 			Message += NumToStr ( PlayerPosGeod[Alt], 6 ) +" "; //alt
-			Message += NumToStr ( CurrentPlayer.LastOrientation[X], 6 ) +" ";
-			Message += NumToStr ( CurrentPlayer.LastOrientation[Y], 6 ) +" ";
-			Message += NumToStr ( CurrentPlayer.LastOrientation[Z], 6 ) +" ";
+            euler_get(PlayerPosGeod[Lat], PlayerPosGeod[Lon],
+                CurrentPlayer.LastOrientation[X], CurrentPlayer.LastOrientation[Y], CurrentPlayer.LastOrientation[Z],
+                &heading, &pitch, &roll );
+			Message += NumToStr ( heading, 6 ) +" ";
+			Message += NumToStr ( pitch,   6 ) +" ";
+			Message += NumToStr ( roll,    6 ) +" ";
 			Message += TimeStr;
 			// queue the message
 		}

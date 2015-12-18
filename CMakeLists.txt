@@ -223,22 +223,20 @@ else(WIN32)
     list(APPEND add_LIBS -lLibCLI -lcrypt)
 endif(WIN32)
 
-### add_subdirectory( src/simgear/debug )
-# Project [sgdebug] [Static Library] [noinst_LIBRARIES], with 1 sources. 2 hdrs.
-set( sgdebug_SRCS src/simgear/debug/logstream.cxx )
-set( sgdebug_HDRS src/simgear/debug/debug_types.h 
-   src/simgear/debug/logstream.hxx )
-add_library( SGdebug ${LIB_TYPE} ${sgdebug_SRCS} ${sgdebug_HDRS} )
+# Project [SGUtils] [Static Library] [noinst_LIBRARIES], with 2 sources. 3 hdrs.
+set( name SGUtils )
+set( ${name}_SRCS
+    src/simgear/debug/logstream.cxx 
+    src/simgear/math/SGEuler.cxx 
+    )
+set( ${name}_HDRS
+    src/simgear/debug/debug_types.h 
+    src/simgear/debug/logstream.hxx 
+    src/simgear/math/SGEuler.hxx 
+    )
+add_library( ${name} ${LIB_TYPE} ${${name}_SRCS} ${${name}_HDRS} )
 # NO INSTALL [noinst_LIBRARIES]
-if(WIN32)
-    list(APPEND add_LIBS SGdebug)
-else(WIN32)
-    list(APPEND add_LIBS -lSGdebug)
-endif(WIN32)
-
-# Project [fgms] [Console Application] [sbin_PROGRAMS], with 1 sources. deps [sgdebug MultiPlayer plib fg_server]4
-set( fgms_SRCS src/server/main.cxx )
-add_executable( ${EXE_NAME} ${fgms_SRCS} )
+list(APPEND add_LIBS ${name})
 
 # find the threads library
 find_package(Threads REQUIRED)
@@ -275,6 +273,9 @@ else(Threads_FOUND)
   message( FATAL_ERROR "*** THREADS NOT FOUND!")
 endif(Threads_FOUND)
 
+# Project [fgms] [Console Application] [sbin_PROGRAMS], with 1 sources. deps [sgutils MultiPlayer plib fg_server]4
+set( fgms_SRCS src/server/main.cxx )
+add_executable( ${EXE_NAME} ${fgms_SRCS} )
 target_link_libraries( ${EXE_NAME} ${add_LIBS} )
 message(STATUS "*** target_link_libraries( ${EXE_NAME} ${add_LIBS} )" )
 if(WIN32)
