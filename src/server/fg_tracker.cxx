@@ -473,8 +473,7 @@ FG_TRACKER::Loop ()
 			}
 			ReadQueue (); 	// read backlog, if any
 		}
-		pthread_mutex_lock ( &msg_mutex );
-		pthread_mutex_unlock ( &msg_mutex );
+
 		if ( !msg_queue.size ())
 		{
 			// wait for data (1 sec at most)

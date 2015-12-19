@@ -1998,8 +1998,12 @@ FG_SERVER::UpdateTracker( const string& Name,const string& Passwd,const string& 
 			// queue the message
 		}
 	} // while
-	m_Tracker->AddMessage (Message);
-	m_TrackerPosition++; // count a POSITION messge queued
+	if( Message!= "" )
+	{	
+		m_Tracker->AddMessage (Message);
+		m_TrackerPosition++; // count a POSITION messge queued
+	}
+
 	Message.erase ( 0 );
 	return ( 0 );
 } // UpdateTracker (...)
