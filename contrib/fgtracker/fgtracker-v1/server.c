@@ -625,7 +625,11 @@ void doit(int fd)
     mypid = getpid();
     if (SERROR(status)) {
 		sprintf(debugstr,"[%d] FAILED to set the socket to non-blocking mode. Exiting...",mypid);
+#if defined(_MSC_VER) || defined(USE_PTHREAD)
+        return;
+#else
 		exit (0);
+#endif
     } else {
 		sprintf(debugstr,"[%d] Socket set to non-blocking mode. %d scans per second",mypid,time_out_fraction);
     }
@@ -727,10 +731,15 @@ void doit(int fd)
 			{	/*Send PING*/
 				if (SWRITE(fd,"PING",5) != 5)
 				{
-					sprintf(debugstr,"[%d] %s:%d: Write PING failed! - %s", mypid, clientip,clientport,strerror(errno));
+					// sprintf(debugstr,"[%d] %s:%d: Write PING failed! - %s", mypid, clientip,clientport,strerror(errno));
+                    // above msg lost, but also is not right for WIN32... socket errors are not in errno!
 					sprintf(debugstr,"[%d] %s:%d: Connection lost. Exiting...", mypid, clientip,clientport);
 					debug(1,debugstr);
+#if defined(_MSC_VER) || defined(USE_PTHREAD)
+                    return;
+#else
 					exit(0);
+#endif
 				}
 				else
 					sprintf(debugstr,"[%d] %s:%d: Wrote PING. Waiting reply", mypid, clientip,clientport);
@@ -794,7 +803,11 @@ void doit(int fd)
 				{
 					sprintf(debugstr,"[%d] %s:%d: Too much retries to PQ. Force Exit...",mypid,clientip,clientport);
 					debug(1,debugstr);
+#if defined(_MSC_VER) || defined(USE_PTHREAD)
+                    return;
+#else
 					exit(0);
+#endif
 				}
             }
         }
@@ -862,7 +875,11 @@ void doit(int fd)
                 sprintf(debugstr,"[%d] %s:%d: Write OK failed - %s", mypid, clientip,clientport,strerror(errno));
                 sprintf(debugstr,"[%d] %s:%d: Connection lost. Exiting...", mypid, clientip,clientport);
 				debug(1,debugstr);
+#if defined(_MSC_VER) || defined(USE_PTHREAD)
+                return;
+#else
 				exit(0);
+#endif
             } else {
                 sprintf(debugstr,"[%d] %s:%d: Reply sent.", mypid,clientip,clientport);
                 debug(3,debugstr);
@@ -872,7 +889,11 @@ void doit(int fd)
 		{	/*Force exit if the secord message does not flip reply switch*/
 			sprintf(debugstr,"[%d] %s:%d: Invalid message sequence. Exiting...",mypid,clientip,clientport);
 			debug(1,debugstr);
+#if defined(_MSC_VER) || defined(USE_PTHREAD)
+            return;
+#else
 			exit(0);
+#endif
 		}
 		strcpy(msg,""); /*clear message*/
     }
