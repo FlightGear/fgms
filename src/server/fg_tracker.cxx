@@ -404,8 +404,17 @@ FG_TRACKER::ReplyFromServer ()
 			SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::ReplyFromServer: "
 						<< "PING from server received" );
 		} else
-		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
+		{
+			reply = "ERROR Unrecognized message \"" + str + "\"";
+			if ( TrackerWrite ( reply ) < 0 )
+			{
+				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
+					<< "Responce not recognized and failed to notify server. Msg: '" << str );
+			}else
+				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
 					<< "Responce not recognized. Msg: '" << str );
+		}
+
 	}
 	return;
 }
@@ -485,9 +494,10 @@ FG_TRACKER::Loop ()
 			pthread_cond_timedwait ( &condition_var, &msg_mutex, &timeout );
 			pthread_mutex_unlock ( &msg_mutex );
 		}
-		while ( msg_queue.size () && m_connected && m_identified)
+		while ( msg_queue.size () && m_connected && m_identified && msg_sent_queue.size() < 25)
 		{
 			/*Get message from msg_queue*/
+			Msg = "";
 			pthread_mutex_lock ( &msg_mutex );
 			Msg = msg_queue.front();
 			msg_queue.erase ( msg_queue.begin() );
@@ -509,12 +519,7 @@ FG_TRACKER::Loop ()
 				break;
 			}
 			
-			TrackerRead (&bs);
-			Msg = "";
-			if ( msg_sent_queue.size() > 25 )
-			{
-				break; /*too much outstanding packets*/
-			}		
+			TrackerRead (&bs);	
 		}
 		TrackerRead (&bs); /*usually read PING*/
 	}
