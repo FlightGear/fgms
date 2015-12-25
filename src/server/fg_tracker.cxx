@@ -383,8 +383,9 @@ FG_TRACKER::ReplyFromServer ()
 		string str=msg_recv_queue.front();
 		msg_recv_queue.erase ( msg_recv_queue.begin() );
 		
-		size_t pos = str.find("IDENTIFIED");
-		if ( pos == 0 )
+		size_t pos_ident = str.find("IDENTIFIED");
+		size_t pos_err = str.find("ERROR");
+		if ( pos_ident == 0 )
 		{
 			m_identified=true;
 		}else if ( str == "OK" )
@@ -403,16 +404,23 @@ FG_TRACKER::ReplyFromServer ()
 			}else
 			SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::ReplyFromServer: "
 						<< "PING from server received" );
-		} else
+		}else if ( pos_err == 0 )
+		{
+			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
+					<< "Received error message from FGTracker. Msg: '" << str <<"'" );
+			SG_CONSOLE (SG_FGMS, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
+					<< "Received error message from FGTracker. Msg: '" << str <<"'");
+		}
+		else
 		{
 			reply = "ERROR Unrecognized message \"" + str + "\"";
 			if ( TrackerWrite ( reply ) < 0 )
 			{
 				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
-					<< "Responce not recognized and failed to notify server. Msg: '" << str );
+					<< "Responce not recognized and failed to notify server. Msg: '" << str <<"'" );
 			}else
 				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
-					<< "Responce not recognized. Msg: '" << str );
+					<< "Responce not recognized. Msg: '" << str <<"'");
 		}
 
 	}

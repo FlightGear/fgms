@@ -18,7 +18,6 @@
 //
 
 #define FGMS_USE_THREADS
-
 //////////////////////////////////////////////////////////////////////
 //
 //      Server for FlightGear
@@ -772,29 +771,28 @@ FG_SERVER::AddClient( const netAddress& Sender,char* Msg )
 	{
 		m_NumMaxClients = NumClients;
 	}
+	
+	Origin  = NewPlayer.Origin;
 	if ( IsLocal )
 	{
+		Message = "New LOCAL Client: ";
 		m_LocalClients++;
 		UpdateTracker ( NewPlayer.Name, NewPlayer.Passwd, NewPlayer.ModelName, NewPlayer.LastSeen, CONNECT );
 	}
 	else
 	{
 		m_RemoteClients++;
-	}
-	Origin  = NewPlayer.Origin;
-	if ( IsLocal )
-	{
-		Message = "New LOCAL Client: ";
-	}
-	else
-	{
 		Message = "New REMOTE Client: ";
 		mT_RelayMapIt Relay = m_RelayMap.find ( NewPlayer.Address.getIP() );
 		if ( Relay != m_RelayMap.end() )
 		{
 			Origin = Relay->second;
 		}
+		#ifdef TRACK_ALL
+		UpdateTracker ( NewPlayer.Name, NewPlayer.Passwd, NewPlayer.ModelName, NewPlayer.LastSeen, CONNECT );
+		#endif
 	}
+
 	SG_LOG ( SG_FGMS, SG_INFO, Message
 	         << NewPlayer.Name << "@"
 	         << Origin << ":" << Sender.getPort()
@@ -1102,10 +1100,16 @@ void
 FG_SERVER::DropClient( PlayerIt& CurrentPlayer )
 {
 	string Origin;
+			
+	#ifdef TRACK_ALL
+	UpdateTracker (CurrentPlayer->Name, CurrentPlayer->Passwd, CurrentPlayer->ModelName, CurrentPlayer->LastSeen, DISCONNECT);
+	#else
 	if ((CurrentPlayer->IsLocal) && (CurrentPlayer->HasErrors == false))
 	{
 		UpdateTracker (CurrentPlayer->Name, CurrentPlayer->Passwd, CurrentPlayer->ModelName, CurrentPlayer->LastSeen, DISCONNECT);
-	}
+	}	
+	#endif
+
 	if (CurrentPlayer->IsLocal)
 		m_LocalClients--;
 	else
@@ -1970,33 +1974,54 @@ FG_SERVER::UpdateTracker( const string& Name,const string& Passwd,const string& 
 	// we only arrive here if type!=CONNECT and !=DISCONNECT
 	Message = "";
     float heading, pitch, roll;
+	size_t j=0; /*message count*/
 	for (size_t i = 0; i < m_PlayerList.Size(); i++)
 	{
 		CurrentPlayer = m_PlayerList[i];
 		if (CurrentPlayer.ID == FG_ListElement::NONE_EXISTANT)
 			continue;
+		euler_get(PlayerPosGeod[Lat], PlayerPosGeod[Lon],
+			CurrentPlayer.LastOrientation[X], CurrentPlayer.LastOrientation[Y], CurrentPlayer.LastOrientation[Z],
+			&heading, &pitch, &roll );
+		
 		if ((CurrentPlayer.IsLocal) && (CurrentPlayer.HasErrors == false))
 		{
-			if(i!=0)
+			if(j!=0)
 				Message += "\n";
 			sgCartToGeod ( CurrentPlayer.LastPos, PlayerPosGeod );
 			Message +=  "POSITION ";
-			Message += CurrentPlayer.Name;
-			Message += " ";
-			Message += CurrentPlayer.Passwd;
-			Message += " ";
+			Message += CurrentPlayer.Name +" ";
+			Message += CurrentPlayer.Passwd +" ";
 			Message += NumToStr ( PlayerPosGeod[Lat], 6 ) +" "; //lat
 			Message += NumToStr ( PlayerPosGeod[Lon], 6 ) +" "; //lon
 			Message += NumToStr ( PlayerPosGeod[Alt], 6 ) +" "; //alt
-            euler_get(PlayerPosGeod[Lat], PlayerPosGeod[Lon],
-                CurrentPlayer.LastOrientation[X], CurrentPlayer.LastOrientation[Y], CurrentPlayer.LastOrientation[Z],
-                &heading, &pitch, &roll );
 			Message += NumToStr ( heading, 6 ) +" ";
 			Message += NumToStr ( pitch,   6 ) +" ";
 			Message += NumToStr ( roll,    6 ) +" ";
 			Message += TimeStr;
 			// queue the message
+			j++;
 		}
+		#ifdef TRACK_ALL
+		if (!CurrentPlayer.IsLocal)
+		{
+			if(j!=0)
+				Message += "\n";
+			sgCartToGeod ( CurrentPlayer.LastPos, PlayerPosGeod );
+			Message +=  "POSITION ";
+			Message += CurrentPlayer.Name +" ";
+			Message += CurrentPlayer.Passwd +" ";
+			Message += NumToStr ( PlayerPosGeod[Lat], 6 ) +" "; //lat
+			Message += NumToStr ( PlayerPosGeod[Lon], 6 ) +" "; //lon
+			Message += NumToStr ( PlayerPosGeod[Alt], 6 ) +" "; //alt
+			Message += NumToStr ( heading, 6 ) +" ";
+			Message += NumToStr ( pitch,   6 ) +" ";
+			Message += NumToStr ( roll,    6 ) +" ";
+			Message += TimeStr;
+			// queue the message
+			j++;
+		}
+		#endif
 	} // while
 	if( Message!= "" )
 	{	
