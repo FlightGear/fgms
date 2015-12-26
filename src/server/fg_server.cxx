@@ -1588,7 +1588,7 @@ FG_SERVER::Loop()
 		}
 		
 		// Update some things every (default) 10 secondes
-		if ( ( CurrentTime - LastTrackerUpdate ) >= m_UpdateTrackerFreq )
+		if ( ( CurrentTime - LastTrackerUpdate ) >= m_UpdateTrackerFreq or ( CurrentTime - LastTrackerUpdate ) < 0)
 		{
 			LastTrackerUpdate = time ( 0 );
 			if ( m_PlayerList.Size() >0 )
