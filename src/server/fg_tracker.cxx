@@ -395,7 +395,8 @@ FG_TRACKER::ReplyFromServer ()
 		}else if ( str == "OK" )
 		{
 			pthread_mutex_lock ( &msg_sent_mutex ); // acquire the lock
-			msg_sent_queue.erase ( msg_sent_queue.begin() );
+			if ( msg_sent_queue.begin() != msg_sent_queue.end() )
+				msg_sent_queue.erase ( msg_sent_queue.begin() );
 			pthread_mutex_unlock ( &msg_sent_mutex );	 // give up the lock
 		}
 		else if ( str == "PING" )
