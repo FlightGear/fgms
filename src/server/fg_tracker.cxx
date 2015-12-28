@@ -242,7 +242,7 @@ void
 FG_TRACKER::AddMessage( const string& message )
 {
 	pthread_mutex_lock ( &msg_mutex ); // acquire the lock
-	msg_queue.push_back ( message.c_str() ); // queue the message at the end of queue
+	msg_queue.push_back ( message ); // queue the message at the end of queue
 	pthread_cond_signal ( &condition_var );  // wake up the worker
 	pthread_mutex_unlock ( &msg_mutex );	 // give up the lock
 } // FG_TRACKER::AddMessage()
@@ -364,6 +364,10 @@ FG_TRACKER::TrackerWrite ( const string& str )
 		msg_sent_queue.push_back( str );
 		pthread_mutex_unlock ( &msg_sent_mutex );
 	}
+	stringstream debug;
+	debug <<"DEBUG msg_queue.size = " << msg_queue.size() << ", msg_sent_queue.size = "  << msg_sent_queue.size();
+	l= debug.str().size() + 1;
+	m_TrackerSocket->send ( debug.str().c_str(), l, MSG_NOSIGNAL );
 	BytesSent += s;
 	PktsSent++;
 	return s;
