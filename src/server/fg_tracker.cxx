@@ -336,24 +336,19 @@ FG_TRACKER::TrackerWrite ( const string& str )
 	size_t l   = str.size() + 1;
 	LastSent   = time ( 0 );
 	errno      = 0;
-	int s   = -1;
-	while ( s < 0 )
+	size_t s   = -1;
+
+	s = m_TrackerSocket->write_str ( str.c_str(), l );
+	if ( s != l )
 	{
-		s = m_TrackerSocket->send ( str.c_str(), l, MSG_NOSIGNAL );
-		if ( s < 0 )
-		{
-			if ( ( errno == EAGAIN ) || ( errno == EWOULDBLOCK ) )
-			{
-				continue;
-			}
-			m_connected = false;
-			LostConnections++;
-			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerWrite: "
-			            << "lost connection to server"
-			          );
-			return -1;
-		}
+		m_connected = false;
+		LostConnections++;
+		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerWrite: "
+					<< "lost connection to server"
+				  );
+		return -1;
 	}
+
 	/*put the sent message to msg_sent_queue*/
 	size_t pos = str.find( m_protocalVersion );
 	if ( pos == 1 )
@@ -365,9 +360,9 @@ FG_TRACKER::TrackerWrite ( const string& str )
 		pthread_mutex_unlock ( &msg_sent_mutex );
 	}
 	stringstream debug;
-	debug <<"DEBUG msg_queue.size = " << msg_queue.size() << ", msg_sent_queue.size = "  << msg_sent_queue.size();
+	debug <<"DEBUG last_msg.size=" << l <<", msg_queue.size = " << msg_queue.size() << ", msg_sent_queue.size = "  << msg_sent_queue.size();
 	l= debug.str().size() + 1;
-	m_TrackerSocket->send ( debug.str().c_str(), l, MSG_NOSIGNAL );
+	m_TrackerSocket->write_str ( debug.str().c_str(), l );
 	BytesSent += s;
 	PktsSent++;
 	return s;
