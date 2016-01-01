@@ -348,7 +348,11 @@ int netSocket::write_str ( const char* str, int len )
 		if (written == SOCKET_ERROR)
 		{
 			if (RECOVERABLE_ERROR)
+			{
 				written = 0;
+				usleep(5000);
+			}
+				
 			else
 				return -1;
 		}

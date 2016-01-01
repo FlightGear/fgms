@@ -304,11 +304,8 @@ FG_TRACKER::TrackerRead (buffsock_t* bs)
 			}
 			pch = strchr(bs->buf,'\0');
 			if( pch == NULL )
-			{
 				/* Not full packet received. break.*/
-				buffsock_free( bs );
 				break;
-			}
 			int pos=pch-bs->buf+1; /* position of '\0', starting with 1 */
 
 			memcpy( res,bs->buf,pos );
@@ -316,6 +313,7 @@ FG_TRACKER::TrackerRead (buffsock_t* bs)
 			/*move array element one packet forward*/
 			memmove( bs->buf,bs->buf + pos,MSGMAXLINE-pos ); 
 			msg_recv_queue.push_back( res );
+			buffsock_free( bs );
 			PktsRcvd++;	
 		}
 		BytesRcvd += bytes;		
@@ -351,7 +349,9 @@ FG_TRACKER::TrackerWrite ( const string& str )
 
 	/*put the sent message to msg_sent_queue*/
 	size_t pos = str.find( m_protocalVersion );
+	size_t pos2 = str.find( "ERROR" );
 	if ( pos == 1 )
+	{} else if ( pos2 == 0 )
 	{} else if( str == "PONG" )
 	{} else
 	{
@@ -529,6 +529,8 @@ FG_TRACKER::Loop ()
 			
 			TrackerRead (&bs);	
 		}
+		if(msg_sent_queue.size()>=25)
+			usleep(10000);
 		TrackerRead (&bs); /*usually read PING*/
 	}
 	return ( 0 );
