@@ -498,10 +498,12 @@ FG_TRACKER::Loop ()
 			struct timespec timeout;
 			gettimeofday(&now, 0);
 			timeout.tv_sec  = now.tv_sec + 1;
+			timeout.tv_nsec = now.tv_usec * 1000;
 			pthread_mutex_lock ( &msg_mutex );	
 			pthread_cond_timedwait ( &condition_var, &msg_mutex, &timeout );
 			pthread_mutex_unlock ( &msg_mutex );
-		}
+		}else usleep(10000);
+
 		while ( msg_queue.size () && m_connected && m_identified && msg_sent_queue.size() < 25)
 		{
 			/*Get message from msg_queue*/
@@ -529,8 +531,7 @@ FG_TRACKER::Loop ()
 			
 			TrackerRead (&bs);	
 		}
-		if(msg_sent_queue.size()>=25)
-			usleep(10000);
+
 		TrackerRead (&bs); /*usually read PING*/
 	}
 	return ( 0 );
