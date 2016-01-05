@@ -502,7 +502,15 @@ FG_TRACKER::Loop ()
 			pthread_mutex_lock ( &msg_mutex );	
 			pthread_cond_timedwait ( &condition_var, &msg_mutex, &timeout );
 			pthread_mutex_unlock ( &msg_mutex );
-		}else usleep(10000);
+		} 
+        else
+        {
+#ifdef _MSC_VER
+            sleep(10);
+#else // !_MSC_VER
+            usleep(10000);
+#endif // _MSC_VER y/n
+        }
 
 		while ( msg_queue.size () && m_connected && m_identified && msg_sent_queue.size() < 25)
 		{
