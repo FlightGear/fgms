@@ -5,11 +5,13 @@
  *			Function available:
  *			usleep()
  */
+#ifndef _MSC_UNISTD_HXX_
+#define _MSC_UNISTD_HXX_
 
 #ifdef _MSC_VER
-class MSC_unistd
-{
-	public:
-	void usleep (int microseconds);
-}
+
+extern int usleep (int microseconds);
+
 #endif // _MSC_VER
+#endif // #ifndef _MSC_UNISTD_HXX_
+// eof

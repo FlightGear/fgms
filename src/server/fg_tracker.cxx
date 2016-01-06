@@ -440,10 +440,6 @@ FG_TRACKER::Loop ()
 	pthread_mutex_init ( &msg_recv_mutex, 0 );
 	pthread_cond_init  ( &condition_var, 0 );
 	MyThreadID = pthread_self();
-	#ifdef _MSC_VER
-	MSC_unistd MSC_unistd;
-	#endif
-	
 	
 	/*Initialize socket read buffer*/
 	buffsock_t bs;
@@ -509,11 +505,7 @@ FG_TRACKER::Loop ()
 		} 
         else
         {
-#ifdef _MSC_VER
-            MSC_unistd.usleep(10000);
-#else // !_MSC_VER
             usleep(10000);
-#endif // _MSC_VER y/n
         }
 
 		while ( msg_queue.size () && m_connected && m_identified && msg_sent_queue.size() < 25)

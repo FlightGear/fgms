@@ -353,14 +353,8 @@ int netSocket::write_str ( const char* str, int len )
 			if (RECOVERABLE_ERROR)
 			{
 				written = 0;
-#ifdef _MSC_VER
-				MSC_unistd MSC_unistd;
-                MSC_unistd.usleep(5000);
-#else   // !_MSC_VER
                 usleep(5000);
-#endif // _MSC_VER y/n
 			}
-				
 			else
 				return -1;
 		}
