@@ -2,7 +2,7 @@
  * @file fg_tracker.cxx
  * @author (c) 2006 Julien Pierru
  * @author (c) 2012 Rob Dosogne ( FreeBSD friendly )
- *
+ * @author (c) 2015 Hazuki Amamiya
  * @todo Pete To make a links here to the config and explain a bit
  *
  */
@@ -45,6 +45,7 @@
 #include <sstream>
 #ifdef _MSC_VER
 #include <sys/timeb.h>
+#include <libmsc/msc_unistd.hxx>
 #else
 #include <errno.h>
 #include <time.h>
@@ -290,7 +291,6 @@ FG_TRACKER::TrackerRead (buffsock_t* bs)
 	else
 	{
 		// something received from tracker server
-		//res[bytes]='\0';
 		bs->curlen += bytes;
 		LastSeen = time ( 0 );
 		while(1)
@@ -359,10 +359,10 @@ FG_TRACKER::TrackerWrite ( const string& str )
 		msg_sent_queue.push_back( str );
 		pthread_mutex_unlock ( &msg_sent_mutex );
 	}
-	stringstream debug;
+	/*stringstream debug;
 	debug <<"DEBUG last_msg.size=" << l <<", msg_queue.size = " << msg_queue.size() << ", msg_sent_queue.size = "  << msg_sent_queue.size();
 	l= debug.str().size() + 1;
-	m_TrackerSocket->write_str ( debug.str().c_str(), l );
+	m_TrackerSocket->write_str ( debug.str().c_str(), l );*/
 	BytesSent += s;
 	PktsSent++;
 	return s;
@@ -440,6 +440,10 @@ FG_TRACKER::Loop ()
 	pthread_mutex_init ( &msg_recv_mutex, 0 );
 	pthread_cond_init  ( &condition_var, 0 );
 	MyThreadID = pthread_self();
+	#ifdef _MSC_VER
+	MSC_unistd MSC_unistd;
+	#endif
+	
 	
 	/*Initialize socket read buffer*/
 	buffsock_t bs;
@@ -506,7 +510,7 @@ FG_TRACKER::Loop ()
         else
         {
 #ifdef _MSC_VER
-            sleep(10);
+            MSC_unistd.usleep(10000);
 #else // !_MSC_VER
             usleep(10000);
 #endif // _MSC_VER y/n

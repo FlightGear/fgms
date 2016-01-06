@@ -159,10 +159,14 @@ set( fg_server_SRCS
     src/server/fg_util.cxx 
     src/server/daemon.cxx 
     src/server/fg_geometry.cxx )
-set( fg_server_HDRS  src/server/fg_server.hxx src/server/fg_tracker.hxx 
-    src/server/fg_config.hxx src/server/fg_list.hxx 
+set( fg_server_HDRS  
+	src/server/fg_server.hxx 
+	src/server/fg_tracker.hxx 
+    src/server/fg_config.hxx 
+	src/server/fg_list.hxx 
     src/server/fg_cli.hxx
-    src/server/daemon.hxx src/server/fg_util.hxx 
+    src/server/daemon.hxx 
+	src/server/fg_util.hxx 
     src/server/fg_common.hxx )
 add_library( fg_server ${LIB_TYPE} ${fg_server_SRCS} ${fg_server_HDRS} )
 # NO INSTALL [noinst_LIBRARIES]
@@ -221,6 +225,25 @@ if(WIN32)
     list(APPEND add_LIBS LibCLI)
 else(WIN32)
     list(APPEND add_LIBS -lLibCLI -lcrypt)
+endif(WIN32)
+
+#### add_subdirectory( src/libmsc ) Windows Only
+# Project [libmsc] [Static Library] [noinst_LIBRARIES], with 1 source. 1 hdr.
+set( libmsc_SRCS
+    src/libmsc/msc_unistd.cxx
+    )
+set( libmsc_HDRS
+	src/libmsc/msc_unistd.hxx
+    )
+if(MSVC)
+	add_library( LibMSC ${LIB_TYPE} ${libmsc_SRCS} ${libmsc_HDRS} )
+endif(MSVC)
+if(WIN32)
+    list(APPEND add_LIBS LibMSC)
+else(WIN32)
+	if(MSVC)
+		list(APPEND add_LIBS -lLibMSC)
+	endif(MSVC)
 endif(WIN32)
 
 # Project [SGUtils] [Static Library] [noinst_LIBRARIES], with 2 sources. 3 hdrs.
