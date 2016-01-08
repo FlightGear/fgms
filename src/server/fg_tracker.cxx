@@ -359,10 +359,10 @@ FG_TRACKER::TrackerWrite ( const string& str )
 		msg_sent_queue.push_back( str );
 		pthread_mutex_unlock ( &msg_sent_mutex );
 	}
-	/*stringstream debug;
+	stringstream debug;
 	debug <<"DEBUG last_msg.size=" << l <<", msg_queue.size = " << msg_queue.size() << ", msg_sent_queue.size = "  << msg_sent_queue.size();
 	l= debug.str().size() + 1;
-	m_TrackerSocket->write_str ( debug.str().c_str(), l );*/
+	m_TrackerSocket->write_str ( debug.str().c_str(), l );
 	BytesSent += s;
 	PktsSent++;
 	return s;
