@@ -112,6 +112,8 @@ FG_TRACKER::FG_TRACKER ( int port, string server, string m_ServerName, string do
 	WantExit	= false;
     m_connected = false;
 	m_identified= false;
+	pinginterval= 55;
+	timeoutstage= 0;
 } // FG_TRACKER()
 
 //////////////////////////////////////////////////////////////////////
@@ -260,6 +262,39 @@ FG_TRACKER::buffsock_free(buffsock_t* bs)
 }
 
 //////////////////////////////////////////////////////////////////////
+//FG_TRACKER::CheckTimeout - Check connection timeout between FGMS and 
+//FGTracker by sending PING to FGTracker
+/////////////////////////////////////////////////////////////////////
+void
+FG_TRACKER::CheckTimeout()
+{
+	
+	time_t curtime = time ( 0 );
+	double seconds;
+	seconds = difftime( curtime, LastSeen );
+	if( (int) seconds - pinginterval * timeoutstage > pinginterval )
+	{
+		timeoutstage++;
+		if(timeoutstage>3)
+		{
+			m_connected = false;
+			LostConnections++;
+			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::CheckTimeout: No data received from FGTracker for "
+				<< seconds << " seconds. Lost connection to FGTracker" );
+			return;
+		}
+		string reply = "PING";
+		if ( TrackerWrite ( reply ) < 0 )
+		{
+			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::CheckTimeout: "
+					<< "Tried to PING FGTracker (No data from FGTracker for "<< seconds <<" seconds) but failed in sending PING to FGTracker" );
+		}else
+		SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::CheckTimeout: "
+					<< "PING FGTracker (No data from FGTracker for "<< seconds <<" seconds)" );
+	}
+	
+}
+//////////////////////////////////////////////////////////////////////
 //FG_TRACKER::TrackerRead - Read TCP stream (non blocking) and call 
 //FG_TRACKER::ReplyFromServer
 //////////////////////////////////////////////////////////////////////
@@ -284,8 +319,7 @@ FG_TRACKER::TrackerRead (buffsock_t* bs)
 			m_connected = false;
 			LostConnections++;
 			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerRead: "
-			            << "lost connection to server"
-			          );
+			            << "lost connection to FGTracker" );
 		}
 	}
 	else
@@ -293,6 +327,8 @@ FG_TRACKER::TrackerRead (buffsock_t* bs)
 		// something received from tracker server
 		bs->curlen += bytes;
 		LastSeen = time ( 0 );
+		timeoutstage = 0;
+
 		while(1)
 		{
 			if( bs->buf[0] == 0x17 )
@@ -317,9 +353,8 @@ FG_TRACKER::TrackerRead (buffsock_t* bs)
 			PktsRcvd++;	
 		}
 		BytesRcvd += bytes;		
-		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerRead: "
-			            << "received message from server"
-			          );
+		SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::TrackerRead: "
+			            << "received message from FGTracker - " << res );
 		ReplyFromServer ();
 	}
 }
@@ -352,7 +387,7 @@ FG_TRACKER::TrackerWrite ( const string& str )
 	size_t pos2 = str.find( "ERROR" );
 	if ( pos == 1 )
 	{} else if ( pos2 == 0 )
-	{} else if( str == "PONG" )
+	{} else if( str == "PING" )
 	{} else
 	{
 		pthread_mutex_lock ( &msg_sent_mutex );
@@ -400,15 +435,17 @@ FG_TRACKER::ReplyFromServer ()
 			if ( TrackerWrite ( reply ) < 0 )
 			{
 				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
-						<< "PING from server received but failed to sent PONG to server" );
+						<< "PING from FGTracker received but failed to sent PONG to FGTracker" );
 			}else
 			SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::ReplyFromServer: "
-						<< "PING from server received" );
+						<< "PING from FGTracker received" );
+		}else if ( str == "PONG" )
+		{
+			SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::ReplyFromServer: "
+						<< "PONG from FGTracker received" );
 		}else if ( pos_err == 0 )
 		{
-			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
-					<< "Received error message from FGTracker. Msg: '" << str <<"'" );
-			SG_CONSOLE (SG_FGMS, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
+			SG_CONSOLE (SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
 					<< "Received error message from FGTracker. Msg: '" << str <<"'");
 		}
 		else
@@ -417,10 +454,10 @@ FG_TRACKER::ReplyFromServer ()
 			if ( TrackerWrite ( reply ) < 0 )
 			{
 				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
-					<< "Responce not recognized and failed to notify server. Msg: '" << str <<"'" );
+					<< "Responce not recognized and failed to notify FGTracker. Msg: '" << str <<"'" );
 			}else
 				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::ReplyFromServer: "
-					<< "Responce not recognized. Msg: '" << str <<"'");
+					<< "Responce from FGTracker not recognized. Msg: '" << str <<"'");
 		}
 
 	}
@@ -470,7 +507,7 @@ FG_TRACKER::Loop ()
 			
 			m_identified=false;
 			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
-			            << "trying to connect"
+			            << "trying to connect to FGTracker"
 			          );
 			m_connected = Connect();
 			if ( ! m_connected )
@@ -488,6 +525,7 @@ FG_TRACKER::Loop ()
 				pthread_mutex_unlock ( &msg_mutex );
 				continue;
 			}
+			timeoutstage = 0;
 			ReadQueue (); 	// read backlog, if any
 		}
 
@@ -537,6 +575,7 @@ FG_TRACKER::Loop ()
 		}
 
 		TrackerRead (&bs); /*usually read PING*/
+		CheckTimeout();
 	}
 	return ( 0 );
 } // Loop ()

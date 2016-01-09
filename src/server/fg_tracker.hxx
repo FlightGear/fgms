@@ -68,6 +68,8 @@ public:
 	//  
 	//////////////////////////////////////////////////
 	int	m_TrackerPort;
+	int pinginterval;
+	int timeoutstage;
 	string	m_TrackerServer;
 	string	m_FgmsName;
 	string	m_domain;
@@ -132,10 +134,11 @@ public:
 	void	ReadQueue ();
 	void 	ReQueueSentMsg ();
 	void 	buffsock_free(buffsock_t* bs);
+	void	CheckTimeout();
 	int		TrackerWrite (const string& str);
 	void 	TrackerRead (buffsock_t* bs);
 	void 	ReplyFromServer ();
-
+	
 	//////////////////////////////////////////////////
 	//	stats
 	//////////////////////////////////////////////////
