@@ -388,6 +388,7 @@ FG_TRACKER::TrackerWrite ( const string& str )
 	if ( pos == 1 )
 	{} else if ( pos2 == 0 )
 	{} else if( str == "PING" )
+	{} else if( str == "PONG" )
 	{} else
 	{
 		pthread_mutex_lock ( &msg_sent_mutex );
