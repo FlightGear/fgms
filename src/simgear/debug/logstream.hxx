@@ -426,7 +426,7 @@ sglog()
     sglog() << loglevel(C,P) << os.str(); \
     pthread_mutex_unlock ( & g_LogMutex ); \
 }
-# define SG_CONSOLE(C,P,M) {
+# define SG_CONSOLE(C,P,M) { \
     std::ostringstream os; \
     os << sglog().datestr() << M << std::endl; \
     pthread_mutex_lock ( & g_LogMutex ); \
