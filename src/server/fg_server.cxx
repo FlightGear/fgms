@@ -47,6 +47,7 @@
 #include "fg_server.hxx"    /* includes pthread.h */
 #include "fg_common.hxx"
 #include "fg_util.hxx"
+#include "logstream.hxx"
 #include "simgear/math/SGEuler.hxx"
 
 #ifdef _MSC_VER

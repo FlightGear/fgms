@@ -29,7 +29,7 @@
 #define _LOGSTREAM_H
 
 #include <simgear/compiler.h>
-
+#include <pthread.h>
 #ifdef _MSC_VER
 #  include <windows.h>
 #endif
@@ -43,6 +43,7 @@
 #endif
 
 #include <cstdio>
+#include <sstream>  // use ostringstream
 #include <simgear/debug/debug_types.h>
 
 SG_USING_STD ( streambuf );
@@ -63,6 +64,9 @@ SG_USING_STD ( iostream );
 // 2. Make logbuf thread safe.
 // 3. Read environment for default debugClass and debugPriority.
 //
+
+/** @brief mutex for thread safty to log */
+extern pthread_mutex_t   g_LogMutex;
 
 /**
  * @brief The user can provide a function which returns a date as a string
@@ -405,12 +409,30 @@ sglog()
 # define SG_CONSOLE(C,P,M) ::sglog() << ::loglevel((sgDebugClass) (C|SG_CONSOLE),P) << ::sglog().datestr() << M << "\r\n";
 #else
 #ifdef _MSC_VER
-# define SG_CONSOLE(C,P,M) sglog() << loglevel((sgDebugClass) (C|SG_CONSOLE),P) << sglog().datestr() << M << "\r\n"; \
-    cerr << sglog().datestr() << M << "\r\n";
+# define SG_CONSOLE(C,P,M) { \
+    std::ostringstream os; \
+    os << sglog().datestr() << M << "\r\n"; \
+    pthread_mutex_lock ( & g_LogMutex ); \
+    sglog() << loglevel((sgDebugClass) (C|SG_CONSOLE),P) << os.str(); \
+    cerr << os.str(); \
+    pthread_mutex_unlock ( & g_LogMutex ); \
+}
 # define SG_LOG(C,P,M) SG_CONSOLE(C,P,M)
 #else
-# define SG_LOG(C,P,M) sglog()   << loglevel(C,P) << sglog().datestr() << M << std::endl
-# define SG_CONSOLE(C,P,M) sglog() << loglevel((sgDebugClass) (C|SG_CONSOLE),P) << sglog().datestr() << M << "\r\n";
+# define SG_LOG(C,P,M) { \
+    std::ostringstream os; \
+    os << sglog().datestr() << M << std::endl; \
+    pthread_mutex_lock ( & g_LogMutex ); \
+    sglog() << loglevel(C,P) << os.str(); \
+    pthread_mutex_unlock ( & g_LogMutex ); \
+}
+# define SG_CONSOLE(C,P,M) {
+    std::ostringstream os; \
+    os << sglog().datestr() << M << std::endl; \
+    pthread_mutex_lock ( & g_LogMutex ); \
+    sglog() << loglevel((sgDebugClass) (C|SG_CONSOLE),P) << os.str(); \
+    pthread_mutex_unlock ( & g_LogMutex ); \
+}
 #endif
 #endif
 
