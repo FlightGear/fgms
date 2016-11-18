@@ -47,7 +47,6 @@
 #include "fg_server.hxx"    /* includes pthread.h */
 #include "fg_common.hxx"
 #include "fg_util.hxx"
-#include "logstream.hxx"
 #include "simgear/math/SGEuler.hxx"
 
 #ifdef _MSC_VER
@@ -1124,7 +1123,7 @@ FG_SERVER::DropClient( PlayerIt& CurrentPlayer )
 	{
 		Origin = "LOCAL";
 	}
-	SG_LOG (SG_FGMS, SG_INFO, "TTL exceeded, dropping pilot "
+	SG_LOG (SG_FGMS, SG_INFO, "Dropping pilot "
 		<< CurrentPlayer->Name << "@" << Origin
 		<< " after " << time(0)-CurrentPlayer->JoinTime << " seconds. "
 		<< "Current clients: "
