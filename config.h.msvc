@@ -24,7 +24,9 @@
 #define sleep(a) Sleep(a * 1000)
 #define strcasecmp strcmp
 #define strncasecmp _strnicmp
+#if (defined(_MSC_VER) && (_MSC_VER < 1900))
 #define snprintf _snprintf
+#endif // for older MSVC
 #define unlink _unlink
 
 /* Now REQUIRED <pthread.h>, and the pthreadVC2.lib and dll */

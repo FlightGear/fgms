@@ -30,10 +30,7 @@
 const size_t FG_ListElement::NONE_EXISTANT = (size_t) -1;
 
 //////////////////////////////////////////////////////////////////////
-FG_ListElement::FG_ListElement
-(
-	const string& Name
-)
+FG_ListElement::FG_ListElement( const string& Name )
 {
 	ID		= NONE_EXISTANT;	// flag a non existant Element
 	Timeout		= 0;
@@ -49,8 +46,7 @@ FG_ListElement::FG_ListElement
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-FG_ListElement::FG_ListElement
-()
+FG_ListElement::FG_ListElement()
 {
 	ID		= NONE_EXISTANT;	// flag a non existant Element
 	Timeout		= 0;
@@ -66,28 +62,21 @@ FG_ListElement::FG_ListElement
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-FG_ListElement::FG_ListElement
-(
-	const FG_ListElement& P
-)
+FG_ListElement::FG_ListElement( const FG_ListElement& P )
 {
 	this->assign (P);
 }
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-FG_ListElement::~FG_ListElement
-()
+FG_ListElement::~FG_ListElement()
 {
 }
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 void
-FG_ListElement::operator =
-(
-	const FG_ListElement& P
-)
+FG_ListElement::operator =( const FG_ListElement& P )
 {
 	this->assign (P);
 }
@@ -95,10 +84,7 @@ FG_ListElement::operator =
 
 //////////////////////////////////////////////////////////////////////
 bool
-FG_ListElement::operator ==
-(
-	const FG_ListElement& P
-)
+FG_ListElement::operator ==( const FG_ListElement& P )
 {
 	// FIXME: compare the name, too?
 	if (Address == P.Address)
@@ -109,10 +95,7 @@ FG_ListElement::operator ==
 
 //////////////////////////////////////////////////////////////////////
 void
-FG_ListElement::assign
-(
-	const FG_ListElement& P
-)
+FG_ListElement::assign( const FG_ListElement& P )
 {
 	ID		= P.ID;
 	Timeout		= P.Timeout;
@@ -130,10 +113,7 @@ FG_ListElement::assign
 
 //////////////////////////////////////////////////////////////////////
 void
-FG_ListElement::UpdateSent
-(
-	size_t bytes
-)
+FG_ListElement::UpdateSent( size_t bytes )
 {
 	PktsSent++;
 	BytesSent += bytes;
@@ -155,64 +135,53 @@ FG_ListElement::UpdateRcvd
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-FG_Player::FG_Player
-()
+FG_Player::FG_Player()
 {
 	Name		= "";
 	JoinTime	= time (0);
 	LastSeen	= JoinTime;
-        LastSent        = 0;
-        Passwd          = "";
-        ModelName       = "";
-        Error           = "";
-        HasErrors       = false;
+	LastSent= 0;
+	Passwd= "";
+	ModelName = "";
+	Error = "";
+	HasErrors = false;
 	DoUpdate	= false;
-        LastRelayedToInactive   = 0;
+	LastRelayedToInactive = 0;
 }
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-FG_Player::FG_Player
-(
-	const string& Name
-)
+FG_Player::FG_Player( const string& Name )
 {
 	this->Name	= Name;
 	JoinTime	= time (0);
 	LastSeen	= JoinTime;
-        LastSent        = 0;
-        Passwd          = "";
-        ModelName       = "";
-        Error           = "";
-        HasErrors       = false;
+	LastSent	= 0;
+	Passwd		= "";
+	ModelName 	= "";
+	Error 		= "";
+	HasErrors 	= false;
 	DoUpdate	= false;
-        LastRelayedToInactive   = 0;
+	LastRelayedToInactive = 0;
 }
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-FG_Player::FG_Player
-(
-	const FG_Player& P
-)
+FG_Player::FG_Player( const FG_Player& P )
 {
 	this->assign (P);
 }
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-FG_Player::~FG_Player
-()
+FG_Player::~FG_Player()
 {
 }
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 void
-FG_Player::operator =
-(
-	const FG_Player& P
-)
+FG_Player::operator =( const FG_Player& P )
 {
 	this->assign (P);
 }
@@ -220,10 +189,7 @@ FG_Player::operator =
 
 //////////////////////////////////////////////////////////////////////
 bool
-FG_Player::operator ==
-(
-	const FG_Player& P
-)
+FG_Player::operator ==( const FG_Player& P )
 {
 	if ((Address == P.Address) && (Name == P.Name))
 		return true;
@@ -233,27 +199,24 @@ FG_Player::operator ==
 
 //////////////////////////////////////////////////////////////////////
 void
-FG_Player::assign
-(
-	const FG_Player& P
-)
+FG_Player::assign( const FG_Player& P )
 {
 	//
 	// using str.c_str() here to prevent copy-on-write in std::string!
 	//
 	FG_ListElement::assign (P);
-        Origin          = P.Origin.c_str();
-        Passwd          = P.Passwd.c_str();
-        ModelName       = P.ModelName.c_str();
-        JoinTime        = P.JoinTime;
-        LastSeen        = P.LastSeen ;
-        LastSent        = P.LastSent ;
-        LastPos         = P.LastPos;
-        IsLocal         = P.IsLocal;
-        Error           = P.Error.c_str();
-        HasErrors       = P.HasErrors;
-        LastOrientation	= P.LastOrientation;
+	Origin = P.Origin.c_str();
+	Passwd = P.Passwd.c_str();
+	ModelName = P.ModelName.c_str();
+	JoinTime = P.JoinTime;
+	LastSeen = P.LastSeen ;
+	LastSent = P.LastSent ;
+	LastPos = P.LastPos;
+	IsLocal = P.IsLocal;
+	Error = P.Error.c_str();
+	HasErrors = P.HasErrors;
+	LastOrientation	= P.LastOrientation;
 	DoUpdate	= P.DoUpdate;
-        LastRelayedToInactive   = P.LastRelayedToInactive;
+	LastRelayedToInactive = P.LastRelayedToInactive;
 }
 //////////////////////////////////////////////////////////////////////

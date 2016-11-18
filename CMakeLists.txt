@@ -99,7 +99,7 @@ if(WIN32)
     endif(MSVC)
     set( NOMINMAX 1 )
     add_definitions( -DUL_MSVC -DOPENALSDK -DHAVE_CONFIG_H -DFREEGLUT_LIB_PRAGMAS -DUL_WIN32 -D_CRT_SECURE_NO_DEPRECATE -DFREEGLUT_STATIC )
-    configure_file( "${CMAKE_SOURCE_DIR}/config.h.msvc" "${CMAKE_BINARY_DIR}/config.h" COPY_ONLY)
+    configure_file( "${CMAKE_SOURCE_DIR}/config.h.msvc" "${CMAKE_BINARY_DIR}/config.h" COPYONLY)
     file(WRITE "${CMAKE_BINARY_DIR}/unistd.h" "/* dummy unistd.h for windows */") 
 else(WIN32)
     if(ENABLE_DEBUG_SYMBOLS)
@@ -159,10 +159,14 @@ set( fg_server_SRCS
     src/server/fg_util.cxx 
     src/server/daemon.cxx 
     src/server/fg_geometry.cxx )
-set( fg_server_HDRS  src/server/fg_server.hxx src/server/fg_tracker.hxx 
-    src/server/fg_config.hxx src/server/fg_list.hxx 
+set( fg_server_HDRS  
+	src/server/fg_server.hxx 
+	src/server/fg_tracker.hxx 
+    src/server/fg_config.hxx 
+	src/server/fg_list.hxx 
     src/server/fg_cli.hxx
-    src/server/daemon.hxx src/server/fg_util.hxx 
+    src/server/daemon.hxx 
+	src/server/fg_util.hxx 
     src/server/fg_common.hxx )
 add_library( fg_server ${LIB_TYPE} ${fg_server_SRCS} ${fg_server_HDRS} )
 # NO INSTALL [noinst_LIBRARIES]
@@ -223,22 +227,39 @@ else(WIN32)
     list(APPEND add_LIBS -lLibCLI -lcrypt)
 endif(WIN32)
 
-### add_subdirectory( src/simgear/debug )
-# Project [sgdebug] [Static Library] [noinst_LIBRARIES], with 1 sources. 2 hdrs.
-set( sgdebug_SRCS src/simgear/debug/logstream.cxx )
-set( sgdebug_HDRS src/simgear/debug/debug_types.h 
-   src/simgear/debug/logstream.hxx )
-add_library( SGdebug ${LIB_TYPE} ${sgdebug_SRCS} ${sgdebug_HDRS} )
-# NO INSTALL [noinst_LIBRARIES]
+#### add_subdirectory( src/libmsc ) Windows Only
+# Project [libmsc] [Static Library] [noinst_LIBRARIES], with 1 source. 1 hdr.
+set( libmsc_SRCS
+    src/libmsc/msc_unistd.cxx
+    )
+set( libmsc_HDRS
+	src/libmsc/msc_unistd.hxx
+    )
+if(MSVC)
+	add_library( LibMSC ${LIB_TYPE} ${libmsc_SRCS} ${libmsc_HDRS} )
+endif(MSVC)
 if(WIN32)
-    list(APPEND add_LIBS SGdebug)
+    list(APPEND add_LIBS LibMSC)
 else(WIN32)
-    list(APPEND add_LIBS -lSGdebug)
+	if(MSVC)
+		list(APPEND add_LIBS -lLibMSC)
+	endif(MSVC)
 endif(WIN32)
 
-# Project [fgms] [Console Application] [sbin_PROGRAMS], with 1 sources. deps [sgdebug MultiPlayer plib fg_server]4
-set( fgms_SRCS src/server/main.cxx )
-add_executable( ${EXE_NAME} ${fgms_SRCS} )
+# Project [SGUtils] [Static Library] [noinst_LIBRARIES], with 2 sources. 3 hdrs.
+set( name SGUtils )
+set( ${name}_SRCS
+    src/simgear/debug/logstream.cxx 
+    src/simgear/math/SGEuler.cxx 
+    )
+set( ${name}_HDRS
+    src/simgear/debug/debug_types.h 
+    src/simgear/debug/logstream.hxx 
+    src/simgear/math/SGEuler.hxx 
+    )
+add_library( ${name} ${LIB_TYPE} ${${name}_SRCS} ${${name}_HDRS} )
+# NO INSTALL [noinst_LIBRARIES]
+list(APPEND add_LIBS ${name})
 
 # find the threads library
 find_package(Threads REQUIRED)
@@ -275,6 +296,9 @@ else(Threads_FOUND)
   message( FATAL_ERROR "*** THREADS NOT FOUND!")
 endif(Threads_FOUND)
 
+# Project [fgms] [Console Application] [sbin_PROGRAMS], with 1 sources. deps [sgutils MultiPlayer plib fg_server]4
+set( fgms_SRCS src/server/main.cxx )
+add_executable( ${EXE_NAME} ${fgms_SRCS} )
 target_link_libraries( ${EXE_NAME} ${add_LIBS} )
 message(STATUS "*** target_link_libraries( ${EXE_NAME} ${add_LIBS} )" )
 if(WIN32)
@@ -309,19 +333,19 @@ if(BUILD_TRACKER)
         add_definitions( -DUSE_PTHREAD )
     endif(USE_PTHREAD_IN_TRACKER)
 
-    set( tracker_SRCS contrib/fgtracker/fgt_error.c contrib/fgtracker/wrappers.c )
-    set( tracker_HDRS contrib/fgtracker/fgt_error.h contrib/fgtracker/wrappers.h contrib/fgtracker/fgt_config.h contrib/fgtracker/fgt_common.h )
+    set( tracker_SRCS contrib/fgtracker/fgtracker-v1/fgt_error.c contrib/fgtracker/fgtracker-v1/wrappers.c )
+    set( tracker_HDRS contrib/fgtracker/fgtracker-v1/fgt_error.h contrib/fgtracker/fgtracker-v1/wrappers.h contrib/fgtracker/fgtracker-v1/fgt_config.h contrib/fgtracker/fgtracker-v1/fgt_common.h )
     add_library( tracker ${LIB_TYPE} ${tracker_SRCS} ${tracker_HDRS} )
     list(APPEND add_LIBS tracker)
 
-    set( server_SRCS contrib/fgtracker/server.c )
+    set( server_SRCS contrib/fgtracker/fgtracker-v1/server.c )
     add_executable( ${TRK_NAME} ${server_SRCS} )
     target_link_libraries( ${TRK_NAME} ${add_LIBS} )
     if (WIN32)
         set_target_properties( ${TRK_NAME} PROPERTIES DEBUG_POSTFIX "d" )
     endif (WIN32)
 
-    set( client_SRCS contrib/fgtracker/client.c )
+    set( client_SRCS contrib/fgtracker/fgtracker-v1/client.c )
     add_executable( fgt_client ${client_SRCS} )
     target_link_libraries( fgt_client ${add_LIBS} )
     if (WIN32)

@@ -230,7 +230,9 @@
 #    define STL_STRSTREAM  <strstream>
 
 #    define isnan _isnan
+#  if _MSC_VER < 1900  // msvc140 has fixed this
 #    define snprintf _snprintf
+#  endif
 
 #    pragma warning(disable: 4786) // identifier was truncated to '255' characters
 #    pragma warning(disable: 4244) // conversion from double to float

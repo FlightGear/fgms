@@ -62,6 +62,9 @@
 	#define MSG_NOSIGNAL 0
 #endif
 
+#ifdef _MSC_VER
+#include <libmsc/msc_unistd.hxx>
+#endif
 using namespace std;
 
 netAddress::netAddress ( const char* host, int port )
@@ -348,7 +351,10 @@ int netSocket::write_str ( const char* str, int len )
 		if (written == SOCKET_ERROR)
 		{
 			if (RECOVERABLE_ERROR)
+			{
 				written = 0;
+                usleep(5000);
+			}
 			else
 				return -1;
 		}

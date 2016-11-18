@@ -26,7 +26,11 @@
 #include "logstream.hxx"
 #include "stdio.h"
 
+/** @brief single global logsteam */
 logstream* global_logstream = NULL;
+
+/** @brief single global mutex for thread safty to log */
+pthread_mutex_t   g_LogMutex = PTHREAD_MUTEX_INITIALIZER;
 
 bool            logbuf::console_enabled = false;
 bool            logbuf::logging_enabled = true;
