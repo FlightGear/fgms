@@ -1,8 +1,8 @@
 
 Oliver Schroeder <fgms@o-schroeder.de>
-Julien Pierru <jpierru@gmail.com>           ( UpdateTracker() )
-Anders Gidenstam <andersg@mpi-inf.mpg.de>   ( LazyRelay )
-Geoff McLane <ubuntu@geoffair.info>         ( Windows port)
-Rob Dosogne <admin@truthsolo.net>           ( FreeBSD friendly )
-Hazuki Amamiya <hatsuki_a-ie@yahoo.com.hk>  ( fg_tracker module )
-Pete Morgan <pete@freeflightsim.org>        ( docs )
+Julien Pierru <jpierru@gmail.com>           		( UpdateTracker() )
+Anders Gidenstam <andersg@mpi-inf.mpg.de>   		( LazyRelay )
+Geoff McLane <ubuntu@geoffair.info>         		( Windows port)
+Rob Dosogne <admin@truthsolo.net>           		( FreeBSD friendly )
+Agostinho Quofei Chan <hatsuki_a-ie@yahoo.com.hk>  	( fg_tracker module )
+Pete Morgan <pete@freeflightsim.org>        		( docs )
