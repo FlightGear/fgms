@@ -1,5 +1,6 @@
 #
 # single CMakeLists.txt for fgms-0-x - hand crafted - commenced 2012/07/03
+# 20161121 - Remove ability to compile FGTracker which is obsolete
 # 20130411 - Change to use external version file
 # 20121130 - Add link_directories ( ${PostgreSQL_LIBRARY_DIR} ) at least for WIN32 - AGE 26
 # 20121025 - Add a windows 'perror' macro PERROR, and minor changes in crossfeed code - age 25
@@ -40,7 +41,6 @@ string(STRIP "${versionFile}" FGMS_VERSION)
 
 # change names if build server and tracker #2
 set( EXE_NAME fgms )
-set( TRK_NAME fgt_server )
 
 # directories
 IF(NOT DEFINED USER_INSTALL_PREFIX)
@@ -58,20 +58,14 @@ if (NOT DEFINED SBINDIR)
 endif (NOT DEFINED SBINDIR)
 add_definitions( -DSYSCONFDIR="${SYSCONFDIR}" )
 
-# Allow developer to select is Dynamic or static library built
+# Allow developer to select Dynamic or static library build
 set( LIB_TYPE STATIC )  # set default static
 option( BUILD_SHARED_LIB "Build Shared Library" OFF )
-option( BUILD_TRACKER "Build 'tracker' server and client" OFF )
 option( BUILD_SERVER2 "Build a server with different defaults" OFF )
-option( ENABLE_TRACKER_LOG "Enable a tracker message log." OFF )
-option( USE_POSTGRESQL "Use a PostgreSQL database in the tracking server." ON )
+
 if(UNIX)
     option( ENABLE_DEBUG_SYMBOLS "Add debug symbols into the binary." OFF )
 endif(UNIX)
-option( ENABLE_DEBUG_OUTPUT "Enable some extra debug output in fg_tracker.cxx." OFF )
-# this should not be confused with the fact that pthread is used in fgms by default. This is in the fgt_server server.c
-# and of course need to be building the 'tracker' for this to have any effect.
-option( USE_PTHREAD_IN_TRACKER "Use pthread in the tracker server, replacing fork()." OFF )
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     set( WARNING_FLAGS -Wall )
@@ -109,13 +103,8 @@ else(WIN32)
     set( WARNING_FLAGS "${WARNING_FLAGS} -Wno-unused-local-typedefs -Wno-unused-but-set-variable" )
 endif(WIN32)
 
-if(ENABLE_TRACKER_LOG)
-    add_definitions( -DENABLE_TRACKER_LOG )
-endif(ENABLE_TRACKER_LOG)
-
 if(BUILD_SERVER2)
     set( EXE_NAME mp_server2 )
-    set( TRK_NAME mpt_server2 )
     add_definitions( -DDEF_SERVER_LOG="fg_server2.log" -DDEF_EXIT_FILE="fgms_exit2"
         -DDEF_RESET_FILE="fgms_reset2" -DDEF_STAT_FILE="fgms_stat2" -DDEF_CONF_FILE="fgms2.conf"
         -DIPCKEY=0xf9f6 )
@@ -309,52 +298,4 @@ else(WIN32)
     message(STATUS "*** Will read config from ${SYSCONFDIR}")
     install(TARGETS ${EXE_NAME} DESTINATION ${SBINDIR})
 endif(WIN32)
-
-if(BUILD_TRACKER)
-    if(USE_POSTGRESQL)
-        # find postgresql include and libraries
-        # =====================================
-        find_package(PostgreSQL REQUIRED)
-        if(PostgreSQL_FOUND)
-            list( APPEND add_LIBS ${PostgreSQL_LIBRARIES} )
-            include_directories( "${PostgreSQL_INCLUDE_DIR}" )
-            message(STATUS "*** Found PosgreSQL_INCLUDE_DIR=${PostgreSQL_INCLUDE_DIR}")
-            message(STATUS "*** Found PostgreSQL_LIBRARY_DIR=${PostgreSQL_LIBRARY_DIR} LIBS ${PostgreSQL_LIBRARIES}")
-            if (WIN32)
-                link_directories( ${PostgreSQL_LIBRARY_DIR} )
-            endif (WIN32)
-        else(PostgreSQL_FOUND)
-            message(FATAL_ERROR "*** PosgreSQL NOT FOUND! Run cmake with -DBUILD_TRACKER:BOOL=FALSE")
-        endif(PostgreSQL_FOUND)
-    else(USE_POSTGRESQL)
-        add_definitions( -DNO_POSTGRESQL )
-    endif(USE_POSTGRESQL)
-    if(USE_PTHREAD_IN_TRACKER)
-        add_definitions( -DUSE_PTHREAD )
-    endif(USE_PTHREAD_IN_TRACKER)
-
-    set( tracker_SRCS contrib/fgtracker/fgtracker-v1/fgt_error.c contrib/fgtracker/fgtracker-v1/wrappers.c )
-    set( tracker_HDRS contrib/fgtracker/fgtracker-v1/fgt_error.h contrib/fgtracker/fgtracker-v1/wrappers.h contrib/fgtracker/fgtracker-v1/fgt_config.h contrib/fgtracker/fgtracker-v1/fgt_common.h )
-    add_library( tracker ${LIB_TYPE} ${tracker_SRCS} ${tracker_HDRS} )
-    list(APPEND add_LIBS tracker)
-
-    set( server_SRCS contrib/fgtracker/fgtracker-v1/server.c )
-    add_executable( ${TRK_NAME} ${server_SRCS} )
-    target_link_libraries( ${TRK_NAME} ${add_LIBS} )
-    if (WIN32)
-        set_target_properties( ${TRK_NAME} PROPERTIES DEBUG_POSTFIX "d" )
-    endif (WIN32)
-
-    set( client_SRCS contrib/fgtracker/fgtracker-v1/client.c )
-    add_executable( fgt_client ${client_SRCS} )
-    target_link_libraries( fgt_client ${add_LIBS} )
-    if (WIN32)
-        set_target_properties( fgt_client PROPERTIES DEBUG_POSTFIX "d" )
-    endif (WIN32)
-    # deal with INSTALL
-    install(TARGETS ${TRK_NAME} fgt_client DESTINATION bin)
-else(BUILD_TRACKER)
-    message( STATUS "*** Tracker NOT being built. Use -DBUILD_TRACKER:BOOL=TRUE to enable it." )
-endif(BUILD_TRACKER)
-
 # eof - CMakeLists.txt
