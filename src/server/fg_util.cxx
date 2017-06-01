@@ -133,4 +133,20 @@ byte_counter
 } // byte_counter()
 //////////////////////////////////////////////////////////////////////
 
-
+//////////////////////////////////////////////////////////////////////
+/**
+ * @return true	'value' ends with 'ending'
+ * @return false else
+ */
+bool
+str_ends_with 
+(
+	std::string const & value,
+	std::string const & ending
+)
+{
+	if ( ending.size() > value.size() )
+		return false;
+	return std::equal( ending.rbegin(), ending.rend(), value.rbegin() );
+} // str_ends_with ()
+//////////////////////////////////////////////////////////////////////

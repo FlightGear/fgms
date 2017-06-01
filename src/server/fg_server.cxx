@@ -563,7 +563,6 @@ FG_SERVER::HandleTelnet( int Fd )
 	errno = 0;
 	string		Message;
 	/** @brief  Geodetic Coordinates */
-	Point3D		PlayerPosGeod;
 	FG_Player	CurrentPlayer;
 	netSocket	NewTelnet;
 	unsigned int	it;
@@ -629,7 +628,6 @@ FG_SERVER::HandleTelnet( int Fd )
 		{
 			continue;
 		}
-		sgCartToGeod ( CurrentPlayer.LastPos, PlayerPosGeod );
 		Message = CurrentPlayer.Name + "@";
 		if ( CurrentPlayer.IsLocal )
 		{
@@ -654,9 +652,9 @@ FG_SERVER::HandleTelnet( int Fd )
 		Message += NumToStr ( CurrentPlayer.LastPos[X], 6 ) +" ";
 		Message += NumToStr ( CurrentPlayer.LastPos[Y], 6 ) +" ";
 		Message += NumToStr ( CurrentPlayer.LastPos[Z], 6 ) +" ";
-		Message += NumToStr ( PlayerPosGeod[Lat], 6 ) +" ";
-		Message += NumToStr ( PlayerPosGeod[Lon], 6 ) +" ";
-		Message += NumToStr ( PlayerPosGeod[Alt], 6 ) +" ";
+		Message += NumToStr ( CurrentPlayer.GeodPos[Lat], 6 ) +" ";
+		Message += NumToStr ( CurrentPlayer.GeodPos[Lon], 6 ) +" ";
+		Message += NumToStr ( CurrentPlayer.GeodPos[Alt], 6 ) +" ";
 		Message += NumToStr ( CurrentPlayer.LastOrientation[X], 6 ) +" ";
 		Message += NumToStr ( CurrentPlayer.LastOrientation[Y], 6 ) +" ";
 		Message += NumToStr ( CurrentPlayer.LastOrientation[Z], 6 ) +" ";
@@ -765,7 +763,36 @@ FG_SERVER::AddClient( const netAddress& Sender,char* Msg )
 	        XDR_decode<float> ( PosMsg->orientation[Y] ),
 	        XDR_decode<float> ( PosMsg->orientation[Z] )
 	);
+	sgCartToGeod ( NewPlayer.LastPos, NewPlayer.GeodPos );
 	NewPlayer.ModelName = PosMsg->Model;
+	if ( ( NewPlayer.ModelName == "OpenRadar" ) || ( NewPlayer.ModelName.find("ATC") != std::string::npos ) )
+	{	// client is an ATC
+		if ( str_ends_with ( NewPlayer.Name, "_DL" ) )
+			NewPlayer.IsATC = FG_Player::ATC_DL;
+		else if ( str_ends_with ( NewPlayer.Name, "_GN" ) )
+			NewPlayer.IsATC = FG_Player::ATC_GN;
+		else if ( str_ends_with ( NewPlayer.Name, "_TW" ) )
+			NewPlayer.IsATC = FG_Player::ATC_TW;
+		else if ( str_ends_with ( NewPlayer.Name, "_AP" ) )
+			NewPlayer.IsATC = FG_Player::ATC_AP;
+		else if ( str_ends_with ( NewPlayer.Name, "_DE" ) )
+			NewPlayer.IsATC = FG_Player::ATC_DE;
+		else if ( str_ends_with ( NewPlayer.Name, "_CT" ) )
+			NewPlayer.IsATC = FG_Player::ATC_CT;
+		else	NewPlayer.IsATC = FG_Player::ATC;
+	}
+
+	typedef struct
+	{
+		int16_t		High;
+		int16_t		Low;
+	} converter;
+	MsgHdr->ReplyAddress = XDR_decode<uint32_t> ( MsgHdr->ReplyAddress );
+	converter* tmp =  ( converter* ) ( & MsgHdr->ReplyAddress );
+	std::cout << NewPlayer.Name << " has radar range "
+		<< tmp->Low << " d: " << tmp->High
+		<< " " << MsgHdr->ReplyAddress << std::endl;
+
 	m_PlayerList.Add ( NewPlayer, m_PlayerExpires );
 	size_t NumClients = m_PlayerList.Size ();
 	if ( NumClients > m_NumMaxClients )
@@ -965,9 +992,9 @@ FG_SERVER::PacketIsValid( int Bytes, T_MsgHdr*  MsgHdr, const netAddress& Sender
 	string          Origin;
 	typedef union
 	{
-		uint32_t    complete;
-		int16_t     High;
-		int16_t     Low;
+		uint32_t	complete;
+		int16_t		High;
+		int16_t		Low;
 	} converter;
 
 	Origin   = SenderAddress.getHost();
@@ -1036,12 +1063,15 @@ FG_SERVER::SendToCrossfeed( char* Msg, int Bytes, const netAddress& SenderAddres
 {
 	T_MsgHdr*       MsgHdr;
 	uint32_t        MsgMagic;
+	uint32_t        RadarRange;
 	int             sent;
 	ItList		Entry;
+
 	MsgHdr    = ( T_MsgHdr* ) Msg;
 	MsgMagic  = MsgHdr->Magic;
 	MsgHdr->Magic = XDR_encode<uint32_t> ( RELAY_MAGIC );
 	// pass on senders address and port to crossfeed server
+	RadarRange = MsgHdr->ReplyAddress;
 	MsgHdr->ReplyAddress = XDR_encode<uint32_t> ( SenderAddress.getIP() );
 	MsgHdr->ReplyPort = XDR_encode<uint32_t> ( SenderAddress.getPort() );
 	m_CrossfeedList.Lock();
@@ -1052,6 +1082,7 @@ FG_SERVER::SendToCrossfeed( char* Msg, int Bytes, const netAddress& SenderAddres
 	}
 	m_CrossfeedList.Unlock();
 	MsgHdr->Magic = MsgMagic;  // restore the magic value
+	MsgHdr->ReplyAddress = RadarRange; // Restore the RadarRange
 } // FG_SERVER::SendToCrossfeed ()
 //////////////////////////////////////////////////////////////////////
 
@@ -1060,28 +1091,30 @@ FG_SERVER::SendToCrossfeed( char* Msg, int Bytes, const netAddress& SenderAddres
  * @brief  Send message to all relay servers
  */
 void
-FG_SERVER::SendToRelays( char* Msg, int Bytes,FG_Player& SendingPlayer )
+FG_SERVER::SendToRelays( char* Msg, int Bytes, PlayerIt& SendingPlayer )
 {
 	T_MsgHdr*       MsgHdr;
 	uint32_t        MsgMagic;
+	uint32_t        MsgId;
 	unsigned int    PktsForwarded = 0;
 	ItList		CurrentRelay;
 
-	if ( (! SendingPlayer.IsLocal ) && ( ! m_IamHUB ) )
+	if ( (! SendingPlayer->IsLocal ) && ( ! m_IamHUB ) )
 	{
 		return;
 	}
 	MsgHdr    = ( T_MsgHdr* ) Msg;
 	MsgMagic  = XDR_decode<uint32_t> ( MsgHdr->Magic );
+	MsgId     = XDR_decode<uint32_t> ( MsgHdr->MsgId );
 	MsgHdr->Magic = XDR_encode<uint32_t> ( RELAY_MAGIC );
 	m_RelayList.Lock ();
 	CurrentRelay = m_RelayList.Begin();
 	while ( CurrentRelay != m_RelayList.End() )
 	{
 
-		if ( CurrentRelay->Address.getIP() != SendingPlayer.Address.getIP() )
+		if ( CurrentRelay->Address.getIP() != SendingPlayer->Address.getIP() )
 		{
-			if ( SendingPlayer.DoUpdate || IsInRange ( *CurrentRelay, SendingPlayer ) )
+			if ( SendingPlayer->DoUpdate || IsInRange ( *CurrentRelay, SendingPlayer, MsgId ) )
 			{
 				m_DataSocket->sendto ( Msg, Bytes, 0, &CurrentRelay->Address );
 				m_RelayList.UpdateSent (CurrentRelay, Bytes);
@@ -1148,18 +1181,15 @@ FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 	T_PositionMsg*  PosMsg;
 	uint32_t        MsgId;
 	uint32_t        MsgMagic;
-	Point3D         SenderPosition;
-	Point3D         SenderOrientation;
-	Point3D         PlayerPosGeod;
+	PlayerIt	SendingPlayer;
 	PlayerIt	CurrentPlayer;
-	FG_Player	SendingPlayer;
 	ItList		CurrentEntry;
 	time_t          Now;
 	unsigned int    PktsForwarded = 0;
 	MsgHdr    = ( T_MsgHdr* ) Msg;
 	MsgMagic  = XDR_decode<uint32_t> ( MsgHdr->Magic );
 	MsgId     = XDR_decode<uint32_t> ( MsgHdr->MsgId );
-	Now   = time ( 0 );
+	Now       = time ( 0 );
 	//////////////////////////////////////////////////
 	//
 	//  First of all, send packet to all
@@ -1207,21 +1237,6 @@ FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 	if ( MsgId == POS_DATA_ID )
 	{
 		m_PositionData++;
-		PosMsg = ( T_PositionMsg* ) ( Msg + sizeof ( T_MsgHdr ) );
-		double x = XDR_decode64<double> ( PosMsg->position[X] );
-		double y = XDR_decode64<double> ( PosMsg->position[Y] );
-		double z = XDR_decode64<double> ( PosMsg->position[Z] );
-		if ( ( x == 0.0 ) || ( y == 0.0 ) || ( z == 0.0 ) )
-		{
-			// ignore while position is not settled
-			return;
-		}
-		SenderPosition.Set ( x, y, z );
-		SenderOrientation.Set (
-		        XDR_decode<float> ( PosMsg->orientation[X] ),
-		        XDR_decode<float> ( PosMsg->orientation[Y] ),
-		        XDR_decode<float> ( PosMsg->orientation[Z] )
-		);
 	}
 	else
 	{
@@ -1233,8 +1248,8 @@ FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 	//
 	//////////////////////////////////////////////////
 	m_PlayerList.Lock();
-	CurrentPlayer = m_PlayerList.FindByName ( MsgHdr->Name );
-	if (CurrentPlayer == m_PlayerList.End () )
+	SendingPlayer = m_PlayerList.FindByName ( MsgHdr->Name );
+	if (SendingPlayer == m_PlayerList.End () )
 	{
 		// unknown, add to the list
 		if ( MsgId != POS_DATA_ID )
@@ -1244,14 +1259,33 @@ FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 			return;
 		}
 		AddClient ( SenderAddress, Msg );
+		SendingPlayer = m_PlayerList.Last();
 	}
 	else
 	{
-		if ( CurrentPlayer->Address != SenderAddress )
+		if ( SendingPlayer->Address != SenderAddress )
 		{
 			m_PlayerList.Unlock();
 			return;
 		}
+		m_PlayerList.UpdateRcvd (SendingPlayer, Bytes);
+		PosMsg = ( T_PositionMsg* ) ( Msg + sizeof ( T_MsgHdr ) );
+		double x = XDR_decode64<double> ( PosMsg->position[X] );
+		double y = XDR_decode64<double> ( PosMsg->position[Y] );
+		double z = XDR_decode64<double> ( PosMsg->position[Z] );
+		if ( ( x == 0.0 ) || ( y == 0.0 ) || ( z == 0.0 ) )
+		{
+			// ignore while position is not settled
+			m_PlayerList.Unlock();
+			return;
+		}
+		SendingPlayer->LastPos.Set ( x, y, z );
+		SendingPlayer->LastOrientation.Set (
+		        XDR_decode<float> ( PosMsg->orientation[X] ),
+		        XDR_decode<float> ( PosMsg->orientation[Y] ),
+		        XDR_decode<float> ( PosMsg->orientation[Z] )
+		);
+		sgCartToGeod ( SendingPlayer->LastPos, SendingPlayer->GeodPos );
 	}
 	m_PlayerList.Unlock();
 	//////////////////////////////////////////
@@ -1292,20 +1326,6 @@ FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 		//         so use a clientID instead
 		if ( CurrentPlayer->Name == MsgHdr->Name )
 		{
-			if ( MsgId == POS_DATA_ID )
-			{
-				CurrentPlayer->LastPos         = SenderPosition;
-				CurrentPlayer->LastOrientation = SenderOrientation;
-			}
-			else
-			{
-				SenderPosition    = CurrentPlayer->LastPos;
-				SenderOrientation = CurrentPlayer->LastOrientation;
-			}
-			if ( CurrentPlayer->IsLocal )
-			{
-				m_PlayerList.UpdateRcvd (CurrentPlayer, Bytes);
-			}
 			//////////////////////////////////////////////////
 			//	send update to inactive relays?
 			//////////////////////////////////////////////////
@@ -1314,7 +1334,6 @@ FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 			{
 				CurrentPlayer->LastRelayedToInactive = Now;
 			}
-			SendingPlayer = *CurrentPlayer;
 			CurrentPlayer++;
 			continue; // don't send packet back to sender
 		}
@@ -1329,16 +1348,37 @@ FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 			return;
 		}
 		//////////////////////////////////////////////////
-		//
+		// 'hidden' feature of fgms. If a callsign starts
+		// with 'obs', do not send the packet to other
+		// clients. Useful for test connections.
+		//////////////////////////////////////////////////
+		if ( CurrentPlayer->Name.compare (0, 3, "obs", 3) != 0 )
+		{
+			CurrentPlayer++;
+			continue;
+		}
+		//////////////////////////////////////////////////
 		//      do not send packet to clients which
 		//      are out of reach.
 		//      FIX20140603 - compare fix by Markus Pargmann
 		//////////////////////////////////////////////////
-		if ( ( Distance ( SenderPosition, CurrentPlayer->LastPos ) > m_PlayerIsOutOfReach )
-		&&   (CurrentPlayer->Name.compare (0, 3, "obs", 3) != 0 ) )
+		if ( MsgId == CHAT_MSG_ID )
+		{	// apply 'radio' rules
+			if ( not ReceiverWantsChat( SendingPlayer, *CurrentPlayer ) )
+			{
+				CurrentPlayer++;
+				continue;
+			}
+		}
+		else
 		{
-			CurrentPlayer++;
-			continue;
+			// apply 'visibility' rules, for now we apply 'radio' rules
+			// if ( not ReceiverWantsData( SendingPlayer, *CurrentPlayer ) )
+			if ( not ReceiverWantsChat( SendingPlayer, *CurrentPlayer ) )
+			{
+				CurrentPlayer++;
+				continue;
+			}
 		}
 		//////////////////////////////////////////////////
 		//
@@ -1353,7 +1393,7 @@ FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 		}
 		CurrentPlayer++;
 	}
-	if ( SendingPlayer.ID ==  FG_ListElement::NONE_EXISTANT )
+	if ( SendingPlayer->ID ==  FG_ListElement::NONE_EXISTANT )
 	{
 		// player not yet in our list
 		// should not happen, but test just in case
@@ -2059,6 +2099,166 @@ FG_SERVER::CloseTracker()
 
 //////////////////////////////////////////////////////////////////////
 /**
+ */
+bool
+FG_SERVER::ReceiverWantsData( const PlayerIt& Sender, const FG_Player& Receiver )
+{
+	float	out_of_reach;
+
+	if ( ( Sender->IsATC == FG_Player::ATC_NONE )
+	&&   ( Receiver.IsATC == FG_Player::ATC_NONE ) )
+	{	// Sender and Receiver are normal pilots, so m_PlayerIsOutOfReach applies
+		if ( Distance ( Sender->LastPos, Receiver.LastPos ) < m_PlayerIsOutOfReach )
+			return true;
+		return false;
+	}
+	//////////////////////////////////////////////////
+	//
+	// either sender or receiver is an ATC
+	//
+	//////////////////////////////////////////////////
+	/* range of ATC, see https://forums.vatsim.net/viewtopic.php?f=7&t=56924 */
+	if ( Receiver.IsATC != FG_Player::ATC_NONE )
+	{
+		switch ( Receiver.IsATC )
+		{
+		case FG_Player::ATC_DL:
+		case FG_Player::ATC_GN:
+			out_of_reach = 5;
+			break;
+		case FG_Player::ATC_TW:
+			out_of_reach = 30;
+			break;
+		case FG_Player::ATC_AP:
+		case FG_Player::ATC_DE:
+			out_of_reach = 100;
+			break;
+		case FG_Player::ATC_CT:
+			out_of_reach = 400;
+			break;
+		default:
+			out_of_reach = m_PlayerIsOutOfReach;
+		}
+	}
+	else if ( Sender->IsATC != FG_Player::ATC_NONE )
+	{
+		// FIXME: if sender is the ATC, the pos-data does not need to be send.
+		//        but we can not implement it before chat- and pos-messages are
+		//        sent seperatly. For now we leave it to be m_PlayerIsOutOfReach
+		out_of_reach = m_PlayerIsOutOfReach;
+		// return false;
+	}
+	if ( Distance ( Sender->LastPos, Receiver.LastPos ) < out_of_reach )
+		return true;
+	return false;
+} // FG_SERVER::ReceiverWantsData ( player, player )
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ */
+bool
+FG_SERVER::ReceiverWantsChat( const PlayerIt& Sender, const FG_Player& Receiver )
+{
+	float	out_of_reach;
+	float	altitude;
+
+	//////////////////////////////////////////////////
+	// If the sender is an ATC use a predefined
+	// range for radio transmission. For now we
+	// use m_PlayerIsOutOfReach
+	//////////////////////////////////////////////////
+	if ( Sender->IsATC != FG_Player::ATC_NONE )
+	{
+		if ( Distance ( Sender->LastPos, Receiver.LastPos ) < m_PlayerIsOutOfReach )
+			return true;
+		return false;
+	}
+	//////////////////////////////////////////////////
+	// If the sender is NOT an ATC use a variable
+	// value for range, depending on the senders
+	// altitude
+	//////////////////////////////////////////////////
+	/* drr0ckso:
+	Here is a table of values, based on the assumption of an airplane flying 
+	over water, talking from the airplane (altitude above mean sea level 
+	[AMSL]) to the ground or a boat (sea level [SL]), or vice versa. Yes, I 
+	was a little curious myself, too. :) Of course, this does not consider 
+	consider path loss over the distance, or AM versus FM or SSB. Generally 
+	speaking, the closer to line-of-sight the communication is, the more 
+	likely it is to work. 
+	*/
+	altitude = Sender->GeodPos[Alt];
+	if ( altitude < 1000.0 )
+		out_of_reach = 39.1;
+	else if ( altitude < 2.000 )
+		out_of_reach = 54.75;
+	else if ( altitude < 3.000 )
+		out_of_reach = 66.91;
+	else if ( altitude < 4.000 )
+		out_of_reach = 77.34;
+	else if ( altitude < 5.000 )
+		out_of_reach = 86.90;
+	else if ( altitude < 6.000 )
+		out_of_reach = 95.59;
+	else if ( altitude < 7.000 )
+		out_of_reach = 102.54;
+	else if ( altitude < 8.000 )
+		out_of_reach = 109.50;
+	else if ( altitude < 9.000 )
+		out_of_reach = 116.44;
+	else if ( altitude < 10.000 )
+		out_of_reach = 122.53;
+	else if ( altitude < 15.000 )
+		out_of_reach = 150.33;
+	else if ( altitude < 20.000 )
+		out_of_reach = 173.80;
+	else if ( altitude < 25.000 )
+		out_of_reach = 194.65;
+	else if ( altitude < 30.000 )
+		out_of_reach = 212.90;
+	else if ( altitude < 35.000 )
+		out_of_reach = 230.29;
+	else if ( altitude < 40.000 ) ///////////////
+		out_of_reach = 283;
+	else if ( altitude < 45.000 )
+		out_of_reach = 300;
+	else if ( altitude < 50.000 )
+		out_of_reach = 316;
+	else if ( altitude < 55.000 )
+		out_of_reach = 332;
+	else if ( altitude < 60.000 )
+		out_of_reach = 346;
+	else if ( altitude < 65.000 )
+		out_of_reach = 361;
+	else if ( altitude < 70.000 )
+		out_of_reach = 374;
+	else if ( altitude < 75.000 )
+		out_of_reach = 387;
+	else if ( altitude < 80.000 )
+		out_of_reach = 400;
+	else if ( altitude < 85.000 )
+		out_of_reach = 412;
+	else if ( altitude < 90.000 )
+		out_of_reach = 424;
+	else if ( altitude < 100.000 )
+		out_of_reach = 447;
+	else if ( altitude < 125.000 )
+		out_of_reach = 500;
+	else if ( altitude < 250.000 )
+		out_of_reach = 707;
+	else if ( altitude < 500.000 )
+		out_of_reach = 1000;
+	else 
+		out_of_reach = 1500;
+	if ( Distance ( Sender->LastPos, Receiver.LastPos ) < out_of_reach )
+		return true;
+	return false;
+} // FG_SERVER::ReceiverWantsChat ( player, player )
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
  * @brief Decide whether the relay is interested in full rate updates.
  * @see \ref server_out_of_reach config.
  * @param Relay
@@ -2066,23 +2266,38 @@ FG_SERVER::CloseTracker()
  * @retval true is within range
  */
 bool
-FG_SERVER::IsInRange( FG_ListElement& Relay, FG_Player& SendingPlayer )
+FG_SERVER::IsInRange( const FG_ListElement& Relay, const PlayerIt& SendingPlayer, uint32_t MsgId )
 {
 	FG_Player CurrentPlayer;
-	size_t	 Cnt;
+	size_t    Cnt;
+
 	Cnt = m_PlayerList.Size ();
 	for (size_t i = 0; i < Cnt; i++)
 	{
 		CurrentPlayer = m_PlayerList[i];
 		if (CurrentPlayer.ID == FG_ListElement::NONE_EXISTANT)
 			continue;
-		if ( ( CurrentPlayer.Address == Relay.Address )
-		&& ( Distance ( SendingPlayer.LastPos, CurrentPlayer.LastPos ) <= m_PlayerIsOutOfReach ) )
+		if ( CurrentPlayer.Address == Relay.Address )
 		{
-			return true;
+			if ( MsgId == CHAT_MSG_ID )
+			{	// apply 'radio' rules
+				if ( ReceiverWantsChat( SendingPlayer, CurrentPlayer ) )
+				{
+					return true;
+				}
+			}
+			else
+			{	// apply 'visibility' rules, for now we apply 'radio' rules
+				//if ( ReceiverWantsData( SendingPlayer, CurrentPlayer ) )
+				if ( ReceiverWantsChat( SendingPlayer, CurrentPlayer ) )
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 	return false;
-} // FG_SERVER::IsInRange()
+} // FG_SERVER::IsInRange( relay, player )
 //////////////////////////////////////////////////////////////////////
 

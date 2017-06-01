@@ -97,6 +97,17 @@ protected:
 class FG_Player : public FG_ListElement
 {
 public:
+	typedef enum
+	{
+		ATC_NONE,	// not an ATC
+		ATC,		// undefined ATC
+		ATC_DL,		// Clearance Delivery
+		ATC_GN,		// Ground
+		ATC_TW,		// Tower
+		ATC_AP,		// Approach
+		ATC_DE,		// Departure
+		ATC_CT		// Center
+	} ATC_TYPE;
 	string	Origin;
 	/** @brief The password 
 	 *  @warning This is not currently used
@@ -106,10 +117,14 @@ public:
 	string	ModelName;
 	/** @brief The last recorded position */
 	Point3D	LastPos;
+	/** @brief The last recorded position in geodectic coordinates (lat/lon/alt) */
+	Point3D	GeodPos;
 	/** @brief The last recorded orientation */
 	Point3D	LastOrientation;
-	/** @brief \b true is this client is directly connected to this \ref fgms instance */
+	/** @brief \b true if this client is directly connected to this \ref fgms instance */
 	bool	IsLocal;
+	/** @brief \b true if this client is an ATC */
+	ATC_TYPE IsATC;
 	/** @brief in case of errors the reason is stored here 
 	 * @see FG_SERVER::AddBadClient
 	 */
@@ -166,6 +181,8 @@ public:
 	ListIterator FindByID	( size_t ID );
 	/** return an iterator of the first element */
 	ListIterator Begin	();
+	/** return an iterator of the last element */
+	ListIterator Last	();
 	/** iterator of the end of the list */
 	ListIterator End	();
 	/** update sent counter of an element and of the list */
@@ -249,7 +266,8 @@ mT_FG_List<T>::~mT_FG_List
  */
 template <class T>
 size_t
-mT_FG_List<T>::Size()
+mT_FG_List<T>::Size
+()
 {
 	return Elements.size ();
 }
@@ -448,6 +466,25 @@ typename vector<T>::iterator
 mT_FG_List<T>::Begin()
 {
 	return Elements.begin ();
+}
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/** NOT thread safe
+ *
+ * In general iterators are not thread safe. If you use them you have
+ * to ensure propper locking youself!
+ *
+ * @return the last element of the list. If the list is empty this
+ *         equals End()
+ */
+template <class T>
+typename vector<T>::iterator
+mT_FG_List<T>::Last()
+{
+	ListIterator RetElem = Elements.end ();
+	--RetElem;
+	return RetElem;
 }
 //////////////////////////////////////////////////////////////////////
 

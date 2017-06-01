@@ -97,6 +97,7 @@ class Point3D
 void CopyPos (  const Point3D& src, Point3D &dst );
 void Mat4ToCoord ( const sgMat4& src,  Point3D & dst );
 float Distance ( const Point3D & P1, const Point3D & P2 );
+float HeightAboveSea ( const Point3D & P );
 void sgCartToPolar3d(const Point3D& cp, Point3D& Polar );
 void CartToLatLon ( const Point3D& CartPoint , Point3D& LatLonAlt );
 double

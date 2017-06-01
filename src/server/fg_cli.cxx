@@ -70,6 +70,15 @@ FG_CLI::setup()
 	//////////////////////////////////////////////////
 	// general commands
 	//////////////////////////////////////////////////
+	register_command ( new Command<CLI> (
+		this,
+		"pager",
+		static_cast<callback_ptr> (&FG_CLI::cmd_pager),
+		LIBCLI::UNPRIVILEGED,
+		LIBCLI::MODE_ANY,
+		"Set number of lines on a screen"
+	) );
+
 	c = new Command<CLI> (
 		this,
 		"show",
@@ -258,6 +267,58 @@ FG_CLI::need_help
 	if (argv[l-1] == '?')
 		return true;
 	return false;
+}
+
+//////////////////////////////////////////////////
+/**
+ *  @brief Set number of lines on a screen
+ *
+ *  possible arguments:
+ *  pager num-lines
+ */
+int
+FG_CLI::cmd_pager
+(
+	char *command,
+	char *argv[],
+	int argc
+)
+{
+	size_t	lines = -1;
+	int	invalid = -1;
+
+	for (int i=0; i < argc; i++)
+	{
+		switch (i)
+		{
+		case 0: // ID or IP or 'brief' or '?'
+			if ( need_help (argv[i]) )
+			{
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "<0-512>" << "Number of lines on screen (0 for no pausing)" << CRLF;
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "<cr>" << "show current number of lines" << CRLF;
+				return (0);
+			}
+			lines = StrToNum<size_t> ( argv[0], invalid );
+			if (invalid)
+			{
+				client << "% invalid argument" << CRLF;
+				return (0);
+			}
+			break;
+		default:
+			client << "% invalid argument" << CRLF;
+			break;
+		}
+	}
+	if ( argc > 0 )
+		client.max_screen_lines = lines;
+	if ( lines == 0 )
+		client << "disabled pausing" << CRLF;
+	else
+		client << "show " << client.max_screen_lines << " lines without pausing" << CRLF;
+	return 0;
 }
 
 int
@@ -1734,9 +1795,20 @@ FG_CLI::cmd_user_show
 			}
 		}
 		FullName = Player.Name + string("@") + Origin;
+		std::string ATC;
+		switch ( Player.IsATC )
+		{
+		case FG_Player::ATC_NONE:	ATC = ", a normal pilot"; break;
+		case FG_Player::ATC:		ATC = ", an ATC"; break;
+		case FG_Player::ATC_DL:		ATC = ", a clearance delivery ATC"; break;
+		case FG_Player::ATC_GN:		ATC = ", a ground ATC"; break;
+		case FG_Player::ATC_TW:		ATC = ", a tower ATC"; break;
+		case FG_Player::ATC_AP:		ATC = ", an approach ATC"; break;
+		case FG_Player::ATC_DE:		ATC = ", a departure ATC"; break;
+		case FG_Player::ATC_CT:		ATC = ", a center ATC"; break;
+		}
 		client << "ID " << Player.ID << ": "
-			<< FullName << " entered: "
-			<< timestamp_to_days (Player.JoinTime) << " ago"
+			<< FullName << ATC
 			<< CRLF; if (check_pager()) return 0;
 		EntriesFound++;
 		if (Brief == true)
@@ -1750,6 +1822,9 @@ FG_CLI::cmd_user_show
 				<< CRLF; if (check_pager()) return 0;
 		}
 		int expires = Player.Timeout - (now - Player.LastSeen);
+		client << "         " << left << setfill(' ') << setw(15)
+			<< "entered" << timestamp_to_days (Player.JoinTime) << " ago"
+			<< CRLF; if (check_pager()) return 0;
 		client << "         " << left << setfill(' ') << setw(15)
 			<< "joined" << timestamp_to_datestr(Player.JoinTime)
 			<< CRLF; if (check_pager()) return 0;
@@ -1770,13 +1845,13 @@ FG_CLI::cmd_user_show
 				<< " / " << byte_counter (Player.BytesSent)
 				<< " (" << byte_counter ((double) Player.BytesSent / difftime) << "/s)"
 				<< CRLF; if (check_pager()) return 0;
-			client << "         " << left << setfill(' ') << setw(15)
-				<< "rcvd" << Player.PktsRcvd << " packets "
-				<< "(" << Player.PktsRcvd / difftime << "/s)"
-				<< " / " << byte_counter (Player.BytesRcvd)
-				<< " (" << byte_counter ((double) Player.BytesRcvd / difftime) << "/s)"
-				<< CRLF; if (check_pager()) return 0;
 		}
+		client << "         " << left << setfill(' ') << setw(15)
+			<< "rcvd" << Player.PktsRcvd << " packets "
+			<< "(" << Player.PktsRcvd / difftime << "/s)"
+			<< " / " << byte_counter (Player.BytesRcvd)
+			<< " (" << byte_counter ((double) Player.BytesRcvd / difftime) << "/s)"
+			<< CRLF; if (check_pager()) return 0;
 		client << "         " << left << setfill(' ') << setw(15)
 			<< "expires in" << expires
 			<< CRLF; if (check_pager()) return 0;

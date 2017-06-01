@@ -140,12 +140,13 @@ FG_Player::FG_Player()
 	Name		= "";
 	JoinTime	= time (0);
 	LastSeen	= JoinTime;
-	LastSent= 0;
-	Passwd= "";
-	ModelName = "";
-	Error = "";
-	HasErrors = false;
+	LastSent	= 0;
+	Passwd		= "";
+	ModelName	= "";
+	Error		= "";
+	HasErrors	= false;
 	DoUpdate	= false;
+	IsATC		= ATC_NONE;
 	LastRelayedToInactive = 0;
 }
 //////////////////////////////////////////////////////////////////////
@@ -162,6 +163,7 @@ FG_Player::FG_Player( const string& Name )
 	Error 		= "";
 	HasErrors 	= false;
 	DoUpdate	= false;
+	IsATC		= ATC_NONE;
 	LastRelayedToInactive = 0;
 }
 //////////////////////////////////////////////////////////////////////
@@ -212,7 +214,9 @@ FG_Player::assign( const FG_Player& P )
 	LastSeen = P.LastSeen ;
 	LastSent = P.LastSent ;
 	LastPos = P.LastPos;
+	GeodPos = P.GeodPos;
 	IsLocal = P.IsLocal;
+	IsATC = P.IsATC;
 	Error = P.Error.c_str();
 	HasErrors = P.HasErrors;
 	LastOrientation	= P.LastOrientation;

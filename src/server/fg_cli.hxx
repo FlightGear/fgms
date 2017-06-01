@@ -50,6 +50,7 @@ private:
 	//////////////////////////////////////////////////
 	// general  commands
 	//////////////////////////////////////////////////
+	int cmd_pager		( char *command, char *argv[], int argc );
 	int cmd_show_stats	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
 	int cmd_show_version	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
 	int cmd_show_uptime	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );

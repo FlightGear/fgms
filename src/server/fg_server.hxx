@@ -216,9 +216,11 @@ protected:
 	int   UpdateTracker ( const string& callsign, const string& passwd, const string& modelname,
 	                      const time_t time, const int type );
 	void  DropClient    ( PlayerIt& CurrentPlayer ); 
-	bool  IsInRange     ( FG_ListElement& Relay,  FG_Player& SendingPlayer );
+	bool  ReceiverWantsData ( const PlayerIt& SenderPos, const FG_Player& Receiver );
+	bool  ReceiverWantsChat ( const PlayerIt& SenderPos, const FG_Player& Receiver );
+	bool  IsInRange     ( const FG_ListElement& Relay,  const PlayerIt& SendingPlayer, uint32_t MsgId );
 	void  SendToCrossfeed ( char* Msg, int Bytes, const netAddress& SenderAddress );
-	void  SendToRelays  ( char* Msg, int Bytes, FG_Player& SendingPlayer );
+	void  SendToRelays  ( char* Msg, int Bytes, PlayerIt& SendingPlayer );
 	void  WantExit ();
 }; // FG_SERVER
 

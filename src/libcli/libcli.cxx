@@ -2170,6 +2170,8 @@ bool
 CLI::check_pager
 ()
 {
+	if (client.max_screen_lines == 0)
+		return 0;
 	// ask for a key after 20 lines of output
 	// FIXME: make this configurable
 	if (client.lines_out > client.max_screen_lines)

@@ -43,6 +43,9 @@
 #include <simgear/math/SGMath.hxx>
 #include "tiny_xdr.hxx"
 
+/** @brief  ID  of a "chat" message */
+#define CHAT_MSG_ID             1
+
 /** @brief The `Magic` value for message (currently FGFS). The magic is at
  * the start of every packet and is used for packet validation.
  */
@@ -88,8 +91,7 @@ struct T_MsgHdr
 	/** @brief Absolute length of message */
 	xdr_data_t  MsgLen;    
 	/** @brief Player's receiver address
-	 * @deprecated Not used in current implementation
-	 * set to zero
+	 * reused for radar range requested by clients
 	 */
 	xdr_data_t  ReplyAddress;   
 	/** @brief Player's receiver port

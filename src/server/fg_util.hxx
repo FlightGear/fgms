@@ -43,6 +43,7 @@ std::string timestamp_to_datestr ( time_t date );
 std::string timestamp_to_days ( time_t date );
 std::string diff_to_days ( time_t date );
 std::string byte_counter ( double bytes );
+bool str_ends_with ( std::string const & value, std::string const & ending );
 
 //////////////////////////////////////////////////////////////////////
 /** 

@@ -370,7 +370,17 @@ Distance ( const Point3D & P1, const Point3D & P2 )
 	return (float)(P.length() / SG_NM_TO_METER);
 } // Distance ( const Point3D & P1, const Point3D & P2 )
 
-
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Calculate the height above sea level
+ */
+float
+HeightAboveSea ( const Point3D & P )
+{
+	// 6367444.5 = approximated radius of earth in meter
+	float h = (P.length() - 6367444.5) / SG_NM_TO_METER;
+	return h;
+} // HeightAboveSea ( const Point3D & P )
 
 //////////////////////////////////////////////////////////////////////
 /**
