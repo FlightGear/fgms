@@ -9,7 +9,7 @@ General Installation
 
 - run "make install"
 
-- copy the file "fgms_example.conf" to "fgms.conf", edit this file to your
+- copy the file "contrib/etc/fgms_production.skel.conf" to "fgms.conf", edit this file to your
   needs and copy it to your "sysconfdir"
 
 - run "fgms --help" for command line help

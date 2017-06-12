@@ -47,7 +47,6 @@
 #include "fg_server.hxx"    /* includes pthread.h */
 #include "fg_common.hxx"
 #include "fg_util.hxx"
-#include "logstream.hxx"
 #include "simgear/math/SGEuler.hxx"
 
 #ifdef _MSC_VER
@@ -1036,10 +1035,12 @@ FG_SERVER::SendToCrossfeed( char* Msg, int Bytes, const netAddress& SenderAddres
 {
 	T_MsgHdr*       MsgHdr;
 	uint32_t        MsgMagic;
+	uint32_t        RadarRange;
 	int             sent;
 	ItList		Entry;
-	MsgHdr    = ( T_MsgHdr* ) Msg;
-	MsgMagic  = MsgHdr->Magic;
+	MsgHdr     = ( T_MsgHdr* ) Msg;
+	MsgMagic   = MsgHdr->Magic;
+	RadarRange = MsgHdr->ReplyAddress;
 	MsgHdr->Magic = XDR_encode<uint32_t> ( RELAY_MAGIC );
 	// pass on senders address and port to crossfeed server
 	MsgHdr->ReplyAddress = XDR_encode<uint32_t> ( SenderAddress.getIP() );
@@ -1052,6 +1053,7 @@ FG_SERVER::SendToCrossfeed( char* Msg, int Bytes, const netAddress& SenderAddres
 	}
 	m_CrossfeedList.Unlock();
 	MsgHdr->Magic = MsgMagic;  // restore the magic value
+	MsgHdr->ReplyAddress = RadarRange;
 } // FG_SERVER::SendToCrossfeed ()
 //////////////////////////////////////////////////////////////////////
 
@@ -1124,7 +1126,7 @@ FG_SERVER::DropClient( PlayerIt& CurrentPlayer )
 	{
 		Origin = "LOCAL";
 	}
-	SG_LOG (SG_FGMS, SG_INFO, "TTL exceeded, dropping pilot "
+	SG_LOG (SG_FGMS, SG_INFO, "Dropping pilot "
 		<< CurrentPlayer->Name << "@" << Origin
 		<< " after " << time(0)-CurrentPlayer->JoinTime << " seconds. "
 		<< "Current clients: "
