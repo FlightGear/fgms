@@ -313,27 +313,24 @@ ProcessConfig ( const string& ConfigName )
 	{
 		string  Server;
 		int     Port;
-		bool    tracked;
+		bool    tracked = false;
+
 		if ( Val == "true" )
 		{
 			tracked = true;
-		}
-		else
-		{
-			tracked = false;
-		}
-		Server = Config.Get ( "server.tracking_server" );
-		Val = Config.Get ( "server.tracking_port" );
-		Port = StrToNum<int> ( Val.c_str (), E );
-		if ( E )
-		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for tracking_port: '" << Val << "'" );
-			exit ( 1 );
-		}
-		if ( tracked && ( Servant.AddTracker ( Server, Port, tracked ) != FG_SERVER::SUCCESS ) ) // set master m_IsTracked
-		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "Failed to get IPC msg queue ID! error " << errno );
-			exit ( 1 ); // do NOT continue if a requested 'tracker' FAILED
+			Server = Config.Get ( "server.tracking_server" );
+			Val = Config.Get ( "server.tracking_port" );
+			Port = StrToNum<int> ( Val.c_str (), E );
+			if ( E )
+			{
+				SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for tracking_port: '" << Val << "'" );
+				exit ( 1 );
+			}
+			if ( tracked && ( Servant.AddTracker ( Server, Port, tracked ) != FG_SERVER::SUCCESS ) ) // set master m_IsTracked
+			{
+				SG_LOG ( SG_SYSTEMS, SG_ALERT, "Failed to get IPC msg queue ID! error " << errno );
+				exit ( 1 ); // do NOT continue if a requested 'tracker' FAILED
+			}
 		}
 	}
 	Val = Config.Get ( "server.is_hub" );
