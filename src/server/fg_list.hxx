@@ -125,6 +125,12 @@ public:
 	bool	IsLocal;
 	/** @brief \b true if this client is an ATC */
 	ATC_TYPE IsATC;
+	/** @brief client provided radar range */
+	uint16_t RadarRange;
+	/** @brief client major protocol version */
+	uint16_t ProtoMajor;
+	/** @brief client minor protocol version */
+	uint16_t ProtoMinor;
 	/** @brief in case of errors the reason is stored here 
 	 * @see FG_SERVER::AddBadClient
 	 */

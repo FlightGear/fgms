@@ -168,9 +168,8 @@ FG_SERVER::FG_SERVER
      m_RelayList("Relays"),
      m_PlayerList("Users")
 {
-	typedef union
+	typedef struct
 	{
-		uint32_t    complete;
 		int16_t     High;
 		int16_t     Low;
 	} converter;
@@ -733,12 +732,21 @@ void
 FG_SERVER::AddClient( const netAddress& Sender,char* Msg )
 {
 	uint32_t	MsgMagic;
+	uint32_t	ProtoVersion;
 	string		Message;
 	string		Origin;
 	T_MsgHdr*	MsgHdr;
 	T_PositionMsg*	PosMsg;
 	FG_Player	NewPlayer;
 	bool		IsLocal;
+	typedef struct
+	{
+		int16_t		High;
+		int16_t		Low;
+	} converter;
+	converter* tmp;
+
+
 	MsgHdr		= ( T_MsgHdr* ) Msg;
 	PosMsg		= ( T_PositionMsg* ) ( Msg + sizeof ( T_MsgHdr ) );
 	MsgMagic	= XDR_decode<uint32_t> ( MsgHdr->Magic );
@@ -747,12 +755,16 @@ FG_SERVER::AddClient( const netAddress& Sender,char* Msg )
 	{
 		IsLocal = false;
 	}
+	ProtoVersion	= XDR_decode<uint32_t> ( MsgHdr->Version );
+	tmp = ( converter* ) & ProtoVersion;
 	NewPlayer.Name	    = MsgHdr->Name;
 	NewPlayer.Passwd    = "test"; //MsgHdr->Passwd;
 	NewPlayer.ModelName = "* unknown *";
 	NewPlayer.Origin    = Sender.getHost ();
 	NewPlayer.Address   = Sender;
 	NewPlayer.IsLocal   = IsLocal;
+	NewPlayer.ProtoMajor	= tmp->High;
+	NewPlayer.ProtoMinor	= tmp->Low;
 	NewPlayer.LastPos.Set (
 	        XDR_decode64<double> ( PosMsg->position[X] ),
 	        XDR_decode64<double> ( PosMsg->position[Y] ),
@@ -782,13 +794,8 @@ FG_SERVER::AddClient( const netAddress& Sender,char* Msg )
 		else	NewPlayer.IsATC = FG_Player::ATC;
 	}
 
-	typedef struct
-	{
-		int16_t		High;
-		int16_t		Low;
-	} converter;
 	MsgHdr->ReplyAddress = XDR_decode<uint32_t> ( MsgHdr->ReplyAddress );
-	converter* tmp =  ( converter* ) ( & MsgHdr->ReplyAddress );
+	tmp =  ( converter* ) & MsgHdr->ReplyAddress;
 	std::cout << NewPlayer.Name << " has radar range "
 		<< tmp->Low << " d: " << tmp->High
 		<< " " << MsgHdr->ReplyAddress << std::endl;
@@ -988,14 +995,15 @@ FG_SERVER::PacketIsValid( int Bytes, T_MsgHdr*  MsgHdr, const netAddress& Sender
 	uint32_t        MsgMagic;
 	uint32_t        MsgLen;
 	uint32_t        MsgId;
+	uint32_t        ProtoVer;
 	string          ErrorMsg;
 	string          Origin;
-	typedef union
+	typedef struct
 	{
-		uint32_t	complete;
 		int16_t		High;
 		int16_t		Low;
 	} converter;
+	converter*    tmp;
 
 	Origin   = SenderAddress.getHost();
 	MsgMagic = XDR_decode<uint32_t> ( MsgHdr->Magic );
@@ -1019,12 +1027,14 @@ FG_SERVER::PacketIsValid( int Bytes, T_MsgHdr*  MsgHdr, const netAddress& Sender
 		AddBadClient ( SenderAddress, ErrorMsg, true, Bytes );
 		return ( false );
 	}
-	if ( XDR_decode<uint32_t> ( MsgHdr->Version ) != PROTO_VER )
+	ProtoVer = XDR_decode<uint32_t> ( MsgHdr->Version );
+	tmp = ( converter* ) & ProtoVer;
+	// if ( XDR_decode<uint32_t> ( MsgHdr->Version ) != PROTO_VER )
+	if ( tmp->High != m_ProtoMajorVersion )
 	{
 		MsgHdr->Version = XDR_decode<uint32_t> ( MsgHdr->Version );
 		ErrorMsg  = Origin;
 		ErrorMsg += " BAD protocol version! Should be ";
-		converter*    tmp;
 		tmp = ( converter* ) ( & PROTO_VER );
 		ErrorMsg += NumToStr ( tmp->High, 0 );
 		ErrorMsg += "." + NumToStr ( tmp->Low, 0 );

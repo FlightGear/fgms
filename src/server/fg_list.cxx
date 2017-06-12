@@ -147,6 +147,9 @@ FG_Player::FG_Player()
 	HasErrors	= false;
 	DoUpdate	= false;
 	IsATC		= ATC_NONE;
+	RadarRange	= 0;
+	ProtoMajor	= 0;
+	ProtoMinor	= 0;
 	LastRelayedToInactive = 0;
 }
 //////////////////////////////////////////////////////////////////////
@@ -164,6 +167,9 @@ FG_Player::FG_Player( const string& Name )
 	HasErrors 	= false;
 	DoUpdate	= false;
 	IsATC		= ATC_NONE;
+	RadarRange	= 0;
+	ProtoMajor	= 0;
+	ProtoMinor	= 0;
 	LastRelayedToInactive = 0;
 }
 //////////////////////////////////////////////////////////////////////
@@ -217,6 +223,9 @@ FG_Player::assign( const FG_Player& P )
 	GeodPos = P.GeodPos;
 	IsLocal = P.IsLocal;
 	IsATC = P.IsATC;
+	RadarRange = P.RadarRange;
+	ProtoMajor = P.ProtoMajor;
+	ProtoMinor = P.ProtoMinor;
 	Error = P.Error.c_str();
 	HasErrors = P.HasErrors;
 	LastOrientation	= P.LastOrientation;
