@@ -44,10 +44,9 @@
 #include <string>
 
 #include "fg_cli.hxx"
-#include "fg_server.hxx"    /* includes pthread.h */
+#include "fg_server.hxx"    // includes pthread.h
 #include "fg_common.hxx"
 #include "fg_util.hxx"
-#include "logstream.hxx"
 #include "simgear/math/SGEuler.hxx"
 
 #ifdef _MSC_VER
@@ -164,6 +163,7 @@ void write_msg_log ( const char* msg, int len, char* src )
 /** @brief Constructor */
 FG_SERVER::FG_SERVER
 () : m_CrossfeedList("Crossfeed"),
+     m_WhiteList("Whitelist"),
      m_BlackList("Blacklist"),
      m_RelayList("Relays"),
      m_PlayerList("Users")
@@ -185,11 +185,12 @@ FG_SERVER::FG_SERVER
 	m_TelnetPort		= m_ListenPort+1;
 	m_AdminPort		= m_ListenPort+2;
 	m_NumMaxClients		= 0;
-	m_PlayerIsOutOfReach	= 100;  // standard 100 nm
+	m_PlayerIsOutOfReach	= 100;	// standard 100 nm
+	m_MaxRadarRange		= 2000;	// standard 2000 nm
 	m_IsParent		= false;
 	m_ServerName		= "* Server *";
 	m_BindAddress		= "";
-	m_domain	= "";
+	m_FQDN			= "";
 	tmp			= ( converter* ) ( & PROTO_VER );
 	m_ProtoMinorVersion	= tmp->High;
 	m_ProtoMajorVersion	= tmp->Low;
@@ -200,6 +201,7 @@ FG_SERVER::FG_SERVER
 	m_UpdateTrackerFreq	= DEF_UPDATE_SECS;
 	// clear stats - should show what type of packet was received
 	m_PacketsReceived	= 0;
+	m_PingReceived		= 0;
 	m_TelnetReceived	= 0;
 	m_AdminReceived		= 0;
 	m_BlackRejected		= 0;  // in black list
@@ -334,7 +336,7 @@ FG_SERVER::Init()
 		if ( m_DataSocket->open ( false ) == 0 ) // UDP-Socket
 		{
 			SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
-			           << "failed to create listener socket" );
+			  << "failed to create listener socket" );
 			return ( ERROR_CREATE_SOCKET );
 		}
 		m_DataSocket->setBlocking ( false );
@@ -342,7 +344,7 @@ FG_SERVER::Init()
 		if ( m_DataSocket->bind ( m_BindAddress.c_str(), m_ListenPort ) != 0 )
 		{
 			SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
-			           << "failed to bind to port " << m_ListenPort );
+			  << "failed to bind to port " << m_ListenPort );
 			SG_CONSOLE ( SG_FGMS, SG_ALERT, "already in use?" );
 			return ( ERROR_COULDNT_BIND );
 		}
@@ -361,23 +363,28 @@ FG_SERVER::Init()
 			m_TelnetSocket = new netSocket;
 			if ( m_TelnetSocket->open ( true ) == 0 ) // TCP-Socket
 			{
-				SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
-				           << "failed to create telnet socket" );
+				SG_CONSOLE ( SG_FGMS, SG_ALERT,
+				  "FG_SERVER::Init() - "
+				  << "failed to create telnet socket" );
 				return ( ERROR_CREATE_SOCKET );
 			}
 			m_TelnetSocket->setBlocking ( false );
 			m_TelnetSocket->setSockOpt ( SO_REUSEADDR, true );
 			if ( m_TelnetSocket->bind ( m_BindAddress.c_str(), m_TelnetPort ) != 0 )
 			{
-				SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
-				           << "failed to bind telnet socket " << m_TelnetPort );
-				SG_CONSOLE ( SG_FGMS, SG_ALERT, "already in use?" );
+				SG_CONSOLE ( SG_FGMS, SG_ALERT,
+				  "FG_SERVER::Init() - "
+				  << "failed to bind telnet socket "
+				  << m_TelnetPort );
+				SG_CONSOLE ( SG_FGMS, SG_ALERT,
+				  "already in use?" );
 				return ( ERROR_COULDNT_BIND );
 			}
 			if ( m_TelnetSocket->listen ( MAX_TELNETS ) != 0 )
 			{
-				SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
-				           << "failed to listen to telnet port" );
+				SG_CONSOLE ( SG_FGMS, SG_ALERT,
+				  "FG_SERVER::Init() - "
+				  << "failed to listen to telnet port" );
 				return ( ERROR_COULDNT_LISTEN );
 			}
 		}
@@ -417,7 +424,7 @@ FG_SERVER::Init()
 		}
 		m_ReinitAdmin = false;
 	}
-	SG_CONSOLE (SG_FGMS, SG_ALERT, "# This is " << m_ServerName << "(" << m_domain << ")");
+	SG_CONSOLE (SG_FGMS, SG_ALERT, "# This is " << m_ServerName << "(" << m_FQDN << ")");
 	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# FlightGear Multiplayer Server v"
 	           << VERSION << " started" );
 	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# using protocol version v"
@@ -517,9 +524,11 @@ FG_SERVER::PrepareInit()
 	m_PlayerList.Unlock ();
 	m_RelayList.Unlock ();
 	m_CrossfeedList.Unlock ();
+	m_WhiteList.Unlock ();
 	m_BlackList.Unlock ();
 	// and clear all but the player list
 	m_RelayList.Clear ();
+	m_WhiteList.Clear ();
 	m_BlackList.Clear ();
 	m_CrossfeedList.Clear ();
 	m_RelayMap.clear ();	// clear(): is a std::map (NOT a FG_List)
@@ -794,12 +803,21 @@ FG_SERVER::AddClient( const netAddress& Sender,char* Msg )
 		else	NewPlayer.IsATC = FG_Player::ATC;
 	}
 
-	MsgHdr->ReplyAddress = XDR_decode<uint32_t> ( MsgHdr->ReplyAddress );
-	tmp =  ( converter* ) & MsgHdr->ReplyAddress;
-	std::cout << NewPlayer.Name << " has radar range "
-		<< tmp->Low << " d: " << tmp->High
-		<< " " << MsgHdr->ReplyAddress << std::endl;
-
+	MsgHdr->RadarRange = XDR_decode<uint32_t> ( MsgHdr->RadarRange );
+	tmp =  ( converter* ) & MsgHdr->RadarRange;
+	if ( ( tmp->Low != 0 ) || ( tmp->High == 0 ) )
+	{
+		// client comes from an old server which overwrites the radar range
+		// or the client does not set RadarRange
+		NewPlayer.RadarRange = m_PlayerIsOutOfReach;
+	}
+	else
+	{
+		if ( tmp->High <= m_MaxRadarRange )
+			NewPlayer.RadarRange = tmp->High;
+	}
+	if ( NewPlayer.RadarRange == 0 )
+		NewPlayer.RadarRange = m_PlayerIsOutOfReach;
 	m_PlayerList.Add ( NewPlayer, m_PlayerExpires );
 	size_t NumClients = m_PlayerList.Size ();
 	if ( NumClients > m_NumMaxClients )
@@ -929,9 +947,28 @@ FG_SERVER::AddTracker( const string& Server, int Port, bool IsTracked )
 {
 	CloseTracker();
 	m_IsTracked = IsTracked;
-	m_Tracker = new FG_TRACKER ( Port, Server, m_ServerName, m_domain );
+	m_Tracker = new FG_TRACKER ( Port, Server, m_ServerName, m_FQDN );
 	return ( SUCCESS );
 } // FG_SERVER::AddTracker()
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Add an IP to the whitelist
+ * @param FourDottedIP IP to add to whitelist
+ */
+void
+FG_SERVER::AddWhitelist( const string& DottedIP )
+{
+	FG_ListElement B (DottedIP);
+	B.Address.set (DottedIP.c_str(), 0);
+	m_WhiteList.Lock ();
+	ItList CurrentEntry = m_WhiteList.Find ( B.Address, "" );
+	m_WhiteList.Unlock ();
+	if ( CurrentEntry == m_WhiteList.End() )
+	{
+		m_WhiteList.Add (B, 0);
+	}
+} // FG_SERVER::AddBlacklist()
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -941,7 +978,6 @@ FG_SERVER::AddTracker( const string& Server, int Port, bool IsTracked )
 void
 FG_SERVER::AddBlacklist( const string& DottedIP, const string& Reason, time_t Timeout)
 {
-
 	FG_ListElement B (Reason);
 	B.Address.set (DottedIP.c_str(), 0);
 	m_BlackList.Lock ();
@@ -963,6 +999,17 @@ bool
 FG_SERVER::IsKnownRelay( const netAddress& SenderAddress, size_t Bytes)
 {
 	ItList CurrentEntry;
+
+	m_WhiteList.Lock ();
+	CurrentEntry = m_WhiteList.Find ( SenderAddress, "" );
+	if ( CurrentEntry != m_WhiteList.End() )
+	{
+		m_WhiteList.UpdateRcvd (CurrentEntry, Bytes);
+		m_WhiteList.Unlock ();
+		return true;
+	}
+	m_WhiteList.Unlock ();
+
 	m_RelayList.Lock ();
 	CurrentEntry = m_RelayList.Find ( SenderAddress, "" );
 	if ( CurrentEntry != m_RelayList.End() )
@@ -972,6 +1019,7 @@ FG_SERVER::IsKnownRelay( const netAddress& SenderAddress, size_t Bytes)
 		return true;
 	}
 	m_RelayList.Unlock ();
+
 	string ErrorMsg;
 	ErrorMsg  = SenderAddress.getHost();
 	ErrorMsg += " is not a valid relay!";
@@ -990,7 +1038,12 @@ FG_SERVER::IsKnownRelay( const netAddress& SenderAddress, size_t Bytes)
  * @brief
  */
 bool
-FG_SERVER::PacketIsValid( int Bytes, T_MsgHdr*  MsgHdr, const netAddress& SenderAddress)
+FG_SERVER::PacketIsValid
+(
+	int		Bytes,
+	T_MsgHdr*	MsgHdr,
+	const netAddress& SenderAddress
+)
 {
 	uint32_t        MsgMagic;
 	uint32_t        MsgLen;
@@ -1029,7 +1082,6 @@ FG_SERVER::PacketIsValid( int Bytes, T_MsgHdr*  MsgHdr, const netAddress& Sender
 	}
 	ProtoVer = XDR_decode<uint32_t> ( MsgHdr->Version );
 	tmp = ( converter* ) & ProtoVer;
-	// if ( XDR_decode<uint32_t> ( MsgHdr->Version ) != PROTO_VER )
 	if ( tmp->High != m_ProtoMajorVersion )
 	{
 		MsgHdr->Version = XDR_decode<uint32_t> ( MsgHdr->Version );
@@ -1045,7 +1097,7 @@ FG_SERVER::PacketIsValid( int Bytes, T_MsgHdr*  MsgHdr, const netAddress& Sender
 		AddBadClient ( SenderAddress, ErrorMsg, true, Bytes );
 		return ( false );
 	}
-	if ( MsgId == POS_DATA_ID )
+	if ( MsgId == FGFS::POS_DATA )
 	{
 		if ( MsgLen < sizeof ( T_MsgHdr ) + sizeof ( T_PositionMsg ) )
 		{
@@ -1073,17 +1125,12 @@ FG_SERVER::SendToCrossfeed( char* Msg, int Bytes, const netAddress& SenderAddres
 {
 	T_MsgHdr*       MsgHdr;
 	uint32_t        MsgMagic;
-	uint32_t        RadarRange;
 	int             sent;
 	ItList		Entry;
 
-	MsgHdr    = ( T_MsgHdr* ) Msg;
-	MsgMagic  = MsgHdr->Magic;
-	MsgHdr->Magic = XDR_encode<uint32_t> ( RELAY_MAGIC );
-	// pass on senders address and port to crossfeed server
-	RadarRange = MsgHdr->ReplyAddress;
-	MsgHdr->ReplyAddress = XDR_encode<uint32_t> ( SenderAddress.getIP() );
-	MsgHdr->ReplyPort = XDR_encode<uint32_t> ( SenderAddress.getPort() );
+	MsgHdr		= ( T_MsgHdr* ) Msg;
+	MsgMagic	= MsgHdr->Magic;
+	MsgHdr->Magic	= XDR_encode<uint32_t> ( RELAY_MAGIC );
 	m_CrossfeedList.Lock();
 	for (Entry = m_CrossfeedList.Begin(); Entry != m_CrossfeedList.End(); Entry++)
 	{
@@ -1092,7 +1139,6 @@ FG_SERVER::SendToCrossfeed( char* Msg, int Bytes, const netAddress& SenderAddres
 	}
 	m_CrossfeedList.Unlock();
 	MsgHdr->Magic = MsgMagic;  // restore the magic value
-	MsgHdr->ReplyAddress = RadarRange; // Restore the RadarRange
 } // FG_SERVER::SendToCrossfeed ()
 //////////////////////////////////////////////////////////////////////
 
@@ -1167,7 +1213,7 @@ FG_SERVER::DropClient( PlayerIt& CurrentPlayer )
 	{
 		Origin = "LOCAL";
 	}
-	SG_LOG (SG_FGMS, SG_INFO, "TTL exceeded, dropping pilot "
+	SG_LOG (SG_FGMS, SG_INFO, "Dropping pilot "
 		<< CurrentPlayer->Name << "@" << Origin
 		<< " after " << time(0)-CurrentPlayer->JoinTime << " seconds. "
 		<< "Current clients: "
@@ -1185,7 +1231,12 @@ FG_SERVER::DropClient( PlayerIt& CurrentPlayer )
  * @param SenderAddress
  */
 void
-FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
+FG_SERVER::HandlePacket
+(
+	char* Msg,
+	int Bytes,
+	const netAddress& SenderAddress
+)
 {
 	T_MsgHdr*       MsgHdr;
 	T_PositionMsg*  PosMsg;
@@ -1196,6 +1247,13 @@ FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 	ItList		CurrentEntry;
 	time_t          Now;
 	unsigned int    PktsForwarded = 0;
+	typedef struct
+	{
+		int16_t         High;
+		int16_t         Low;
+	} converter;
+	converter* tmp;
+
 	MsgHdr    = ( T_MsgHdr* ) Msg;
 	MsgMagic  = XDR_decode<uint32_t> ( MsgHdr->Magic );
 	MsgId     = XDR_decode<uint32_t> ( MsgHdr->MsgId );
@@ -1241,16 +1299,27 @@ FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 	}
 	//////////////////////////////////////////////////
 	//
-	//    Store senders position
+	//    Statistics
 	//
 	//////////////////////////////////////////////////
-	if ( MsgId == POS_DATA_ID )
+	if ( MsgId == FGFS::POS_DATA )
 	{
 		m_PositionData++;
 	}
 	else
 	{
 		m_NotPosData++;
+		//////////////////////////////////////////////////
+		// handle special packets
+		//////////////////////////////////////////////////
+		if ( MsgId == FGFS::PING )
+		{
+			// send packet verbatim back to sender
+			m_PingReceived++;
+			MsgHdr->MsgId = XDR_encode<uint32_t> ( FGFS::PONG );
+			m_DataSocket->sendto ( Msg, Bytes, 0, &SenderAddress );
+			return;
+		}
 	}
 	//////////////////////////////////////////////////
 	//
@@ -1262,7 +1331,7 @@ FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 	if (SendingPlayer == m_PlayerList.End () )
 	{
 		// unknown, add to the list
-		if ( MsgId != POS_DATA_ID )
+		if ( MsgId != FGFS::POS_DATA )
 		{
 			// ignore clients until we have a valid position
 			m_PlayerList.Unlock();
@@ -1273,29 +1342,59 @@ FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 	}
 	else
 	{
+		//////////////////////////////////////////////////
+		//
+		// found the client, update internal values
+		//
+		//////////////////////////////////////////////////
 		if ( SendingPlayer->Address != SenderAddress )
 		{
 			m_PlayerList.Unlock();
 			return;
 		}
 		m_PlayerList.UpdateRcvd (SendingPlayer, Bytes);
-		PosMsg = ( T_PositionMsg* ) ( Msg + sizeof ( T_MsgHdr ) );
-		double x = XDR_decode64<double> ( PosMsg->position[X] );
-		double y = XDR_decode64<double> ( PosMsg->position[Y] );
-		double z = XDR_decode64<double> ( PosMsg->position[Z] );
-		if ( ( x == 0.0 ) || ( y == 0.0 ) || ( z == 0.0 ) )
+		if ( MsgId == FGFS::POS_DATA )
 		{
-			// ignore while position is not settled
-			m_PlayerList.Unlock();
-			return;
+			PosMsg = ( T_PositionMsg* ) ( Msg + sizeof ( T_MsgHdr ) );
+			double x = XDR_decode64<double> ( PosMsg->position[X] );
+			double y = XDR_decode64<double> ( PosMsg->position[Y] );
+			double z = XDR_decode64<double> ( PosMsg->position[Z] );
+			if ( ( x == 0.0 ) || ( y == 0.0 ) || ( z == 0.0 ) )
+			{
+				// ignore while position is not settled
+				m_PlayerList.Unlock();
+				return;
+			}
+			SendingPlayer->LastPos.Set ( x, y, z );
+			SendingPlayer->LastOrientation.Set (
+				XDR_decode<float> ( PosMsg->orientation[X] ),
+				XDR_decode<float> ( PosMsg->orientation[Y] ),
+				XDR_decode<float> ( PosMsg->orientation[Z] )
+			);
+			sgCartToGeod ( SendingPlayer->LastPos, SendingPlayer->GeodPos );
 		}
-		SendingPlayer->LastPos.Set ( x, y, z );
-		SendingPlayer->LastOrientation.Set (
-		        XDR_decode<float> ( PosMsg->orientation[X] ),
-		        XDR_decode<float> ( PosMsg->orientation[Y] ),
-		        XDR_decode<float> ( PosMsg->orientation[Z] )
-		);
-		sgCartToGeod ( SendingPlayer->LastPos, SendingPlayer->GeodPos );
+		MsgHdr->RadarRange = XDR_decode<uint32_t> ( MsgHdr->RadarRange );
+		tmp =  ( converter* ) & MsgHdr->RadarRange;
+		if ( ( tmp->High != 0 ) && ( tmp->Low == 0 ) )
+		{	// client is 'new' and transmit radar range
+			if ( tmp->High != SendingPlayer->RadarRange )
+			{
+				SG_LOG ( SG_FGMS, SG_INFO, SendingPlayer->Name
+					<< " changes radar range from "
+					<< SendingPlayer->RadarRange
+					<< " to "
+					<< tmp->High
+				);
+				if ( tmp->High <= m_MaxRadarRange )
+					SendingPlayer->RadarRange = tmp->High;
+				else
+				{
+					SG_LOG ( SG_FGMS, SG_INFO, SendingPlayer->Name
+						<< " radar range to high, ignoring"
+					);
+				}
+			}
+		}
 	}
 	m_PlayerList.Unlock();
 	//////////////////////////////////////////
@@ -1348,16 +1447,6 @@ FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 			continue; // don't send packet back to sender
 		}
 		//////////////////////////////////////////////////
-		//      do not send packets to clients if the
-		//      origin is an observer, but do send
-		//      chat messages anyway
-		//      FIXME: MAGIC = SFGF!
-		//////////////////////////////////////////////////
-		if ( strncasecmp ( MsgHdr->Name, "obs", 3 ) == 0 )
-		{
-			return;
-		}
-		//////////////////////////////////////////////////
 		// 'hidden' feature of fgms. If a callsign starts
 		// with 'obs', do not send the packet to other
 		// clients. Useful for test connections.
@@ -1370,11 +1459,11 @@ FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 		//////////////////////////////////////////////////
 		//      do not send packet to clients which
 		//      are out of reach.
-		//      FIX20140603 - compare fix by Markus Pargmann
 		//////////////////////////////////////////////////
 		if ( MsgId == CHAT_MSG_ID )
 		{	// apply 'radio' rules
-			if ( not ReceiverWantsChat( SendingPlayer, *CurrentPlayer ) )
+			// if ( not ReceiverWantsChat( SendingPlayer, *CurrentPlayer ) )
+			if ( not ReceiverWantsData ( SendingPlayer, *CurrentPlayer ) )
 			{
 				CurrentPlayer++;
 				continue;
@@ -1383,8 +1472,7 @@ FG_SERVER::HandlePacket( char* Msg, int Bytes, const netAddress& SenderAddress )
 		else
 		{
 			// apply 'visibility' rules, for now we apply 'radio' rules
-			// if ( not ReceiverWantsData( SendingPlayer, *CurrentPlayer ) )
-			if ( not ReceiverWantsChat( SendingPlayer, *CurrentPlayer ) )
+			if ( not ReceiverWantsData ( SendingPlayer, *CurrentPlayer ) )
 			{
 				CurrentPlayer++;
 				continue;
@@ -1481,13 +1569,16 @@ void FG_SERVER::Show_Stats ( void )
 /**
  * @brief Check exit and stat files
  *
- * Do not think this is used by many, but is a convenient way to output some stats
- * to the LOG, or request an exit. In the past the reset action has failed, and 
- * although some fixes have been put in place, a caution about using this reset.
+ * Do not think this is used by many, but is a convenient way to output
+ * some stats to the LOG, or request an exit. In the past the reset action
+ * has failed, and although some fixes have been put in place, a caution about
+ * using this reset.
  *
- * 20150619:0.11.9: If running instance can NOT delete a detected file, usually due to wrong permissions,
- * that particular file interface will be disabled. Also if any of these files exist at start-up, again 
- * that file interface will be disable. This also gives a way to disable this file interface actions.
+ * 20150619:0.11.9: If running instance can NOT delete a detected file,
+ * usually due to wrong permissions, that particular file interface will
+ * be disabled. Also if any of these files exist at start-up, again 
+ * that file interface will be disable. This also gives a way to disable this
+ * file interface actions.
  *
  */
 int
@@ -1496,22 +1587,28 @@ FG_SERVER::check_files()
 	struct stat buf;
 	if ( m_useExitFile && (stat ( exit_file,&buf ) == 0) )
 	{
-		SG_LOG ( SG_FGMS, SG_ALERT, "## Got EXIT file : " << exit_file );
+		SG_LOG ( SG_FGMS, SG_ALERT, "## Got EXIT file : "
+		  << exit_file );
 		unlink ( exit_file );
 		if ( stat ( exit_file,&buf ) == 0 )
 		{
-			SG_LOG ( SG_FGMS, SG_ALERT, "WARNING: Unable to delete exit file " << exit_file << "! Disabled interface..." );
-            m_useExitFile = false;
+			SG_LOG ( SG_FGMS, SG_ALERT,
+			  "WARNING: Unable to delete exit file "
+			  << exit_file << "! Disabled interface..." );
+			m_useExitFile = false;
 		}
 		return 1;
 	}
 	else if ( m_useResetFile && ( stat ( reset_file,&buf ) == 0 ) )
 	{
-		SG_LOG ( SG_FGMS, SG_ALERT, "## Got RESET file " << reset_file );
+		SG_LOG ( SG_FGMS, SG_ALERT, "## Got RESET file "
+		  << reset_file );
 		unlink ( reset_file );
 		if ( stat ( reset_file,&buf ) == 0 )
 		{
-			SG_LOG ( SG_FGMS, SG_ALERT, "WARNING: Unable to delete reset file " << reset_file << "! Disabled interface..." );
+			SG_LOG ( SG_FGMS, SG_ALERT,
+			  "WARNING: Unable to delete reset file "
+			  << reset_file << "! Disabled interface..." );
 			m_useResetFile = false;
 		}
 		m_ReinitData	= true; // init the data port
@@ -1525,7 +1622,9 @@ FG_SERVER::check_files()
 		unlink ( stat_file );
 		if ( stat ( stat_file,&buf ) == 0 )
 		{
-			SG_LOG ( SG_FGMS, SG_ALERT, "WARNING: Unable to delete stat file " << stat_file << "! Disabled interface..." );
+			SG_LOG ( SG_FGMS, SG_ALERT,
+			  "WARNING: Unable to delete stat file "
+			  << stat_file << "! Disabled interface..." );
 			m_useStatFile = false;
 		}
 		Show_Stats();
@@ -1824,6 +1923,20 @@ FG_SERVER::SetOutOfReach( int OutOfReach)
 
 //////////////////////////////////////////////////////////////////////
 /**
+ * @brief Set maximum allowed radar range of clients in nautical miles
+ */
+void
+FG_SERVER::SetMaxRadarRange
+(
+	int MaxRange
+)
+{
+	m_MaxRadarRange = MaxRange;
+} // FG_SERVER::SetMaxRadarRange ( int MaxRange )
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
  * @brief Set the default loglevel
  */
 void
@@ -1890,10 +2003,10 @@ FG_SERVER::SetBindAddress( const std::string& BindAddress )
  * @brief Set the external address this server on
  */
 void
-FG_SERVER::Setdomain( const std::string& domain )
+FG_SERVER::SetFQDN( const std::string& FQDN )
 {
-	m_domain = domain;
-} // FG_SERVER::Setdomain ( const std::string &domain )
+	m_FQDN = FQDN;
+} // FG_SERVER::SetFQDN ( const std::string &FQDN )
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -2111,14 +2224,24 @@ FG_SERVER::CloseTracker()
 /**
  */
 bool
-FG_SERVER::ReceiverWantsData( const PlayerIt& Sender, const FG_Player& Receiver )
+FG_SERVER::ReceiverWantsData
+(
+	const PlayerIt& Sender,
+	const FG_Player& Receiver
+)
 {
+	if ( Distance ( Sender->LastPos, Receiver.LastPos ) < Receiver.RadarRange )
+		return true;
+	return false;
+
+	// TODO:
+
 	float	out_of_reach;
 
 	if ( ( Sender->IsATC == FG_Player::ATC_NONE )
 	&&   ( Receiver.IsATC == FG_Player::ATC_NONE ) )
 	{	// Sender and Receiver are normal pilots, so m_PlayerIsOutOfReach applies
-		if ( Distance ( Sender->LastPos, Receiver.LastPos ) < m_PlayerIsOutOfReach )
+		if ( Distance ( Sender->LastPos, Receiver.LastPos ) < Receiver.RadarRange )
 			return true;
 		return false;
 	}
@@ -2291,15 +2414,15 @@ FG_SERVER::IsInRange( const FG_ListElement& Relay, const PlayerIt& SendingPlayer
 		{
 			if ( MsgId == CHAT_MSG_ID )
 			{	// apply 'radio' rules
-				if ( ReceiverWantsChat( SendingPlayer, CurrentPlayer ) )
+				// if ( ReceiverWantsChat( SendingPlayer, CurrentPlayer ) )
+				if ( ReceiverWantsData ( SendingPlayer, CurrentPlayer ) )
 				{
 					return true;
 				}
 			}
 			else
 			{	// apply 'visibility' rules, for now we apply 'radio' rules
-				//if ( ReceiverWantsData( SendingPlayer, CurrentPlayer ) )
-				if ( ReceiverWantsChat( SendingPlayer, CurrentPlayer ) )
+				if ( ReceiverWantsData( SendingPlayer, CurrentPlayer ) )
 				{
 					return true;
 				}

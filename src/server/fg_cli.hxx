@@ -52,9 +52,16 @@ private:
 	//////////////////////////////////////////////////
 	int cmd_pager		( char *command, char *argv[], int argc );
 	int cmd_show_stats	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
+	int cmd_show_settings	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
 	int cmd_show_version	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
 	int cmd_show_uptime	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
 	int cmd_fgms_die	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
+	//////////////////////////////////////////////////
+	// show/modify whitelist
+	//////////////////////////////////////////////////
+	int cmd_whitelist_show   (  char *command, char *argv[], int argc );
+	int cmd_whitelist_add    (  char *command, char *argv[], int argc );
+	int cmd_whitelist_delete (  char *command, char *argv[], int argc );
 	//////////////////////////////////////////////////
 	// show/modify blacklist
 	//////////////////////////////////////////////////

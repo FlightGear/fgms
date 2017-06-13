@@ -56,8 +56,37 @@ const uint32_t MSG_MAGIC = 0x46474653;  // "FGFS"
  */
 const uint32_t PROTO_VER = 0x00010001;  // 1.1
 
-/** @brief  ID  of a "position" message, and the most trafficked */
-#define POS_DATA_ID             7
+/**
+ * @brief  IDs of message types seen by fgms
+ */
+namespace FGFS
+{
+
+/**
+ * Message identifiers
+ */
+typedef enum
+{
+	//@{ deprecated message ids
+	U1 = 1,	// old CHAT_MSG_ID
+	U2,	// old pos data
+	U3,	// old pos data,
+	U4,	// old pos data,
+	U5,	// old pos data,
+	U6,	// RESET_DATA_ID
+	//@}
+	/// a "position" message, and the most trafficked
+	POS_DATA,
+	MP_2017_DATA_ID,
+	/// a ping packet is send verbatim back to sender
+	PING,	// request
+	PONG,	// answer
+	/// reply with a server info packet
+	RQ_SERVER_INFO,	// request
+	SERVER_INFO,	// answer
+} MSG_ID;
+
+} // namspace FGFS
 
 /** @brief  Maximum length of a callsign */
 #define MAX_CALLSIGN_LEN        8
@@ -90,10 +119,8 @@ struct T_MsgHdr
 	xdr_data_t  MsgId;     
 	/** @brief Absolute length of message */
 	xdr_data_t  MsgLen;    
-	/** @brief Player's receiver address
-	 * reused for radar range requested by clients
-	 */
-	xdr_data_t  ReplyAddress;   
+	/** @brief Player's radar range */
+	xdr_data_t  RadarRange;   
 	/** @brief Player's receiver port
 	 * @deprecated Not used in current implementation
 	 * set to zero

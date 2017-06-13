@@ -70,6 +70,7 @@
 #endif
 
 int tracker_conn_secs = DEF_CONN_SECS;
+bool FG_TRACKER::m_connected = false;
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 /* windows work around for gettimeofday() */
@@ -96,7 +97,7 @@ FG_TRACKER::FG_TRACKER ( int port, string server, string m_ServerName, string do
 	m_TrackerServer = server;
 	m_FgmsName = m_ServerName;
 	m_domain = domain;
-	m_protocalVersion = "20151207";
+	m_ProtocolVersion = "20151207";
 	m_TrackerSocket = 0;
 	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::FG_TRACKER:"
 	            << m_TrackerServer << ", Port: " << m_TrackerPort
@@ -110,10 +111,10 @@ FG_TRACKER::FG_TRACKER ( int port, string server, string m_ServerName, string do
 	LostConnections = 0;
 	LastConnected	= 0;
 	WantExit	= false;
-    m_connected = false;
-	m_identified= false;
-	pinginterval= 55;
-	timeoutstage= 0;
+	m_identified	= false;
+	m_PingInterval	= 55;
+	m_TimeoutStage	= 0;
+	set_connected ( false );
 } // FG_TRACKER()
 
 //////////////////////////////////////////////////////////////////////
@@ -272,12 +273,12 @@ FG_TRACKER::CheckTimeout()
 	time_t curtime = time ( 0 );
 	double seconds;
 	seconds = difftime( curtime, LastSeen );
-	if( (int) seconds - pinginterval * timeoutstage > pinginterval )
+	if( (int) seconds - m_PingInterval * m_TimeoutStage > m_PingInterval )
 	{
-		timeoutstage++;
-		if(timeoutstage>3)
+		m_TimeoutStage++;
+		if(m_TimeoutStage>3)
 		{
-			m_connected = false;
+			set_connected ( false );
 			LostConnections++;
 			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::CheckTimeout: No data received from FGTracker for "
 				<< seconds << " seconds. Lost connection to FGTracker" );
@@ -316,7 +317,7 @@ FG_TRACKER::TrackerRead (buffsock_t* bs)
 		EINTR (sth hard to explain - Linux only)*/
 		if ( ( errno != EAGAIN ) && ( errno != EWOULDBLOCK ) && ( errno != EINTR ) )
 		{
-			m_connected = false;
+			set_connected ( false );
 			LostConnections++;
 			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerRead: "
 			            << "lost connection to FGTracker" );
@@ -327,7 +328,7 @@ FG_TRACKER::TrackerRead (buffsock_t* bs)
 		// something received from tracker server
 		bs->curlen += bytes;
 		LastSeen = time ( 0 );
-		timeoutstage = 0;
+		m_TimeoutStage = 0;
 
 		while(1)
 		{
@@ -374,7 +375,7 @@ FG_TRACKER::TrackerWrite ( const string& str )
 	s = m_TrackerSocket->write_str ( str.c_str(), l );
 	if ( s != l )
 	{
-		m_connected = false;
+		set_connected ( false );
 		LostConnections++;
 		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerWrite: "
 					<< "lost connection to server"
@@ -383,7 +384,7 @@ FG_TRACKER::TrackerWrite ( const string& str )
 	}
 
 	/*put the sent message to msg_sent_queue*/
-	size_t pos = str.find( m_protocalVersion );
+	size_t pos = str.find( m_ProtocolVersion );
 	size_t pos2 = str.find( "ERROR" );
 	if ( pos == 1 )
 	{} else if ( pos2 == 0 )
@@ -482,8 +483,8 @@ FG_TRACKER::Loop ()
 	/*Initialize socket read buffer*/
 	buffsock_t bs;
 	bs.buf = (char*) malloc( MSGMAXLINE );
-    bs.maxlen = MSGMAXLINE;
-    bs.curlen = 0;
+	bs.maxlen = MSGMAXLINE;
+	bs.curlen = 0;
 	
 #ifdef WIN32
 	SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
@@ -497,7 +498,7 @@ FG_TRACKER::Loop ()
 	/*Infinite loop*/
 	while ( ! WantExit )
 	{
-		if (! m_connected)
+		if (! is_connected())
 		{
 			/*requeue the outstanding message to message queue*/
 			ReQueueSentMsg ();
@@ -510,8 +511,8 @@ FG_TRACKER::Loop ()
 			SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
 			            << "trying to connect to FGTracker"
 			          );
-			m_connected = Connect();
-			if ( ! m_connected )
+			set_connected ( Connect() );
+			if ( ! is_connected() )
 			{
 				SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Loop: "
 				            << "not connected, will sleep for " << tracker_conn_secs << " seconds"
@@ -526,7 +527,7 @@ FG_TRACKER::Loop ()
 				pthread_mutex_unlock ( &msg_mutex );
 				continue;
 			}
-			timeoutstage = 0;
+			m_TimeoutStage = 0;
 			ReadQueue (); 	// read backlog, if any
 		}
 
@@ -547,7 +548,7 @@ FG_TRACKER::Loop ()
             usleep(10000);
         }
 
-		while ( msg_queue.size () && m_connected && m_identified && msg_sent_queue.size() < 25)
+		while ( msg_queue.size () && is_connected() && m_identified && msg_sent_queue.size() < 25)
 		{
 			/*Get message from msg_queue*/
 			Msg = "";
@@ -627,7 +628,7 @@ FG_TRACKER::Connect()
 	sleep ( 2 );
 	/*Write Version header to FGTracker*/
 	std::stringstream ss;
-	ss << "V" << m_protocalVersion << " " << VERSION << " "<< m_domain << " " << m_FgmsName;
+	ss << "V" << m_ProtocolVersion << " " << VERSION << " "<< m_domain << " " << m_FgmsName;
 	std::string s = ss.str();
 	TrackerWrite ( s );
 	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect: "
@@ -690,6 +691,7 @@ signal_handler ( int s )
 		break;
 	case 13:
 		printf ( "SIGPIPE received. Connection Error.\n" );
+		FG_TRACKER::set_connected ( false );
 		break;
 	case 14:
 		printf ( "SIGALRM received\n" );

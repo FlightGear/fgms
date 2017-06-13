@@ -68,14 +68,13 @@ public:
 	//  
 	//////////////////////////////////////////////////
 	int	m_TrackerPort;
-	int pinginterval;
-	int timeoutstage;
+	int	m_PingInterval;
+	int	m_TimeoutStage;
 	string	m_TrackerServer;
 	string	m_FgmsName;
 	string	m_domain;
-	string	m_protocalVersion;
-	bool	m_connected; /*If connected to fgtracker*/
-	bool	m_identified; /*If fgtracker identified this fgms*/
+	string	m_ProtocolVersion;
+	bool	m_identified;			/* If fgtracker identified this fgms */
 	netSocket* m_TrackerSocket;
 
 	typedef std::vector<std::string> vMSG;	/* string vector */
@@ -93,7 +92,10 @@ public:
 	vMSG    msg_sent_queue;			/* the single message queue */
 	vMSG    msg_recv_queue;			/* the single message queue */
 	bool	WantExit;
-	
+	// static, so it can be set from outside (signal handler)
+	static bool	m_connected;			/* If connected to fgtracker */
+	static inline void set_connected ( bool b ) { m_connected = b; };
+	static inline bool is_connected () { return m_connected; };
 	//////////////////////////////////////////////////
 	//
 	//  constructors

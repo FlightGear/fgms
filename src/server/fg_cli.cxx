@@ -30,14 +30,24 @@
 #include <fg_cli.hxx>
 #include <fg_common.hxx>
 
-FG_CLI::FG_CLI( FG_SERVER* fgms, int fd): CLI(fd)
+FG_CLI::FG_CLI
+(
+	FG_SERVER* fgms,
+	int fd
+): CLI(fd)
 {
 	this->fgms = fgms;
 	this->setup ();
 }
 
+//////////////////////////////////////////////////
+/**
+ *  @brief Set up all commands
+ *
+ */
 void
-FG_CLI::setup()
+FG_CLI::setup
+()
 {
 	typedef Command<CLI>::cpp_callback_func callback_ptr;
 	typedef Command<CLI>::cpp_callback_func callback_ptr;
@@ -99,6 +109,15 @@ FG_CLI::setup()
 
 	register_command ( new Command<CLI> (
 		this,
+		"settings",
+		static_cast<callback_ptr> (&FG_CLI::cmd_show_settings),
+		LIBCLI::UNPRIVILEGED,
+		LIBCLI::MODE_ANY,
+		"Show general settings"
+	), c);
+
+	register_command ( new Command<CLI> (
+		this,
 		"version",
 		static_cast<callback_ptr> (&FG_CLI::cmd_show_version),
 		LIBCLI::UNPRIVILEGED,
@@ -113,6 +132,15 @@ FG_CLI::setup()
 		LIBCLI::UNPRIVILEGED,
 		LIBCLI::MODE_ANY,
 		"Show uptime information"
+	), c);
+
+	register_command (new Command<CLI> (
+		this,
+		"whitelist",
+		static_cast<callback_ptr> (&FG_CLI::cmd_whitelist_show),
+		LIBCLI::UNPRIVILEGED,
+		LIBCLI::MODE_ANY,
+		"Show entries in the whitelist"
 	), c);
 
 	register_command (new Command<CLI> (
@@ -253,8 +281,9 @@ FG_CLI::setup()
 		"Add relay"
 	), c);
 
-}
+} // FG_CLI::setup ()
 
+// little helper function
 bool
 FG_CLI::need_help
 (
@@ -267,7 +296,7 @@ FG_CLI::need_help
 	if (argv[l-1] == '?')
 		return true;
 	return false;
-}
+} // FG_CLI::need_help ()
 
 //////////////////////////////////////////////////
 /**
@@ -319,8 +348,12 @@ FG_CLI::cmd_pager
 	else
 		client << "show " << client.max_screen_lines << " lines without pausing" << CRLF;
 	return 0;
-}
+} // FG_CLI::cmd_pager ()
 
+//////////////////////////////////////////////////
+/**
+ *  @brief Show general statistics
+ */
 int
 FG_CLI::cmd_show_stats
 (
@@ -335,7 +368,6 @@ FG_CLI::cmd_show_stats
 	uint64_t	accumulated_rcvd	= 0;
 	uint64_t	accumulated_sent_pkts	= 0;
 	uint64_t	accumulated_rcvd_pkts	= 0;
-
 	if (argc > 0)
 	{
 		client << "<cr>" << CRLF;
@@ -379,6 +411,12 @@ FG_CLI::cmd_show_stats
 		<< " (" << byte_counter ((double) fgms->m_PlayerList.BytesSent / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 	client << "Receive counters:" << CRLF; if (check_pager()) return 0;
+	client << "  " << left << setfill(' ') << setw(22)
+		<< "total:" <<  fgms->m_PacketsReceived
+		<< CRLF; if (check_pager()) return 0;
+	client << "  " << left << setfill(' ') << setw(22)
+		<< "pings:" <<  fgms->m_PingReceived
+		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "errors:"
 		<< "invalid packets:" << fgms->m_PacketsInvalid
@@ -450,7 +488,6 @@ FG_CLI::cmd_show_stats
 		<< " / " << byte_counter (accumulated_sent)
 		<< " (" << byte_counter ((double) accumulated_sent / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
-
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "received:"
 		<< accumulated_rcvd_pkts << " packets"
@@ -459,8 +496,66 @@ FG_CLI::cmd_show_stats
 		<< " (" << byte_counter ((double) accumulated_rcvd / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 	return (0);
-}
+} // FG_CLI::cmd_show_stats ()
 
+//////////////////////////////////////////////////
+/**
+ *  @brief Show general settings
+ */
+int
+FG_CLI::cmd_show_settings
+(
+	UNUSED(char *command),
+	UNUSED(char *argv[]),
+	UNUSED(int argc)
+)
+{
+	if (argc > 0)
+	{
+		client << "<cr>" << CRLF;
+		return (0);
+	}
+	cmd_show_version (command, argv, argc);
+	client << CRLF;
+	client << "current settings:" << CRLF; if (check_pager()) return 0;
+	client << "  " << left << setfill(' ') << setw(22)
+		<< "listen port:" << fgms->m_ListenPort
+		<< CRLF; if (check_pager()) return 0;
+	client << "  " << left << setfill(' ') << setw(22)
+		<< "telnet port:" << fgms->m_TelnetPort
+		<< CRLF; if (check_pager()) return 0;
+	client << "  " << left << setfill(' ') << setw(22)
+		<< "admin port:" << fgms->m_AdminPort
+		<< CRLF; if (check_pager()) return 0;
+	client << "  " << left << setfill(' ') << setw(22)
+		<< "tracking port:" << fgms->m_TrackingPort
+		<< CRLF; if (check_pager()) return 0;
+	client << "  " << left << setfill(' ') << setw(22)
+		<< "player expires:" << fgms->m_PlayerExpires
+		<< CRLF; if (check_pager()) return 0;
+	client << "  " << left << setfill(' ') << setw(22)
+		<< "out of reach:" << fgms->m_PlayerIsOutOfReach
+		<< CRLF; if (check_pager()) return 0;
+	client << "  " << left << setfill(' ') << setw(22)
+		<< "radar range:" << fgms->m_MaxRadarRange
+		<< CRLF; if (check_pager()) return 0;
+	client << "  " << left << setfill(' ') << setw(22)
+		<< "logfile:" << fgms->m_LogFileName
+		<< CRLF; if (check_pager()) return 0;
+	client << "  " << left << setfill(' ') << setw(22)
+		<< "bind address:" << fgms->m_BindAddress
+		<< CRLF; if (check_pager()) return 0;
+	client << "  " << left << setfill(' ') << setw(22)
+		<< "FQDN:" << fgms->m_FQDN
+		<< CRLF; if (check_pager()) return 0;
+
+	return (0);
+} // FG_CLI::cmd_show_settings ()
+
+//////////////////////////////////////////////////
+/**
+ *  @brief Shutdown the server
+ */
 int
 FG_CLI::cmd_fgms_die
 (
@@ -479,8 +574,13 @@ FG_CLI::cmd_fgms_die
 	}
 	fgms->m_WantExit = true;
 	return LIBCLI::QUIT;
-}
+} // FG_CLI::cmd_fgms_die
 
+//////////////////////////////////////////////////
+/**
+ *  @brief Show the uptime of the the server
+ *         in a human readable form.
+ */
 int
 FG_CLI::cmd_show_uptime
 (
@@ -500,8 +600,12 @@ FG_CLI::cmd_show_uptime
 	client << "UP since " << timestamp_to_datestr(fgms->m_Uptime)
 		<< "(" << timestamp_to_days(fgms->m_Uptime) << ")" << CRLF;
 	return (0);
-}
+} // FG_CLI::cmd_show_uptime
 
+//////////////////////////////////////////////////
+/**
+ *  @brief Show the version number of the the server
+ */
 int
 FG_CLI::cmd_show_version
 (
@@ -523,7 +627,7 @@ FG_CLI::cmd_show_version
 		s = "HUB";
 	else
 		s = "LEAVE";
-	client << "This is " << fgms->m_ServerName << CRLF;
+	client << "This is " << fgms->m_ServerName << " (" << fgms->m_FQDN << ")" << CRLF;
 	client << "FlightGear Multiplayer " << s << " Server version " << VERSION << CRLF; 
 	client << "using protocol version v"
 		<< fgms->m_ProtoMajorVersion << "." << fgms->m_ProtoMinorVersion << CRLF;
@@ -533,7 +637,314 @@ FG_CLI::cmd_show_version
 		client << "This server is NOT tracked" << CRLF;
 	cmd_show_uptime (command, argv, argc);
 	return (0);
-}
+} // FG_CLI::cmd_show_version
+
+//////////////////////////////////////////////////
+/**
+ *  @brief Show Whitelist
+ *
+ *  possible arguments:
+ *  show whitelist ?
+ *  show whitelist <cr>
+ *  show whitelist ID
+ *  show whitelist IP-Address
+ */
+int
+FG_CLI::cmd_whitelist_show
+(
+	char *command,
+	char *argv[],
+	int argc
+)
+{
+	size_t		ID = 0;
+	int		ID_invalid = -1;
+	netAddress	Address ("0.0.0.0", 0);
+	size_t		EntriesFound = 0;
+	for (int i=0; i < argc; i++)
+	{
+		ID  = StrToNum<size_t> ( argv[0], ID_invalid );
+		if (ID_invalid)
+			ID = 0;
+		switch (i)
+		{
+		case 0: // ID or IP or 'brief' or '?'
+			if ( need_help (argv[i]) )
+			{
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "ID" << "show entry with ID" << CRLF;
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "IP" << "show entry with IP-Address" << CRLF;
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "<cr>" << "show long listing" << CRLF;
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "|" << "output modifier" << CRLF;
+				return (0);
+			}
+			else if (ID == 0)
+			{
+				Address.set (argv[0], 0);
+				if (Address.getIP() == 0)
+				{
+					client << "% invalid IP address" << CRLF;
+					return (1);
+				}
+			}
+			break;
+		case 1: // '?'
+			if ( need_help (argv[i]) )
+			{
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "<cr>" << "show long listing" << CRLF;
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "|" << "output modifier" << CRLF;
+				return (0);
+			}
+			break;
+		default:
+			client << "% invalid argument" << CRLF;
+			break;
+		}
+	}
+	int Count = fgms->m_WhiteList.Size ();
+	FG_ListElement Entry("");
+	client << CRLF;
+	time_t  difftime;
+	time_t  now;
+	now = time(0);
+	difftime = now - fgms->m_Uptime;
+	client << fgms->m_WhiteList.Name << ":" << CRLF;
+	client << CRLF;
+	for (int i = 0; i < Count; i++)
+	{
+		Entry = fgms->m_WhiteList[i];
+		if ( (ID == 0) && (Address.getIP() != 0) )
+		{	// only list matching entries
+			if (Entry.Address != Address)
+				continue;
+		}
+		else if (ID)
+		{
+			if (Entry.ID != ID)
+				continue;
+		}
+		EntriesFound++;
+		client << "ID " << Entry.ID << ": "
+			<< Entry.Address.getHost() << " : " << Entry.Name
+			<< CRLF; if (check_pager()) return 0;
+		client << "  entered      : " << timestamp_to_datestr (Entry.JoinTime)
+			<< CRLF; if (check_pager()) return 0;
+		client << "  last seen    : " << timestamp_to_days (Entry.LastSeen)
+			<< CRLF; if (check_pager()) return 0;
+		client << "  rcvd packets : " << Entry.PktsRcvd
+			<< CRLF; if (check_pager()) return 0;
+		client << "  rcvd bytes   : " << byte_counter (Entry.BytesRcvd)
+			<< CRLF; if (check_pager()) return 0;
+	}
+	if (EntriesFound)
+		client << CRLF; if (check_pager()) return 0;
+	client << EntriesFound << " entries found" << CRLF; if (check_pager()) return 0;
+	if (EntriesFound)
+	{
+		client << "Total rcvd: "
+			<< fgms->m_WhiteList.PktsRcvd << " packets"
+			<< " (" << fgms->m_WhiteList.PktsRcvd / difftime << "/s)"
+			<< " / " << byte_counter (fgms->m_WhiteList.BytesRcvd)
+			<< " (" << byte_counter ((double) (fgms->m_WhiteList.BytesRcvd/difftime)) << "/s)"
+			<< CRLF; if (check_pager()) return 0;
+	}
+	return 0;
+} // FG_CLI::cmd_whitelist_show
+
+//////////////////////////////////////////////////
+/**
+ *  @brief Delete whitelist entry
+ *
+ *  ONLY in config mode
+ *
+ *  possible arguments:
+ *  whitelist delete ?
+ *  whitelist delete ID
+ *  whitelist delete IP-Address
+ *  whitelist delete [...] <cr>
+ */
+int
+FG_CLI::cmd_whitelist_delete
+(
+	char *command,
+	char *argv[],
+	int argc
+)
+{
+	size_t		ID = 0;
+	int		ID_invalid = -1;
+	netAddress	Address;
+	ItList		Entry;
+	for (int i=0; i < argc; i++)
+	{
+		ID  = StrToNum<size_t> ( argv[0], ID_invalid );
+		if (ID_invalid)
+			ID = 0;
+		switch (i)
+		{
+		case 0: // ID or IP or 'brief' or '?'
+			if ( need_help (argv[i]) )
+			{
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "ID" << "delete entry with ID" << CRLF;
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "IP" << "delete entry with IP address" << CRLF;
+				return (0);
+			}
+			else if (ID == 0)
+			{
+				Address.set (argv[0], 0);
+				if (Address.getIP() == 0)
+				{
+					client << "% invalid IP address" << CRLF;
+					return (1);
+				}
+			}
+			break;
+		case 1: // only '?'
+			if ( need_help (argv[i]) )
+			{
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "<cr>" << "delete entry" << CRLF;
+				return 1;
+			}
+		default:
+			client << "% invalid argument" << CRLF;
+			break;
+		}
+	}
+	if ( (ID == 0) && (Address.getIP() == 0) )
+	{
+		client << "% missing argument" << CRLF;
+		return 1;
+	}
+	if ( (ID == 0) && (Address.getIP() != 0) )
+	{	// match IP
+		Entry = fgms->m_WhiteList.Find (Address, "");
+		if (Entry != fgms->m_WhiteList.End())
+		{
+			fgms->m_WhiteList.Delete (Entry);
+		}
+		else
+		{
+			client << "no entry found!" << CRLF;
+			return 1;
+		}
+		return 0;
+	}
+	Entry = fgms->m_WhiteList.FindByID (ID);
+	if (Entry != fgms->m_WhiteList.End())
+	{
+		fgms->m_WhiteList.Delete (Entry);
+	}
+	else
+	{
+		client << "no entry found!" << CRLF;
+		return 1;
+	}
+	client << "deleted!" << CRLF;
+	return 0;
+} // FG_CLI::cmd_whitelist_delete
+
+//////////////////////////////////////////////////
+/**
+ *  @brief Add Whitelist entry
+ *
+ *  ONLY in config mode
+ *
+ *  possible arguments:
+ *  blacklist add ?
+ *  blacklist add TTL IP-Address [reason]
+ *  blacklist add [...] <cr>
+ */
+int
+FG_CLI::cmd_whitelist_add
+(
+	char *command,
+	char *argv[],
+	int argc
+)
+{
+	time_t		TTL = -1;
+	int		I;
+	netAddress	Address;
+	string		Reason;
+	ItList		Entry;
+	for (int i=0; i < argc; i++)
+	{
+		switch (i)
+		{
+		case 0: // must be TTL or '?'
+			if ( need_help (argv[i]) )
+			{
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "TTL" << "Timeout of the new entry in seconds" << CRLF;
+				return (0);
+			}
+			TTL  = StrToNum<size_t> ( argv[0], I );
+			if (I)
+			{
+				client << "% invalid TTL" << CRLF;
+				return (1);
+			}
+			break;
+		case 1: // IP or '?'
+			if ( need_help (argv[i]) )
+			{
+				client << "  " << left << setfill(' ') << setw(22)
+					<< "IP" << "IP address which should be whitelisted" << CRLF;
+				return (0);
+			}
+			Address.set (argv[i], 0);
+			if (Address.getIP() == 0)
+			{
+				client << "% invalid IP address" << CRLF;
+				return (1);
+			}
+			break;
+		default:
+			if ( need_help (argv[i]) )
+			{
+				if (Reason == "")
+				{
+					client << "  " << left << setfill(' ') << setw(22)
+						<< "STRING" << "a reason for whitelisting this IP" << CRLF;
+				}
+				else
+				{
+					client << "  " << left << setfill(' ') << setw(22)
+						<< "<cr>" << "add this IP" << CRLF;
+				}
+				return 0;
+			}
+			Reason += argv[i];
+			if (i+1 < argc)
+				Reason += " ";
+			break;
+		}
+	}
+	FG_ListElement E (Reason);
+	E.Address = Address;
+	size_t NewID;
+	ItList CurrentEntry = fgms->m_WhiteList.Find ( E.Address, "" );
+	if ( CurrentEntry == fgms->m_WhiteList.End() )
+	{       
+		NewID = fgms->m_WhiteList.Add (E, TTL);
+	}
+	else
+	{
+		client << "% entry already exists (ID " << CurrentEntry->ID << ")!" << CRLF;
+		return 1;
+	}
+	client << "added with ID " << NewID << CRLF;
+	return (0);
+} // FG_CLI::cmd_whitelist_add
+
 
 //////////////////////////////////////////////////
 /**
@@ -666,7 +1077,9 @@ FG_CLI::cmd_blacklist_show
 			<< CRLF; if (check_pager()) return 0;
 	}
 	if (EntriesFound)
+	{
 		client << CRLF; if (check_pager()) return 0;
+	}
 	client << EntriesFound << " entries found" << CRLF; if (check_pager()) return 0;
 	if (EntriesFound)
 	{
@@ -678,7 +1091,7 @@ FG_CLI::cmd_blacklist_show
 			<< CRLF; if (check_pager()) return 0;
 	}
 	return 0;
-}
+} // FG_CLI::cmd_blacklist_show
 
 //////////////////////////////////////////////////
 /**
@@ -773,7 +1186,7 @@ FG_CLI::cmd_blacklist_delete
 	}
 	client << "deleted!" << CRLF;
 	return 0;
-}
+} // FG_CLI::cmd_blacklist_delete
 
 //////////////////////////////////////////////////
 /**
@@ -867,7 +1280,7 @@ FG_CLI::cmd_blacklist_add
 	}
 	client << "added with ID " << NewID << CRLF;
 	return (0);
-}
+} // FG_CLI::cmd_blacklist_add
 
 //////////////////////////////////////////////////
 /**
@@ -962,7 +1375,7 @@ FG_CLI::cmd_crossfeed_delete
 	}
 	client << "deleted" << CRLF;
 	return 0;
-}
+} // FG_CLI::cmd_crossfeed_delete
 
 //////////////////////////////////////////////////
 /**
@@ -976,7 +1389,12 @@ FG_CLI::cmd_crossfeed_delete
  *  crossfeed add [...] <cr>
  */
 int
-FG_CLI::cmd_crossfeed_add( char *command, char *argv[],int argc )
+FG_CLI::cmd_crossfeed_add
+(
+	char *command,
+	char *argv[],
+	int argc
+)
 {
 	netAddress	Address;
 	string		Name;
@@ -1052,7 +1470,7 @@ FG_CLI::cmd_crossfeed_add( char *command, char *argv[],int argc )
 	}
 	client << "added with ID " << NewID << CRLF;
 	return (0);
-}
+} // FG_CLI::cmd_crossfeed_add
 
 //////////////////////////////////////////////////
 /**
@@ -1180,7 +1598,9 @@ FG_CLI::cmd_crossfeed_show
 			<< CRLF; if (check_pager()) return 0;
 	}
 	if (EntriesFound)
+	{
 		client << CRLF; if (check_pager()) return 0;
+	}
 	client << EntriesFound << " entries found" << CRLF; if (check_pager()) return 0;
 	if (EntriesFound)
 	{
@@ -1192,7 +1612,7 @@ FG_CLI::cmd_crossfeed_show
 			<< CRLF;
 	}
 	return 0;
-}
+} // FG_CLI::cmd_crossfeed_show
 
 //////////////////////////////////////////////////
 /**
@@ -1353,7 +1773,7 @@ FG_CLI::cmd_relay_show
 		<< " (" << byte_counter ((double) fgms->m_RelayList.BytesRcvd / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 	return 0;
-}
+} // FG_CLI::cmd_relay_show
 
 //////////////////////////////////////////////////
 /**
@@ -1445,7 +1865,7 @@ FG_CLI::cmd_tracker_show
 	client << CRLF;
 	client << "  queue size: " << fgms->m_Tracker->msg_queue.size() << " messages" << CRLF;
 	return 0;
-}
+} // FG_CLI::cmd_tracker_show
 
 //////////////////////////////////////////////////
 /**
@@ -1540,7 +1960,7 @@ FG_CLI::cmd_relay_delete
 	}
 	client << "deleted" << CRLF;
 	return 0;
-}
+} // FG_CLI::cmd_relay_delete
 
 //////////////////////////////////////////////////
 /**
@@ -1631,7 +2051,7 @@ FG_CLI::cmd_relay_add
 	}
 	client << "added with ID " << NewID << CRLF;
 	return (0);
-}
+} // FG_CLI::cmd_relay_add
 
 //////////////////////////////////////////////////
 /**
@@ -1821,6 +2241,12 @@ FG_CLI::cmd_user_show
 				<< "ERROR" << Player.Error
 				<< CRLF; if (check_pager()) return 0;
 		}
+		client << "         " << left << setfill(' ') << setw(15)
+			<< "protocoll" << Player.ProtoMajor << "." << Player.ProtoMinor
+			<< CRLF; if (check_pager()) return 0;
+		client << "         " << left << setfill(' ') << setw(15)
+			<< "radar range" << Player.RadarRange
+			<< CRLF; if (check_pager()) return 0;
 		int expires = Player.Timeout - (now - Player.LastSeen);
 		client << "         " << left << setfill(' ') << setw(15)
 			<< "entered" << timestamp_to_days (Player.JoinTime) << " ago"
@@ -1834,11 +2260,11 @@ FG_CLI::cmd_user_show
 		client << "         " << left << setfill(' ') << setw(15)
 			<< "using model" << Player.ModelName
 			<< CRLF; if (check_pager()) return 0;
-		client << "         " << left << setfill(' ') << setw(15)
-			<< "real origin" << Player.Origin
-			<< CRLF; if (check_pager()) return 0;
 		if (Player.IsLocal)
 		{
+			client << "         " << left << setfill(' ') << setw(15)
+				<< "real origin" << Player.Origin
+				<< CRLF; if (check_pager()) return 0;
 			client << "         " << left << setfill(' ') << setw(15)
 				<< "sent" << Player.PktsSent << " packets "
 				<< "(" << Player.PktsSent / difftime << "/s)"
@@ -1846,6 +2272,7 @@ FG_CLI::cmd_user_show
 				<< " (" << byte_counter ((double) Player.BytesSent / difftime) << "/s)"
 				<< CRLF; if (check_pager()) return 0;
 		}
+
 		client << "         " << left << setfill(' ') << setw(15)
 			<< "rcvd" << Player.PktsRcvd << " packets "
 			<< "(" << Player.PktsRcvd / difftime << "/s)"
@@ -1877,7 +2304,7 @@ FG_CLI::cmd_user_show
 			<< CRLF; if (check_pager()) return 0;
 	}
 	return 0;
-}
+} // FG_CLI::cmd_user_show
 
 int
 FG_CLI::cmd_NOT_IMPLEMENTED

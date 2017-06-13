@@ -200,10 +200,10 @@ ProcessConfig ( const string& ConfigName )
 	{
 		Servant.SetBindAddress ( Val );
 	}
-	Val = Config.Get ( "server.domain" );
+	Val = Config.Get ( "server.FQDN" );
 	if ( Val != "" )
 	{
-		Servant.Setdomain ( Val );
+		Servant.SetFQDN ( Val );
 	}
 	Val = Config.Get ( "server.port" );
 	if ( Val != "" )
@@ -211,7 +211,9 @@ ProcessConfig ( const string& ConfigName )
 		Servant.SetDataPort ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for DataPort: '" << optarg << "'" );
+			SG_LOG ( SG_SYSTEMS, SG_ALERT,
+			  "invalid value for DataPort: '" << optarg << "'"
+			);
 			exit ( 1 );
 		}
 	}
@@ -221,11 +223,13 @@ ProcessConfig ( const string& ConfigName )
 		Servant.SetTelnetPort ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for TelnetPort: '" << optarg << "'" );
+			SG_LOG ( SG_SYSTEMS, SG_ALERT,
+			  "invalid value for TelnetPort: '" << optarg << "'"
+			);
 			exit ( 1 );
 		}
 	}
-    Val = Config.Get ( "server.admin_cli" );
+	Val = Config.Get ( "server.admin_cli" );
 	if ( Val != "" )
 	{
 		if ( ( Val == "on" ) || ( Val == "true" ) )
@@ -238,17 +242,21 @@ ProcessConfig ( const string& ConfigName )
 		}
 		else
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "unknown value for 'server.admin_cli'!" << " in file " << ConfigName );
+			SG_LOG ( SG_SYSTEMS, SG_ALERT,
+			  "unknown value for 'server.admin_cli'!"
+			  << " in file " << ConfigName
+			);
 		}
-    }
-
+	}
 	Val = Config.Get ( "server.admin_port" );
 	if ( Val != "" )
 	{
 		Servant.SetAdminPort ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for AdminPort: '" << optarg << "'" );
+			SG_LOG ( SG_SYSTEMS, SG_ALERT,
+			  "invalid value for AdminPort: '" << optarg << "'"
+			);
 			exit ( 1 );
 		}
 	}
@@ -273,17 +281,35 @@ ProcessConfig ( const string& ConfigName )
 		Servant.SetOutOfReach ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for OutOfReach: '" << optarg << "'" );
+			SG_LOG ( SG_SYSTEMS, SG_ALERT,
+			  "invalid value for out_of_reach: '" << optarg << "'"
+			);
 			exit ( 1 );
 		}
 	}
+	Val = Config.Get ( "server.max_radar_range" );
+	if ( Val != "" )
+	{
+		Servant.SetMaxRadarRange ( StrToNum<int> ( Val.c_str (), E ) );
+		if ( E )
+		{
+			SG_LOG ( SG_SYSTEMS, SG_ALERT,
+			  "invalid value for max_radar_range: '" << optarg
+			  << "'"
+			);
+			exit ( 1 );
+		}
+	}
+
 	Val = Config.Get ( "server.playerexpires" );
 	if ( Val != "" )
 	{
 		Servant.SetPlayerExpires ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for Expire: '" << optarg << "'" );
+			SG_LOG ( SG_SYSTEMS, SG_ALERT,
+			  "invalid value for Expire: '" << optarg << "'"
+			);
 			exit ( 1 );
 		}
 	}
@@ -305,7 +331,10 @@ ProcessConfig ( const string& ConfigName )
 		}
 		else
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "unknown value for 'server.daemon'!" << " in file " << ConfigName );
+			SG_LOG ( SG_SYSTEMS, SG_ALERT,
+			  "unknown value for 'server.daemon'!"
+			  << " in file " << ConfigName
+			);
 		}
 	}
 	Val = Config.Get ( "server.tracked" );
@@ -313,7 +342,8 @@ ProcessConfig ( const string& ConfigName )
 	{
 		string  Server;
 		int     Port;
-		bool    tracked;
+		bool    tracked = false;
+
 		if ( Val == "true" )
 		{
 			tracked = true;
@@ -322,7 +352,10 @@ ProcessConfig ( const string& ConfigName )
 			Port = StrToNum<int> ( Val.c_str (), E );
 			if ( E )
 			{
-				SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for tracking_port: '" << Val << "'" );
+				SG_LOG ( SG_SYSTEMS, SG_ALERT,
+				  "invalid value for tracking_port: '"
+				  << Val << "'"
+				);
 				exit ( 1 );
 			}
 			if ( tracked && ( Servant.AddTracker ( Server, Port, tracked ) != FG_SERVER::SUCCESS ) ) // set master m_IsTracked
@@ -331,11 +364,6 @@ ProcessConfig ( const string& ConfigName )
 				exit ( 1 ); // do NOT continue if a requested 'tracker' FAILED
 			}
 		}
-		else
-		{
-			tracked = false;
-		}
-
 	}
 	Val = Config.Get ( "server.is_hub" );
 	if ( Val != "" )
@@ -374,7 +402,10 @@ ProcessConfig ( const string& ConfigName )
 			Port = StrToNum<int> ( Val.c_str(), E );
 			if ( E )
 			{
-				SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for RelayPort: '" << Val << "'" );
+				SG_LOG ( SG_SYSTEMS, SG_ALERT,
+				  "invalid value for RelayPort: '"
+				  << Val << "'"
+				);
 				exit ( 1 );
 			}
 		}
@@ -414,7 +445,10 @@ ProcessConfig ( const string& ConfigName )
 			Port = StrToNum<int> ( Val.c_str(), E );
 			if ( E )
 			{
-				SG_LOG ( SG_SYSTEMS, SG_ALERT, "invalid value for crossfeed.port: '" << Val << "'" );
+				SG_LOG ( SG_SYSTEMS, SG_ALERT,
+				  "invalid value for crossfeed.port: '"
+				  << Val << "'"
+				);
 				exit ( 1 );
 			}
 		}
@@ -429,6 +463,35 @@ ProcessConfig ( const string& ConfigName )
 			MoreToRead = false;
 		}
 	}
+
+	//////////////////////////////////////////////////
+	//      read the list of whitelisted IPs
+	//      (a crossfeed might list the sender here
+	//      to avoid blacklisting without defining the
+	//      sender as a relay)
+	//////////////////////////////////////////////////
+	MoreToRead  = true;
+	Section = "whitelist";
+	Var    = "";
+	Val    = "";
+	if ( ! Config.SetSection ( Section ) )
+	{
+		MoreToRead = false;
+	}
+	while ( MoreToRead )
+	{
+		Var = Config.GetName ();
+		Val = Config.GetValue();
+		if ( Var == "whitelist" )
+		{
+			Servant.AddWhitelist ( Val.c_str() );
+		}
+		if ( Config.SecNext () == 0 )
+		{
+			MoreToRead = false;
+		}
+	}
+
 	//////////////////////////////////////////////////
 	//      read the list of blacklisted IPs
 	//////////////////////////////////////////////////
@@ -446,13 +509,15 @@ ProcessConfig ( const string& ConfigName )
 		Val = Config.GetValue();
 		if ( Var == "blacklist" )
 		{
-			Servant.AddBlacklist ( Val.c_str(), "static config entry", 0 );
+			Servant.AddBlacklist ( Val.c_str(),
+			  "static config entry", 0 );
 		}
 		if ( Config.SecNext () == 0 )
 		{
 			MoreToRead = false;
 		}
 	}
+
 	//////////////////////////////////////////////////
 	return ( true );
 } // ProcessConfig ( const string& ConfigName )
@@ -654,7 +719,9 @@ main ( int argc, char* argv[] )
 	ReadConfigs ();
 	if ( !bHadConfig )
 	{
-		SG_LOG ( SG_SYSTEMS, SG_ALERT, "No configuration file '" << DEF_CONF_FILE << "' found!" );
+		SG_LOG ( SG_SYSTEMS, SG_ALERT,
+		  "No configuration file '" << DEF_CONF_FILE << "' found!"
+		);
 		exit ( 1 );
 	}
 #ifndef _MSC_VER

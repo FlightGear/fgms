@@ -371,7 +371,7 @@ mT_FG_List<T>::Find( const netAddress& Address, const string& Name)
 				RetElem = Element;
 			}
 		}
-		else
+		/*else Temporary removed by Hazuki on 2016.11.19 (Duplicated with CheckTTL function)
 		{
 			if ((Element->Timeout == 0) || (this->Name == "Users"))
 			{	// never times out
@@ -389,7 +389,7 @@ mT_FG_List<T>::Find( const netAddress& Address, const string& Name)
 				Element = Elements.erase (Element);
 				continue;
 			}
-		}
+		}*/
 		Element++;
 	}
 	return RetElem;
@@ -559,9 +559,9 @@ mT_FG_List<T>::CheckTTL( int position )
 	{
 		SG_LOG ( SG_FGMS, SG_INFO,
 		  this->Name << ": TTL exceeded for "
-		  << Element->Name << " "
+		  << Element->Name << "@"
 		  << Element->Address.getHost() << " "
-		  << "after " << diff_to_days (Element->LastSeen - Element->JoinTime)
+		 // << "after " << diff_to_days (Element->LastSeen - Element->JoinTime)
 		  );
 		  pthread_mutex_unlock ( & m_ListMutex );
 		  return false;

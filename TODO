@@ -1,4 +1,9 @@
-- rewrite logstream and make it thread-safe
+- precompile list of clients in a list of strings at regular intervals,
+  show this list on telnet port
+- make relay list available via telnet
+- let relays introduce themself (name, location, email)
+- create an IRC like chat protocoll
+- fgms git repository back to SF?
 - implement server to server communication
   special messages for server internal purposes
 - rate limit clients

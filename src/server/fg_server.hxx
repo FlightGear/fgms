@@ -102,15 +102,17 @@ public:
 	void  SetAdminEnable ( string Enable );
 	void  SetPlayerExpires ( int Seconds );
 	void  SetOutOfReach ( int OutOfReach );
+	void  SetMaxRadarRange ( int MaxRange );
 	void  SetHub ( bool IamHUB );
 	void  SetLog ( int Facility, int Priority );
 	void  SetLogfile ( const std::string& LogfileName );
 	void  SetServerName ( const std::string& ServerName );
 	void  SetBindAddress ( const std::string& BindAddress );
-	void  Setdomain( const std::string& domain );
+	void  SetFQDN( const std::string& FQDN );
 	void  AddRelay ( const string& Server, int Port );
 	void  AddCrossfeed ( const string& Server, int Port );
 	int   AddTracker ( const string& Server, int Port, bool IsTracked );
+	void  AddWhitelist  ( const string& DottedIP );
 	void  AddBlacklist  ( const string& DottedIP, const string& Reason, time_t Timeout = 10 );
 	void  CloseTracker ();
 	int   check_files();
@@ -145,13 +147,14 @@ protected:
 	int		m_TrackingPort;
 	int		m_PlayerExpires;
 	int		m_PlayerIsOutOfReach;
+	int		m_MaxRadarRange;
 	string		m_AdminUser;
 	string		m_AdminPass;
 	string		m_AdminEnable;
 	ofstream	m_LogFile;
 	string		m_LogFileName;
 	string		m_BindAddress;
-	string		m_domain;
+	string		m_FQDN;
 	size_t		m_NumMaxClients;
 	size_t		m_LocalClients;
 	size_t		m_RemoteClients;
@@ -166,6 +169,7 @@ protected:
 	netSocket*	m_AdminSocket;
 	mT_IP2Relay	m_RelayMap;
 	FG_List		m_CrossfeedList;
+	FG_List		m_WhiteList;
 	FG_List		m_BlackList;
 	FG_List		m_RelayList;
 	PlayerList	m_PlayerList;
@@ -176,14 +180,15 @@ protected:
 	time_t		m_UpdateTrackerFreq;
 	bool		m_WantExit;
 
-    //////////////////////////////////////////////////
-    bool    m_useExitFile, m_useResetFile, m_useStatFile; // 20150619:0.11.9: be able to disable these functions
+	//////////////////////////////////////////////////
+	bool    m_useExitFile, m_useResetFile, m_useStatFile; // 20150619:0.11.9: be able to disable these functions
 	//////////////////////////////////////////////////
 	//
 	//  statistics
 	//
 	//////////////////////////////////////////////////
 	size_t		m_PacketsReceived;	// rw data packet received
+	size_t		m_PingReceived;		// rw ping packets received
 	size_t		m_BlackRejected;	// in black list
 	size_t		m_PacketsInvalid;	// invalid packet
 	size_t		m_UnknownRelay;		// unknown relay
