@@ -170,12 +170,12 @@ endif(WIN32)
 set( MultiPlayer_SRCS src/flightgear/MultiPlayer/tiny_xdr.cxx )
 set( MultiPlayer_HDRS src/flightgear/MultiPlayer/tiny_xdr.hxx 
     src/flightgear/MultiPlayer/mpmessages.hxx )
-add_library( MultiPlayer ${LIB_TYPE} ${MultiPlayer_SRCS} ${MultiPlayer_HDRS} )
+add_library( Multiplayer ${LIB_TYPE} ${MultiPlayer_SRCS} ${MultiPlayer_HDRS} )
 # NO INSTALL [noinst_LIBRARIES]
 if(WIN32)
-    list(APPEND add_LIBS MultiPlayer)
+    list(APPEND add_LIBS Multiplayer)
 else(WIN32)
-    list(APPEND add_LIBS -lMultiPlayer)
+    list(APPEND add_LIBS -lMultiplayer)
 endif(WIN32)
 
 #### add_subdirectory( src/plib )
@@ -191,7 +191,7 @@ else(WIN32)
 endif(WIN32)
 
 #### add_subdirectory( src/libcli )
-# Project [plib] [Static Library] [noinst_LIBRARIES], with 1 sources. 1 hdrs.
+# Project [libcli] [Static Library] [noinst_LIBRARIES], with 1 sources. 1 hdrs.
 set( libcli_SRCS
     src/libcli/debug.cxx
     src/libcli/filter.cxx
