@@ -1471,7 +1471,7 @@ FG_SERVER::HandlePacket
 		if ( MsgId == CHAT_MSG_ID )
 		{	// apply 'radio' rules
 			// if ( not ReceiverWantsChat( SendingPlayer, *CurrentPlayer ) )
-			if ( not ReceiverWantsData ( SendingPlayer, *CurrentPlayer ) )
+			if ( ! ReceiverWantsData ( SendingPlayer, *CurrentPlayer ) )
 			{
 				CurrentPlayer++;
 				continue;
@@ -1480,7 +1480,7 @@ FG_SERVER::HandlePacket
 		else
 		{
 			// apply 'visibility' rules, for now we apply 'radio' rules
-			if ( not ReceiverWantsData ( SendingPlayer, *CurrentPlayer ) )
+			if ( ! ReceiverWantsData ( SendingPlayer, *CurrentPlayer ) )
 			{
 				CurrentPlayer++;
 				continue;
