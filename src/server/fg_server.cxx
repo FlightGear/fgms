@@ -1328,7 +1328,6 @@ FG_SERVER::HandlePacket
 			return;
 		}
 		m_UnkownMsgID++;
-		return; // if the msg is of unknown type, discard it
 	}
 	//////////////////////////////////////////////////
 	//
