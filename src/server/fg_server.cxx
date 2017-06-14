@@ -202,6 +202,7 @@ FG_SERVER::FG_SERVER
 	// clear stats - should show what type of packet was received
 	m_PacketsReceived	= 0;
 	m_PingReceived		= 0;
+	m_PongReceived		= 0;
 	m_TelnetReceived	= 0;
 	m_AdminReceived		= 0;
 	m_BlackRejected		= 0;  // in black list
@@ -209,7 +210,7 @@ FG_SERVER::FG_SERVER
 	m_UnknownRelay		= 0;  // unknown relay
 	m_RelayMagic		= 0;  // relay magic packet
 	m_PositionData		= 0;  // position data packet
-	m_NotPosData		= 0;
+	m_UnkownMsgID		= 0;
 	// clear totals
 	mT_PacketsReceived	= 0;
 	mT_BlackRejected	= 0;
@@ -218,7 +219,7 @@ FG_SERVER::FG_SERVER
 	mT_PositionData		= 0;
 	mT_TelnetReceived	= 0;
 	mT_RelayMagic		= 0;
-	mT_NotPosData		= 0;
+	mT_UnkownMsgID		= 0;
 	m_CrossFeedFailed	= 0;
 	m_CrossFeedSent		= 0;
 	mT_CrossFeedFailed	= 0;
@@ -1308,7 +1309,6 @@ FG_SERVER::HandlePacket
 	}
 	else
 	{
-		m_NotPosData++;
 		//////////////////////////////////////////////////
 		// handle special packets
 		//////////////////////////////////////////////////
@@ -1320,6 +1320,15 @@ FG_SERVER::HandlePacket
 			m_DataSocket->sendto ( Msg, Bytes, 0, &SenderAddress );
 			return;
 		}
+		else if ( MsgId == FGFS::PONG )
+		{
+			// we should never receive PONGs, but silently
+			// discard them if someone tries to play tricks
+			m_PongReceived++;
+			return;
+		}
+		m_UnkownMsgID++;
+		return; // if the msg is of unknown type, discard it
 	}
 	//////////////////////////////////////////////////
 	//
@@ -1517,7 +1526,7 @@ void FG_SERVER::Show_Stats ( void )
 	mT_UnknownRelay    += m_UnknownRelay;
 	mT_RelayMagic      += m_RelayMagic;
 	mT_PositionData    += m_PositionData;
-	mT_NotPosData      += m_NotPosData;
+	mT_UnkownMsgID     += m_UnkownMsgID;
 	mT_TelnetReceived  += m_TelnetReceived;
 	mT_CrossFeedFailed += m_CrossFeedFailed;
 	mT_CrossFeedSent   += m_CrossFeedSent;
@@ -1543,7 +1552,7 @@ void FG_SERVER::Show_Stats ( void )
 	           m_UnknownRelay << " RD=" <<
 	           m_RelayMagic << " PD=" <<
 	           m_PositionData << " NP=" <<
-	           m_NotPosData << " CF=" <<
+	           m_UnkownMsgID << " CF=" <<
 	           m_CrossFeedSent << "/" << m_CrossFeedFailed << " TN=" <<
 	           m_TelnetReceived
 	         );
@@ -1554,7 +1563,7 @@ void FG_SERVER::Show_Stats ( void )
 	           mT_UnknownRelay << " RD=" <<
 	           mT_RelayMagic << " PD=" <<
 	           mT_PositionData << " NP=" <<
-	           mT_NotPosData <<  " CF=" <<
+	           mT_UnkownMsgID <<  " CF=" <<
 	           mT_CrossFeedSent << "/" << mT_CrossFeedFailed << " TN=" <<
 	           mT_TelnetReceived << " TC/D/P=" <<
 	           m_TrackerConnect << "/" << m_TrackerDisconnect << "/" << m_TrackerPosition
@@ -1562,7 +1571,7 @@ void FG_SERVER::Show_Stats ( void )
 	// restart 'since' last stat counter
 	m_PacketsReceived = m_BlackRejected = m_PacketsInvalid = 0;
 	m_UnknownRelay = m_PositionData = m_TelnetReceived = 0; // reset
-	m_RelayMagic = m_NotPosData = 0; // reset
+	m_RelayMagic = m_UnkownMsgID = 0; // reset
 	m_CrossFeedFailed = m_CrossFeedSent = 0;
 }
 

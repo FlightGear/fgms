@@ -26,6 +26,7 @@
  * 
  */
 
+#include <sstream>
 #include <fg_util.hxx>
 #include <fg_cli.hxx>
 #include <fg_common.hxx>
@@ -60,12 +61,13 @@ FG_CLI::setup
 	// general setup
 	//////////////////////////////////////////////////
 	set_hostname (this->fgms->m_ServerName.c_str());
-	set_banner (
-		"\r\n"
-		"------------------------------------------------\r\n"
-		"FlightGear Multiplayer Server CLI\r\n"
-		"------------------------------------------------\r\n"
-	);
+	std::stringstream banner;
+	banner	<< "\r\n"
+		<< "------------------------------------------------\r\n"
+		<< "FlightGear Multiplayer Server CLI\r\n"
+		<< "This is " << fgms->m_ServerName << " (" << fgms->m_FQDN << ")\r\n"
+		<< "------------------------------------------------\r\n";
+	set_banner ( banner.str() );
 	//////////////////////////////////////////////////
 	// setup authentication (if required)
 	//////////////////////////////////////////////////
@@ -377,7 +379,8 @@ FG_CLI::cmd_show_stats
 	difftime = now - fgms->m_Uptime;
 	cmd_show_version (command, argv, argc);
 	client << CRLF;
-	client << "I have " << fgms->m_BlackList.Size () << " entries in my blacklist"
+	client	<< "I have " << fgms->m_BlackList.Size ()
+		<< " entries in my blacklist"
 		<< CRLF; if (check_pager()) return 0;
 	client << "I have " << fgms->m_CrossfeedList.Size () << " crossfeeds"
 		<< CRLF; if (check_pager()) return 0;
@@ -388,6 +391,7 @@ FG_CLI::cmd_show_stats
 		<< fgms->m_RemoteClients << " remote, "
 		<< fgms->m_NumMaxClients << " max)"
 		<< CRLF; if (check_pager()) return 0;
+
 	client << "Sent counters:" << CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "to crossfeeds:"
@@ -410,12 +414,14 @@ FG_CLI::cmd_show_stats
 		<< " / " << byte_counter (fgms->m_PlayerList.BytesSent)
 		<< " (" << byte_counter ((double) fgms->m_PlayerList.BytesSent / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
+
 	client << "Receive counters:" << CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "total:" <<  fgms->m_PacketsReceived
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "pings:" <<  fgms->m_PingReceived
+		<< " (" << fgms->m_PongReceived << " pongs)"
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "errors:"
@@ -426,7 +432,7 @@ FG_CLI::cmd_show_stats
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "valid data:"
 		<< "pos data:" << fgms->m_PositionData
-		<< " other:" << fgms->m_NotPosData
+		<< " other:" << fgms->m_UnkownMsgID
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "tracker:"
@@ -515,6 +521,12 @@ FG_CLI::cmd_show_settings
 		client << "<cr>" << CRLF;
 		return (0);
 	}
+	std::string bind_addr;
+
+	if ( fgms->m_BindAddress == "" )
+		bind_addr = "*";
+	else
+		bind_addr = fgms->m_BindAddress;
 	cmd_show_version (command, argv, argc);
 	client << CRLF;
 	client << "current settings:" << CRLF; if (check_pager()) return 0;
@@ -526,9 +538,6 @@ FG_CLI::cmd_show_settings
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "admin port:" << fgms->m_AdminPort
-		<< CRLF; if (check_pager()) return 0;
-	client << "  " << left << setfill(' ') << setw(22)
-		<< "tracking port:" << fgms->m_TrackingPort
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "player expires:" << fgms->m_PlayerExpires
@@ -543,7 +552,7 @@ FG_CLI::cmd_show_settings
 		<< "logfile:" << fgms->m_LogFileName
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
-		<< "bind address:" << fgms->m_BindAddress
+		<< "bind address:" << bind_addr
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "FQDN:" << fgms->m_FQDN

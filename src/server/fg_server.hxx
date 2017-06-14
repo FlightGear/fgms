@@ -144,7 +144,6 @@ protected:
 	int		m_ListenPort;
 	int		m_TelnetPort;
 	int		m_AdminPort;
-	int		m_TrackingPort;
 	int		m_PlayerExpires;
 	int		m_PlayerIsOutOfReach;
 	int		m_MaxRadarRange;
@@ -189,17 +188,18 @@ protected:
 	//////////////////////////////////////////////////
 	size_t		m_PacketsReceived;	// rw data packet received
 	size_t		m_PingReceived;		// rw ping packets received
+	size_t		m_PongReceived;		// rw pong packets received
 	size_t		m_BlackRejected;	// in black list
 	size_t		m_PacketsInvalid;	// invalid packet
 	size_t		m_UnknownRelay;		// unknown relay
 	size_t		m_RelayMagic;		// known relay packet
 	size_t		m_PositionData;		// position data packet
-	size_t		m_NotPosData;		// packet NOT pos data
+	size_t		m_UnkownMsgID;		// packet with unknown data
 	size_t		m_TelnetReceived;
 	size_t		m_AdminReceived;
 	size_t		mT_PacketsReceived, mT_BlackRejected, mT_PacketsInvalid;
 	size_t		mT_UnknownRelay, mT_PositionData, mT_TelnetReceived;
-	size_t		mT_RelayMagic, mT_NotPosData;
+	size_t		mT_RelayMagic, mT_UnkownMsgID;
 	size_t		m_CrossFeedFailed, m_CrossFeedSent;
 	size_t		mT_CrossFeedFailed, mT_CrossFeedSent;
 	size_t		m_TrackerConnect, m_TrackerDisconnect,m_TrackerPosition;

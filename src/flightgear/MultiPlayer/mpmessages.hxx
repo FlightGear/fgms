@@ -81,9 +81,6 @@ typedef enum
 	/// a ping packet is send verbatim back to sender
 	PING,	// request
 	PONG,	// answer
-	/// reply with a server info packet
-	RQ_SERVER_INFO,	// request
-	SERVER_INFO,	// answer
 } MSG_ID;
 
 } // namspace FGFS
