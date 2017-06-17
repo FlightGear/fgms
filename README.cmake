@@ -1,4 +1,4 @@
-file: README.cmake - 20150307 - 20150216 - created 20120704
+file: README.cmake - 20170617 - 20150307 - 20150216 - created 20120704
 
 This project is now only configured by cmake, and then using 
 either the default or the chosen build generation.
@@ -13,7 +13,6 @@ Prerequisites:
 1. git - http://git-scm.com/
 2. cmake - http://www.cmake.org/
 3. pthread - http://en.wikipedia.org/wiki/POSIX_Threads
-4. PostgreSQL - [optional] http://www.postgresql.org/ - only for tracker build
 
 Building:
 
@@ -140,22 +139,8 @@ to the cmake command.
 
 fgtracker:
 
-There is also a cmake OPTION to generate the fgtracker 
-binaries - fgt_server and fgt_client. This is controls by 
-adding the following to the cmake command -
- -DBUILD_TRACKER
-
-But be aware, this fgtracker presently has a dependency 
-on PostgreSQL, see http://www.postgresql.org/, so you must 
-install this package, configure, and get the postgresql server 
-running first.
-
-Also then cmake uses find_package(PostgreSQL REQUIRED). In
-this case, so you MUST have FindPostgreSQL.cmake installed, 
-and this is not always done by default.
-
-The files that need to be found are the header 'libpq-fe.h',
-and the 'pg' library.
+As at 20170617, fgtracker has been rewritten and its source code
+is hosted at https://gitlab.com/fgms/FGTracker
 
 shared libraries:
 
@@ -171,4 +156,5 @@ Geoff.
 reports _at_ geoffair _dot_ info
 20150307
 
+Edited by Hazuki on 20170617 - remove fgtracker
 # eof
