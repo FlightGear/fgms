@@ -1,3 +1,11 @@
+0.13.2
+	[FIX]	fixed a major bug which prevented packet forwarding
+		at all.
+
+0.13.1
+	[FIX]   fixed a minor bug which prevented
+		forwarding of packets with MsgID != FGFS::POS_DATA
+
 0.13.0
 	[NEW]	honour client provided radar range
 	[NEW]	show client provided radar range in cli
