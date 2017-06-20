@@ -139,8 +139,8 @@ to the cmake command.
 
 fgtracker:
 
-As at 20170617, fgtracker has been rewritten and its source code
-is hosted at https://gitlab.com/fgms/FGTracker
+fgtracker has been rewritten and its source code
+is hosted as sub-project of FGMS.
 
 shared libraries:
 
