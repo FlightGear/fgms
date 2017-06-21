@@ -43,15 +43,15 @@ using namespace std;
 #include <time.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <plib/netSocket.h>
-#include "daemon.hxx"
-#include "fg_geometry.hxx"
+#include <fglib/netsocket.hxx>
+#include <fglib/fg_geometry.hxx>
+#include <fglib/fg_version.hxx>
 
 #define CONNECT    0
 #define DISCONNECT 1
 #define UPDATE     2
 
-void signal_handler(int s);
+void signal_handler ( int s );
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -61,11 +61,11 @@ void signal_handler(int s);
 class FG_TRACKER
 {
 public:
-	
+
 	//////////////////////////////////////////////////
 	//
 	//  private variables
-	//  
+	//
 	//////////////////////////////////////////////////
 	int	m_TrackerPort;
 	int	m_PingInterval;
@@ -75,11 +75,13 @@ public:
 	string	m_domain;
 	string	m_ProtocolVersion;
 	bool	m_identified;			/* If fgtracker identified this fgms */
-	netSocket* m_TrackerSocket;
+	NetSocket* m_TrackerSocket;
+	FG_VERSION m_version;
 
 	typedef std::vector<std::string> vMSG;	/* string vector */
 	typedef vMSG::iterator VI;		/* string vector iterator */
-	typedef struct buffsock { /*socket buffer*/
+	typedef struct buffsock   /*socket buffer*/
+	{
 		char* buf;
 		size_t maxlen;
 		size_t curlen;
@@ -94,37 +96,53 @@ public:
 	bool	WantExit;
 	// static, so it can be set from outside (signal handler)
 	static bool	m_connected;			/* If connected to fgtracker */
-	static inline void set_connected ( bool b ) { m_connected = b; };
-	static inline bool is_connected () { return m_connected; };
+	static inline void set_connected ( bool b )
+	{
+		m_connected = b;
+	};
+	static inline bool is_connected ()
+	{
+		return m_connected;
+	};
 	//////////////////////////////////////////////////
 	//
 	//  constructors
 	//
 	//////////////////////////////////////////////////
-	FG_TRACKER (int port, string server, string m_ServerName, string m_domain);
+	FG_TRACKER ( int port, string server, string m_ServerName, string m_domain );
 	~FG_TRACKER ();
 
+	inline void set_version ( const FG_VERSION& v )
+	{
+		m_version.set_num ( v.num() );
+	};
 	//////////////////////////////////////////////////
 	//
 	//  public methods
 	//
 	//////////////////////////////////////////////////
 	int	Loop ();
-	void	AddMessage ( const string & message );
-	
-	/** 
+	void	AddMessage ( const string& message );
+
+	/**
 	 * @brief Return the server of the tracker
-	 * @retval string Return tracker server as string 
+	 * @retval string Return tracker server as string
 	 */
-	string	GetTrackerServer () { return m_TrackerServer; };
-	
-	/** 
-	 * @brief Return the port no of the tracker 
+	inline string GetTrackerServer ()
+	{
+		return m_TrackerServer;
+	};
+
+	/**
+	 * @brief Return the port no of the tracker
 	 * @retval int Port Number
 	 */
-	int	GetTrackerPort () { return m_TrackerPort; };
+	inline int GetTrackerPort ()
+	{
+		return m_TrackerPort;
+	};
 	pthread_t GetThreadID();
-	
+
 
 	//////////////////////////////////////////////////
 	//
@@ -135,12 +153,12 @@ public:
 	void	WriteQueue ();
 	void	ReadQueue ();
 	void 	ReQueueSentMsg ();
-	void 	buffsock_free(buffsock_t* bs);
+	void 	buffsock_free ( buffsock_t* bs );
 	void	CheckTimeout();
-	int		TrackerWrite (const string& str);
-	void 	TrackerRead (buffsock_t* bs);
+	int		TrackerWrite ( const string& str );
+	void 	TrackerRead ( buffsock_t* bs );
 	void 	ReplyFromServer ();
-	
+
 	//////////////////////////////////////////////////
 	//	stats
 	//////////////////////////////////////////////////

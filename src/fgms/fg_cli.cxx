@@ -27,13 +27,12 @@
  */
 
 #include <sstream>
-#include <fg_util.hxx>
+#include <fglib/fg_util.hxx>
 #include <fg_cli.hxx>
-#include <fg_common.hxx>
 
 FG_CLI::FG_CLI
 (
-	FG_SERVER* fgms,
+	FGMS* fgms,
 	int fd
 ): CLI(fd)
 {
@@ -637,7 +636,8 @@ FG_CLI::cmd_show_version
 	else
 		s = "LEAVE";
 	client << "This is " << fgms->m_ServerName << " (" << fgms->m_FQDN << ")" << CRLF;
-	client << "FlightGear Multiplayer " << s << " Server version " << VERSION << CRLF; 
+	client << "FlightGear Multiplayer " << s << " Server version "
+	       << fgms->m_version.str() << CRLF; 
 	client << "using protocol version v"
 		<< fgms->m_ProtoMajorVersion << "." << fgms->m_ProtoMinorVersion << CRLF;
 	if (fgms->m_IsTracked)
@@ -668,7 +668,7 @@ FG_CLI::cmd_whitelist_show
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	netAddress	Address ("0.0.0.0", 0);
+	NetAddr		Address;
 	size_t		EntriesFound = 0;
 	for (int i=0; i < argc; i++)
 	{
@@ -692,8 +692,8 @@ FG_CLI::cmd_whitelist_show
 			}
 			else if (ID == 0)
 			{
-				Address.set (argv[0], 0);
-				if (Address.getIP() == 0)
+				Address.Assign (argv[0], 0);
+				if ( ! Address.IsValid() )
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -727,7 +727,7 @@ FG_CLI::cmd_whitelist_show
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_WhiteList[i];
-		if ( (ID == 0) && (Address.getIP() != 0) )
+		if ( (ID == 0) && (Address.IsValid()) )
 		{	// only list matching entries
 			if (Entry.Address != Address)
 				continue;
@@ -739,7 +739,7 @@ FG_CLI::cmd_whitelist_show
 		}
 		EntriesFound++;
 		client << "ID " << Entry.ID << ": "
-			<< Entry.Address.getHost() << " : " << Entry.Name
+			<< Entry.Address.ToString() << " : " << Entry.Name
 			<< CRLF; if (check_pager()) return 0;
 		client << "  entered      : " << timestamp_to_datestr (Entry.JoinTime)
 			<< CRLF; if (check_pager()) return 0;
@@ -787,7 +787,7 @@ FG_CLI::cmd_whitelist_delete
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	netAddress	Address;
+	NetAddr		Address;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
 	{
@@ -807,8 +807,8 @@ FG_CLI::cmd_whitelist_delete
 			}
 			else if (ID == 0)
 			{
-				Address.set (argv[0], 0);
-				if (Address.getIP() == 0)
+				Address.Assign (argv[0], 0);
+				if (! Address.IsValid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -827,12 +827,12 @@ FG_CLI::cmd_whitelist_delete
 			break;
 		}
 	}
-	if ( (ID == 0) && (Address.getIP() == 0) )
+	if ( (ID == 0) && (! Address.IsValid()) )
 	{
 		client << "% missing argument" << CRLF;
 		return 1;
 	}
-	if ( (ID == 0) && (Address.getIP() != 0) )
+	if ( (ID == 0) && (Address.IsValid()) )
 	{	// match IP
 		Entry = fgms->m_WhiteList.Find (Address, "");
 		if (Entry != fgms->m_WhiteList.End())
@@ -881,7 +881,7 @@ FG_CLI::cmd_whitelist_add
 {
 	time_t		TTL = -1;
 	int		I;
-	netAddress	Address;
+	NetAddr		Address;
 	string		Reason;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
@@ -909,8 +909,8 @@ FG_CLI::cmd_whitelist_add
 					<< "IP" << "IP address which should be whitelisted" << CRLF;
 				return (0);
 			}
-			Address.set (argv[i], 0);
-			if (Address.getIP() == 0)
+			Address.Assign (argv[i], 0);
+			if (! Address.IsValid())
 			{
 				client << "% invalid IP address" << CRLF;
 				return (1);
@@ -976,7 +976,7 @@ FG_CLI::cmd_blacklist_show
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	netAddress	Address ("0.0.0.0", 0);
+	NetAddr		Address;
 	bool		Brief = false;
 	size_t		EntriesFound = 0;
 	for (int i=0; i < argc; i++)
@@ -1007,8 +1007,8 @@ FG_CLI::cmd_blacklist_show
 			}
 			else if (ID == 0)
 			{
-				Address.set (argv[0], 0);
-				if (Address.getIP() == 0)
+				Address.Assign (argv[0], 0);
+				if (! Address.IsValid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -1051,7 +1051,7 @@ FG_CLI::cmd_blacklist_show
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_BlackList[i];
-		if ( (ID == 0) && (Address.getIP() != 0) )
+		if ( (ID == 0) && (Address.IsValid()) )
 		{	// only list matching entries
 			if (Entry.Address != Address)
 				continue;
@@ -1063,7 +1063,7 @@ FG_CLI::cmd_blacklist_show
 		}
 		EntriesFound++;
 		client << "ID " << Entry.ID << ": "
-			<< Entry.Address.getHost() << " : " << Entry.Name
+			<< Entry.Address.ToString() << " : " << Entry.Name
 			<< CRLF; if (check_pager()) return 0;
 		if (Brief == true)
 		{
@@ -1124,7 +1124,7 @@ FG_CLI::cmd_blacklist_delete
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	netAddress	Address;
+	NetAddr		Address;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
 	{
@@ -1144,8 +1144,8 @@ FG_CLI::cmd_blacklist_delete
 			}
 			else if (ID == 0)
 			{
-				Address.set (argv[0], 0);
-				if (Address.getIP() == 0)
+				Address.Assign (argv[0], 0);
+				if (! Address.IsValid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -1164,12 +1164,12 @@ FG_CLI::cmd_blacklist_delete
 			break;
 		}
 	}
-	if ( (ID == 0) && (Address.getIP() == 0) )
+	if ( (ID == 0) && (! Address.IsValid()) )
 	{
 		client << "% missing argument" << CRLF;
 		return 1;
 	}
-	if ( (ID == 0) && (Address.getIP() != 0) )
+	if ( (ID == 0) && (Address.IsValid()) )
 	{	// match IP
 		Entry = fgms->m_BlackList.Find (Address, "");
 		if (Entry != fgms->m_BlackList.End())
@@ -1218,7 +1218,7 @@ FG_CLI::cmd_blacklist_add
 {
 	time_t		TTL = -1;
 	int		I;
-	netAddress	Address;
+	NetAddr		Address;
 	string		Reason;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
@@ -1246,8 +1246,8 @@ FG_CLI::cmd_blacklist_add
 					<< "IP" << "IP address which should be blacklisted" << CRLF;
 				return (0);
 			}
-			Address.set (argv[i], 0);
-			if (Address.getIP() == 0)
+			Address.Assign (argv[i], 0);
+			if (! Address.IsValid())
 			{
 				client << "% invalid IP address" << CRLF;
 				return (1);
@@ -1313,7 +1313,7 @@ FG_CLI::cmd_crossfeed_delete
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	netAddress	Address;
+	NetAddr		Address;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
 	{
@@ -1333,8 +1333,8 @@ FG_CLI::cmd_crossfeed_delete
 			}
 			else if (ID == 0)
 			{
-				Address.set (argv[0], 0);
-				if (Address.getIP() == 0)
+				Address.Assign (argv[0], 0);
+				if (! Address.IsValid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -1353,12 +1353,12 @@ FG_CLI::cmd_crossfeed_delete
 			break;
 		}
 	}
-	if ( (ID == 0) && (Address.getIP() == 0) )
+	if ( (ID == 0) && (! Address.IsValid()) )
 	{
 		client << "% missing argument" << CRLF;
 		return 1;
 	}
-	if ( (ID == 0) && (Address.getIP() != 0) )
+	if ( (ID == 0) && (Address.IsValid()) )
 	{	// match IP
 		Entry = fgms->m_CrossfeedList.Find (Address, "");
 		if (Entry != fgms->m_CrossfeedList.End())
@@ -1405,7 +1405,7 @@ FG_CLI::cmd_crossfeed_add
 	int argc
 )
 {
-	netAddress	Address;
+	NetAddr		Address;
 	string		Name;
 	int		Port;
 	int		I;
@@ -1421,8 +1421,8 @@ FG_CLI::cmd_crossfeed_add
 					<< "IP" << "IP address of the crossfeed" << CRLF;
 				return (0);
 			}
-			Address.set (argv[i], 0);
-			if (Address.getIP() == 0)
+			Address.Assign (argv[i], 0);
+			if (! Address.IsValid())
 			{
 				client << "% invalid IP address" << CRLF;
 				return (1);
@@ -1465,7 +1465,7 @@ FG_CLI::cmd_crossfeed_add
 	}
 	FG_ListElement E (Name);
 	E.Address = Address;
-	E.Address.setPort (Port);
+	E.Address.SetPort (Port);
 	size_t NewID;
 	ItList CurrentEntry = fgms->m_CrossfeedList.Find ( E.Address, "" );
 	if ( CurrentEntry == fgms->m_CrossfeedList.End() )
@@ -1502,7 +1502,7 @@ FG_CLI::cmd_crossfeed_show
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	netAddress	Address ("0.0.0.0", 0);
+	NetAddr		Address;
 	bool		Brief = false;
 	size_t		EntriesFound = 0;
 	for (int i=0; i < argc; i++)
@@ -1533,8 +1533,8 @@ FG_CLI::cmd_crossfeed_show
 			}
 			else if (ID == 0)
 			{
-				Address.set (argv[0], 0);
-				if (Address.getIP() == 0)
+				Address.Assign (argv[0], 0);
+				if (! Address.IsValid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -1576,7 +1576,7 @@ FG_CLI::cmd_crossfeed_show
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_CrossfeedList[i];
-		if ( (ID == 0) && (Address.getIP() != 0) )
+		if ( (ID == 0) && (Address.IsValid()) )
 		{	// only list matching entries
 			if (Entry.Address != Address)
 				continue;
@@ -1588,7 +1588,7 @@ FG_CLI::cmd_crossfeed_show
 		}
 		EntriesFound++;
 		client << "ID " << Entry.ID << ": "
-			<< Entry.Address.getHost() << ":" << Entry.Address.getPort()
+			<< Entry.Address.ToString() << ":" << Entry.Address.Port()
 			<< " : " << Entry.Name
 			<< CRLF; if (check_pager()) return 0;
 		if (Brief == true)
@@ -1644,7 +1644,7 @@ FG_CLI::cmd_relay_show
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	netAddress	Address ("0.0.0.0", 0);
+	NetAddr		Address;
 	bool		Brief = false;
 	size_t		EntriesFound = 0;
 	string		Name;
@@ -1678,8 +1678,8 @@ FG_CLI::cmd_relay_show
 			}
 			else if (ID == 0)
 			{
-				Address.set (argv[0], 0);
-				if (Address.getIP() == 0)
+				Address.Assign (argv[0], 0);
+				if (! Address.IsValid())
 				{
 					Name = argv[0];
 				}
@@ -1720,7 +1720,7 @@ FG_CLI::cmd_relay_show
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_RelayList[i];
-		if ( (ID == 0) && (Address.getIP() != 0) )
+		if ( (ID == 0) && (Address.IsValid()) )
 		{	// only list matching entries
 			if (Entry.Address != Address)
 				continue;
@@ -1737,7 +1737,7 @@ FG_CLI::cmd_relay_show
 		}
 		EntriesFound++;
 		client << "ID " << Entry.ID << ": "
-			<< Entry.Address.getHost() << ":" << Entry.Address.getPort()
+			<< Entry.Address.ToString() << ":" << Entry.Address.Port()
 			<< " : " << Entry.Name
 			<< CRLF; if (check_pager()) return 0;
 		if (Brief == true)
@@ -1898,7 +1898,7 @@ FG_CLI::cmd_relay_delete
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	netAddress	Address;
+	NetAddr		Address;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
 	{
@@ -1918,8 +1918,8 @@ FG_CLI::cmd_relay_delete
 			}
 			else if (ID == 0)
 			{
-				Address.set (argv[0], 0);
-				if (Address.getIP() == 0)
+				Address.Assign (argv[0], 0);
+				if (! Address.IsValid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -1938,12 +1938,12 @@ FG_CLI::cmd_relay_delete
 			break;
 		}
 	}
-	if ( (ID == 0) && (Address.getIP() == 0) )
+	if ( (ID == 0) && (! Address.IsValid()) )
 	{
 		client << "% missing argument" << CRLF;
 		return 1;
 	}
-	if ( (ID == 0) && (Address.getIP() != 0) )
+	if ( (ID == 0) && (Address.IsValid()) )
 	{	// match IP
 		Entry = fgms->m_RelayList.Find (Address, "");
 		if (Entry != fgms->m_RelayList.End())
@@ -1990,7 +1990,7 @@ FG_CLI::cmd_relay_add
 	int argc
 )
 {
-	netAddress	Address;
+	NetAddr		Address;
 	string		Name;
 	int		Port;
 	int		I;
@@ -2006,8 +2006,8 @@ FG_CLI::cmd_relay_add
 					<< "IP" << "IP address of the relay" << CRLF;
 				return (0);
 			}
-			Address.set (argv[i], 0);
-			if (Address.getIP() == 0)
+			Address.Assign (argv[i], 0);
+			if (! Address.IsValid())
 			{
 				client << "% invalid IP address" << CRLF;
 				return (1);
@@ -2046,7 +2046,7 @@ FG_CLI::cmd_relay_add
 	}
 	FG_ListElement E (Name);
 	E.Address = Address;
-	E.Address.setPort (Port);
+	E.Address.SetPort (Port);
 	size_t NewID;
 	ItList CurrentEntry = fgms->m_RelayList.Find ( E.Address, "" );
 	if ( CurrentEntry == fgms->m_RelayList.End() )
@@ -2086,7 +2086,7 @@ FG_CLI::cmd_user_show
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	netAddress	Address ("0.0.0.0", 0);
+	NetAddr		Address;
 	string		Name;
 	bool		Brief = false;
 	bool		OnlyLocal = false;
@@ -2128,8 +2128,8 @@ FG_CLI::cmd_user_show
 			}
 			else if (ID == 0)
 			{
-				Address.set (argv[0], 0);
-				if (Address.getIP() == 0)
+				Address.Assign (argv[0], 0);
+				if (! Address.IsValid())
 				{
 					Name = argv[0];
 				}
@@ -2181,7 +2181,7 @@ FG_CLI::cmd_user_show
 		now = time(0);
 		difftime = now - fgms->m_Uptime;
 		Player = fgms->m_PlayerList[i];
-		if ( (ID == 0) && (Address.getIP() != 0) )
+		if ( (ID == 0) && (Address.IsValid()) )
 		{	// only list matching entries
 			if (Player.Address != Address)
 				continue;
@@ -2213,7 +2213,7 @@ FG_CLI::cmd_user_show
 		}
 		else
 		{
-			FG_SERVER::mT_RelayMapIt Relay = fgms->m_RelayMap.find ( Player.Address.getIP() );
+			FGMS::mT_RelayMapIt Relay = fgms->m_RelayMap.find ( Player.Address );
 			if ( Relay != fgms->m_RelayMap.end() )
 			{
 				Origin = Relay->second;

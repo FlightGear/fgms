@@ -41,7 +41,7 @@
 #include <vector>
 #include <simgear/compiler.h>
 #include <simgear/math/SGMath.hxx>
-#include "tiny_xdr.hxx"
+#include "encoding.hxx"
 
 /** @brief  ID  of a "chat" message */
 #define CHAT_MSG_ID             1

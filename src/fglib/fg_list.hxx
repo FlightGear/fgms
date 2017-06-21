@@ -32,11 +32,10 @@
 
 #include <string>
 #include <vector>
-#include <plib/netSocket.h>
 #include <pthread.h>
 #include <fg_geometry.hxx>
-#include <fg_common.hxx>
-
+#include <simgear/debug/logstream.hxx>
+#include <fglib/netaddr.hxx>
 
 //////////////////////////////////////////////////////////////////////
 /** 
@@ -60,7 +59,7 @@ public:
 	/** @brief The callsign (or name) */
 	string		Name;
 	/** @brief The network address of this element */
-	netAddress	Address;
+	NetAddr	Address;
 	/** @brief The time this entry was added to the list */
 	time_t		JoinTime;
 	/** @brief timestamp of last seen packet from this element */
@@ -83,75 +82,6 @@ protected:
 	FG_ListElement ();
 	void assign ( const FG_ListElement& P );
 }; // FG_ListElement
-
-//////////////////////////////////////////////////////////////////////
-/** 
- * @class FG_Player
- * @brief Represent a Player
- * 
- * Player objects are stored in the FG_SERVER::m_PlayerList
- * They are created and added in FG_SERVER::AddClient
- * They are dropped with FG_SERVER::DropClient after expiry time
- * Clients are added even if they have bad data, see FG_SERVER::AddBadClient
- */
-class FG_Player : public FG_ListElement
-{
-public:
-	typedef enum
-	{
-		ATC_NONE,	// not an ATC
-		ATC,		// undefined ATC
-		ATC_DL,		// Clearance Delivery
-		ATC_GN,		// Ground
-		ATC_TW,		// Tower
-		ATC_AP,		// Approach
-		ATC_DE,		// Departure
-		ATC_CT		// Center
-	} ATC_TYPE;
-	string	Origin;
-	/** @brief The password 
-	 *  @warning This is not currently used
-	 */
-	string	Passwd;
-	/** @brief The model name */
-	string	ModelName;
-	/** @brief The last recorded position */
-	Point3D	LastPos;
-	/** @brief The last recorded position in geodectic coordinates (lat/lon/alt) */
-	Point3D	GeodPos;
-	/** @brief The last recorded orientation */
-	Point3D	LastOrientation;
-	/** @brief \b true if this client is directly connected to this \ref fgms instance */
-	bool	IsLocal;
-	/** @brief \b true if this client is an ATC */
-	ATC_TYPE IsATC;
-	/** @brief client provided radar range */
-	uint16_t RadarRange;
-	/** @brief client major protocol version */
-	uint16_t ProtoMajor;
-	/** @brief client minor protocol version */
-	uint16_t ProtoMinor;
-	/** @brief in case of errors the reason is stored here 
-	 * @see FG_SERVER::AddBadClient
-	 */
-	string	Error;    // in case of errors
-	/** @brief \b true if this client has errors
-	 * @see FG_SERVER::AddBadClient
-	 */
-	bool	HasErrors;
-	/** when did we sent updates of this player to inactive relays */
-	time_t	LastRelayedToInactive;
-	/** \b true if we need to send updates to inactive relays */
-	bool	DoUpdate;
-	FG_Player ();
-	FG_Player ( const string& Name );
-	FG_Player ( const FG_Player& P);
-	~FG_Player ();
-	void operator =  ( const FG_Player& P );
-	virtual bool operator ==  ( const FG_Player& P );
-private:
-	void assign ( const FG_Player& P );
-}; // FG_Player
 
 /** 
  * @class mT_FG_List
@@ -180,7 +110,7 @@ public:
 	/** delete an element of this list */
 	ListIterator Delete	( const ListIterator& Element );
 	/** find an element by its IP address */
-	ListIterator Find	( const netAddress& Address, const string& Name = "" );
+	ListIterator Find	( const NetAddr& Address, const string& Name = "" );
 	/** find an element by its Name */
 	ListIterator FindByName	( const string& Name = "" );
 	/** find an element by its ID */
@@ -229,9 +159,7 @@ private:
 };
 
 typedef mT_FG_List<FG_ListElement>		FG_List;
-typedef mT_FG_List<FG_Player>			PlayerList;
 typedef vector<FG_ListElement>::iterator	ItList;
-typedef vector<FG_Player>::iterator		PlayerIt;
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -337,7 +265,7 @@ mT_FG_List<T>::Delete( const ListIterator& Element)
  *
  * Find an element by IP-address (and optionally Name). Automatically
  * removes entries which TTL is expired, with the exception of the 'users'
- * list which entries are deleted in FG_SERVER::HandlePacket()
+ * list which entries are deleted in FGMS::HandlePacket()
  * @param Address IP address of the element
  * @param Name The name (or description) of the element
  * @return iterator pointing to the found element, or End() if element
@@ -345,7 +273,7 @@ mT_FG_List<T>::Delete( const ListIterator& Element)
  */
 template <class T>
 typename vector<T>::iterator
-mT_FG_List<T>::Find( const netAddress& Address, const string& Name)
+mT_FG_List<T>::Find( const NetAddr& Address, const string& Name)
 {
 	ListIterator Element;
 	ListIterator RetElem;
@@ -371,25 +299,6 @@ mT_FG_List<T>::Find( const netAddress& Address, const string& Name)
 				RetElem = Element;
 			}
 		}
-		/*else Temporary removed by Hazuki on 2016.11.19 (Duplicated with CheckTTL function)
-		{
-			if ((Element->Timeout == 0) || (this->Name == "Users"))
-			{	// never times out
-				Element++;
-				continue;
-			}
-			if ( (this->LastRun - Element->LastSeen) > Element->Timeout )
-			{
-				SG_LOG ( SG_FGMS, SG_INFO,
-				  this->Name << ": TTL exceeded for "
-				  << Element->Name << " "
-				  << Element->Address.getHost() << " "
-				  << "after " << diff_to_days (Element->LastSeen - Element->JoinTime)
-				  );
-				Element = Elements.erase (Element);
-				continue;
-			}
-		}*/
 		Element++;
 	}
 	return RetElem;
@@ -560,7 +469,7 @@ mT_FG_List<T>::CheckTTL( int position )
 		SG_LOG ( SG_FGMS, SG_INFO,
 		  this->Name << ": TTL exceeded for "
 		  << Element->Name << "@"
-		  << Element->Address.getHost() << " "
+		  << Element->Address.ToString() << " "
 		 // << "after " << diff_to_days (Element->LastSeen - Element->JoinTime)
 		  );
 		  pthread_mutex_unlock ( & m_ListMutex );

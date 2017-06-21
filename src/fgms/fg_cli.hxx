@@ -35,7 +35,7 @@
 #ifndef FG_CLI_HEADER
 #define FG_CLI_HEADER
 
-#include <fg_server.hxx>
+#include <fgms.hxx>
 #include <libcli.hxx>
 
 using namespace LIBCLI;
@@ -44,7 +44,7 @@ using namespace std;
 class FG_CLI : public CLI
 {
 public:
-	FG_CLI ( FG_SERVER*  fgms, int fd);
+	FG_CLI ( FGMS*  fgms, int fd);
 private:
 	void setup ();
 	//////////////////////////////////////////////////
@@ -89,7 +89,7 @@ private:
 	//////////////////////////////////////////////////
 	int cmd_tracker_show   (  char *command, char *argv[], int argc );
 private:
-	FG_SERVER* fgms;
+	FGMS* fgms;
 	int cmd_NOT_IMPLEMENTED (  char *command, char *argv[], int argc );
 	//////////////////////////////////////////////////
 	//  utility functions

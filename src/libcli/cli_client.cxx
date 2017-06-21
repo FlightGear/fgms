@@ -1,4 +1,3 @@
-//                                                                                                                           
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -82,14 +81,14 @@ Client::Client
 	}
 	else
 	{	// setup telnet session
-		m_socket = new netSocket();
-		m_socket->setHandle (fd);
+		m_socket = new NetSocket();
+		m_socket->SetHandle (fd);
 		const char* negotiate =
 			"\xFF\xFB\x03"	// WILL SUPPRESS GO AHEAD OPTION
 			"\xFF\xFB\x01"	// WILL ECHO
 			"\xFF\xFD\x03"	// DO SUPPRESS GO AHEAD OPTION
 			"\xFF\xFD\x01";	// DO ECHO
-		m_socket->send (negotiate, strlen ( negotiate ), 0 );
+		m_socket->Send (negotiate, strlen ( negotiate ), 0 );
 	}
 } // Client::Client ()
 //////////////////////////////////////////////////////////////////////
@@ -108,7 +107,7 @@ Client::~Client
 	}
 	else
 	{
-		m_socket->close();
+		m_socket->Close();
 		delete m_socket;
 	}
 } // Client::~Client ()
@@ -134,10 +133,10 @@ Client::wait_for_input
 #endif
 	if (m_socket != 0)
 	{
-		netSocket*  ListenSockets[2];
+		NetSocket*  ListenSockets[2];
 		ListenSockets[0] = m_socket;
 		ListenSockets[1] = 0;
-		return m_socket->select ( ListenSockets, 0, seconds );
+		return m_socket->Select ( ListenSockets, 0, seconds );
 	}
 	else
 	{
@@ -163,7 +162,7 @@ Client::read_char
 {
 	if (m_socket != 0)
 	{
-		return m_socket->read_char(c);
+		return m_socket->RecvChar(c);
 	}
 	c = getchar();
 	return 1;
@@ -181,7 +180,7 @@ Client::put_char
 {
 	if (m_socket != 0)
 	{
-		m_socket->send (&c, 1);
+		m_socket->Send (&c, 1);
 	}
 	else
 	{
@@ -446,7 +445,7 @@ Client& commit
 		{
 			string s = out.m_output.str();
 			size_t l = s.size();
-			out.m_socket->send (s.c_str(), l);
+			out.m_socket->Send (s.c_str(), l);
 		}
 		else
 		{

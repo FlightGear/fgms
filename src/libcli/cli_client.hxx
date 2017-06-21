@@ -22,7 +22,8 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-#include <plib/netSocket.h>
+#include <fglib/netsocket.hxx>
+#include <fglib/fg_util.hxx>
 #ifndef _MSC_VER
 	#include <termios.h>
 #endif
@@ -77,7 +78,7 @@ protected:
 	int     range_filter ( char* cmd, void* data );
 	int     count_filter ( char* cmd, void* data );
 	PRINT_MODE		m_print_mode;
-	netSocket*		m_socket;
+	NetSocket*		m_socket;
 	std::ostringstream	m_output;
 	#ifndef _MSC_VER
 	struct termios OldModes;

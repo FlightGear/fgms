@@ -24,8 +24,7 @@
 #endif
 
 #include <time.h>
-#include <simgear/debug/logstream.hxx>
-#include <fg_list.hxx>
+#include "fg_list.hxx"
 
 const size_t FG_ListElement::NONE_EXISTANT = (size_t) -1;
 
@@ -131,105 +130,5 @@ FG_ListElement::UpdateRcvd
 	PktsRcvd++;
 	BytesRcvd += bytes;
 	LastSeen = time(0);
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-FG_Player::FG_Player()
-{
-	Name		= "";
-	JoinTime	= time (0);
-	LastSeen	= JoinTime;
-	LastSent	= 0;
-	Passwd		= "";
-	ModelName	= "";
-	Error		= "";
-	HasErrors	= false;
-	DoUpdate	= false;
-	IsATC		= ATC_NONE;
-	RadarRange	= 0;
-	ProtoMajor	= 0;
-	ProtoMinor	= 0;
-	LastRelayedToInactive = 0;
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-FG_Player::FG_Player( const string& Name )
-{
-	this->Name	= Name;
-	JoinTime	= time (0);
-	LastSeen	= JoinTime;
-	LastSent	= 0;
-	Passwd		= "";
-	ModelName 	= "";
-	Error 		= "";
-	HasErrors 	= false;
-	DoUpdate	= false;
-	IsATC		= ATC_NONE;
-	RadarRange	= 0;
-	ProtoMajor	= 0;
-	ProtoMinor	= 0;
-	LastRelayedToInactive = 0;
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-FG_Player::FG_Player( const FG_Player& P )
-{
-	this->assign (P);
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-FG_Player::~FG_Player()
-{
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-void
-FG_Player::operator =( const FG_Player& P )
-{
-	this->assign (P);
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-bool
-FG_Player::operator ==( const FG_Player& P )
-{
-	if ((Address == P.Address) && (Name == P.Name))
-		return true;
-	return false;
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-void
-FG_Player::assign( const FG_Player& P )
-{
-	//
-	// using str.c_str() here to prevent copy-on-write in std::string!
-	//
-	FG_ListElement::assign (P);
-	Origin = P.Origin.c_str();
-	Passwd = P.Passwd.c_str();
-	ModelName = P.ModelName.c_str();
-	JoinTime = P.JoinTime;
-	LastSeen = P.LastSeen ;
-	LastSent = P.LastSent ;
-	LastPos = P.LastPos;
-	GeodPos = P.GeodPos;
-	IsLocal = P.IsLocal;
-	IsATC = P.IsATC;
-	RadarRange = P.RadarRange;
-	ProtoMajor = P.ProtoMajor;
-	ProtoMinor = P.ProtoMinor;
-	Error = P.Error.c_str();
-	HasErrors = P.HasErrors;
-	LastOrientation	= P.LastOrientation;
-	DoUpdate	= P.DoUpdate;
-	LastRelayedToInactive = P.LastRelayedToInactive;
 }
 //////////////////////////////////////////////////////////////////////

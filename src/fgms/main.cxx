@@ -37,15 +37,16 @@
 #include <sys/wait.h>
 #endif
 #include <signal.h>
-#include "fg_server.hxx"
-#include "fg_config.hxx"
-#include "daemon.hxx"
-#include "fg_util.hxx"
+#include <fglib/fg_util.hxx>
+#include <fglib/fg_config.hxx>
+#include <fglib/daemon.hxx>
+#include <fglib/fg_version.hxx>
+#include "fgms.hxx"
 
 using namespace std;
 
-/** @brief The running  ::FG_SERVER server process */
-FG_SERVER       Servant;
+/** @brief The running  ::FGMS server process */
+FGMS       fgms;
 
 /** @brief Flag whether instance is a Daemon  */
 extern  bool    RunAsDaemon;
@@ -96,7 +97,8 @@ sgDebugClass curr_class = (sgDebugClass)DEF_LOG_CLASS;
 void
 PrintHelp ()
 {
-	cout << "fgms: version " << VERSION << ", compiled on " << __DATE__ << ", at " << __TIME__ << endl;
+	cout << "fgms: version " << fgms.m_version
+	     << ", compiled on " << __DATE__ << ", at " << __TIME__ << endl;
 	cout << "\n"
 	     "options are:\n"
 	     "-h            print this help screen\n"
@@ -188,27 +190,27 @@ ProcessConfig ( const string& ConfigName )
 		return ( false );
 	}
 	cout << "processing " << ConfigName << endl;
-	Servant.ConfigFile =  ConfigName;
+	fgms.ConfigFile =  ConfigName;
 	Val = Config.Get ( "server.name" );
 	if ( Val != "" )
 	{
-		Servant.SetServerName ( Val );
+		fgms.SetServerName ( Val );
 		bHadConfig = true; // got a serve name - minimum
 	}
 	Val = Config.Get ( "server.address" );
 	if ( Val != "" )
 	{
-		Servant.SetBindAddress ( Val );
+		fgms.SetBindAddress ( Val );
 	}
 	Val = Config.Get ( "server.FQDN" );
 	if ( Val != "" )
 	{
-		Servant.SetFQDN ( Val );
+		fgms.SetFQDN ( Val );
 	}
 	Val = Config.Get ( "server.port" );
 	if ( Val != "" )
 	{
-		Servant.SetDataPort ( StrToNum<int> ( Val.c_str (), E ) );
+		fgms.SetDataPort ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
 			SG_LOG ( SG_SYSTEMS, SG_ALERT,
@@ -220,7 +222,7 @@ ProcessConfig ( const string& ConfigName )
 	Val = Config.Get ( "server.telnet_port" );
 	if ( Val != "" )
 	{
-		Servant.SetTelnetPort ( StrToNum<int> ( Val.c_str (), E ) );
+		fgms.SetTelnetPort ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
 			SG_LOG ( SG_SYSTEMS, SG_ALERT,
@@ -251,7 +253,7 @@ ProcessConfig ( const string& ConfigName )
 	Val = Config.Get ( "server.admin_port" );
 	if ( Val != "" )
 	{
-		Servant.SetAdminPort ( StrToNum<int> ( Val.c_str (), E ) );
+		fgms.SetAdminPort ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
 			SG_LOG ( SG_SYSTEMS, SG_ALERT,
@@ -263,22 +265,22 @@ ProcessConfig ( const string& ConfigName )
 	Val = Config.Get ( "server.admin_user" );
 	if ( Val != "" )
 	{
-		Servant.SetAdminUser ( Val );
+		fgms.SetAdminUser ( Val );
 	}
 	Val = Config.Get ( "server.admin_pass" );
 	if ( Val != "" )
 	{
-		Servant.SetAdminPass ( Val );
+		fgms.SetAdminPass ( Val );
 	}
 	Val = Config.Get ( "server.admin_enable" );
 	if ( Val != "" )
 	{
-		Servant.SetAdminEnable ( Val );
+		fgms.SetAdminEnable ( Val );
 	}
 	Val = Config.Get ( "server.out_of_reach" );
 	if ( Val != "" )
 	{
-		Servant.SetOutOfReach ( StrToNum<int> ( Val.c_str (), E ) );
+		fgms.SetOutOfReach ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
 			SG_LOG ( SG_SYSTEMS, SG_ALERT,
@@ -290,7 +292,7 @@ ProcessConfig ( const string& ConfigName )
 	Val = Config.Get ( "server.max_radar_range" );
 	if ( Val != "" )
 	{
-		Servant.SetMaxRadarRange ( StrToNum<int> ( Val.c_str (), E ) );
+		fgms.SetMaxRadarRange ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
 			SG_LOG ( SG_SYSTEMS, SG_ALERT,
@@ -304,7 +306,7 @@ ProcessConfig ( const string& ConfigName )
 	Val = Config.Get ( "server.playerexpires" );
 	if ( Val != "" )
 	{
-		Servant.SetPlayerExpires ( StrToNum<int> ( Val.c_str (), E ) );
+		fgms.SetPlayerExpires ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
 			SG_LOG ( SG_SYSTEMS, SG_ALERT,
@@ -316,7 +318,7 @@ ProcessConfig ( const string& ConfigName )
 	Val = Config.Get ( "server.logfile" );
 	if ( Val != "" )
 	{
-		Servant.SetLogfile ( Val );
+		fgms.SetLogfile ( Val );
 	}
 	Val = Config.Get ( "server.daemon" );
 	if ( Val != "" )
@@ -358,7 +360,7 @@ ProcessConfig ( const string& ConfigName )
 				);
 				exit ( 1 );
 			}
-			if ( tracked && ( Servant.AddTracker ( Server, Port, tracked ) != FG_SERVER::SUCCESS ) ) // set master m_IsTracked
+			if ( tracked && ( fgms.AddTracker ( Server, Port, tracked ) != FGMS::SUCCESS ) ) // set master m_IsTracked
 			{
 				SG_LOG ( SG_SYSTEMS, SG_ALERT, "Failed to get IPC msg queue ID! error " << errno );
 				exit ( 1 ); // do NOT continue if a requested 'tracker' FAILED
@@ -370,11 +372,11 @@ ProcessConfig ( const string& ConfigName )
 	{
 		if ( Val == "true" )
 		{
-			Servant.SetHub ( true );
+			fgms.SetHub ( true );
 		}
 		else
 		{
-			Servant.SetHub ( false );
+			fgms.SetHub ( false );
 		}
 	}
 	//////////////////////////////////////////////////
@@ -411,7 +413,7 @@ ProcessConfig ( const string& ConfigName )
 		}
 		if ( ( Server != "" ) && ( Port != 0 ) )
 		{
-			Servant.AddRelay ( Server, Port );
+			fgms.AddRelay ( Server, Port );
 			Server = "";
 			Port   = 0;
 		}
@@ -454,7 +456,7 @@ ProcessConfig ( const string& ConfigName )
 		}
 		if ( ( Server != "" ) && ( Port != 0 ) )
 		{
-			Servant.AddCrossfeed ( Server, Port );
+			fgms.AddCrossfeed ( Server, Port );
 			Server = "";
 			Port   = 0;
 		}
@@ -484,7 +486,7 @@ ProcessConfig ( const string& ConfigName )
 		Val = Config.GetValue();
 		if ( Var == "whitelist" )
 		{
-			Servant.AddWhitelist ( Val.c_str() );
+			fgms.AddWhitelist ( Val.c_str() );
 		}
 		if ( Config.SecNext () == 0 )
 		{
@@ -509,7 +511,7 @@ ProcessConfig ( const string& ConfigName )
 		Val = Config.GetValue();
 		if ( Var == "blacklist" )
 		{
-			Servant.AddBlacklist ( Val.c_str(),
+			fgms.AddBlacklist ( Val.c_str(),
 			  "static config entry", 0 );
 		}
 		if ( Config.SecNext () == 0 )
@@ -544,7 +546,7 @@ ParseParams ( int argcount, char* argvars[] )
 			PrintHelp ();
 			break; // never reached
 		case 'a':
-			Servant.SetTelnetPort ( StrToNum<int> ( optarg, E ) );
+			fgms.SetTelnetPort ( StrToNum<int> ( optarg, E ) );
 			if ( E )
 			{
 				cerr << "invalid value for TelnetPort: '" << optarg << "'" << endl;
@@ -552,7 +554,7 @@ ParseParams ( int argcount, char* argvars[] )
 			}
 			break;
 		case 'b':
-			Servant.SetAdminPort ( StrToNum<int> ( optarg, E ) );
+			fgms.SetAdminPort ( StrToNum<int> ( optarg, E ) );
 			if ( E )
 			{
 				cerr << "invalid value for AdminPort: '" << optarg << "'" << endl;
@@ -563,7 +565,7 @@ ParseParams ( int argcount, char* argvars[] )
 			ProcessConfig ( optarg );
 			break;
 		case 'p':
-			Servant.SetDataPort ( StrToNum<int>  ( optarg, E ) );
+			fgms.SetDataPort ( StrToNum<int>  ( optarg, E ) );
 			if ( E )
 			{
 				cerr << "invalid value for DataPort: '"
@@ -572,7 +574,7 @@ ParseParams ( int argcount, char* argvars[] )
 			}
 			break;
 		case 'o':
-			Servant.SetOutOfReach ( StrToNum<int>  ( optarg, E ) );
+			fgms.SetOutOfReach ( StrToNum<int>  ( optarg, E ) );
 			if ( E )
 			{
 				cerr << "invalid value for OutOfReach: '"
@@ -582,7 +584,7 @@ ParseParams ( int argcount, char* argvars[] )
 			break;
 		case 'v':
             curr_priority = (sgDebugPriority) StrToNum<int>  ( optarg, E );
-			Servant.SetLog ( curr_class, curr_priority );
+			fgms.SetLog ( curr_class, curr_priority );
 			if ( E )
 			{
 				cerr << "invalid value for Loglevel: '"
@@ -591,7 +593,7 @@ ParseParams ( int argcount, char* argvars[] )
 			}
 			break;
 		case 't':
-			Servant.SetPlayerExpires ( StrToNum<int>  ( optarg, E ) );
+			fgms.SetPlayerExpires ( StrToNum<int>  ( optarg, E ) );
 			if ( E )
 			{
 				cerr << "invalid value for expire: '"
@@ -600,7 +602,7 @@ ParseParams ( int argcount, char* argvars[] )
 			}
 			break;
 		case 'l':
-			Servant.SetLogfile ( optarg );
+			fgms.SetLogfile ( optarg );
 			break;
 		case 'd':
 			RunAsDaemon = false;
@@ -673,9 +675,9 @@ ReadConfigs ( bool ReInit = false )
  */
 void SigHUPHandler ( int SigType )
 {
-	Servant.PrepareInit();
+	fgms.PrepareInit();
 	bHadConfig = false;
-	if (Servant.ConfigFile == "")
+	if (fgms.ConfigFile == "")
 	{
 		if ( !ReadConfigs ( true ) )
 		{
@@ -685,13 +687,13 @@ void SigHUPHandler ( int SigType )
 	}
 	else
 	{
-		if ( ProcessConfig ( Servant.ConfigFile ) == false )
+		if ( ProcessConfig ( fgms.ConfigFile ) == false )
 		{
 			SG_LOG ( SG_SYSTEMS, SG_ALERT, "received HUP signal, but read config file failed!" );
 			exit ( 1 );
 		}
 	}
-	if ( Servant.Init () != 0 )
+	if ( fgms.Init () != 0 )
 	{
 		SG_LOG ( SG_SYSTEMS, SG_ALERT, "received HUP signal, but reinit failed!" );
 		exit ( 1 );
@@ -712,6 +714,8 @@ int
 main ( int argc, char* argv[] )
 {
 	int     I;
+
+	FG_VERSION v;
 #ifndef _MSC_VER
 	signal ( SIGHUP, SigHUPHandler );
 #endif
@@ -730,16 +734,16 @@ main ( int argc, char* argv[] )
 		Myself.Daemonize ();
 	}
 #endif
-	I = Servant.Init ();
+	I = fgms.Init ();
 	if ( I != 0 )
 	{
-		Servant.CloseTracker();
+		fgms.CloseTracker();
 		return ( I );
 	}
 	SG_CONSOLE ( SG_SYSTEMS, SG_ALERT, "Main server started!" );
-	I = Servant.Loop();
-	Servant.CloseTracker();
-	Servant.Done();
+	I = fgms.Loop();
+	fgms.CloseTracker();
+	fgms.Done();
 	return ( I );
 } // main()
 //////////////////////////////////////////////////////////////////////

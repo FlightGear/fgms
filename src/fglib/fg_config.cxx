@@ -22,15 +22,12 @@
 
 //////////////////////////////////////////////////////////////////////
 //
-//      Simple configfile parser for fg_server
+//      Simple configfile parser for fgms
 //
 //////////////////////////////////////////////////////////////////////
 
 #include <cctype>
 #include "fg_config.hxx"
-
-
-
 
 //////////////////////////////////////////////////////////////////////
 /** @brief  Read in the config file 
@@ -89,7 +86,7 @@ FG_CONFIG::Get( const std::string &VarName)
 		m_CurrentVar++;
 	}
 	return ("");
-} // FG_SERVER::Get ()
+} // FGMS::Get ()
 
 
 
@@ -291,7 +288,7 @@ FG_CONFIG::Dump
 	std::cout << std::endl;
 	std::cout << "done." << std::endl;
 	std::cout << std::endl;
-} // FG_SERVER::Dump ()
+} // FGMS::Dump ()
 
 
 
@@ -343,6 +340,6 @@ FG_CONFIG::ParseLine
 		(nVarValueStart, nVarValueEnd - nVarValueStart);
 	m_VarList.push_back (NewVar);
 	return (0);
-} // FG_SERVER::ParseLine ()
+} // FGMS::ParseLine ()
 //////////////////////////////////////////////////////////////////////
 

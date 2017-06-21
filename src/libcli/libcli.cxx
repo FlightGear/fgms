@@ -28,7 +28,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
-#include <server/fg_util.hxx>
+#include <fglib/fg_util.hxx>
 #include "libcli.hxx"
 
 #if defined(_MSC_VER) || defined(__CYGWIN__)

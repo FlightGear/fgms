@@ -23,8 +23,8 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#if !defined FG_SERVER_HXX
-#define FG_SERVER_HXX
+#if !defined FGMS_HXX
+#define FGMS_HXX
 
 #include <iostream>
 #include <fstream>
@@ -36,31 +36,35 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <plib/netSocket.h>
-#include <flightgear/MultiPlayer/mpmessages.hxx>
-#include <flightgear/MultiPlayer/tiny_xdr.hxx>
+#include <fglib/netsocket.hxx>
+#include <fglib/encoding.hxx>
+#include <fglib/mpmessages.hxx>
 #include <simgear/debug/logstream.hxx>
-#include "daemon.hxx"
-#include "fg_geometry.hxx"
+#include <fglib/daemon.hxx>
+#include <fglib/fg_version.hxx>
+#include <fglib/fg_geometry.hxx>
 #include "fg_list.hxx"
+#include "fg_player.hxx"
 #include "fg_tracker.hxx"
 
 using namespace std;
 
 //////////////////////////////////////////////////////////////////////
 /**
- * @class FG_SERVER
+ * @class FGMS
  * @brief The Main fgms Class
  */
-class FG_SERVER
+class FGMS
 {
 public:
+
+	static const FG_VERSION m_version; // ( 1, 0, 0, "-dev" );
 
 	friend class FG_CLI;
 	friend void* admin_helper ( void* context );
 
 	/** @brief Internal Constants */
-	enum FG_SERVER_CONSTANTS
+	enum FGMS_CONSTANTS
 	{
 		// return values
 		SUCCESS                 = 0,
@@ -81,8 +85,8 @@ public:
 	//  constructors
 	//
 	//////////////////////////////////////////////////
-	FG_SERVER ();
-	~FG_SERVER ();
+	FGMS ();
+	~FGMS ();
 
 	//////////////////////////////////////////////////
 	//
@@ -134,8 +138,8 @@ protected:
 	//  private variables
 	//
 	//////////////////////////////////////////////////
-	typedef std::map<uint32_t,string>		mT_IP2Relay;
-	typedef std::map<uint32_t,string>::iterator	mT_RelayMapIt;
+	typedef std::map<NetAddr,string>		mT_IP2Relay;
+	typedef std::map<NetAddr,string>::iterator	mT_RelayMapIt;
 	bool		m_Initialized;
 	bool		m_ReinitData;
 	bool		m_ReinitTelnet;
@@ -163,9 +167,9 @@ protected:
 	bool		m_IsTracked;
 	string		m_ServerName;
 	string		m_TrackerServer;
-	netSocket*	m_DataSocket;
-	netSocket*	m_TelnetSocket;
-	netSocket*	m_AdminSocket;
+	NetSocket*	m_DataSocket;
+	NetSocket*	m_TelnetSocket;
+	NetSocket*	m_AdminSocket;
 	mT_IP2Relay	m_RelayMap;
 	FG_List		m_CrossfeedList;
 	FG_List		m_WhiteList;
@@ -210,28 +214,28 @@ protected:
 	//  private methods
 	//
 	//////////////////////////////////////////////////
-	void  AddClient     ( const netAddress& Sender, char* Msg );
-	void  AddBadClient  ( const netAddress& Sender, string& ErrorMsg,
+	void  AddClient     ( const NetAddr& Sender, char* Msg );
+	void  AddBadClient  ( const NetAddr& Sender, string& ErrorMsg,
 	                      bool IsLocal, int Bytes );
-	bool  IsKnownRelay ( const netAddress& SenderAddress, size_t Bytes );
+	bool  IsKnownRelay ( const NetAddr& SenderAddress, size_t Bytes );
 	bool  PacketIsValid ( int Bytes, T_MsgHdr* MsgHdr,
-	                      const netAddress& SenderAddress );
+	                      const NetAddr& SenderAddress );
 	void  HandlePacket  ( char* sMsg, int Bytes,
-	                      const netAddress& SenderAdress );
+	                      const NetAddr& SenderAdress );
 	int   UpdateTracker ( const string& callsign, const string& passwd, const string& modelname,
 	                      const time_t time, const int type );
 	void  DropClient    ( PlayerIt& CurrentPlayer ); 
 	bool  ReceiverWantsData ( const PlayerIt& SenderPos, const FG_Player& Receiver );
 	bool  ReceiverWantsChat ( const PlayerIt& SenderPos, const FG_Player& Receiver );
 	bool  IsInRange     ( const FG_ListElement& Relay,  const PlayerIt& SendingPlayer, uint32_t MsgId );
-	void  SendToCrossfeed ( char* Msg, int Bytes, const netAddress& SenderAddress );
+	void  SendToCrossfeed ( char* Msg, int Bytes, const NetAddr& SenderAddress );
 	void  SendToRelays  ( char* Msg, int Bytes, PlayerIt& SendingPlayer );
 	void  WantExit ();
-}; // FG_SERVER
+}; // FGMS
 
 typedef struct st_telnet
 {
-	FG_SERVER* Instance;
+	FGMS* Instance;
 	int        Fd;
 } st_telnet;
 #endif
