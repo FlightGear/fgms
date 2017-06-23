@@ -27,29 +27,33 @@
  * Implementation of a thread-safe list.
  */
 
-#if !defined FG_LIST_HXX
+#ifndef FG_LIST_HXX
 #define FG_LIST_HXX
 
 #include <string>
 #include <vector>
 #include <pthread.h>
-#include <fg_geometry.hxx>
 #include <simgear/debug/logstream.hxx>
-#include <fglib/netaddr.hxx>
+#include "netaddr.hxx"
+#include "fg_geometry.hxx"
+#include "fg_thread.hxx"
+
+namespace fgmp
+{
 
 //////////////////////////////////////////////////////////////////////
 /** 
- * @class FG_ListElement
+ * @class ListElement
  * @brief Represent a generic list element
  * 
  */
-class FG_ListElement
+class ListElement
 {
 public:
 	/** every element has a a name */
-	FG_ListElement ( const string& Name );
-	FG_ListElement ( const FG_ListElement& P );
-	~FG_ListElement ();
+	ListElement ( const string& Name );
+	ListElement ( const ListElement& P );
+	~ListElement ();
 	/** mark a nonexisting element */
 	static const size_t NONE_EXISTANT;
 	/** @brief The ID of this entry */
@@ -74,29 +78,29 @@ public:
 	uint64_t	BytesRcvd;
 	/** @brief Count of bytes sent to client */
 	uint64_t	BytesSent;
-	void operator =  ( const FG_ListElement& P );
-	virtual bool operator ==  ( const FG_ListElement& P );
+	void operator =  ( const ListElement& P );
+	virtual bool operator ==  ( const ListElement& P );
 	void UpdateSent ( size_t bytes );
 	void UpdateRcvd ( size_t bytes );
 protected:
-	FG_ListElement ();
-	void assign ( const FG_ListElement& P );
-}; // FG_ListElement
+	ListElement ();
+	void assign ( const ListElement& P );
+}; // ListElement
 
 /** 
- * @class mT_FG_List
+ * @class List
  * @brief a generic list implementation for fgms
  * 
  */
 template <class T>
-class mT_FG_List
+class List : public Lockable
 {
 public:
 	typedef vector<T> ListElements;
 	typedef typename vector<T>::iterator ListIterator;
 	/** constructor, must supply a Name */
-	mT_FG_List   ( const string& Name );
-	~mT_FG_List  ();
+	List   ( const string& Name );
+	~List  ();
 	/** return the number of elements in this list */
 	size_t Size  ();
 	/** delete all elements of this list */
@@ -129,10 +133,6 @@ public:
 	void UpdateSent ( size_t bytes );
 	/** update receive counter of the list */
 	void UpdateRcvd ( size_t bytes );
-	/** thread lock the list */
-	void Lock();
-	/** thread unlock the list */
-	void Unlock();
 	/** return a copy of an element at position x (thread safe) */
 	T operator []( const size_t& Index );
 	/** @brief maximum entries this list ever had */
@@ -148,18 +148,16 @@ public:
 	/** the name (or description) of this element */
 	string		Name;
 private:
-	/** @brief mutex for thread safty */
-	pthread_mutex_t   m_ListMutex;
 	/** @brief timestamp of last cleanup */
 	time_t	LastRun;
 	/** do not allow standard constructor */
-	mT_FG_List ();
+	List ();
 	/** the actual storage of elements */
 	ListElements	Elements;
 };
 
-typedef mT_FG_List<FG_ListElement>		FG_List;
-typedef vector<FG_ListElement>::iterator	ItList;
+typedef List<ListElement>		FG_List;
+typedef vector<ListElement>::iterator	ItList;
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -167,12 +165,11 @@ typedef vector<FG_ListElement>::iterator	ItList;
  * construct an element and initialise counters
  */
 template <class T>
-mT_FG_List<T>::mT_FG_List
+List<T>::List
 (
 	const string& Name
 )
 {
-	pthread_mutex_init ( &m_ListMutex, 0 );
 	this->Name	= Name;
 	PktsSent	= 0;
 	BytesSent	= 0;
@@ -183,7 +180,7 @@ mT_FG_List<T>::mT_FG_List
 
 //////////////////////////////////////////////////////////////////////
 template <class T>
-mT_FG_List<T>::~mT_FG_List
+List<T>::~List
 ()
 {
 	Clear ();
@@ -200,7 +197,7 @@ mT_FG_List<T>::~mT_FG_List
  */
 template <class T>
 size_t
-mT_FG_List<T>::Size
+List<T>::Size
 ()
 {
 	return Elements.size ();
@@ -211,20 +208,18 @@ mT_FG_List<T>::Size
 /** thread safe
  *
  * Add an element to the list
- * @param Element the FG_ListElement to add
+ * @param Element the ListElement to add
  * @param TTL automatic expiry of the element (time-to-live)
  * @see Find()
  */
 template <class T>
 size_t
-mT_FG_List<T>::Add( T& Element, time_t TTL)
+List<T>::Add( T& Element, time_t TTL)
 {
 	this->MaxID++;
 	Element.ID	= this->MaxID;
 	Element.Timeout	= TTL;
-//	pthread_mutex_lock   ( & m_ListMutex );
 	Elements.push_back   ( Element );
-//	pthread_mutex_unlock ( & m_ListMutex );
 	return this->MaxID;
 }
 //////////////////////////////////////////////////////////////////////
@@ -232,15 +227,14 @@ mT_FG_List<T>::Add( T& Element, time_t TTL)
 
 template <class T>
 void 
-mT_FG_List<T>::DeleteByPosition (int position)
+List<T>::DeleteByPosition (int position)
 {
-	pthread_mutex_lock ( & m_ListMutex );
+	LockGuard ( & this->m_Mutex );
 	ListIterator Element;
 	this->LastRun = time (0);
 	Element = Elements.begin();
 	std::advance (Element,position);
 	Elements.erase   ( Element );
-	pthread_mutex_unlock ( & m_ListMutex );
 }
 //////////////////////////////////////////////////////////////////////
 /** thread safe
@@ -250,12 +244,11 @@ mT_FG_List<T>::DeleteByPosition (int position)
  */
 template <class T>
 typename vector<T>::iterator
-mT_FG_List<T>::Delete( const ListIterator& Element)
+List<T>::Delete( const ListIterator& Element)
 {
+	LockGuard ( & this->m_Mutex );
 	ListIterator E;
-	pthread_mutex_lock   ( & m_ListMutex );
 	E = Elements.erase   ( Element );
-	pthread_mutex_unlock ( & m_ListMutex );
 	return (E);
 }
 //////////////////////////////////////////////////////////////////////
@@ -273,7 +266,7 @@ mT_FG_List<T>::Delete( const ListIterator& Element)
  */
 template <class T>
 typename vector<T>::iterator
-mT_FG_List<T>::Find( const NetAddr& Address, const string& Name)
+List<T>::Find( const NetAddr& Address, const string& Name)
 {
 	ListIterator Element;
 	ListIterator RetElem;
@@ -315,7 +308,7 @@ mT_FG_List<T>::Find( const NetAddr& Address, const string& Name)
  */
 template <class T>
 typename vector<T>::iterator
-mT_FG_List<T>::FindByName( const string& Name)
+List<T>::FindByName( const string& Name)
 {
 	ListIterator Element;
 	ListIterator RetElem;
@@ -346,7 +339,7 @@ mT_FG_List<T>::FindByName( const string& Name)
  */
 template <class T>
 typename vector<T>::iterator
-mT_FG_List<T>::FindByID
+List<T>::FindByID
 ( size_t ID )
 {
 	ListIterator Element;
@@ -378,7 +371,7 @@ mT_FG_List<T>::FindByID
  */
 template <class T>
 typename vector<T>::iterator
-mT_FG_List<T>::Begin()
+List<T>::Begin()
 {
 	return Elements.begin ();
 }
@@ -395,7 +388,7 @@ mT_FG_List<T>::Begin()
  */
 template <class T>
 typename vector<T>::iterator
-mT_FG_List<T>::Last()
+List<T>::Last()
 {
 	ListIterator RetElem = Elements.end ();
 	--RetElem;
@@ -410,37 +403,9 @@ mT_FG_List<T>::Last()
  */
 template <class T>
 typename vector<T>::iterator
-mT_FG_List<T>::End()
+List<T>::End()
 {
 	return Elements.end ();
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-/**
- *
- * Set a mutex lock on the list, so concurrent operations are blocked
- * until the lock is released.
- * @see Unlock()
- */
-template <class T>
-void
-mT_FG_List<T>::Lock()
-{
-	pthread_mutex_lock ( & m_ListMutex );
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-/**
- *
- * Release a mutex lock
- */
-template <class T>
-void
-mT_FG_List<T>::Unlock()
-{
-	pthread_mutex_unlock ( & m_ListMutex );
 }
 //////////////////////////////////////////////////////////////////////
 
@@ -451,9 +416,9 @@ mT_FG_List<T>::Unlock()
  */
 template <class T>
 bool
-mT_FG_List<T>::CheckTTL( int position )
+List<T>::CheckTTL( int position )
 {
-	pthread_mutex_lock ( & m_ListMutex );
+	LockGuard ( & this->m_Mutex );
 	ListIterator Element;
 	this->LastRun = time (0);
 	Element = Elements.begin();
@@ -461,7 +426,6 @@ mT_FG_List<T>::CheckTTL( int position )
 
 	if (Element->Timeout == 0)
 	{	// never timeouts
-		pthread_mutex_unlock ( & m_ListMutex );
 		return true;
 	}
 	if ( (this->LastRun - Element->LastSeen) > Element->Timeout )
@@ -470,12 +434,9 @@ mT_FG_List<T>::CheckTTL( int position )
 		  this->Name << ": TTL exceeded for "
 		  << Element->Name << "@"
 		  << Element->Address.ToString() << " "
-		 // << "after " << diff_to_days (Element->LastSeen - Element->JoinTime)
 		  );
-		  pthread_mutex_unlock ( & m_ListMutex );
 		  return false;
 	}
-	pthread_mutex_unlock ( & m_ListMutex );
 	return true;
 }
 //////////////////////////////////////////////////////////////////////
@@ -490,13 +451,11 @@ mT_FG_List<T>::CheckTTL( int position )
  */
 template <class T>
 T
-mT_FG_List<T>::operator []( const size_t& Index )
+List<T>::operator []( const size_t& Index )
 {
 	T RetElem("");
-//	pthread_mutex_lock ( & m_ListMutex );
 	if (Index < Elements.size ())
 		RetElem = Elements[Index];
-//	pthread_mutex_unlock ( & m_ListMutex );
 	return RetElem;
 }
 //////////////////////////////////////////////////////////////////////
@@ -512,7 +471,7 @@ mT_FG_List<T>::operator []( const size_t& Index )
  */
 template <class T>
 void
-mT_FG_List<T>::UpdateSent
+List<T>::UpdateSent
 (
 	ListIterator& Element,
 	size_t bytes
@@ -535,7 +494,7 @@ mT_FG_List<T>::UpdateSent
  */
 template <class T>
 void
-mT_FG_List<T>::UpdateRcvd
+List<T>::UpdateRcvd
 (
 	ListIterator& Element,
 	size_t bytes
@@ -557,7 +516,7 @@ mT_FG_List<T>::UpdateRcvd
  */
 template <class T>
 void
-mT_FG_List<T>::UpdateSent
+List<T>::UpdateSent
 (
 	size_t bytes
 )
@@ -577,7 +536,7 @@ mT_FG_List<T>::UpdateSent
  */
 template <class T>
 void
-mT_FG_List<T>::UpdateRcvd
+List<T>::UpdateRcvd
 (
 	size_t bytes
 )
@@ -594,7 +553,7 @@ mT_FG_List<T>::UpdateRcvd
  */
 template <class T>
 void
-mT_FG_List<T>::Clear()
+List<T>::Clear()
 {
 	Lock ();
 	Elements.clear ();
@@ -602,4 +561,5 @@ mT_FG_List<T>::Clear()
 }
 //////////////////////////////////////////////////////////////////////
 
+} // namespace fgmp
 #endif

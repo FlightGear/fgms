@@ -491,7 +491,7 @@ FGMS::Init
 		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# tracking is disabled." );
 	}
 	size_t Count;
-	FG_ListElement Entry ( "" );
+	ListElement Entry ( "" );
 	//////////////////////////////////////////////////
 	// print list of all relays
 	//////////////////////////////////////////////////
@@ -500,7 +500,7 @@ FGMS::Init
 	for ( size_t i = 0; i < Count; i++ )
 	{
 		Entry = m_RelayList[i];
-		if ( Entry.ID == FG_ListElement::NONE_EXISTANT )
+		if ( Entry.ID == ListElement::NONE_EXISTANT )
 		{
 			continue;
 		}
@@ -516,7 +516,7 @@ FGMS::Init
 	for ( size_t i = 0; i < Count; i++ )
 	{
 		Entry = m_CrossfeedList[i];
-		if ( Entry.ID == FG_ListElement::NONE_EXISTANT )
+		if ( Entry.ID == ListElement::NONE_EXISTANT )
 		{
 			continue;
 		}
@@ -929,7 +929,7 @@ FGMS::AddRelay
 	int Port
 )
 {
-	FG_ListElement  B ( Relay );
+	ListElement  B ( Relay );
 	B.Address.Assign ( Relay, Port );
 	if ( ! B.Address.IsValid () )
 	{
@@ -991,7 +991,7 @@ FGMS::AddCrossfeed
 		s = "127.0.0.1";
 	}
 #endif // _MSC_VER
-	FG_ListElement B ( s );
+	ListElement B ( s );
 	B.Address.Assign ( ( char* ) s.c_str(), Port );
 	m_CrossfeedList.Lock ();
 	ItList CurrentEntry = m_CrossfeedList.Find ( B.Address, "" );
@@ -1035,7 +1035,7 @@ FGMS::AddWhitelist
 	const string& DottedIP
 )
 {
-	FG_ListElement B ( DottedIP );
+	ListElement B ( DottedIP );
 	B.Address.Assign ( DottedIP.c_str(), 0 );
 	m_WhiteList.Lock ();
 	ItList CurrentEntry = m_WhiteList.Find ( B.Address, "" );
@@ -1059,7 +1059,7 @@ FGMS::AddBlacklist
 	time_t Timeout
 )
 {
-	FG_ListElement B ( Reason );
+	ListElement B ( Reason );
 	B.Address.Assign ( DottedIP.c_str(), 0 );
 	m_BlackList.Lock ();
 	ItList CurrentEntry = m_BlackList.Find ( B.Address, "" );
@@ -1605,7 +1605,7 @@ FGMS::HandlePacket
 		}
 		CurrentPlayer++;
 	}
-	if ( SendingPlayer->ID ==  FG_ListElement::NONE_EXISTANT )
+	if ( SendingPlayer->ID ==  ListElement::NONE_EXISTANT )
 	{
 		// player not yet in our list
 		// should not happen, but test just in case
@@ -1643,7 +1643,7 @@ void FGMS::Show_Stats
 	for ( int i = 0; i < pilot_cnt; i++ )
 	{
 		CurrentPlayer = m_PlayerList[i];
-		if ( CurrentPlayer.ID == FG_ListElement::NONE_EXISTANT )
+		if ( CurrentPlayer.ID == ListElement::NONE_EXISTANT )
 		{
 			continue;
 		}
@@ -1787,12 +1787,12 @@ FGMS::Loop
 {
 	int         Bytes;
 	char        Msg[MAX_PACKET_SIZE];
-	NetAddr  SenderAddress;
+	NetAddr     SenderAddress;
 	NetSocket*  ListenSockets[3 + MAX_TELNETS];
 	time_t      LastTrackerUpdate;
 	time_t      CurrentTime;
+	PlayerIt    CurrentPlayer;
 	LastTrackerUpdate = time ( 0 );
-	PlayerIt	CurrentPlayer;
 	m_IsParent = true;
 	if ( m_Listening == false )
 	{
@@ -1801,7 +1801,9 @@ FGMS::Loop
 		return ( ERROR_NOT_LISTENING );
 	}
 #ifdef _MSC_VER
-	SG_LOG ( SG_FGMS, SG_ALERT,  "ESC key to EXIT (after select " << m_PlayerExpires << " sec timeout)." );
+	SG_LOG ( SG_FGMS, SG_ALERT,
+	  "ESC key to EXIT (after select "
+	  << m_PlayerExpires << " sec timeout)." );
 #endif
 	if ( ( m_AdminUser == "" ) || ( m_AdminPass == "" ) )
 	{
@@ -1810,7 +1812,9 @@ FGMS::Loop
 			m_AdminSocket->Close();
 			delete m_AdminSocket;
 			m_AdminSocket = 0;
-			SG_CONSOLE ( SG_FGMS, SG_ALERT, "# Admin port disabled, please set user and password" );
+			SG_CONSOLE ( SG_FGMS, SG_ALERT,
+			  "# Admin port disabled, "
+			  "please set user and password" );
 		}
 	}
 	if ( ! RunAsDaemon && AddCLI )
@@ -2322,7 +2326,7 @@ FGMS::UpdateTracker
 	for ( size_t i = 0; i < m_PlayerList.Size(); i++ )
 	{
 		CurrentPlayer = m_PlayerList[i];
-		if ( CurrentPlayer.ID == FG_ListElement::NONE_EXISTANT )
+		if ( CurrentPlayer.ID == ListElement::NONE_EXISTANT )
 		{
 			continue;
 		}
@@ -2658,7 +2662,7 @@ FGMS::ReceiverWantsChat
 bool
 FGMS::IsInRange
 (
-	const FG_ListElement& Relay,
+	const ListElement& Relay,
 	const PlayerIt& SendingPlayer,
 	uint32_t MsgId
 )
@@ -2669,7 +2673,7 @@ FGMS::IsInRange
 	for ( size_t i = 0; i < Cnt; i++ )
 	{
 		CurrentPlayer = m_PlayerList[i];
-		if ( CurrentPlayer.ID == FG_ListElement::NONE_EXISTANT )
+		if ( CurrentPlayer.ID == ListElement::NONE_EXISTANT )
 		{
 			continue;
 		}

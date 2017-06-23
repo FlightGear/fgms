@@ -38,6 +38,7 @@
 #include <netdb.h>      // gethostbyname()
 #include <arpa/inet.h>  // htons()
 #endif
+#include "encoding.hxx"
 #include "netaddr.hxx"
 #include "fg_util.hxx"
 
@@ -760,14 +761,41 @@ NetAddr::IsLoopback
 	}
 	else if ( m_Type == NetAddr::IPv6 )
 	{
-		for ( int i = 0; i < 15; i++ )
-			if ( m_Addr[i] != 0 )
-				return false;
-		if ( m_Addr[15] == 1 )
+		uint64_t* ip = (uint64_t*) & m_Addr[0];
+		if ((  ip[0] == 0 )
+		&& ( XDR_decode_uint64 (ip[1]) == 1 ) )
 			return true;
 	}
 	return false;
 } // NetAddr::IsLoopback ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * Check if *this address is a Loopback IP
+ *
+ * @return true if *this is a Loopback IP
+ * @return false if *this is not a Loopback IP
+ */
+//////////////////////////////////////////////////////////////////////
+bool
+NetAddr::IsNull
+() const
+{
+	if ( m_Type == NetAddr::IPv4 )
+	{
+		uint32_t* ip = (uint32_t*) & m_Addr[12];
+		if ( ip == 0 )
+			return true;
+	}
+	else if ( m_Type == NetAddr::IPv6 )
+	{
+		uint64_t* ip = (uint64_t*) & m_Addr;
+		if ((  ip[0] == 0 ) && ( ip[1] == 0 ) )
+			return true;
+	}
+	return false;
+} // NetAddr::IsNull ()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -847,17 +875,6 @@ NetAddr::CopySockAddr
 		memcpy ( & m_Addr, & ( SockAddrV6->sin6_addr ), 16 );
 	}
 } // NetAddr::pm_CopySockAddr ()
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-uint32_t
-NetAddr::GetIP
-() const
-{
-	uint32_t ret;
-	memcpy ( &ret, & m_Addr[12], 4 );
-	return ( ret );
-}
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////

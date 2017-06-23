@@ -22,6 +22,9 @@
 
 #include "fg_player.hxx"
 
+namespace fgmp
+{
+
 //////////////////////////////////////////////////////////////////////
 FG_Player::FG_Player()
 {
@@ -100,7 +103,7 @@ FG_Player::assign( const FG_Player& P )
 	//
 	// using str.c_str() here to prevent copy-on-write in std::string!
 	//
-	FG_ListElement::assign (P);
+	ListElement::assign (P);
 	Origin = P.Origin.c_str();
 	Passwd = P.Passwd.c_str();
 	ModelName = P.ModelName.c_str();
@@ -121,3 +124,6 @@ FG_Player::assign( const FG_Player& P )
 	LastRelayedToInactive = P.LastRelayedToInactive;
 }
 //////////////////////////////////////////////////////////////////////
+
+} // namespace fgmp
+

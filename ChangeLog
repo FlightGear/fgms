@@ -1,3 +1,22 @@
+1.0.0
+	[MISC]	moved files which are used from other servers
+		from src/server to src/fglib
+	[NEW]	incorporated files from fgms-1.x
+		netsocket, netaddr, netpacket, encoding
+	[MISC]	renamed src/server to src/fgms
+	[MISC]	renamed fg_server to fgms
+	[MISC]	splittest fg_list into fg_list and fg_player
+	[NEW]	Created a class for version (which is now set
+		in fgms.cxx)
+		removed version file
+	[MISC]	removed tiny_xdr (replaced by encoding)
+	[MISC]	removed plib
+	[MISC]	removed fg_common.hxx
+	[MISC]	cleaned CMakeList.txt (a bit)
+	[MISC]	re-idented all files to use tab instead of space,
+		using tabwidth of 8 characters
+	
+
 0.13.2
 	[FIX]	fixed a major bug which prevented packet forwarding
 		at all.

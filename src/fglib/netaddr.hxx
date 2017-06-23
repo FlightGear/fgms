@@ -145,8 +145,6 @@ public:
 	void SetPort ( const int Port );
 	/// resolve hostname
 	void Resolve ( const string& Host, const int Port = 0 );
-	/// return the IP as an int, FIXME: only works for IPv4
-	uint32_t GetIP() const;
 	///@defgroup netaddr-operators
 	///@{
 	/// assign another Addr
@@ -225,6 +223,8 @@ public:
 	bool IsPartOf ( const NetAddr& Addr ) const;
 	/// return true if this is a loopback IP
 	bool IsLoopback () const;
+	/// return true if this is unset
+	bool IsNull () const;
 	/// map an ipv4 address to an ipv6 address
 	NetAddr MapToV6 () const;
 	/// map an IPv4inIPv6 address to an IPv4 address

@@ -716,7 +716,7 @@ FG_CLI::cmd_whitelist_show
 		}
 	}
 	int Count = fgms->m_WhiteList.Size ();
-	FG_ListElement Entry("");
+	fgmp::ListElement Entry("");
 	client << CRLF;
 	time_t  difftime;
 	time_t  now;
@@ -937,7 +937,7 @@ FG_CLI::cmd_whitelist_add
 			break;
 		}
 	}
-	FG_ListElement E (Reason);
+	fgmp::ListElement E (Reason);
 	E.Address = Address;
 	size_t NewID;
 	ItList CurrentEntry = fgms->m_WhiteList.Find ( E.Address, "" );
@@ -1040,7 +1040,7 @@ FG_CLI::cmd_blacklist_show
 		}
 	}
 	int Count = fgms->m_BlackList.Size ();
-	FG_ListElement Entry("");
+	fgmp::ListElement Entry("");
 	client << CRLF;
 	time_t  difftime;
 	time_t  now;
@@ -1274,7 +1274,7 @@ FG_CLI::cmd_blacklist_add
 			break;
 		}
 	}
-	FG_ListElement E (Reason);
+	fgmp::ListElement E (Reason);
 	E.Address = Address;
 	size_t NewID;
 	ItList CurrentEntry = fgms->m_BlackList.Find ( E.Address, "" );
@@ -1463,7 +1463,7 @@ FG_CLI::cmd_crossfeed_add
 			break;
 		}
 	}
-	FG_ListElement E (Name);
+	fgmp::ListElement E (Name);
 	E.Address = Address;
 	E.Address.SetPort (Port);
 	size_t NewID;
@@ -1566,7 +1566,7 @@ FG_CLI::cmd_crossfeed_show
 		}
 	}
 	int Count = fgms->m_CrossfeedList.Size ();
-	FG_ListElement Entry("");
+	fgmp::ListElement Entry("");
 	client << fgms->m_CrossfeedList.Name << ":" << CRLF;
 	client << CRLF;
 	time_t  difftime;
@@ -1710,7 +1710,7 @@ FG_CLI::cmd_relay_show
 		}
 	}
 	int Count = fgms->m_RelayList.Size ();
-	FG_ListElement Entry("");
+	fgmp::ListElement Entry("");
 	client << fgms->m_RelayList.Name << ":" << CRLF;
 	client << CRLF;
 	time_t  difftime;
@@ -2044,7 +2044,7 @@ FG_CLI::cmd_relay_add
 			break;
 		}
 	}
-	FG_ListElement E (Name);
+	fgmp::ListElement E (Name);
 	E.Address = Address;
 	E.Address.SetPort (Port);
 	size_t NewID;

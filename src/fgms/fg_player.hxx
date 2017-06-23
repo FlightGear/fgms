@@ -30,8 +30,10 @@
 #ifndef FG_PLAYER_HXX
 #define FG_PLAYER_HXX
 
-//#include <fglib/fg_list.hxx>
-#include "fg_list.hxx"
+#include <fglib/fg_list.hxx>
+
+namespace fgmp
+{
 
 //////////////////////////////////////////////////////////////////////
 /** 
@@ -43,7 +45,7 @@
  * They are dropped with FGMS::DropClient after expiry time
  * Clients are added even if they have bad data, see FGMS::AddBadClient
  */
-class FG_Player : public FG_ListElement
+class FG_Player : public ListElement
 {
 public:
 	typedef enum
@@ -102,7 +104,9 @@ private:
 	void assign ( const FG_Player& P );
 }; // FG_Player
 
-typedef mT_FG_List<FG_Player>			PlayerList;
-typedef vector<FG_Player>::iterator		PlayerIt;
+typedef List<FG_Player>			PlayerList;
+typedef vector<FG_Player>::iterator	PlayerIt;
+
+} // namepsace fgmp
 
 #endif

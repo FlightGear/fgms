@@ -583,7 +583,7 @@ ParseParams ( int argcount, char* argvars[] )
 			}
 			break;
 		case 'v':
-            curr_priority = (sgDebugPriority) StrToNum<int>  ( optarg, E );
+			curr_priority = (sgDebugPriority) StrToNum<int>  ( optarg, E );
 			fgms.SetLog ( curr_class, curr_priority );
 			if ( E )
 			{
@@ -711,7 +711,11 @@ void SigHUPHandler ( int SigType )
  * @param argv*[]
  */
 int
-main ( int argc, char* argv[] )
+main
+(
+	int argc,
+	char* argv[]
+)
 {
 	int     I;
 

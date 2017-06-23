@@ -72,9 +72,9 @@ if(WIN32)
 	configure_file( "${CMAKE_SOURCE_DIR}/config.h.msvc" "${CMAKE_BINARY_DIR}/config.h" COPYONLY)
 	file(WRITE "${CMAKE_BINARY_DIR}/unistd.h" "/* dummy unistd.h for windows */") 
 else(WIN32)
-	set( EXTRA_FLAGS -std=c++11 )
+	set( EXTRA_FLAGS "-std=c++11" )
 	if(ENABLE_DEBUG_SYMBOLS)
-		list(APPEND EXTRA_FLAGS "-g")
+		set(EXTRA_FLAGS "${EXTRA_FLAGS} -g")
 	endif(ENABLE_DEBUG_SYMBOLS)
 	list(APPEND EXTRA_LD_FLAGS -L.)
 	set( WARNING_FLAGS "${WARNING_FLAGS} -Wno-unused-local-typedefs -Wno-unused-but-set-variable" )
@@ -182,6 +182,8 @@ add_library( Libfgmp ${LIB_TYPE}
 	src/fglib/fg_geometry.cxx
 	src/fglib/fg_version.hxx
 	src/fglib/fg_version.cxx
+	src/fglib/fg_thread.hxx 
+	src/fglib/fg_thread.cxx 
 	src/fglib/fg_list.hxx 
 	src/fglib/fg_list.cxx 
 )

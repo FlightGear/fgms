@@ -49,6 +49,13 @@
 
 using namespace std;
 
+using fgmp::FG_List;
+using fgmp::PlayerList;
+using fgmp::ListElement;
+using fgmp::FG_Player;
+using fgmp::PlayerIt;
+using fgmp::ItList;
+
 //////////////////////////////////////////////////////////////////////
 /**
  * @class FGMS
@@ -171,11 +178,11 @@ protected:
 	NetSocket*	m_TelnetSocket;
 	NetSocket*	m_AdminSocket;
 	mT_IP2Relay	m_RelayMap;
-	FG_List		m_CrossfeedList;
-	FG_List		m_WhiteList;
-	FG_List		m_BlackList;
-	FG_List		m_RelayList;
-	PlayerList	m_PlayerList;
+	fgmp::FG_List	m_CrossfeedList;
+	fgmp::FG_List	m_WhiteList;
+	fgmp::FG_List	m_BlackList;
+	fgmp::FG_List	m_RelayList;
+	fgmp::PlayerList	m_PlayerList;
 	int		m_ipcid;
 	int		m_childpid;
 	FG_TRACKER*	m_Tracker;
@@ -227,7 +234,7 @@ protected:
 	void  DropClient    ( PlayerIt& CurrentPlayer ); 
 	bool  ReceiverWantsData ( const PlayerIt& SenderPos, const FG_Player& Receiver );
 	bool  ReceiverWantsChat ( const PlayerIt& SenderPos, const FG_Player& Receiver );
-	bool  IsInRange     ( const FG_ListElement& Relay,  const PlayerIt& SendingPlayer, uint32_t MsgId );
+	bool  IsInRange     ( const fgmp::ListElement& Relay,  const PlayerIt& SendingPlayer, uint32_t MsgId );
 	void  SendToCrossfeed ( char* Msg, int Bytes, const NetAddr& SenderAddress );
 	void  SendToRelays  ( char* Msg, int Bytes, PlayerIt& SendingPlayer );
 	void  WantExit ();

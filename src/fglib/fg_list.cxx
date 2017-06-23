@@ -19,17 +19,17 @@
 //
 // Copyright (C) 2005-2012  Oliver Schroeder
 //
-#ifdef HAVE_CONFIG_H
-	#include "config.h"
-#endif
 
 #include <time.h>
 #include "fg_list.hxx"
 
-const size_t FG_ListElement::NONE_EXISTANT = (size_t) -1;
+namespace fgmp
+{
+
+const size_t ListElement::NONE_EXISTANT = (size_t) -1;
 
 //////////////////////////////////////////////////////////////////////
-FG_ListElement::FG_ListElement( const string& Name )
+ListElement::ListElement( const string& Name )
 {
 	ID		= NONE_EXISTANT;	// flag a non existant Element
 	Timeout		= 0;
@@ -45,7 +45,7 @@ FG_ListElement::FG_ListElement( const string& Name )
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-FG_ListElement::FG_ListElement()
+ListElement::ListElement()
 {
 	ID		= NONE_EXISTANT;	// flag a non existant Element
 	Timeout		= 0;
@@ -61,21 +61,21 @@ FG_ListElement::FG_ListElement()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-FG_ListElement::FG_ListElement( const FG_ListElement& P )
+ListElement::ListElement( const ListElement& P )
 {
 	this->assign (P);
 }
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-FG_ListElement::~FG_ListElement()
+ListElement::~ListElement()
 {
 }
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 void
-FG_ListElement::operator =( const FG_ListElement& P )
+ListElement::operator =( const ListElement& P )
 {
 	this->assign (P);
 }
@@ -83,7 +83,7 @@ FG_ListElement::operator =( const FG_ListElement& P )
 
 //////////////////////////////////////////////////////////////////////
 bool
-FG_ListElement::operator ==( const FG_ListElement& P )
+ListElement::operator ==( const ListElement& P )
 {
 	// FIXME: compare the name, too?
 	if (Address == P.Address)
@@ -94,7 +94,7 @@ FG_ListElement::operator ==( const FG_ListElement& P )
 
 //////////////////////////////////////////////////////////////////////
 void
-FG_ListElement::assign( const FG_ListElement& P )
+ListElement::assign( const ListElement& P )
 {
 	ID		= P.ID;
 	Timeout		= P.Timeout;
@@ -112,7 +112,7 @@ FG_ListElement::assign( const FG_ListElement& P )
 
 //////////////////////////////////////////////////////////////////////
 void
-FG_ListElement::UpdateSent( size_t bytes )
+ListElement::UpdateSent( size_t bytes )
 {
 	PktsSent++;
 	BytesSent += bytes;
@@ -122,7 +122,7 @@ FG_ListElement::UpdateSent( size_t bytes )
 
 //////////////////////////////////////////////////////////////////////
 void
-FG_ListElement::UpdateRcvd
+ListElement::UpdateRcvd
 (
 	size_t bytes
 )
@@ -132,3 +132,5 @@ FG_ListElement::UpdateRcvd
 	LastSeen = time(0);
 }
 //////////////////////////////////////////////////////////////////////
+
+} // namespace fgmp
