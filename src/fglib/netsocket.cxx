@@ -447,7 +447,7 @@ NetSocket::Connect
  *
  * @param Buffer        The data to send.
  * @param Size          The number of bytes to send.
- * @param Flags         See socket(2) for a description
+ * @param Flags         See send(2) for a description
  *
  * @return >0           Number of bytes actually sent.
  * @return -1           Something went wrong, check @a errno
@@ -461,7 +461,29 @@ NetSocket::Send
 	const int Flags
 )
 {
-	return ::send ( m_Handle, ( const char* ) Buffer, Size, Flags );
+	char* p       = (char*) Buffer;
+	int   left    = Size;
+	int   written = 0;
+
+	while ( left > 0 )
+	{
+		written = ::send ( m_Handle, p, left, MSG_NOSIGNAL );
+		if ( written == SOCKET_ERROR )
+		{
+			if ( RECOVERABLE_ERROR )
+			{
+				written = 0;
+				usleep ( 5000 );
+			}
+			else
+			{
+				return -1;
+			}
+		}
+		left -= written;
+		p    += written;
+	}
+	return Size;
 } // NetSocket::Send ()
 //////////////////////////////////////////////////////////////////////
 
@@ -470,7 +492,6 @@ NetSocket::Send
  * Send a string via current connection.
  *
  * @param Msg           The message to send.
- * @param Size          The number of bytes to send.
  * @param Flags         See socket(2) for a description
  *
  * @return >0           Number of bytes actually sent.
@@ -484,8 +505,29 @@ NetSocket::Send
 	const int Flags
 )
 {
-	return ::send ( m_Handle,
-	  ( const char* ) Msg.c_str(), Msg.size(), Flags );
+	return Send ( ( const void* ) Msg.c_str(), Msg.length(), Flags );
+
+} // NetSocket::Send ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * Send a single character via current connection.
+ *
+ * @param Buffer        The data to send.
+ * @param Size          The number of bytes to send.
+ *
+ * @return >0           Number of bytes actually sent.
+ * @return -1           Something went wrong, check @a errno
+ */
+//////////////////////////////////////////////////////////////////////
+int
+NetSocket::Send
+(
+	const char& C
+)
+{
+	return ::send ( m_Handle, & C, 1, 0 );
 } // NetSocket::Send ()
 //////////////////////////////////////////////////////////////////////
 
@@ -511,8 +553,30 @@ NetSocket::SendTo
 	const int Flags
 )
 {
-	return ::sendto ( m_Handle, ( const char* ) Buffer, Size, Flags,
-	  ( struct sockaddr* ) To.SockAddr(), To.AddrSize() );
+	char* p       = (char*) Buffer;
+	int   left    = Size;
+	int   written = 0;
+	while ( left > 0 )
+	{
+		written = ::sendto ( m_Handle, p, left, MSG_NOSIGNAL,
+		  ( struct sockaddr* ) To.SockAddr(), To.AddrSize()
+		);
+		if ( written == SOCKET_ERROR )
+		{
+			if ( RECOVERABLE_ERROR )
+			{
+				written = 0;
+				usleep ( 5000 );
+			}
+			else
+			{
+				return -1;
+			}
+		}
+		left -= written;
+		p    += written;
+	}
+	return Size;
 } // NetSocket::SendTo ()
 //////////////////////////////////////////////////////////////////////
 
@@ -537,11 +601,7 @@ NetSocket::SendTo
 	const int Flags
 )
 {
-	SG_LOG ( SG_UTIL, SG_DEBUG, "NetSocket::SendTo(msg) to: "
-		 << To.ToString() << "(" << To.AddrType() << ") "
-		 << " flags: " << Flags );
-	return ::sendto ( m_Handle, ( const char* ) Msg.c_str(), Msg.size(),
-	  Flags, ( struct sockaddr* ) To.SockAddr(), To.AddrSize() );
+	return SendTo ( ( const void* ) Msg.c_str(), Msg.length(), To, Flags );
 } // NetSocket::SendTo ()
 //////////////////////////////////////////////////////////////////////
 

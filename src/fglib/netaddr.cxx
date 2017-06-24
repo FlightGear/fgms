@@ -95,9 +95,9 @@ NetAddr::NetAddr
 	const int Port
 )
 {
-	m_Error       = E_OK;
-	m_Port        = Port;
+	m_Error = E_OK;
 	FromString ( Addr.c_str() );
+	m_Port  = Port;
 } // NetAddr::NetAddr ( const string& Addr )
 //////////////////////////////////////////////////////////////////////
 

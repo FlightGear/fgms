@@ -71,6 +71,8 @@ public:
 	int  Send ( const void* Buffer, const int Size, const int Flags=0 );
 	/// Send a string over the current connection.
 	int  Send ( const string& Msg, const int Flags=0 );
+	/// Send a string over the current connection.
+	int  Send ( const char& C );
 	/// Send data to the given host and port.
 	int  SendTo ( const void* Buffer, const int Size,
 		      const NetAddr& To, const int Flags=0 );
