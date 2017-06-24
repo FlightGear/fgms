@@ -20,6 +20,9 @@
 //
 
 // #define SG_DEBUG_ALL
+#ifdef HAVE_CONFIG_H
+#include "config.h" // for MSVC, always first
+#endif
 
 #include <iostream>
 #include "netpacket.hxx"

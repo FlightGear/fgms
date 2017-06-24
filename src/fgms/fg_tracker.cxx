@@ -34,7 +34,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "config.h" // for MSVC, always first
 #endif
 
 #include <iostream>
@@ -55,6 +55,7 @@
 #include <sys/msg.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <sys/time.h>
 #endif
 #include <unistd.h>
 #include <stdio.h>
@@ -63,7 +64,6 @@
 #include <simgear/debug/logstream.hxx>
 #include <libcli/debug.hxx>
 #include <fglib/daemon.hxx>
-#include <sys/time.h>
 
 #ifndef DEF_CONN_SECS
 #define DEF_CONN_SECS 30

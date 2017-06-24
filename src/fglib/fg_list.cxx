@@ -20,6 +20,10 @@
 // Copyright (C) 2005-2012  Oliver Schroeder
 //
 
+#ifdef HAVE_CONFIG_H
+#include "config.h" // for MSVC, always first
+#endif
+
 #include <time.h>
 #include "fg_list.hxx"
 

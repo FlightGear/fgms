@@ -22,6 +22,9 @@
 //  taken from simgear and other sources
 //
 //////////////////////////////////////////////////////////////////////
+#ifdef HAVE_CONFIG_H
+#include "config.h" // for MSVC, always first
+#endif
 
 #include <math.h>
 #ifndef _MSC_VER

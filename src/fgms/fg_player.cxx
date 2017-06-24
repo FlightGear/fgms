@@ -20,6 +20,10 @@
 // Copyright (C) 2005-2012  Oliver Schroeder
 //
 
+#ifdef HAVE_CONFIG_H
+#include "config.h" // for MSVC, always first
+#endif
+
 #include "fg_player.hxx"
 
 namespace fgmp

@@ -1,5 +1,6 @@
 // config.h
 // SPECIAL HAND CRAFTED CONFIG.H FOR MSVC
+// 20170623 - Updated to build fgms version 1.0.0
 // 20121016 - After removal of 'build' folder, and all automake pieces, add back this as config.h.msvc
 // 20120623 - Bumped verions, to agree with configure.ac
 // 20120322 - update using pthreads for telnet
@@ -7,13 +8,14 @@
 // 20110324 - hand crafted for MSVC
 #ifndef _FGMS_CONFIG_H_
 #define _FGMS_CONFIG_H_
+#ifdef _MSC_VER
 
 #pragma warning ( disable : 4996 )  // remove warning "The POSIX name for this item is depreciated" ...
 #pragma warning ( disable : 4244 )  // conversion from 'a' to 'b', possible loss of data
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <winsock2.h>
+#include <winsock2.h>   // NOTE: This includes Windows.h
 #include <ws2tcpip.h>
 #include <time.h>
 
@@ -32,5 +34,10 @@
 /* Now REQUIRED <pthread.h>, and the pthreadVC2.lib and dll */
 #define HAVE_PTHREAD_H 1
 
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
+#endif // _MSC_VER
 #endif // #ifndef _FGMS_CONFIG_H_
 // eof - config.h

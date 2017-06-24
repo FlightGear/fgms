@@ -1,3 +1,10 @@
+//
+// util functions
+//
+#ifdef HAVE_CONFIG_H
+#include "config.h" // for MSVC, always first
+#endif
+
 #include <stdio.h>
 #include "fg_util.hxx"
 
