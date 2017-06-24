@@ -1020,7 +1020,7 @@ FGMS::AddTracker
 {
 	CloseTracker();
 	m_IsTracked = IsTracked;
-	m_Tracker = new FG_TRACKER ( Port, Server, m_ServerName, m_FQDN );
+	m_Tracker = new FG_TRACKER ( Port, Server, m_ServerName, m_FQDN, m_version.str() );
 	return ( SUCCESS );
 } // FGMS::AddTracker()
 

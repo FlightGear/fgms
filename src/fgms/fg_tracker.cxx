@@ -106,9 +106,11 @@ FG_TRACKER::FG_TRACKER
 	int port,
 	string server,
 	string m_ServerName,
-	string domain
+	string domain,
+	string version
 )
 {
+	m_version		= version;
 	m_TrackerPort	= port;
 	m_TrackerServer = server;
 	m_FgmsName = m_ServerName;
@@ -402,17 +404,18 @@ FG_TRACKER::TrackerWrite
 	const string& str
 )
 {
-	size_t l   = str.size() + 1;
+	size_t l   = str.size()+1;
 	LastSent   = time ( 0 );
 	errno      = 0;
 	size_t s   = -1;
-	s = m_TrackerSocket->Send ( str, l );
+
+	s = m_TrackerSocket->Send ( str.c_str(), l ,0 );
 	if ( s != l )
 	{
 		set_connected ( false );
 		LostConnections++;
 		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::TrackerWrite: "
-			 << "lost connection to server"
+			 << "lost connection to server. Netsocket returned size =" << s << ", actual size should be =" <<l
 		       );
 		return -1;
 	}
@@ -438,8 +441,7 @@ FG_TRACKER::TrackerWrite
 		<< l <<", msg_queue.size = "
 		<< msg_queue.size()
 		<< ", msg_sent_queue.size = "  << msg_sent_queue.size();
-	l= debug.str().size() + 1;
-	m_TrackerSocket->Send ( debug.str(), l );
+	m_TrackerSocket->Send ( debug.str().c_str(), debug.str().size() + 1, 0 );
 	BytesSent += s;
 	PktsSent++;
 	return s;
@@ -647,10 +649,10 @@ FG_TRACKER::Connect
 		m_TrackerSocket = 0;
 		return false;
 	}
-	if ( m_TrackerSocket->Connect ( m_TrackerServer, m_TrackerPort ) < 0 )
+	if ( m_TrackerSocket->Connect ( m_TrackerServer, m_TrackerPort ) == false )
 	{
 		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::Connect: "
-			 << "Connect failed!"
+			 << "Connect to " << m_TrackerServer <<":" << m_TrackerPort << " failed!"
 		       );
 		delete m_TrackerSocket;
 		m_TrackerSocket = 0;
@@ -661,14 +663,16 @@ FG_TRACKER::Connect
 		 << "success"
 	       );
 	LastConnected	= time ( 0 );
-	m_TrackerSocket->Send ( '\0' );
-	sleep ( 2 );
-	/*Write Version header to FGTracker*/
 	std::stringstream ss;
+	ss.str("Please iniialize");
+	m_TrackerSocket->Send ( ss.str().c_str(), ss.str().size()+1 ,0 );
+	sleep ( 2 );
+	
+	/*Write Version header to FGTracker*/
+	ss.str("");
 	ss << "V" << m_ProtocolVersion << " " << m_version
 	   << " "<< m_domain << " " << m_FgmsName;
-	std::string s = ss.str();
-	TrackerWrite ( s );
+	TrackerWrite ( ss.str() );
 	SG_LOG ( SG_FGTRACKER, SG_DEBUG, "# FG_TRACKER::Connect: "
 		 << "Written Version header"
 	       );

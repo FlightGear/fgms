@@ -45,7 +45,6 @@ using namespace std;
 #include <unistd.h>
 #include <fglib/netsocket.hxx>
 #include <fglib/fg_geometry.hxx>
-#include <fglib/fg_version.hxx>
 
 #define CONNECT    0
 #define DISCONNECT 1
@@ -76,7 +75,7 @@ public:
 	string	m_ProtocolVersion;
 	bool	m_identified;			/* If fgtracker identified this fgms */
 	NetSocket* m_TrackerSocket;
-	FG_VERSION m_version;
+	string m_version;
 
 	typedef std::vector<std::string> vMSG;	/* string vector */
 	typedef vMSG::iterator VI;		/* string vector iterator */
@@ -109,13 +108,9 @@ public:
 	//  constructors
 	//
 	//////////////////////////////////////////////////
-	FG_TRACKER ( int port, string server, string m_ServerName, string m_domain );
+	FG_TRACKER ( int port, string server, string m_ServerName, string m_domain, string m_version);
 	~FG_TRACKER ();
 
-	inline void set_version ( const FG_VERSION& v )
-	{
-		m_version.set_num ( v.num() );
-	};
 	//////////////////////////////////////////////////
 	//
 	//  public methods
