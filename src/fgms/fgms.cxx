@@ -505,7 +505,6 @@ FGMS::Init
 			continue;
 		}
 		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# relay " << Entry.Name
-			     << ":" << Entry.Address.Port()
 			     << " (" << Entry.Address << ")" );
 	}
 	//////////////////////////////////////////////////
@@ -931,6 +930,9 @@ FGMS::AddRelay
 {
 	ListElement  B ( Relay );
 	B.Address.Assign ( Relay, Port );
+	stringstream Portss;
+	Portss << Relay << ":" << Port;
+	B.Name = Portss.str();
 	if ( ! B.Address.IsValid () )
 	{
 		SG_LOG ( SG_FGMS, SG_ALERT,
@@ -944,7 +946,7 @@ FGMS::AddRelay
 		return;
 	}
 	m_RelayList.Lock ();
-	ItList CurrentEntry = m_RelayList.Find ( B.Address, "" );
+	ItList CurrentEntry = m_RelayList.Find ( B.Address, B.Name );
 	m_RelayList.Unlock ();
 	if ( CurrentEntry == m_RelayList.End() )
 	{

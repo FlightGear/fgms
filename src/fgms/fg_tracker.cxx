@@ -664,7 +664,7 @@ FG_TRACKER::Connect
 	       );
 	LastConnected	= time ( 0 );
 	std::stringstream ss;
-	ss.str("Please iniialize");
+	ss.str("Please initialize");
 	m_TrackerSocket->Send ( ss.str().c_str(), ss.str().size()+1 ,0 );
 	sleep ( 2 );
 	
