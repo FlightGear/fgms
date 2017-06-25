@@ -484,7 +484,6 @@ FG_SERVER::Init()
 		if (Entry.ID == FG_ListElement::NONE_EXISTANT)
 			continue;
 		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# relay " << Entry.Name
-		           << ":" << Entry.Address.getPort()
 			   << " (" << Entry.Address.getHost() << ")");
 	}
 	//////////////////////////////////////////////////
@@ -868,6 +867,9 @@ FG_SERVER::AddRelay( const string& Relay, int Port )
 	FG_ListElement  B (Relay);
 
 	B.Address.set ( ( char* ) Relay.c_str(), Port );
+	stringstream Portss;
+	Portss << Relay << ":" << Port;
+	B.Name = Portss.str();
 	if (B.Address.getIP() == 0)
 	{
 		SG_LOG ( SG_FGMS, SG_ALERT,
@@ -881,7 +883,7 @@ FG_SERVER::AddRelay( const string& Relay, int Port )
 		return;
 	}
 	m_RelayList.Lock ();
-	ItList CurrentEntry = m_RelayList.Find ( B.Address, "" );
+	ItList CurrentEntry = m_RelayList.Find ( B.Address, B.Name );
 	m_RelayList.Unlock ();
 	if ( CurrentEntry == m_RelayList.End() )
 	{	
