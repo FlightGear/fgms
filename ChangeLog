@@ -1,3 +1,21 @@
+1.0.0-dev2
+	[MISC]	moved contrib/etc to etc
+	[MISC]	CMakeList.txt: reordered, reformatted
+		added a summary at the end
+	[NEW]	created fglib/fg_log
+		A logging class with a logbuffer, which can be 
+		accessed from outside. Useful for the cli to
+		show the log
+	[MISC]	deleted src/simgear/debug/*
+		Changed all files to use log::logstream instead of 
+		SG_LOG
+	[NEW]	added fgls
+		It does nothing useful, yet.
+	[NEW]	fgms cli is now able to show the logs :-)
+	[MISC]	added additional config settings with documentation
+		to etc/fgms_production.skel.conf
+	[NEW]	added etc/fgls_skel.conf
+	[FIX]	
 1.0.0
 	[MISC]	moved files which are used from other servers
 		from src/server to src/fglib

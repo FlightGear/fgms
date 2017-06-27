@@ -199,7 +199,6 @@ endif ( Threads_FOUND )
 include_directories ( SYSTEM "${PROJECT_BINARY_DIR}"
 	src
 	src/flightgear/MultiPlayer
-	src/simgear/debug
 	src/fgms
 	src/fglib
 	src/libcli
@@ -305,9 +304,6 @@ endif ( WIN32 )
 # Project [sgutils] [Static Library] [noinst_LIBRARIES]
 add_library (
 	sgutils ${LIB_TYPE}
-	src/simgear/debug/debug_types.h 
-	src/simgear/debug/logstream.cxx 
-	src/simgear/debug/logstream.hxx 
 	src/simgear/math/SGEuler.hxx 
 	src/simgear/math/SGEuler.cxx 
 )
@@ -351,8 +347,6 @@ if ( WIN32 )
 	set_target_properties ( ${EXE_NAME} PROPERTIES DEBUG_POSTFIX "d" )
 	install ( TARGETS ${EXE_NAME} DESTINATION bin )
 else ( WIN32 )
-	message ( STATUS "*** Will install binary to ${SBINDIR}" )
-	message ( STATUS "*** Will read config from ${SYSCONFDIR}" )
 	install ( TARGETS ${EXE_NAME} DESTINATION ${SBINDIR} )
 endif ( WIN32 )
 
@@ -361,9 +355,8 @@ endif ( WIN32 )
 # print summary of build settings
 #
 ##################################################
-message ( STATUS "*** Set CMAKE_INSTALL_PREFIX to ${CMAKE_INSTALL_PREFIX}" )
-message ( STATUS "*** Set SYSCONFDIR to user ${SYSCONFDIR}" )
-message ( STATUS "*** Set SBINDIR to user ${SBINDIR}" )
+message ( STATUS "*** Will install binary to ${SBINDIR}" )
+message ( STATUS "*** Will read config from ${SYSCONFDIR}" )
 if ( BUILD_SHARED_LIB )
 	message( STATUS "*** Building DLL library ${LIB_TYPE}" )
 else (BUILD_SHARED_LIB )
