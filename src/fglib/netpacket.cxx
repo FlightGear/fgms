@@ -25,6 +25,7 @@
 #endif
 
 #include <iostream>
+#include "fg_log.hxx"
 #include "netpacket.hxx"
 
 //////////////////////////////////////////////////////////////////////
@@ -316,12 +317,13 @@ NetPacket::Encrypt
 	uint32_t Mod = Len % XTEA_BLOCK_SIZE;
 	if ( ( ! m_Buffer ) || ( m_BytesInUse == 0 ) )
 	{
-		SG_LOG ( SG_UTIL, SG_ALERT,  "NetPacket::Encrypt() - nothing to encrypt!" );
+		LOG(log::DEBUG, "NetPacket::Encrypt() - nothing to encrypt!" );
 		return;
 	}
 	if ( m_BytesInUse <= Offset )
 	{
-		SG_LOG ( SG_UTIL, SG_ALERT,  "NetPacket::Enrypt() - Offset>Used Bytes!" );
+		LOG ( log::DEBUG,
+		  "NetPacket::Enrypt() - Offset>Used Bytes!" );
 		return;
 	}
 	for ( uint32_t i=Offset; i<=Len-XTEA_BLOCK_SIZE; i+=XTEA_BLOCK_SIZE )
@@ -348,12 +350,14 @@ NetPacket::Decrypt
 	uint32_t Mod = Len % XTEA_BLOCK_SIZE;
 	if ( ( ! m_Buffer ) || ( m_BytesInUse == 0 ) )
 	{
-		SG_LOG ( SG_UTIL, SG_ALERT,  "NetPacket::Decrypt() - nothing to encrypt!" );
+		LOG ( log::DEBUG,
+		  "NetPacket::Decrypt() - nothing to encrypt!" );
 		return;
 	}
 	if ( m_BytesInUse <= Offset )
 	{
-		SG_LOG ( SG_UTIL, SG_ALERT,  "NetPacket::Decrypt() - Offset>Used Bytes!" );
+		LOG ( log::DEBUG,
+		  "NetPacket::Decrypt() - Offset>Used Bytes!" );
 		return;
 	}
 	if ( Mod )
@@ -428,7 +432,7 @@ NetPacket::WriteOpaque
 bool
 NetPacket::WriteString
 (
-	const string& Str
+	const std::string& Str
 )
 {
 	return ( WriteOpaque ( ( const void* ) Str.c_str(), Str.size() +1 ) );
@@ -509,7 +513,7 @@ NetPacket::ReadOpaque
 
 //////////////////////////////////////////////////////////////////////
 
-string
+std::string
 NetPacket::ReadString
 () throw ( std::runtime_error )
 {
@@ -525,14 +529,14 @@ NetPacket::ReadString
 		throw std::runtime_error (
 			"NetPacket::ReadString (): invalid length" );
 	}
-	string ret = ( char* )  &m_Buffer[m_CurrentIndex];
+	std::string ret = ( char* )  &m_Buffer[m_CurrentIndex];
 	m_CurrentIndex += Size;
 	return ( ret );
 } // NetPacket::ReadString ()
 
 //////////////////////////////////////////////////////////////////////
 
-string
+std::string
 NetPacket::ReadCStr
 () throw ( std::runtime_error )
 {
@@ -541,7 +545,7 @@ NetPacket::ReadCStr
 		throw std::runtime_error (
 			"NetPacket::ReadCStr (): no more data to read" );
 	}
-	string ret = ( char* )  &m_Buffer[m_CurrentIndex];
+	std::string ret = ( char* )  &m_Buffer[m_CurrentIndex];
 	int len = ret.size () + 1;
 	m_CurrentIndex += len;
 	return ( ret );

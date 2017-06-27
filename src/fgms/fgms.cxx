@@ -43,11 +43,12 @@
 #endif
 #include <string>
 #include <fglib/fg_util.hxx>
+#include <fglib/fg_log.hxx>
 #include <simgear/math/SGEuler.hxx>
 #include "fg_cli.hxx"
 #include "fgms.hxx"    // includes pthread.h
 
-const FG_VERSION FGMS::m_version ( 1, 0, 0, "-dev" );
+const FG_VERSION FGMS::m_version ( 1, 0, 0, "-dev2" );
 
 #ifdef _MSC_VER
 #include <conio.h> // for _kbhit(), _getch
@@ -98,8 +99,6 @@ static char* stat_file   = ( char* ) "/tmp/" DEF_STAT_FILE;
 
 #ifdef ADD_TRACKER_LOG
 
-// FIXME: use SG_LOG !
-
 static void
 write_time_string
 (
@@ -136,7 +135,9 @@ write_msg_log
 		msg_file = fopen ( msg_log, "ab" );
 		if ( !msg_file )
 		{
-			printf ( "ERROR: Failed to OPEN/append %s log file!\n", msg_log );
+			LOG ( log::ERROR,
+			  "ERROR: Failed to OPEN/append "
+			  << log file << "!" )
 			msg_file = ( FILE* )-1;
 		}
 	}
@@ -152,7 +153,10 @@ write_msg_log
 		{
 			fclose ( msg_file );
 			msg_file = ( FILE* )-1;
-			printf ( "ERROR: Failed to WRITE %d != %d to %s log file!\n", wtn, len, msg_log );
+			LOG ( log::ERROR,
+			  "ERROR: Failed to WRITE "
+			  << wtn << " != " << len
+			  << " to " << msg_log );
 		}
 		else
 		{
@@ -239,6 +243,8 @@ FGMS::FGMS
 	m_TrackerPosition	= 0; // Tracker messages queued
 	m_LocalClients		= 0;
 	m_RemoteClients		= 0;
+	m_ClientsInterval	= 5;
+	m_ClientsLastRun	= 0;
 	// Be able to enable/disable file interface
 	// On start-up if the file already exists, disable
 	struct stat buf;
@@ -248,8 +254,6 @@ FGMS::FGMS
 	m_Uptime		= time ( 0 );
 	m_WantExit		= false;
 	ConfigFile		= "";
-	SetLog ( SG_FGMS|SG_FGTRACKER, SG_INFO );
-	// SetLog (SG_ALL, SG_DISABLED);
 } // FGMS::FGMS()
 
 //////////////////////////////////////////////////////////////////////
@@ -318,21 +322,9 @@ FGMS::Init
 	//      all connections and re-init all
 	//      variables
 	//////////////////////////////////////////////////
-	if ( !m_LogFile.is_open() )
+	if ( ! logger.is_open() )
 	{
-		m_LogFile.open ( m_LogFileName.c_str(), ios::out|ios::app );
-		sglog().setLogLevels ( SG_FGMS, SG_INFO );
-		sglog().enable_with_date ( true );
-		if ( m_LogFile.is_open() )
-		{
-			sglog().set_output ( m_LogFile );
-		}
-		else
-		{
-			SG_CONSOLE ( SG_FGMS, SG_ALERT, "FGMS::Init() - "
-				     << "Failed to open log file "
-				     << m_LogFileName );
-		}
+		SetLogfile ( m_LogFileName );
 	}
 	if ( m_Initialized == false )
 	{
@@ -355,17 +347,17 @@ FGMS::Init
 		m_DataSocket = new NetSocket();
 		if ( m_DataSocket->Open ( NetSocket::UDP ) == 0 )
 		{
-			SG_CONSOLE ( SG_FGMS, SG_ALERT, "FGMS::Init() - "
-				     << "failed to create listener socket" );
+			LOG ( log::ERROR, "FGMS::Init() - "
+			  << "failed to create listener socket" );
 			return ( ERROR_CREATE_SOCKET );
 		}
 		m_DataSocket->SetBlocking ( false );
 		m_DataSocket->SetSocketOption ( SO_REUSEADDR, true );
 		if ( ! m_DataSocket->Bind ( m_BindAddress, m_ListenPort ) )
 		{
-			SG_CONSOLE ( SG_FGMS, SG_ALERT, "FGMS::Init() - "
-				     << "failed to bind to port " << m_ListenPort );
-			SG_CONSOLE ( SG_FGMS, SG_ALERT, "already in use?" );
+			LOG ( log::ERROR, "FGMS::Init() - "
+			  << "failed to bind to port " << m_ListenPort );
+			LOG ( log::ERROR, "already in use?" );
 			return ( ERROR_COULDNT_BIND );
 		}
 		m_ReinitData = false;
@@ -383,28 +375,24 @@ FGMS::Init
 			m_TelnetSocket = new NetSocket;
 			if ( m_TelnetSocket->Open ( NetSocket::TCP ) == 0 )
 			{
-				SG_CONSOLE ( SG_FGMS, SG_ALERT,
-					     "FGMS::Init() - "
-					     << "failed to create telnet socket" );
+				LOG ( log::ERROR, "FGMS::Init() - "
+				  << "failed to create telnet socket" );
 				return ( ERROR_CREATE_SOCKET );
 			}
 			m_TelnetSocket->SetBlocking ( false );
 			m_TelnetSocket->SetSocketOption ( SO_REUSEADDR, true );
 			if ( ! m_TelnetSocket->Bind ( m_BindAddress, m_TelnetPort ) )
 			{
-				SG_CONSOLE ( SG_FGMS, SG_ALERT,
-					     "FGMS::Init() - "
-					     << "failed to bind telnet socket "
-					     << m_TelnetPort );
-				SG_CONSOLE ( SG_FGMS, SG_ALERT,
-					     "already in use?" );
+				LOG ( log::ERROR, "FGMS::Init() - "
+				  << "failed to bind telnet socket "
+				  << m_TelnetPort );
+				LOG ( log::ERROR, "already in use?" );
 				return ( ERROR_COULDNT_BIND );
 			}
 			if ( ! m_TelnetSocket->Listen ( MAX_TELNETS ) )
 			{
-				SG_CONSOLE ( SG_FGMS, SG_ALERT,
-					     "FGMS::Init() - "
-					     << "failed to listen to telnet port" );
+				LOG ( log::ERROR, "FGMS::Init() - "
+				  << "failed to listen to telnet port" );
 				return ( ERROR_COULDNT_LISTEN );
 			}
 		}
@@ -422,65 +410,66 @@ FGMS::Init
 			m_AdminSocket = new NetSocket;
 			if ( m_AdminSocket->Open ( NetSocket::TCP ) == 0 )
 			{
-				SG_CONSOLE ( SG_FGMS, SG_ALERT, "FGMS::Init() - "
-					     << "failed to create admin socket" );
+				LOG ( log::ERROR, "FGMS::Init() - "
+				  << "failed to create admin socket" );
 				return ( ERROR_CREATE_SOCKET );
 			}
 			m_AdminSocket->SetBlocking ( false );
 			m_AdminSocket->SetSocketOption ( SO_REUSEADDR, true );
 			if ( ! m_AdminSocket->Bind ( m_BindAddress.c_str(), m_AdminPort ) )
 			{
-				SG_CONSOLE ( SG_FGMS, SG_ALERT, "FGMS::Init() - "
-					     << "failed to bind admin socket " << m_AdminPort );
-				SG_CONSOLE ( SG_FGMS, SG_ALERT, "already in use?" );
+				LOG ( log::ERROR, "FGMS::Init() - "
+				  << "failed to bind admin socket "
+				  << m_AdminPort );
+				LOG ( log::ERROR, "already in use?" );
 				return ( ERROR_COULDNT_BIND );
 			}
 			if ( ! m_AdminSocket->Listen ( MAX_TELNETS ) )
 			{
-				SG_CONSOLE ( SG_FGMS, SG_ALERT, "FGMS::Init() - "
-					     << "failed to listen to admin port" );
+				LOG ( log::ERROR, "FGMS::Init() - "
+				  << "failed to listen to admin port" );
 				return ( ERROR_COULDNT_LISTEN );
 			}
 		}
 		m_ReinitAdmin = false;
 	}
-	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# This is " << m_ServerName << "(" << m_FQDN << ")" );
-	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# FlightGear Multiplayer Server v"
-		     << m_version << " started" );
-	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# using protocol version v"
+	LOG ( log::ERROR, "# This is " << m_ServerName << " (" << m_FQDN << ")" );
+	LOG ( log::ERROR, "# FlightGear Multiplayer Server v"
+		     << m_version.str() << " started" );
+	LOG ( log::ERROR, "# using protocol version v"
 		     << m_ProtoMajorVersion << "." << m_ProtoMinorVersion
 		     << " (LazyRelay enabled)" );
-	SG_CONSOLE ( SG_FGMS, SG_ALERT,"# listening to port " << m_ListenPort );
+	LOG ( log::ERROR, "# listening to port " << m_ListenPort );
 	if ( m_TelnetSocket )
 	{
-		SG_CONSOLE ( SG_FGMS, SG_ALERT,"# telnet port " << m_TelnetPort );
+		LOG ( log::ERROR, "# telnet port " << m_TelnetPort );
 	}
 	else
 	{
-		SG_CONSOLE ( SG_FGMS, SG_ALERT,"# telnet port DISABLED" );
+		LOG ( log::ERROR, "# telnet port DISABLED" );
 	}
 	if ( m_AdminSocket )
 	{
-		SG_CONSOLE ( SG_FGMS, SG_ALERT,"# admin port " << m_AdminPort );
+		LOG ( log::ERROR, "# admin port " << m_AdminPort );
 	}
 	else
 	{
-		SG_CONSOLE ( SG_FGMS, SG_ALERT,"# admin port DISABLED" );
+		LOG ( log::ERROR, "# admin port DISABLED" );
 	}
-	SG_CONSOLE ( SG_FGMS, SG_ALERT,"# using logfile " << m_LogFileName );
+	LOG ( log::ERROR, "# using logfile " << m_LogFileName );
 	if ( m_BindAddress != "" )
 	{
-		SG_CONSOLE ( SG_FGMS, SG_ALERT,"# listening on " << m_BindAddress );
+		LOG ( log::ERROR, "# listening on " << m_BindAddress );
 	}
 	if ( m_IamHUB )
 	{
-		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# I am a HUB Server" );
+		LOG ( log::ERROR, "# I am a HUB Server" );
 	}
 	if ( ( m_IsTracked ) && ( m_Tracker != 0 ) )
 	{
 		pthread_t th;
 		pthread_create ( &th, NULL, &detach_tracker, m_Tracker );
-		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# tracked to "
+		LOG ( log::ERROR, "# tracked to "
 			     << m_Tracker->GetTrackerServer ()
 			     << ":" << m_Tracker->GetTrackerPort ()
 			     << ", using a thread."
@@ -488,7 +477,7 @@ FGMS::Init
 	}
 	else
 	{
-		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# tracking is disabled." );
+		LOG ( log::ERROR, "# tracking is disabled." );
 	}
 	size_t Count;
 	ListElement Entry ( "" );
@@ -496,7 +485,7 @@ FGMS::Init
 	// print list of all relays
 	//////////////////////////////////////////////////
 	Count = m_RelayList.Size();
-	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# I have " << Count << " relays" );
+	LOG ( log::ERROR, "# I have " << Count << " relays" );
 	for ( size_t i = 0; i < Count; i++ )
 	{
 		Entry = m_RelayList[i];
@@ -504,7 +493,7 @@ FGMS::Init
 		{
 			continue;
 		}
-		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# relay " << Entry.Name
+		LOG ( log::ERROR, "# relay " << Entry.Name
 			     << ":" << Entry.Address.Port()
 			     << " (" << Entry.Address << ")" );
 	}
@@ -512,7 +501,7 @@ FGMS::Init
 	// print list of all crossfeeds
 	//////////////////////////////////////////////////
 	Count = m_CrossfeedList.Size();
-	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# I have " << Count << " crossfeeds" );
+	LOG ( log::ERROR, "# I have " << Count << " crossfeeds" );
 	for ( size_t i = 0; i < Count; i++ )
 	{
 		Entry = m_CrossfeedList[i];
@@ -520,13 +509,15 @@ FGMS::Init
 		{
 			continue;
 		}
-		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# crossfeed " << Entry.Name
+		LOG ( log::ERROR, "# crossfeed " << Entry.Name
 			     << ":" << Entry.Address.Port() );
 	}
-	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# I have " << m_BlackList.Size() << " blacklisted IPs" );
-	if ( m_useExitFile && m_useStatFile ) // only show this IFF both are enabled
-	{
-		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# Files: exit=[" << exit_file << "] stat=[" << stat_file << "]" );
+	LOG ( log::ERROR, "# I have " << m_BlackList.Size()
+	  << " blacklisted IPs" );
+	if ( m_useExitFile && m_useStatFile )
+	{	// only show this IFF both are enabled
+		LOG ( log::ERROR, "# Files: exit=[" << exit_file
+		  << "] stat=[" << stat_file << "]" );
 	}
 	m_Listening = true;
 	return ( SUCCESS );
@@ -544,7 +535,7 @@ FGMS::PrepareInit
 	{
 		return;
 	}
-	SG_LOG ( SG_FGMS, SG_ALERT, "# caught SIGHUP, doing reinit!" );
+	LOG ( log::URGENT, "# caught SIGHUP, doing reinit!" );
 	// release all locks
 	m_PlayerList.Unlock ();
 	m_RelayList.Unlock ();
@@ -589,25 +580,17 @@ FGMS::HandleAdmin
 }
 
 //////////////////////////////////////////////////////////////////////
-/**
- * @brief Handle a telnet session. if a telnet connection is opened, this
- *         method outputs a list  of all known clients.
- * @param Fd -- docs todo --
- */
-void*
-FGMS::HandleTelnet
-(
-	int Fd
-)
+
+void
+FGMS::MkClientList
+()
 {
-	errno = 0;
-	string		Message;
-	/** @brief  Geodetic Coordinates */
+	std::string	Message;
 	FG_Player	CurrentPlayer;
-	NetSocket	NewTelnet;
 	unsigned int	it;
-	NewTelnet.SetHandle ( Fd );
-	errno = 0;
+
+	m_Clients.Lock ();
+	m_Clients.clear ();
 	//////////////////////////////////////////////////
 	//
 	//      create the output message
@@ -616,38 +599,27 @@ FGMS::HandleTelnet
 	//////////////////////////////////////////////////
 	Message  = "# This is " + m_ServerName;
 	Message += "\n";
-	Message += "# FlightGear Multiplayer Server v";
+	m_Clients.push_back ( Message );
+	Message  = "# FlightGear Multiplayer Server v";
 	Message += m_version.str();
 	Message += "\n";
-	Message += "# using protocol version v";
+	m_Clients.push_back ( Message );
+	Message  = "# using protocol version v";
 	Message += NumToStr ( m_ProtoMajorVersion, 0 );
 	Message += "." + NumToStr ( m_ProtoMinorVersion, 0 );
 	Message += " (LazyRelay enabled)";
 	Message += "\n";
+	m_Clients.push_back ( Message );
 	if ( m_IsTracked )
 	{
-		Message += "# This server is tracked: ";
+		Message  = "# This server is tracked: ";
 		Message += m_Tracker->GetTrackerServer();
 		Message += "\n";
-	}
-	if ( NewTelnet.Send ( Message ) < 0 )
-	{
-		if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
-		{
-			SG_LOG ( SG_FGMS, SG_ALERT, "FGMS::HandleTelnet() - " << strerror ( errno ) );
-		}
-		return ( 0 );
+		m_Clients.push_back ( Message );
 	}
 	Message  = "# "+ NumToStr ( m_PlayerList.Size(), 0 );
 	Message += " pilot(s) online\n";
-	if ( NewTelnet.Send ( Message ) < 0 )
-	{
-		if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
-		{
-			SG_LOG ( SG_FGMS, SG_ALERT, "FGMS::HandleTelnet() - " << strerror ( errno ) );
-		}
-		return ( 0 );
-	}
+	m_Clients.push_back ( Message );
 	//////////////////////////////////////////////////
 	//
 	//      create list of players
@@ -701,16 +673,42 @@ FGMS::HandleTelnet
 		Message += NumToStr ( CurrentPlayer.LastOrientation[Z], 6 ) +" ";
 		Message += CurrentPlayer.ModelName;
 		Message += "\n";
-		if ( NewTelnet.Send ( Message ) < 0 )
+		m_Clients.push_back ( Message );
+	}
+	m_Clients.Unlock ();
+} // FGMS::MkClientList()
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Handle a telnet session. if a telnet connection is opened, this
+ *         method outputs a list  of all known clients.
+ * @param Fd -- docs todo --
+ */
+void*
+FGMS::HandleTelnet
+(
+	int Fd
+)
+{
+	StrIt		Line;
+	NetSocket	NewTelnet;
+	NewTelnet.SetHandle ( Fd );
+	errno = 0;
+	m_Clients.Lock ();
+	for ( Line = m_Clients.begin(); Line != m_Clients.end(); Line++ )
+	{
+		if ( NewTelnet.Send ( *Line ) < 0 )
 		{
 			if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 			{
-				SG_LOG ( SG_FGMS, SG_ALERT, "FGMS::HandleTelnet() - " << strerror ( errno ) );
+				LOG ( log::URGENT, "FGMS::HandleTelnet() - "
+				  << strerror ( errno ) );
 			}
 			return ( 0 );
 		}
 	}
 	NewTelnet.Close ();
+	m_Clients.Unlock ();
 	return ( 0 );
 } // FGMS::HandleTelnet ()
 
@@ -740,7 +738,7 @@ FGMS::AddBadClient
 	//      see, if we already know the client
 	//////////////////////////////////////////////////
 	m_PlayerList.Lock ();
-	CurrentPlayer = m_PlayerList.Find ( Sender );
+	CurrentPlayer = m_PlayerList.Find ( Sender, true );
 	if ( CurrentPlayer != m_PlayerList.End () )
 	{
 		CurrentPlayer->UpdateRcvd ( Bytes );
@@ -767,7 +765,7 @@ FGMS::AddBadClient
 	NewPlayer.HasErrors     = true;
 	NewPlayer.Error         = ErrorMsg;
 	NewPlayer.UpdateRcvd ( Bytes );
-	SG_LOG ( SG_FGMS, SG_WARN, "FGMS::AddBadClient() - " << ErrorMsg );
+	LOG ( log::MEDIUM, "FGMS::AddBadClient() - " << ErrorMsg );
 	m_PlayerList.Add ( NewPlayer, m_PlayerExpires );
 	m_PlayerList.UpdateRcvd ( Bytes );
 	m_PlayerList.Unlock();
@@ -907,7 +905,7 @@ FGMS::AddClient
 		UpdateTracker ( NewPlayer.Name, NewPlayer.Passwd, NewPlayer.ModelName, NewPlayer.LastSeen, CONNECT );
 #endif
 	}
-	SG_LOG ( SG_FGMS, SG_INFO, Message
+	LOG ( log::MEDIUM, Message
 		 << NewPlayer.Name << "@"
 		 << Origin << ":" << Sender.Port()
 		 << " (" << NewPlayer.ModelName << ")"
@@ -933,18 +931,18 @@ FGMS::AddRelay
 	B.Address.Assign ( Relay, Port );
 	if ( ! B.Address.IsValid () )
 	{
-		SG_LOG ( SG_FGMS, SG_ALERT,
-			 "could not resolve '" << Relay << "'" );
+		LOG ( log::URGENT,
+		  "could not resolve '" << Relay << "'" );
 		return;
 	}
 	if ( B.Address.IsLoopback() )
 	{
-		SG_LOG ( SG_FGMS, SG_ALERT,
-			 "relay points back to me '" << Relay << "'" );
+		LOG ( log::URGENT,
+		  "relay points back to me '" << Relay << "'" );
 		return;
 	}
 	m_RelayList.Lock ();
-	ItList CurrentEntry = m_RelayList.Find ( B.Address, "" );
+	ItList CurrentEntry = m_RelayList.Find ( B.Address, true );
 	m_RelayList.Unlock ();
 	if ( CurrentEntry == m_RelayList.End() )
 	{
@@ -994,7 +992,7 @@ FGMS::AddCrossfeed
 	ListElement B ( s );
 	B.Address.Assign ( ( char* ) s.c_str(), Port );
 	m_CrossfeedList.Lock ();
-	ItList CurrentEntry = m_CrossfeedList.Find ( B.Address, "" );
+	ItList CurrentEntry = m_CrossfeedList.Find ( B.Address, true );
 	m_CrossfeedList.Unlock ();
 	if ( CurrentEntry == m_CrossfeedList.End() )
 	{
@@ -1038,7 +1036,7 @@ FGMS::AddWhitelist
 	ListElement B ( DottedIP );
 	B.Address.Assign ( DottedIP.c_str(), 0 );
 	m_WhiteList.Lock ();
-	ItList CurrentEntry = m_WhiteList.Find ( B.Address, "" );
+	ItList CurrentEntry = m_WhiteList.Find ( B.Address );
 	m_WhiteList.Unlock ();
 	if ( CurrentEntry == m_WhiteList.End() )
 	{
@@ -1062,7 +1060,7 @@ FGMS::AddBlacklist
 	ListElement B ( Reason );
 	B.Address.Assign ( DottedIP.c_str(), 0 );
 	m_BlackList.Lock ();
-	ItList CurrentEntry = m_BlackList.Find ( B.Address, "" );
+	ItList CurrentEntry = m_BlackList.Find ( B.Address );
 	m_BlackList.Unlock ();
 	if ( CurrentEntry == m_BlackList.End() )
 	{
@@ -1086,7 +1084,7 @@ FGMS::IsKnownRelay
 {
 	ItList CurrentEntry;
 	m_WhiteList.Lock ();
-	CurrentEntry = m_WhiteList.Find ( SenderAddress, "" );
+	CurrentEntry = m_WhiteList.Find ( SenderAddress );
 	if ( CurrentEntry != m_WhiteList.End() )
 	{
 		m_WhiteList.UpdateRcvd ( CurrentEntry, Bytes );
@@ -1095,7 +1093,7 @@ FGMS::IsKnownRelay
 	}
 	m_WhiteList.Unlock ();
 	m_RelayList.Lock ();
-	CurrentEntry = m_RelayList.Find ( SenderAddress, "" );
+	CurrentEntry = m_RelayList.Find ( SenderAddress );
 	if ( CurrentEntry != m_RelayList.End() )
 	{
 		m_RelayList.UpdateRcvd ( CurrentEntry, Bytes );
@@ -1107,7 +1105,7 @@ FGMS::IsKnownRelay
 	ErrorMsg  = SenderAddress.ToString ();
 	ErrorMsg += " is not a valid relay!";
 	AddBlacklist ( SenderAddress.ToString (), "not a valid relay", 0 );
-	SG_LOG ( SG_FGMS, SG_ALERT, "UNKNOWN RELAY: " << ErrorMsg );
+	LOG ( log::URGENT, "UNKNOWN RELAY: " << ErrorMsg );
 	return ( false );
 } // FGMS::IsKnownRelay ()
 //////////////////////////////////////////////////////////////////////
@@ -1317,12 +1315,12 @@ FGMS::DropClient
 	{
 		Origin = "LOCAL";
 	}
-	SG_LOG ( SG_FGMS, SG_INFO, "Dropping pilot "
-		 << CurrentPlayer->Name << "@" << Origin
-		 << " after " << time ( 0 )-CurrentPlayer->JoinTime << " seconds. "
-		 << "Current clients: "
-		 << m_PlayerList.Size()-1 << " max: " << m_NumMaxClients
-	       );
+	LOG ( log::MEDIUM, "Dropping pilot "
+	  << CurrentPlayer->Name << "@" << Origin
+	  << " after " << time ( 0 )-CurrentPlayer->JoinTime << " seconds. "
+	  << "Current clients: "
+	  << m_PlayerList.Size()-1 << " max: " << m_NumMaxClients
+	);
 	CurrentPlayer = m_PlayerList.Delete ( CurrentPlayer );
 } // FGMS::DropClient()
 //////////////////////////////////////////////////////////////////////
@@ -1374,7 +1372,7 @@ FGMS::HandlePacket
 	//
 	//////////////////////////////////////////////////
 	m_BlackList.Lock ();
-	CurrentEntry = m_BlackList.Find ( SenderAddress, "" );
+	CurrentEntry = m_BlackList.Find ( SenderAddress );
 	if ( CurrentEntry != m_BlackList.End() )
 	{
 		m_BlackList.UpdateRcvd ( CurrentEntry, Bytes );
@@ -1490,21 +1488,21 @@ FGMS::HandlePacket
 			// client is 'new' and transmit radar range
 			if ( tmp->High != SendingPlayer->RadarRange )
 			{
-				SG_LOG ( SG_FGMS, SG_INFO, SendingPlayer->Name
-					 << " changes radar range from "
-					 << SendingPlayer->RadarRange
-					 << " to "
-					 << tmp->High
-				       );
+				LOG ( log::MEDIUM, SendingPlayer->Name
+				  << " changes radar range from "
+				  << SendingPlayer->RadarRange
+				  << " to "
+				  << tmp->High
+				);
 				if ( tmp->High <= m_MaxRadarRange )
 				{
 					SendingPlayer->RadarRange = tmp->High;
 				}
 				else
 				{
-					SG_LOG ( SG_FGMS, SG_INFO, SendingPlayer->Name
-						 << " radar range to high, ignoring"
-					       );
+					LOG ( log::MEDIUM, SendingPlayer->Name
+					  << " radar range to high, ignoring"
+					);
 				}
 			}
 		}
@@ -1609,9 +1607,9 @@ FGMS::HandlePacket
 	{
 		// player not yet in our list
 		// should not happen, but test just in case
-		SG_LOG ( SG_FGMS, SG_ALERT, "## BAD => "
-			 << MsgHdr->Name << ":" << SenderAddress.ToString ()
-		       );
+		LOG ( log::URGENT, "## BAD => "
+		  << MsgHdr->Name << ":" << SenderAddress.ToString ()
+		);
 		return;
 	}
 	SendToRelays ( Msg, Bytes, SendingPlayer );
@@ -1652,8 +1650,9 @@ void FGMS::Show_Stats
 			local_cnt++;
 		}
 	}
-	SG_LOG ( SG_FGMS, SG_ALERT, "## Pilots: total " << pilot_cnt << ", local " << local_cnt );
-	SG_LOG ( SG_FGMS, SG_ALERT, "## Since: Packets " <<
+	LOG ( log::URGENT, "## Pilots: total "
+	  << pilot_cnt << ", local " << local_cnt );
+	LOG ( log::URGENT, "## Since: Packets " <<
 		 m_PacketsReceived << " BL=" <<
 		 m_BlackRejected << " INV=" <<
 		 m_PacketsInvalid << " UR=" <<
@@ -1664,7 +1663,7 @@ void FGMS::Show_Stats
 		 m_CrossFeedSent << "/" << m_CrossFeedFailed << " TN=" <<
 		 m_TelnetReceived
 	       );
-	SG_LOG ( SG_FGMS, SG_ALERT, "## Total: Packets " <<
+	LOG ( log::URGENT, "## Total: Packets " <<
 		 mT_PacketsReceived << " BL=" <<
 		 mT_BlackRejected << " INV=" <<
 		 mT_PacketsInvalid << " UR=" <<
@@ -1705,12 +1704,11 @@ FGMS::check_files
 	struct stat buf;
 	if ( m_useExitFile && ( stat ( exit_file,&buf ) == 0 ) )
 	{
-		SG_LOG ( SG_FGMS, SG_ALERT, "## Got EXIT file : "
-			 << exit_file );
+		LOG ( log::URGENT, "## Got EXIT file : " << exit_file );
 		unlink ( exit_file );
 		if ( stat ( exit_file,&buf ) == 0 )
 		{
-			SG_LOG ( SG_FGMS, SG_ALERT,
+			LOG ( log::URGENT,
 				 "WARNING: Unable to delete exit file "
 				 << exit_file << "! Disabled interface..." );
 			m_useExitFile = false;
@@ -1719,12 +1717,12 @@ FGMS::check_files
 	}
 	else if ( m_useResetFile && ( stat ( reset_file,&buf ) == 0 ) )
 	{
-		SG_LOG ( SG_FGMS, SG_ALERT, "## Got RESET file "
+		LOG ( log::URGENT, "## Got RESET file "
 			 << reset_file );
 		unlink ( reset_file );
 		if ( stat ( reset_file,&buf ) == 0 )
 		{
-			SG_LOG ( SG_FGMS, SG_ALERT,
+			LOG ( log::URGENT,
 				 "WARNING: Unable to delete reset file "
 				 << reset_file << "! Disabled interface..." );
 			m_useResetFile = false;
@@ -1736,11 +1734,11 @@ FGMS::check_files
 	}
 	else if ( m_useStatFile && ( stat ( stat_file,&buf ) == 0 ) )
 	{
-		SG_LOG ( SG_FGMS, SG_ALERT, "## Got STAT file " << stat_file );
+		LOG ( log::URGENT, "## Got STAT file " << stat_file );
 		unlink ( stat_file );
 		if ( stat ( stat_file,&buf ) == 0 )
 		{
-			SG_LOG ( SG_FGMS, SG_ALERT,
+			LOG ( log::URGENT,
 				 "WARNING: Unable to delete stat file "
 				 << stat_file << "! Disabled interface..." );
 			m_useStatFile = false;
@@ -1793,18 +1791,12 @@ FGMS::Loop
 	time_t      CurrentTime;
 	PlayerIt    CurrentPlayer;
 	LastTrackerUpdate = time ( 0 );
-	m_IsParent = true;
 	if ( m_Listening == false )
 	{
-		SG_LOG ( SG_FGMS, SG_ALERT, "FGMS::Loop() - "
+		LOG ( log::ERROR, "FGMS::Loop() - "
 			 << "not listening on any socket!" );
 		return ( ERROR_NOT_LISTENING );
 	}
-#ifdef _MSC_VER
-	SG_LOG ( SG_FGMS, SG_ALERT,
-	  "ESC key to EXIT (after select "
-	  << m_PlayerExpires << " sec timeout)." );
-#endif
 	if ( ( m_AdminUser == "" ) || ( m_AdminPass == "" ) )
 	{
 		if ( m_AdminSocket )
@@ -1812,11 +1804,17 @@ FGMS::Loop
 			m_AdminSocket->Close();
 			delete m_AdminSocket;
 			m_AdminSocket = 0;
-			SG_CONSOLE ( SG_FGMS, SG_ALERT,
+			LOG ( log::ERROR,
 			  "# Admin port disabled, "
 			  "please set user and password" );
 		}
 	}
+	LOG ( log::ERROR, "# Main server started!" );
+#ifdef _MSC_VER
+	LOG ( log::URGENT,
+	  "ESC key to EXIT (after select "
+	  << m_PlayerExpires << " sec timeout)." );
+#endif
 	if ( ! RunAsDaemon && AddCLI )
 	{
 		// Run admin CLI in foreground reading from stdin
@@ -1826,6 +1824,7 @@ FGMS::Loop
 		pthread_t th;
 		pthread_create ( &th, NULL, &admin_helper, t );
 	}
+	m_IsParent = true;
 	//////////////////////////////////////////////////
 	//
 	//      infinite listening loop
@@ -1915,7 +1914,8 @@ FGMS::Loop
 			{
 				if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 				{
-					SG_LOG ( SG_FGMS, SG_ALERT, "FGMS::Loop() - " << strerror ( errno ) );
+					LOG ( log::URGENT, "FGMS::Loop() - "
+					  << strerror ( errno ) );
 				}
 				continue;
 			}
@@ -1935,18 +1935,27 @@ FGMS::Loop
 			{
 				if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 				{
-					SG_LOG ( SG_FGMS, SG_ALERT, "FGMS::Loop() - " << strerror ( errno ) );
+					LOG ( log::URGENT, "FGMS::Loop() - "
+					  << strerror ( errno ) );
 				}
 				continue;
 			}
-			SG_LOG ( SG_FGMS, SG_ALERT, "FGMS::Loop() - new Admin connection from "
-				 << AdminAddress.ToString () );
+			LOG ( log::URGENT,
+			  "FGMS::Loop() - new Admin connection from "
+			  << AdminAddress.ToString () );
 			st_telnet* t = new st_telnet;
 			t->Instance = this;
 			t->Fd       = Fd;
 			pthread_t th;
 			pthread_create ( &th, NULL, &admin_helper, t );
 		} // AdminSocket
+		//
+		// regenrate the client list?
+		if ( ( CurrentTime - m_ClientsLastRun ) > m_ClientsInterval )
+		{
+			MkClientList ();
+			m_ClientsLastRun = CurrentTime;
+		}
 	}
 	return ( 0 );
 } // FGMS::Loop()
@@ -2090,21 +2099,6 @@ FGMS::SetMaxRadarRange
 
 //////////////////////////////////////////////////////////////////////
 /**
- * @brief Set the default loglevel
- */
-void
-FGMS::SetLog
-(
-	int Facility,
-	int Priority
-)
-{
-	sglog().setLogLevels ( ( sgDebugClass ) Facility, ( sgDebugPriority ) Priority );
-} // FGMS::SetLoglevel ()
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-/**
  * @brief  Set the logfile
  */
 void
@@ -2114,14 +2108,14 @@ FGMS::SetLogfile
 )
 {
 	m_LogFileName = LogfileName;
-	SG_LOG ( SG_FGMS, SG_ALERT,"# using logfile " << m_LogFileName );
-	if ( m_LogFile.is_open() )
+	LOG ( log::URGENT, "# using logfile " << m_LogFileName );
+	if ( ! logger.open ( m_LogFileName ) )
 	{
-		m_LogFile.close ();
+		LOG ( log::ERROR, "FGMS::Init() - "
+		  << "Failed to open log file " << m_LogFileName );
 	}
-	m_LogFile.open ( m_LogFileName.c_str(), ios::out|ios::app );
-	sglog().enable_with_date ( true );
-	sglog().set_output ( m_LogFile );
+	logger.priority ( log::MEDIUM );
+	logger.flags ( log::WITH_DATE );
 } // FGMS::SetLogfile ( const std::string &LogfileName )
 //////////////////////////////////////////////////////////////////////
 
@@ -2188,13 +2182,14 @@ FGMS::SetFQDN
 void
 FGMS::Done()
 {
+	if ( m_Initialized == false )
+		return;
 	if ( ! m_IsParent )
 	{
 		return;
 	}
-	Show_Stats();   // 20150619:0.11.9: Add stats to the LOG on exit
-	SG_LOG ( SG_FGMS, SG_ALERT, "FGMS::Done() - exiting" );
-	m_LogFile.close();
+	LOG ( log::URGENT, "FGMS::Done() - exiting" );
+	Show_Stats ();   // 20150619:0.11.9: Add stats to the LOG on exit
 	if ( m_Listening == false )
 	{
 		return;
@@ -2228,6 +2223,7 @@ FGMS::Done()
 	m_BlackList.Clear ();
 	m_RelayMap.clear ();	// clear(): is a std::map (NOT a FG_List)
 	m_Listening = false;
+	m_Initialized = false;
 } // FGMS::Done()
 //////////////////////////////////////////////////////////////////////
 

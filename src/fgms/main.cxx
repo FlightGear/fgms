@@ -41,6 +41,7 @@
 #include <fglib/fg_config.hxx>
 #include <fglib/daemon.hxx>
 #include <fglib/fg_version.hxx>
+#include <fglib/fg_log.hxx>
 #include "fgms.hxx"
 
 using namespace std;
@@ -76,20 +77,6 @@ static bool     bHadConfig = false;
 #define SYSCONFDIR "/usr/etc"
 #endif
 
-#ifndef DEF_LOG_LEVEL
-#define DEF_LOG_LEVEL SG_INFO
-#endif
-#ifndef DEF_LOG_CLASS
-#ifdef _MSC_VER
-#define DEF_LOG_CLASS (SG_FGMS|SG_FGTRACKER|SG_CONSOLE)
-#else
-#define DEF_LOG_CLASS (SG_FGMS|SG_FGTRACKER)
-#endif
-#endif
-
-sgDebugPriority curr_priority = DEF_LOG_LEVEL;
-sgDebugClass curr_class = (sgDebugClass)DEF_LOG_CLASS;
-
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief Print a help screen for command line parameters, see \ref command_line
@@ -108,7 +95,7 @@ PrintHelp ()
 	     "-t TTL        Time a client is active while not sending packets\n"
 	     "-o OOR        nautical miles two players must be apart to be out of reach\n"
 	     "-l LOGFILE    Log to LOGFILE\n"
-	     "-v LEVEL      verbosity (loglevel) in range 0 (few) and 4 (much). 5 to disable. (def=" << curr_priority << ")\n"
+	     "-v LEVEL      verbosity (loglevel) in range 0 (few) and 4 (much). 5 to disable. (def=" << logger.priority() << ")\n"
 	     "-d            do _not_ run as a daemon (stay in foreground)\n"
 	     "-D            do run as a daemon\n"
 	     "\n"
@@ -183,8 +170,7 @@ ProcessConfig ( const string& ConfigName )
 	}
 	if ( Config.Read ( ConfigName ) )
 	{
-		// bHadConfig = true;
-		SG_LOG ( SG_SYSTEMS, SG_ALERT,
+		LOG ( log::URGENT,
 		  "Could not read config file '" << ConfigName
 		  << "' => using defaults");
 		return ( false );
@@ -213,7 +199,7 @@ ProcessConfig ( const string& ConfigName )
 		fgms.SetDataPort ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT,
+			LOG ( log::URGENT,
 			  "invalid value for DataPort: '" << optarg << "'"
 			);
 			exit ( 1 );
@@ -225,7 +211,7 @@ ProcessConfig ( const string& ConfigName )
 		fgms.SetTelnetPort ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT,
+			LOG ( log::URGENT,
 			  "invalid value for TelnetPort: '" << optarg << "'"
 			);
 			exit ( 1 );
@@ -244,7 +230,7 @@ ProcessConfig ( const string& ConfigName )
 		}
 		else
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT,
+			LOG ( log::URGENT,
 			  "unknown value for 'server.admin_cli'!"
 			  << " in file " << ConfigName
 			);
@@ -256,7 +242,7 @@ ProcessConfig ( const string& ConfigName )
 		fgms.SetAdminPort ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT,
+			LOG ( log::URGENT,
 			  "invalid value for AdminPort: '" << optarg << "'"
 			);
 			exit ( 1 );
@@ -283,7 +269,7 @@ ProcessConfig ( const string& ConfigName )
 		fgms.SetOutOfReach ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT,
+			LOG ( log::URGENT,
 			  "invalid value for out_of_reach: '" << optarg << "'"
 			);
 			exit ( 1 );
@@ -295,21 +281,20 @@ ProcessConfig ( const string& ConfigName )
 		fgms.SetMaxRadarRange ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT,
+			LOG ( log::URGENT,
 			  "invalid value for max_radar_range: '" << optarg
 			  << "'"
 			);
 			exit ( 1 );
 		}
 	}
-
 	Val = Config.Get ( "server.playerexpires" );
 	if ( Val != "" )
 	{
 		fgms.SetPlayerExpires ( StrToNum<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT,
+			LOG ( log::URGENT,
 			  "invalid value for Expire: '" << optarg << "'"
 			);
 			exit ( 1 );
@@ -333,7 +318,7 @@ ProcessConfig ( const string& ConfigName )
 		}
 		else
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT,
+			LOG ( log::URGENT,
 			  "unknown value for 'server.daemon'!"
 			  << " in file " << ConfigName
 			);
@@ -354,7 +339,7 @@ ProcessConfig ( const string& ConfigName )
 			Port = StrToNum<int> ( Val.c_str (), E );
 			if ( E )
 			{
-				SG_LOG ( SG_SYSTEMS, SG_ALERT,
+				LOG ( log::URGENT,
 				  "invalid value for tracking_port: '"
 				  << Val << "'"
 				);
@@ -362,7 +347,9 @@ ProcessConfig ( const string& ConfigName )
 			}
 			if ( tracked && ( fgms.AddTracker ( Server, Port, tracked ) != FGMS::SUCCESS ) ) // set master m_IsTracked
 			{
-				SG_LOG ( SG_SYSTEMS, SG_ALERT, "Failed to get IPC msg queue ID! error " << errno );
+				LOG ( log::URGENT,
+				  "Failed to get IPC msg queue ID! error "
+				  << errno );
 				exit ( 1 ); // do NOT continue if a requested 'tracker' FAILED
 			}
 		}
@@ -404,7 +391,7 @@ ProcessConfig ( const string& ConfigName )
 			Port = StrToNum<int> ( Val.c_str(), E );
 			if ( E )
 			{
-				SG_LOG ( SG_SYSTEMS, SG_ALERT,
+				LOG ( log::URGENT,
 				  "invalid value for RelayPort: '"
 				  << Val << "'"
 				);
@@ -447,7 +434,7 @@ ProcessConfig ( const string& ConfigName )
 			Port = StrToNum<int> ( Val.c_str(), E );
 			if ( E )
 			{
-				SG_LOG ( SG_SYSTEMS, SG_ALERT,
+				LOG ( log::URGENT,
 				  "invalid value for crossfeed.port: '"
 				  << Val << "'"
 				);
@@ -583,8 +570,7 @@ ParseParams ( int argcount, char* argvars[] )
 			}
 			break;
 		case 'v':
-			curr_priority = (sgDebugPriority) StrToNum<int>  ( optarg, E );
-			fgms.SetLog ( curr_class, curr_priority );
+			logger.priority ( StrToNum<int> ( optarg, E ) );
 			if ( E )
 			{
 				cerr << "invalid value for Loglevel: '"
@@ -681,7 +667,8 @@ void SigHUPHandler ( int SigType )
 	{
 		if ( !ReadConfigs ( true ) )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "received HUP signal, but read config file failed!" );
+			LOG ( log::HIGH,
+			  "received HUP signal, but read config file failed!" );
 			exit ( 1 );
 		}
 	}
@@ -689,13 +676,15 @@ void SigHUPHandler ( int SigType )
 	{
 		if ( ProcessConfig ( fgms.ConfigFile ) == false )
 		{
-			SG_LOG ( SG_SYSTEMS, SG_ALERT, "received HUP signal, but read config file failed!" );
+			LOG ( log::HIGH,
+			  "received HUP signal, but read config file failed!" );
 			exit ( 1 );
 		}
 	}
 	if ( fgms.Init () != 0 )
 	{
-		SG_LOG ( SG_SYSTEMS, SG_ALERT, "received HUP signal, but reinit failed!" );
+		LOG ( log::HIGH,
+		  "received HUP signal, but reinit failed!" );
 		exit ( 1 );
 	}
 #ifndef _MSC_VER
@@ -727,7 +716,7 @@ main
 	ReadConfigs ();
 	if ( !bHadConfig )
 	{
-		SG_LOG ( SG_SYSTEMS, SG_ALERT,
+		LOG ( log::HIGH,
 		  "No configuration file '" << DEF_CONF_FILE << "' found!"
 		);
 		exit ( 1 );
@@ -744,9 +733,7 @@ main
 		fgms.CloseTracker();
 		return ( I );
 	}
-	SG_CONSOLE ( SG_SYSTEMS, SG_ALERT, "Main server started!" );
 	I = fgms.Loop();
-	fgms.CloseTracker();
 	fgms.Done();
 	return ( I );
 } // main()

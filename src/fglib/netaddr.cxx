@@ -230,6 +230,7 @@ NetAddr::Resolve
 {
 	m_Error = E_OK;
 	m_Port  = Port;
+	// FIXME: replace by getaddrinfo
 	struct hostent* hp = gethostbyname ( Host.c_str() );
 	if ( hp != NULL )
 	{

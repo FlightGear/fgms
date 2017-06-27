@@ -7,6 +7,7 @@
 //
 // $Id: encoding.cxx,v 1.1.1.1 2009/10/12 07:24:05 oliver Exp $
 
+#include <fglib/fg_log.hxx>
 #include "encoding.hxx"
 
 //////////////////////////////////////////////////
@@ -330,8 +331,8 @@ XDR_encode_float ( const float& Val )
 	} tmp;
 	if ( sizeof ( float ) != sizeof ( xdr_data_t ) )
 	{
-		SG_LOG ( SG_UTIL, SG_ALERT, "XDR_encode_float: "
-			 << "sizeof (float) != sizeof (xdr_data_t) !!!" );
+		LOG ( log::DEBUG,  "XDR_encode_float: "
+		  << "sizeof (float) != sizeof (xdr_data_t) !!!" );
 	}
 	tmp.raw = Val;
 	tmp.encoded = SWAP32 ( tmp.encoded );
@@ -350,8 +351,8 @@ XDR_decode_float ( const xdr_data_t& Val )
 	} tmp;
 	if ( sizeof ( float ) != sizeof ( xdr_data_t ) )
 	{
-		SG_LOG ( SG_UTIL, SG_ALERT, "XDR_decode_float: "
-			 << "sizeof (float) != sizeof (xdr_data_t) !!!" );
+		LOG ( log::DEBUG, "XDR_decode_float: "
+		  << "sizeof (float) != sizeof (xdr_data_t) !!!" );
 	}
 	tmp.encoded = SWAP32 ( Val );
 	return ( tmp.raw );
@@ -369,8 +370,8 @@ XDR_encode_double ( const double& Val )
 	} tmp;
 	if ( sizeof ( double ) != sizeof ( xdr_data2_t ) )
 	{
-		SG_LOG ( SG_UTIL, SG_ALERT, "XDR_encode_double: "
-			 << "sizeof (double) != sizeof (xdr_data2_t) !!!" );
+		LOG ( log::DEBUG, "XDR_encode_double: "
+		  << "sizeof (double) != sizeof (xdr_data2_t) !!!" );
 	}
 	tmp.raw = Val;
 	tmp.encoded = SWAP64 ( tmp.encoded );
@@ -389,8 +390,8 @@ XDR_decode_double ( const xdr_data2_t& Val )
 	} tmp;
 	if ( sizeof ( double ) != sizeof ( xdr_data2_t ) )
 	{
-		SG_LOG ( SG_UTIL, SG_ALERT, "XDR_decode_double: "
-			 << "sizeof (double) != sizeof (xdr_data2_t) !!!" );
+		LOG ( log::DEBUG, "XDR_decode_double: "
+		  << "sizeof (double) != sizeof (xdr_data2_t) !!!" );
 	}
 	tmp.encoded = SWAP64 ( Val );
 	return ( tmp.raw );
@@ -620,7 +621,8 @@ NET_encode_float ( const float& Val )
 	} tmp;
 	if ( sizeof ( float ) != sizeof ( uint32_t ) )
 	{
-		SG_LOG ( SG_UTIL, SG_ALERT, "NET_encode_float: " << "sizeof (float) != 4 !!!" );
+		LOG ( log::DEBUG, "NET_encode_float: "
+		  << "sizeof (float) != 4 !!!" );
 	}
 	tmp.raw = Val;
 	tmp.net = SWAP32 ( tmp.net );
@@ -639,7 +641,8 @@ NET_decode_float ( const uint32_t& Val )
 	} tmp;
 	if ( sizeof ( float ) != sizeof ( uint32_t ) )
 	{
-		SG_LOG ( SG_UTIL, SG_ALERT, "NET_decode_float: " << "sizeof (float) != 4 !!!" );
+		LOG ( log::DEBUG, "NET_decode_float: "
+		  << "sizeof (float) != 4 !!!" );
 	}
 	tmp.net = SWAP32 ( Val );
 	return ( tmp.raw );
@@ -657,8 +660,8 @@ NET_encode_double ( const double& Val )
 	} tmp;
 	if ( sizeof ( double ) != sizeof ( uint64_t ) )
 	{
-		SG_LOG ( SG_UTIL, SG_ALERT, "NET_encode_double: "
-			 << "sizeof (double) != sizeof (uint64_t) !!!" );
+		LOG ( log::DEBUG, "NET_encode_double: "
+		  << "sizeof (double) != sizeof (uint64_t) !!!" );
 	}
 	tmp.raw = Val;
 	tmp.net = SWAP64 ( tmp.net );
@@ -677,8 +680,8 @@ NET_decode_double ( const uint64_t& Val )
 	} tmp;
 	if ( sizeof ( double ) != sizeof ( uint64_t ) )
 	{
-		SG_LOG ( SG_UTIL, SG_ALERT, "NET_decode_double: "
-			 << "sizeof (double) != sizeof (uint64_t) !!!" );
+		LOG ( log::DEBUG, "NET_decode_double: "
+		  << "sizeof (double) != sizeof (uint64_t) !!!" );
 	}
 	tmp.net = SWAP64 ( Val );
 	return ( tmp.raw );

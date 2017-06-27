@@ -35,7 +35,7 @@
 #include <fcntl.h>
 #include <iostream>
 #include <cstdlib>
-#include <simgear/debug/logstream.hxx>
+#include <fglib/fg_log.hxx>
 #include "daemon.hxx"
 
 pid_t cDaemon::PidOfDaemon; // remember who we are
@@ -183,7 +183,7 @@ int cDaemon::Daemonize () // make us a daemon
 	// well, my child, do well!
 	//
 	PidOfDaemon = getpid();
-	SG_LOG (SG_SYSTEMS, SG_ALERT, "# My PID is " << PidOfDaemon);
+	LOG ( log::URGENT, "# My PID is " << PidOfDaemon );
 	setsid ();	// become a session leader
 	// chdir ("/");	// make sure, we're not on a mounted fs
 	umask (0);	// clear the file creation mode
@@ -200,7 +200,8 @@ void cDaemon::KillAllChildren ()
 	aChild = Children.begin ();
 	while ( aChild != Children.end () )
 	{
-		SG_LOG (SG_SYSTEMS, SG_ALERT, "cDaemon: killing child " << (*aChild));
+		LOG ( log::URGENT,
+		  "cDaemon: killing child " << (*aChild) );
 		if ( kill ((*aChild), SIGTERM))
 			kill ((*aChild), SIGKILL);
 		aChild++;

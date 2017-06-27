@@ -29,7 +29,6 @@
 #endif
 
 #include <stdint.h>
-#include <simgear/debug/logstream.hxx>
 
 #define XDR_BYTES_PER_UNIT  4
 

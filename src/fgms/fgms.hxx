@@ -39,7 +39,6 @@
 #include <fglib/netsocket.hxx>
 #include <fglib/encoding.hxx>
 #include <fglib/mpmessages.hxx>
-#include <simgear/debug/logstream.hxx>
 #include <fglib/daemon.hxx>
 #include <fglib/fg_version.hxx>
 #include <fglib/fg_geometry.hxx>
@@ -55,6 +54,8 @@ using fgmp::ListElement;
 using fgmp::FG_Player;
 using fgmp::PlayerIt;
 using fgmp::ItList;
+using fgmp::StrList;
+using fgmp::StrIt;
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -115,7 +116,6 @@ public:
 	void  SetOutOfReach ( int OutOfReach );
 	void  SetMaxRadarRange ( int MaxRange );
 	void  SetHub ( bool IamHUB );
-	void  SetLog ( int Facility, int Priority );
 	void  SetLogfile ( const std::string& LogfileName );
 	void  SetServerName ( const std::string& ServerName );
 	void  SetBindAddress ( const std::string& BindAddress );
@@ -161,7 +161,6 @@ protected:
 	string		m_AdminUser;
 	string		m_AdminPass;
 	string		m_AdminEnable;
-	ofstream	m_LogFile;
 	string		m_LogFileName;
 	string		m_BindAddress;
 	string		m_FQDN;
@@ -191,7 +190,8 @@ protected:
 	bool		m_WantExit;
 
 	//////////////////////////////////////////////////
-	bool    m_useExitFile, m_useResetFile, m_useStatFile; // 20150619:0.11.9: be able to disable these functions
+	// 20150619:0.11.9: be able to disable these functions
+	bool    m_useExitFile, m_useResetFile, m_useStatFile;
 	//////////////////////////////////////////////////
 	//
 	//  statistics
@@ -215,6 +215,16 @@ protected:
 	size_t		mT_CrossFeedFailed, mT_CrossFeedSent;
 	size_t		m_TrackerConnect, m_TrackerDisconnect,m_TrackerPosition;
 	time_t		m_Uptime;
+
+	//////////////////////////////////////////////////
+	// list of currently connected clients
+	// gets updated periodically
+	//////////////////////////////////////////////////
+	// time in seconds to regenerate the client list
+	time_t		m_ClientsInterval;
+	time_t		m_ClientsLastRun;
+	StrList m_Clients;
+	void MkClientList ();
 
 	//////////////////////////////////////////////////
 	//

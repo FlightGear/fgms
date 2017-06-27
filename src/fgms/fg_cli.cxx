@@ -135,6 +135,15 @@ FG_CLI::setup
 		"Show uptime information"
 	), c);
 
+	register_command ( new Command<CLI> (
+		this,
+		"log",
+		static_cast<callback_ptr> (&FG_CLI::cmd_show_log),
+		LIBCLI::UNPRIVILEGED,
+		LIBCLI::MODE_ANY,
+		"Show log buffer"
+	), c);
+
 	register_command (new Command<CLI> (
 		this,
 		"whitelist",
@@ -612,6 +621,38 @@ FG_CLI::cmd_show_uptime
 
 //////////////////////////////////////////////////
 /**
+ *  @brief Show log buffer of the the server
+ */
+int
+FG_CLI::cmd_show_log
+(
+	UNUSED(char *command),
+	UNUSED(char *argv[]),
+	UNUSED(int argc)
+)
+{
+	if (argc > 0)
+	{
+		if (strcmp (argv[0], "?") == 0)
+		{
+			client << "<cr>" << CRLF;
+		}
+		return (0);
+	}
+	fgmp::StrList*  buf = logger.logbuf();
+	fgmp::StrIt     it;
+	buf->Lock ();
+	for ( it = buf->begin(); it != buf->end(); it++ )
+	{
+		client << *it << commit;
+		if (check_pager()) return 0;
+	}
+	buf->Unlock ();
+	return (0);
+} // FG_CLI::cmd_show_uptime
+
+//////////////////////////////////////////////////
+/**
  *  @brief Show the version number of the the server
  */
 int
@@ -834,7 +875,7 @@ FG_CLI::cmd_whitelist_delete
 	}
 	if ( (ID == 0) && (Address.IsValid()) )
 	{	// match IP
-		Entry = fgms->m_WhiteList.Find (Address, "");
+		Entry = fgms->m_WhiteList.Find (Address);
 		if (Entry != fgms->m_WhiteList.End())
 		{
 			fgms->m_WhiteList.Delete (Entry);
@@ -940,7 +981,7 @@ FG_CLI::cmd_whitelist_add
 	fgmp::ListElement E (Reason);
 	E.Address = Address;
 	size_t NewID;
-	ItList CurrentEntry = fgms->m_WhiteList.Find ( E.Address, "" );
+	ItList CurrentEntry = fgms->m_WhiteList.Find ( E.Address );
 	if ( CurrentEntry == fgms->m_WhiteList.End() )
 	{       
 		NewID = fgms->m_WhiteList.Add (E, TTL);
@@ -953,7 +994,6 @@ FG_CLI::cmd_whitelist_add
 	client << "added with ID " << NewID << CRLF;
 	return (0);
 } // FG_CLI::cmd_whitelist_add
-
 
 //////////////////////////////////////////////////
 /**
@@ -1171,7 +1211,7 @@ FG_CLI::cmd_blacklist_delete
 	}
 	if ( (ID == 0) && (Address.IsValid()) )
 	{	// match IP
-		Entry = fgms->m_BlackList.Find (Address, "");
+		Entry = fgms->m_BlackList.Find (Address);
 		if (Entry != fgms->m_BlackList.End())
 		{
 			fgms->m_BlackList.Delete (Entry);
@@ -1277,7 +1317,7 @@ FG_CLI::cmd_blacklist_add
 	fgmp::ListElement E (Reason);
 	E.Address = Address;
 	size_t NewID;
-	ItList CurrentEntry = fgms->m_BlackList.Find ( E.Address, "" );
+	ItList CurrentEntry = fgms->m_BlackList.Find ( E.Address );
 	if ( CurrentEntry == fgms->m_BlackList.End() )
 	{       
 		NewID = fgms->m_BlackList.Add (E, TTL);
@@ -1360,7 +1400,7 @@ FG_CLI::cmd_crossfeed_delete
 	}
 	if ( (ID == 0) && (Address.IsValid()) )
 	{	// match IP
-		Entry = fgms->m_CrossfeedList.Find (Address, "");
+		Entry = fgms->m_CrossfeedList.Find (Address);
 		if (Entry != fgms->m_CrossfeedList.End())
 		{
 			fgms->m_CrossfeedList.Delete (Entry);
@@ -1467,7 +1507,7 @@ FG_CLI::cmd_crossfeed_add
 	E.Address = Address;
 	E.Address.SetPort (Port);
 	size_t NewID;
-	ItList CurrentEntry = fgms->m_CrossfeedList.Find ( E.Address, "" );
+	ItList CurrentEntry = fgms->m_CrossfeedList.Find ( E.Address, true );
 	if ( CurrentEntry == fgms->m_CrossfeedList.End() )
 	{       
 		NewID = fgms->m_CrossfeedList.Add (E, Port);
@@ -1945,7 +1985,7 @@ FG_CLI::cmd_relay_delete
 	}
 	if ( (ID == 0) && (Address.IsValid()) )
 	{	// match IP
-		Entry = fgms->m_RelayList.Find (Address, "");
+		Entry = fgms->m_RelayList.Find (Address);
 		if (Entry != fgms->m_RelayList.End())
 		{
 			fgms->m_RelayList.Delete (Entry);
@@ -2048,7 +2088,7 @@ FG_CLI::cmd_relay_add
 	E.Address = Address;
 	E.Address.SetPort (Port);
 	size_t NewID;
-	ItList CurrentEntry = fgms->m_RelayList.Find ( E.Address, "" );
+	ItList CurrentEntry = fgms->m_RelayList.Find ( E.Address, true );
 	if ( CurrentEntry == fgms->m_RelayList.End() )
 	{       
 		NewID = fgms->m_RelayList.Add (E, 0);

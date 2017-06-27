@@ -32,8 +32,9 @@
 
 #include <string>
 #include <vector>
+#include <list>
 #include <pthread.h>
-#include <simgear/debug/logstream.hxx>
+#include "fg_log.hxx"
 #include "netaddr.hxx"
 #include "fg_geometry.hxx"
 #include "fg_thread.hxx"
@@ -63,7 +64,7 @@ public:
 	/** @brief The callsign (or name) */
 	string		Name;
 	/** @brief The network address of this element */
-	NetAddr	Address;
+	NetAddr		Address;
 	/** @brief The time this entry was added to the list */
 	time_t		JoinTime;
 	/** @brief timestamp of last seen packet from this element */
@@ -114,7 +115,8 @@ public:
 	/** delete an element of this list */
 	ListIterator Delete	( const ListIterator& Element );
 	/** find an element by its IP address */
-	ListIterator Find	( const NetAddr& Address, const string& Name = "" );
+	ListIterator Find	( const NetAddr& Address,
+		bool ComparePort = false );
 	/** find an element by its Name */
 	ListIterator FindByName	( const string& Name = "" );
 	/** find an element by its ID */
@@ -214,7 +216,11 @@ List<T>::Size
  */
 template <class T>
 size_t
-List<T>::Add( T& Element, time_t TTL)
+List<T>::Add
+(
+	T& Element,
+	time_t TTL
+)
 {
 	this->MaxID++;
 	Element.ID	= this->MaxID;
@@ -227,9 +233,12 @@ List<T>::Add( T& Element, time_t TTL)
 
 template <class T>
 void 
-List<T>::DeleteByPosition (int position)
+List<T>::DeleteByPosition
+(
+	int position
+)
 {
-	LockGuard ( & this->m_Mutex );
+	LockGuard lg ( & this->m_Mutex );
 	ListIterator Element;
 	this->LastRun = time (0);
 	Element = Elements.begin();
@@ -244,9 +253,12 @@ List<T>::DeleteByPosition (int position)
  */
 template <class T>
 typename vector<T>::iterator
-List<T>::Delete( const ListIterator& Element)
+List<T>::Delete
+(
+	const ListIterator& Element
+)
 {
-	LockGuard ( & this->m_Mutex );
+	LockGuard lg ( & this->m_Mutex );
 	ListIterator E;
 	E = Elements.erase   ( Element );
 	return (E);
@@ -260,13 +272,18 @@ List<T>::Delete( const ListIterator& Element)
  * removes entries which TTL is expired, with the exception of the 'users'
  * list which entries are deleted in FGMS::HandlePacket()
  * @param Address IP address of the element
- * @param Name The name (or description) of the element
+ * @param ComparePort If true, element matches only if the port also
+ *        matches
  * @return iterator pointing to the found element, or End() if element
  *         could not be found
  */
 template <class T>
 typename vector<T>::iterator
-List<T>::Find( const NetAddr& Address, const string& Name)
+List<T>::Find
+(
+	const NetAddr& Address,
+	bool ComparePort
+)
 {
 	ListIterator Element;
 	ListIterator RetElem;
@@ -278,9 +295,9 @@ List<T>::Find( const NetAddr& Address, const string& Name)
 	{
 		if (Element->Address == Address)
 		{
-			if (Name != "") 
-			{	// additionally look for matching name
-				if (Element->Name == Name)
+			if ( ComparePort ) 
+			{	// additionally check port
+				if ( Element->Address.Port() == Address.Port() )
 				{
 					Element->LastSeen = this->LastRun;
 					RetElem = Element;
@@ -308,7 +325,10 @@ List<T>::Find( const NetAddr& Address, const string& Name)
  */
 template <class T>
 typename vector<T>::iterator
-List<T>::FindByName( const string& Name)
+List<T>::FindByName
+(
+	const string& Name
+)
 {
 	ListIterator Element;
 	ListIterator RetElem;
@@ -340,7 +360,9 @@ List<T>::FindByName( const string& Name)
 template <class T>
 typename vector<T>::iterator
 List<T>::FindByID
-( size_t ID )
+(
+	size_t ID
+)
 {
 	ListIterator Element;
 	ListIterator RetElem;
@@ -371,7 +393,8 @@ List<T>::FindByID
  */
 template <class T>
 typename vector<T>::iterator
-List<T>::Begin()
+List<T>::Begin
+()
 {
 	return Elements.begin ();
 }
@@ -388,7 +411,8 @@ List<T>::Begin()
  */
 template <class T>
 typename vector<T>::iterator
-List<T>::Last()
+List<T>::Last
+()
 {
 	ListIterator RetElem = Elements.end ();
 	--RetElem;
@@ -403,7 +427,8 @@ List<T>::Last()
  */
 template <class T>
 typename vector<T>::iterator
-List<T>::End()
+List<T>::End
+()
 {
 	return Elements.end ();
 }
@@ -416,9 +441,12 @@ List<T>::End()
  */
 template <class T>
 bool
-List<T>::CheckTTL( int position )
+List<T>::CheckTTL
+(
+	int position
+)
 {
-	LockGuard ( & this->m_Mutex );
+	LockGuard lg ( & this->m_Mutex );
 	ListIterator Element;
 	this->LastRun = time (0);
 	Element = Elements.begin();
@@ -430,11 +458,9 @@ List<T>::CheckTTL( int position )
 	}
 	if ( (this->LastRun - Element->LastSeen) > Element->Timeout )
 	{
-		SG_LOG ( SG_FGMS, SG_INFO,
-		  this->Name << ": TTL exceeded for "
+		LOG ( log::MEDIUM, this->Name << ": TTL exceeded for "
 		  << Element->Name << "@"
-		  << Element->Address.ToString() << " "
-		  );
+		  << Element->Address.ToString() << " " );
 		  return false;
 	}
 	return true;
@@ -451,7 +477,10 @@ List<T>::CheckTTL( int position )
  */
 template <class T>
 T
-List<T>::operator []( const size_t& Index )
+List<T>::operator []
+(
+	const size_t& Index
+)
 {
 	T RetElem("");
 	if (Index < Elements.size ())
@@ -553,7 +582,8 @@ List<T>::UpdateRcvd
  */
 template <class T>
 void
-List<T>::Clear()
+List<T>::Clear
+()
 {
 	Lock ();
 	Elements.clear ();

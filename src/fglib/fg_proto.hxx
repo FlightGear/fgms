@@ -36,7 +36,7 @@ namespace fgms
 /// client types
 typedef enum
 {
-	NOCLIENT,       // unset
+	UNSET,       // unset
 	FGFS,           // a normal client
 	FGMS,           // FlightGear Multiplayer Server
 	FGAS,           // FlightGear Authentication Service

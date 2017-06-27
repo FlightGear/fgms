@@ -43,7 +43,10 @@
 #       include <Winsock2.h>
 #       include <stdarg.h>
 #endif
+
+#include <iostream>
 #include "netsocket.hxx"
+
 #if defined(UL_MSVC) && !defined(socklen_t)
 #       define socklen_t int
 #endif

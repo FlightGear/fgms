@@ -27,7 +27,6 @@
 #endif
 #include <stdexcept>
 #include <cstring>
-#include <simgear/debug/logstream.hxx>
 #include "encoding.hxx"
 
 /** A class for network buffers.
@@ -221,7 +220,7 @@ public:
 	 */
 	bool WriteOpaque ( const void* Data, const uint32_t Size );
 	/// Write a string
-	bool WriteString ( const string& Str );
+	bool WriteString ( const std::string& Str );
 	/** compatabilty routine
 	 *
 	 * write a raw c-string to the buffer. if Size!=0
@@ -265,12 +264,12 @@ public:
 	throw ( std::runtime_error );
 	/// Read a string from the buffer. \n
 	/// Like ReadOpaque(), but automatically inserts the length of the string
-	string ReadString () throw ( std::runtime_error );
+	std::string ReadString () throw ( std::runtime_error );
 	/** compatabilty routine
 	 *
 	 * read a raw c-string from the buffer.
 	 */
-	string ReadCStr () throw ( std::runtime_error );
+	std::string ReadCStr () throw ( std::runtime_error );
 	/// Get byte at index
 	inline int8_t Peek ( const int Index ) const
 	{

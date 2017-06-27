@@ -51,11 +51,16 @@ private:
 	// general  commands
 	//////////////////////////////////////////////////
 	int cmd_pager		( char *command, char *argv[], int argc );
-	int cmd_show_stats	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
-	int cmd_show_settings	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
-	int cmd_show_version	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
-	int cmd_show_uptime	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
-	int cmd_fgms_die	( UNUSED(char *command), UNUSED(char *argv[]), UNUSED(int argc) );
+	int cmd_show_stats	( UNUSED(char *command),
+				  UNUSED(char *argv[]), UNUSED(int argc) );
+	int cmd_show_settings	( UNUSED(char *command),
+				  UNUSED(char *argv[]), UNUSED(int argc) );
+	int cmd_show_version	( UNUSED(char *command),
+				  UNUSED(char *argv[]), UNUSED(int argc) );
+	int cmd_show_uptime	( UNUSED(char *command),
+				  UNUSED(char *argv[]), UNUSED(int argc) );
+	int cmd_fgms_die	( UNUSED(char *command),
+				  UNUSED(char *argv[]), UNUSED(int argc) );
 	//////////////////////////////////////////////////
 	// show/modify whitelist
 	//////////////////////////////////////////////////
@@ -88,6 +93,12 @@ private:
 	// show status of tracker
 	//////////////////////////////////////////////////
 	int cmd_tracker_show   (  char *command, char *argv[], int argc );
+	//////////////////////////////////////////////////
+	// show/modify log
+	//////////////////////////////////////////////////
+	int cmd_show_log ( UNUSED(char *command),
+			   UNUSED(char *argv[]), UNUSED(int argc) );
+	// TODO: change the size of the logbuffer
 private:
 	FGMS* fgms;
 	int cmd_NOT_IMPLEMENTED (  char *command, char *argv[], int argc );

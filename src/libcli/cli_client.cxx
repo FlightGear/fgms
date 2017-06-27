@@ -487,7 +487,7 @@ Client& UNFILTERED
 {
 	out.m_print_mode = PRINT_PLAIN;
 	return out;
-} // CRLF()
+} // UNFILTERED()
 //////////////////////////////////////////////////////////////////////
 
 }; // namespace LIBCLI
