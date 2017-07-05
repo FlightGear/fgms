@@ -1,30 +1,26 @@
 //
-// netsocket.cxx - Provide a class for TCP/UDP internet connections
-//
-// Copied and modified version of the PLIB Library:
-//
-//      PLIB - A Suite of Portable Game Libraries
-//      Copyright (C) 1998,2002  Steve Baker
-//      http://plib.sourceforge.net
-//
-// This file is part of fgms.
-//
-// Copyright (C) 2008 Oliver Schroeder <fgms@postrobot.de>
+// This file is part of fgms, the flightgear multiplayer server
+// https://sourceforge.net/projects/fgms/
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
+// published by the Free Software Foundation; either version 2 of the
+// License, or (at your option) any later version.
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-// See the GNU General Public License for more details.
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, see
-// <http://www.gnu.org/licenses/>.
+// along with this program; if not see <http://www.gnu.org/licenses/>
 //
+
+/**
+ * @file	netsocket.cxx
+ * @author	Oliver Schroeder <fgms@o-schroeder.de>
+ * @date	07/2017
+ */
 
 #if defined(UL_CYGWIN) || !defined (UL_WIN32)
 #       if defined(UL_MAC_OSX)
@@ -45,21 +41,24 @@
 #endif
 
 #include <iostream>
-#include "netsocket.hxx"
+#include <fglib/fg_util.hxx>
+#include <fglib/netsocket.hxx>
 
 #if defined(UL_MSVC) && !defined(socklen_t)
 #       define socklen_t int
 #endif
 
-/* Init/Exit functions */
+#ifdef _MSC_VER
+/* 
+ * Init/Exit functions
+ * only needed on windows
+ */
 static bool donenetinit = false;
 
 static void netExit ( void )
 {
 	if ( donenetinit )
 	{
-#if defined(UL_CYGWIN) || !defined (UL_WIN32)
-#else
 		/* Clean up windows networking */
 		if ( WSACleanup() == SOCKET_ERROR )
 		{
@@ -69,11 +68,9 @@ static void netExit ( void )
 				WSACleanup();
 			}
 		}
-#endif
 	}
 	donenetinit = false;
 }
-
 
 int netInit()
 {
@@ -81,8 +78,6 @@ int netInit()
 	{
 		return 0;        // that's ok
 	}
-#if defined(UL_CYGWIN) || !defined (UL_WIN32)
-#else
 	/* Start up the windows networking */
 	WORD version_wanted = MAKEWORD ( 2, 2 );
 	WSADATA wsaData;
@@ -91,386 +86,536 @@ int netInit()
 		fprintf ( stderr, "Couldn't initialize Winsock 2.2\n" );
 		return ( -1 );
 	}
-#endif
 	atexit ( netExit );
 	donenetinit = true;
 	return ( 0 );
 }
+#endif
 
+namespace fgmp
+{
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Construct an 'empty' NetSocket.
+
+/** Construct an 'empty' netsocket.
  */
-//////////////////////////////////////////////////////////////////////
-NetSocket::NetSocket
+netsocket::netsocket
 ()
 {
-	m_Handle = -1 ;
-	m_IsStream = false;
-} // NetSocket::NetSocket ()
-//////////////////////////////////////////////////////////////////////
+	m_handle = -1 ;
+	m_is_stream = false;
+} // netsocket::netsocket ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Close active connections.
+
+/** Close active connections.
  */
-//////////////////////////////////////////////////////////////////////
-NetSocket::~NetSocket
+netsocket::~netsocket
 ()
 {
-	Close ();
-} // NetSocket::~NetSocket ()
-//////////////////////////////////////////////////////////////////////
+	close ();
+} // netsocket::~netsocket ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Assign another socket to *this
+
+/** Assign another socket to *this
  */
-//////////////////////////////////////////////////////////////////////
 void
-NetSocket::Assign
-( const NetSocket& Socket )
+netsocket::assign
+(
+	const netsocket& socket
+)
 {
-	m_Handle = Socket.m_Handle;
-	m_IsStream = Socket.m_IsStream;
-} // NetSocket::Assign ()
-//////////////////////////////////////////////////////////////////////
+	m_handle = socket.m_handle;
+	m_is_stream = socket.m_is_stream;
+} // netsocket::assign ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Return the filedescriptor of current connection.
+
+/** Return the filedescriptor of current connection.
  *
  * @return The filedescriptor.
  */
-//////////////////////////////////////////////////////////////////////
 int
-NetSocket::GetHandle
+netsocket::handle
 () const
 {
-	return ( m_Handle );
-} // NetSocket::GetHandle ()
-//////////////////////////////////////////////////////////////////////
+	return ( m_handle );
+} // netsocket::handle ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Set the filedescriptor. Close the current conenction, if any.
+
+/** Set the filedescriptor.
+ *
+ * Close the current conenction, if any.
  */
-//////////////////////////////////////////////////////////////////////
 void
-NetSocket::SetHandle
+netsocket::handle
 (
-	int Handle
+	int handle
 )
 {
-	Close ();
-	m_Handle = Handle;
-} // NetSocket::SetHandle ()
-//////////////////////////////////////////////////////////////////////
+	close ();
+	m_handle = handle;
+} // netsocket::handle ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Create a socket.
+
+/** Create a socket.
  *
- * @param IsStream      If true: connection is a tcp stream
- *                      If false: connection will be udp based
+ * @param type		netsocket::TCP -> connection is a tcp stream
+ *                      netsocket::UDP -> connection will be udp based
  * @return true         Socket creation succeeded.
  * @return false        Something went wrong
  */
-//////////////////////////////////////////////////////////////////////
 bool
-NetSocket::Open
-( const SOCKET_TYPES Type )
-{
-	/* start up networking */
-	if ( netInit() )
-	{
-		return false;
-	}
-	Close ();
-	if ( Type == NetSocket::TCP )
-	{
-		m_Handle = ::socket ( AF_INET, SOCK_STREAM, 0 );
-		m_IsStream = true;
-	}
-	else
-	{
-		m_Handle = ::socket ( AF_INET, SOCK_DGRAM, 0 );
-	}
-	return ( m_Handle != -1 );
-} // NetSocket::Open ()
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-/**
- * Set connection into blocking mode.
- *
- * @param IsBlocking    If true: set blocking mode
- *                      If false: set non-blocking mode
- */
-//////////////////////////////////////////////////////////////////////
-void
-NetSocket::SetBlocking
-( const bool IsBlocking )
-{
-#if defined(UL_CYGWIN) || !defined (UL_WIN32)
-	int DelayFlag = ::fcntl ( m_Handle, F_GETFL, 0 );
-	if ( IsBlocking )
-	{
-		DelayFlag &= ( ~O_NDELAY );
-	}
-	else
-	{
-		DelayFlag |= O_NDELAY;
-	}
-	::fcntl ( m_Handle, F_SETFL, DelayFlag );
-#else
-	u_long nBlocking = IsBlocking? 0: 1;
-	::ioctlsocket ( m_Handle, FIONBIO, & nBlocking );
-#endif
-} // NetSocket::SetBlocking ()
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-/**
- * Set socket option
- *
- * @param SocketOption  the socket option to (un)set, see GETSOCKOPT(2)
- * @param Broadcast     If true: set the option
- *                      if false: unset the option
- */
-//////////////////////////////////////////////////////////////////////
-void
-NetSocket::SetSocketOption
+netsocket::open
 (
-	const int SocketOption,
-	const bool Set
+	int family,
+	const SOCKET_TYPES type
 )
 {
-	int Result;
-	errno = 0;
-	if ( Set )
+#ifdef _MSC_VER
+	/* start up networking */
+	if ( netInit() )
+		return false;
+#endif
+	close ();
+	if ( type == netsocket::TCP )
 	{
-		int One = 1;
+		m_handle = ::socket ( family, SOCK_STREAM, 0 );
+		m_is_stream = true;
+	}
+	else
+	{
+		m_handle = ::socket ( family, SOCK_DGRAM, 0 );
+	}
+	return ( m_handle != -1 );
+} // netsocket::open ()
+
+//////////////////////////////////////////////////////////////////////
+
+/** Set connection into blocking mode.
+ *
+ * @param is_blocking   If true: set blocking mode
+ *                      If false: set non-blocking mode
+ */
+void
+netsocket::set_blocking
+(
+	const bool is_blocking
+)
+{
+#if defined(UL_CYGWIN) || !defined (UL_WIN32)
+	int flag = ::fcntl ( m_handle, F_GETFL, 0 );
+	if ( is_blocking )
+	{
+		flag &= ( ~O_NDELAY );
+	}
+	else
+	{
+		flag |= O_NDELAY;
+	}
+	::fcntl ( m_handle, F_SETFL, flag );
+#else
+	u_long blocking = is_blocking? 0: 1;
+	::ioctlsocket ( m_handle, FIONBIO, & blocking );
+#endif
+} // netsocket::set_blocking ()
+
+//////////////////////////////////////////////////////////////////////
+
+/** Set socket option
+ *
+ * @param opt	the socket option to (un)set, see GETSOCKOPT(2)
+ * @param set	If true: set the option
+ *		if false: unset the option
+ */
+void
+netsocket::set_sock_opt
+(
+	const int  opt,
+	const bool set
+)
+{
+	int result;
+	errno = 0;
+
+	if ( set )
+	{
+		int one = 1;
 		#ifdef UL_WIN32
-		  Result = ::setsockopt ( m_Handle,
-		    SOL_SOCKET, SocketOption,(char*) & One, sizeof ( One ) );
+		  result = ::setsockopt ( m_handle,
+		    SOL_SOCKET, opt,(char*) & one, sizeof ( one ) );
 		#else
-		  Result = ::setsockopt ( m_Handle,
-		    SOL_SOCKET, SocketOption, & One, sizeof ( One ) );
+		  result = ::setsockopt ( m_handle,
+		    SOL_SOCKET, opt, & one, sizeof ( one ) );
 		#endif
 	}
 	else
 	{
-		Result = ::setsockopt ( m_Handle,
-		  SOL_SOCKET, SocketOption, NULL, 0 );
+		result = ::setsockopt ( m_handle, SOL_SOCKET, opt, NULL, 0 );
 	}
-	if ( Result < 0 )
+	if ( result < 0 )
 	{
 		perror ( "setsockopt:" );
-		switch ( errno )
-		{
-		case EBADF:
-			std::cout << " EBADF" << std::endl;
-			break;
-		case EFAULT:
-			std::cout << " EFAULT" << std::endl;
-			break;
-		case EINVAL:
-			std::cout << " EINVAL" << std::endl;
-			break;
-		case ENOPROTOOPT:
-			std::cout << " EPROTO" << std::endl;
-			break;
-		case ENOTSOCK:
-			std::cout << " ENOTSOCK" << std::endl;
-			break;
-		}
 	}
-} // NetSocket::SetSocketOption ()
-//////////////////////////////////////////////////////////////////////
+} // netsocket::set_sock_opt ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Receive packets sent to a broadcast address? Only works on
- * non-stream sockets (UDP).
+
+/** Receive packets sent to a broadcast address?
  *
- * @param Broadcast     If true: receive packets to broadcast address
+ * Only works on non-stream sockets (UDP).
+ *
+ * @param broadcast     If true: receive packets to broadcast address
  *                      if false: ignore packets to broadcast address
  */
 //////////////////////////////////////////////////////////////////////
 void
-NetSocket::SetBroadcast
-( const bool Broadcast )
+netsocket::set_broadcast
+(
+	const bool broadcast
+)
 {
-	int Result;
-	if ( Broadcast )
+	int result;
+
+	if ( broadcast )
 	{
-		int One = 1;
+		int one = 1;
 		#ifdef UL_WIN32
-		  Result = ::setsockopt ( m_Handle,
-		    SOL_SOCKET, SO_BROADCAST,(char*) & One, sizeof ( One ) );
+		  result = ::setsockopt ( m_handle, SOL_SOCKET,
+		    SO_BROADCAST,(char*) & one, sizeof ( one ) );
 		#else
-		  Result = ::setsockopt ( m_Handle,
-		    SOL_SOCKET, SO_BROADCAST, & One, sizeof ( One ) );
+		  result = ::setsockopt ( m_handle, SOL_SOCKET,
+		    SO_BROADCAST, & one, sizeof ( one ) );
 		#endif
 	}
 	else
 	{
-		Result = ::setsockopt ( m_Handle,
-		  SOL_SOCKET, SO_BROADCAST, NULL, 0 );
+		result = ::setsockopt ( m_handle, SOL_SOCKET,
+		  SO_BROADCAST, NULL, 0 );
 	}
-	if ( Result < 0 )
+	if ( result < 0 )
 	{
 		perror ( "set broadcast:" );
 	}
-} // NetSocket::SetBroadcast ()
-//////////////////////////////////////////////////////////////////////
+} // netsocket::set_broadcast ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Bind connection to specified @a Host and @a Port.
+
+/** Bind connection to specified @a host and @a port.
  *
- * @param Host          The hostname/IP to bind to.
- * @param Port          The port to bind to.
+ * @param host          The hostname/IP to bind to.
+ * @param port          The port to bind to.
  *
  * @return true         On success.
  * @return false        If something went wrong.
  */
-//////////////////////////////////////////////////////////////////////
 bool
-NetSocket::Bind
+netsocket::bind
 (
-	const string& Host,
-	const int Port
+	const std::string& host,
+	const uint16_t port
 )
 {
-	NetAddr Addr ( Host, Port );
-	if ( ::bind ( m_Handle, Addr.SockAddr(), sizeof ( sockaddr_in ) ) == 0 )
+	netaddr addr ( host, port );
+	if ( ::bind ( m_handle, addr.sock_addr(), addr.size() ) == 0 )
 	{
 		return ( true );
 	}
 	perror ( "bind" );
 	return ( false );
-} // NetSocket::Bind ()
-//////////////////////////////////////////////////////////////////////
+} // netsocket::bind ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Listen to current connection.
+
+/** Create a socket which listens on all interfaces
  *
- * @param Backlog       See listen(2)
+ * @param port          The port to bind to.
+ * @param type          specify wether to use TCP or UDP
+ *
+ * @return true         On success.
+ * @return false        If something went wrong.
+ */
+bool
+netsocket::listen_all
+(
+	const uint16_t port,
+	const SOCKET_TYPES type
+) throw ( std::runtime_error )
+{
+	int socktype;
+	int family = AF_INET6; // try v6 first
+	sys_sock* sa;
+	socklen_t len;
+
+	if ( type == TCP )
+		socktype = SOCK_STREAM;
+	else
+		socktype = SOCK_DGRAM;
+
+	m_handle = ::socket ( family, socktype, 0 );
+	if ( m_handle < 0 )
+	{
+		family = AF_INET;
+		m_handle = ::socket ( family, socktype, 0 );
+		if ( m_handle < 0 )
+		{
+			throw std::runtime_error (
+			  "netsocket::listen_all(): could not create socket"
+			);
+		}
+	}
+	switch ( family )
+	{
+	case AF_INET6:
+		struct sockaddr_in6 sin6;
+		sa  = (sys_sock*) & sin6;
+		len = sizeof ( sin6 );
+		memset ( &sin6, 0, sizeof(sin6) );
+		sin6.sin6_family = AF_INET6;
+		sin6.sin6_addr = in6addr_any;
+		sin6.sin6_port = NET_encode_uint16 ( port );
+		break;
+	case AF_INET:
+		struct sockaddr_in sin4;
+		sa  = (sys_sock*) & sin4;
+		len = sizeof ( sin4 );
+		memset ( &sin4, 0, sizeof(sin4) );
+		sin4.sin_family = AF_INET;
+		sin4.sin_addr.s_addr = 0;
+		sin4.sin_port = NET_encode_uint16 ( port );
+		break;
+	}
+	if ( ::bind ( m_handle, sa, len ) < 0 )
+	{
+		perror ( "netsocket::listen_all:" );
+		throw std::runtime_error (
+		  "netsocket::listen_all(): could not bind"
+		);
+	}
+	if ( ::getsockname ( m_handle, sa, &len ) < 0 )
+	{
+		perror ( "netsocket::listen_all:" );
+		throw std::runtime_error (
+		  "netsocket::listen_all(): getsockname"
+		);
+	}
+	if ( type == TCP )
+	{
+		if ( ! listen ( 5 ) )
+		{
+			return false;
+		}
+		m_is_stream = true;
+	}
+	return true;
+} // netsocket::listen_all ()
+
+//////////////////////////////////////////////////////////////////////
+
+/** Make *this netsocket listen to the address/hostname specified
+ * by @c host on the specified @c port
+ *
+ * @param host          The hostname/IP to bind to.
+ * 			Can be 'any' or emtpy, in which case the socket
+ * 			will listen on all interfaces and all ip
+ * 			addresses.
+ * @param port          The port to bind to.
+ * @param type          specify wether to use TCP or UDP
+ *
+ * @return true         On success.
+ * @return false        If something went wrong.
+ */
+bool
+netsocket::listen_to
+(
+	const std::string& host,
+	const uint16_t port,
+	const SOCKET_TYPES type
+) throw ( std::runtime_error )
+{
+	if ( ( host == "" ) || ( host == "any" ) )
+	{
+		try
+		{
+			listen_all ( port, type );
+			return true;
+		}
+		catch ( std::runtime_error& e )
+		{
+			throw e;
+		}
+	}
+	struct addrinfo  hints;
+	struct addrinfo* res;
+	struct addrinfo* rp;
+	int n;
+
+	memset ( &hints, 0, sizeof(struct addrinfo) );
+	hints.ai_flags = AI_PASSIVE;
+	hints.ai_family = AF_UNSPEC;
+	if ( type == TCP )
+		hints.ai_socktype = SOCK_STREAM;
+	else
+		hints.ai_socktype = SOCK_DGRAM;
+	n = getaddrinfo ( host.c_str(), NumToStr( port, 0 ).c_str(),
+	  &hints, &res );
+	if ( n != 0 )
+	{
+		throw std::runtime_error ( gai_strerror(n) );
+	}
+	rp = res;
+	do
+	{
+		m_handle = ::socket ( rp->ai_family, rp->ai_socktype, 0 );
+		if ( m_handle < 0 )
+			continue;
+		set_blocking ( false );
+		set_sock_opt ( SO_REUSEADDR, true );
+		if ( ::bind ( m_handle, rp->ai_addr, rp->ai_addrlen) == 0)
+			break; // success
+		close ();
+		rp = rp->ai_next;
+	} while ( rp != 0 );
+	if ( rp == 0 )
+		return false; // no suitable socket found
+	if ( type == TCP )
+	{
+		if ( ! listen ( 5 ) )
+		{
+			return false;
+		}
+		m_is_stream = true;
+	}
+	freeaddrinfo ( rp );
+	return true;
+} // netsocket::bind ()
+
+//////////////////////////////////////////////////////////////////////
+
+/** Listen to current connection.
+ *
+ * @param backlog       See listen(2)
  *
  * @return true         Success.
  * @return false        Something is wrong, check @a errno.
  */
-//////////////////////////////////////////////////////////////////////
 bool
-NetSocket::Listen
+netsocket::listen
 (
-	const int Backlog
+	const int backlog
 )
 {
-	if ( ::listen ( m_Handle, Backlog ) == 0 )
+	if ( ::listen ( m_handle, backlog ) == 0 )
 	{
 		return ( true );
 	}
 	return ( false );
-} // NetSocket::Listen ()
-//////////////////////////////////////////////////////////////////////
+} // netsocket::listen ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Accept new connections.
+
+/** Accept new connections.
  *
  * @param Addr          The internet address of the new client.
  *
  * @return >0           Filedescriptor of the new accepted connection
- * @return 0            Something went wrong, check @a errno.
+ * @return <=0          Something went wrong, check @a errno.
  */
-//////////////////////////////////////////////////////////////////////
 int
-NetSocket::Accept
+netsocket::accept
 (
-	NetAddr& Addr
-)
+	netaddr* addr
+) const
 {
-	int nResult;
-	if ( Addr.AddrType() == NetAddr::Invalid )
+	if ( addr == 0 )
 	{
-		nResult = ::accept ( m_Handle, NULL, NULL );
-		if ( nResult > 0 )
-		{
-			m_Handle = nResult;
-			return ( true );
-		}
-		return ( 0 );
+		return ::accept ( m_handle, NULL, NULL );
 	}
-	socklen_t AddrSize = Addr.AddrSize();
-	nResult = ::accept ( m_Handle, Addr.SockAddr(), &AddrSize );
-	if ( nResult < 1 )
-	{
-		return ( 0 );
-	}
-	Addr.CopySockAddr ();
-	return ( nResult );
-} // NetSocket::Accept ()
-//////////////////////////////////////////////////////////////////////
+	uint32_t size = addr->size();
+	return ::accept ( m_handle, addr->sock_addr(), &size );
+} // netsocket::accept ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Connect to given @a Host on @a Port.
+
+/** Connect to given @a host on @a port.
  *
- * @param Host          Hostname/IP of client to connect to
- * @param Port          Port to connect to.
+ * @param host          Hostname/IP of client to connect to
+ * @param port          Port to connect to.
  *
  * @return true         Connect succeeded.
  * @return false        Something went wrong, check @a errno
  */
-//////////////////////////////////////////////////////////////////////
 bool
-NetSocket::Connect
+netsocket::connect
 (
-	const string& Host,
-	const int Port
+	const std::string& host,
+	const uint16_t port,
+	const SOCKET_TYPES type
 )
 {
-	NetAddr Addr ( Host, Port );
-	if ( ::connect ( m_Handle, Addr.SockAddr(), Addr.AddrSize() ) == 0 )
+	struct addrinfo  hints;
+	struct addrinfo* res;
+	struct addrinfo* rp;
+	int n;
+
+	memset ( &hints, 0, sizeof(struct addrinfo) );
+	hints.ai_family = AF_UNSPEC;
+	if ( type == TCP )
+		hints.ai_socktype = SOCK_STREAM;
+	else
+		hints.ai_socktype = SOCK_DGRAM;
+	n = getaddrinfo ( host.c_str(), NumToStr( port, 0 ).c_str(),
+	  &hints, &res );
+	if ( n != 0 )
 	{
-		return ( true );
+		throw std::runtime_error ( gai_strerror(n) );
 	}
-	return ( false );
-} // NetSocket::Connect ()
-//////////////////////////////////////////////////////////////////////
+	rp = res;
+	do
+	{
+		m_handle = ::socket ( rp->ai_family, rp->ai_socktype, 0 );
+		if ( m_handle < 0 )
+			continue;
+		if ( ::connect ( m_handle, rp->ai_addr, rp->ai_addrlen) == 0)
+			break; // success
+		close ();
+		rp = rp->ai_next;
+	} while ( rp != 0 );
+	if ( rp == 0 )
+		return false; // no suitable socket found
+	return ( true );
+} // netsocket::connect ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Send data via current connection.
+
+/** Send data via current connection.
  *
- * @param Buffer        The data to send.
- * @param Size          The number of bytes to send.
- * @param Flags         See send(2) for a description
+ * @param buffer        The data to send.
+ * @param size          The number of bytes to send.
+ * @param flags         See send(2) for a description
  *
  * @return >0           Number of bytes actually sent.
  * @return -1           Something went wrong, check @a errno
  */
 //////////////////////////////////////////////////////////////////////
 int
-NetSocket::Send
+netsocket::send
 (
-	const void* Buffer,
-	const int Size,
-	const int Flags
+	const void* buffer,
+	const int size,
+	const int flags
 )
 {
-	char* p       = (char*) Buffer;
-	int   left    = Size;
+	char* p       = (char*) buffer;
+	int   left    = size;
 	int   written = 0;
 
 	while ( left > 0 )
 	{
-		written = ::send ( m_Handle, p, left, MSG_NOSIGNAL );
+		written = ::send ( m_handle, p, left, flags );
 		if ( written == SOCKET_ERROR )
 		{
 			if ( RECOVERABLE_ERROR )
@@ -486,83 +631,77 @@ NetSocket::Send
 		left -= written;
 		p    += written;
 	}
-	return Size;
-} // NetSocket::Send ()
-//////////////////////////////////////////////////////////////////////
+	return size;
+} // netsocket::send ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Send a string via current connection.
+
+/** Send a string via current connection.
  *
- * @param Msg           The message to send.
- * @param Flags         See socket(2) for a description
+ * @param msg           The message to send.
+ * @param flags         See socket(2) for a description
  *
  * @return >0           Number of bytes actually sent.
  * @return -1           Something went wrong, check @a errno
  */
-//////////////////////////////////////////////////////////////////////
 int
-NetSocket::Send
+netsocket::send
 (
-	const string& Msg,
-	const int Flags
+	const std::string& msg,
+	const int flags
 )
 {
-	return Send ( ( const void* ) Msg.c_str(), Msg.length(), Flags );
+	return send ( ( const void* ) msg.c_str(), msg.length(), flags );
 
-} // NetSocket::Send ()
+} // netsocket::send ()
+
 //////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////
-/**
- * Send a single character via current connection.
+/** Send a single character via current connection.
  *
- * @param Buffer        The data to send.
- * @param Size          The number of bytes to send.
+ * @param c	The character to send.
  *
- * @return >0           Number of bytes actually sent.
- * @return -1           Something went wrong, check @a errno
+ * @return >0   Number of bytes actually sent.
+ * @return -1   Something went wrong, check @a errno
  */
-//////////////////////////////////////////////////////////////////////
 int
-NetSocket::Send
+netsocket::send
 (
 	const char& C
 )
 {
-	return ::send ( m_Handle, & C, 1, 0 );
-} // NetSocket::Send ()
-//////////////////////////////////////////////////////////////////////
+	return ::send ( m_handle, & C, 1, 0 );
+} // netsocket::send ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Send data to the specified %NetAddr.
+
+/** send data to the specified %netaddr.
  *
- * @param Buffer        The data to send.
- * @param Size          The number of bytes to send.
- * @param To            The %NetAddr of the destined receiver.
- * @param Flags         See socket(2) for a description
+ * @param buffer        The data to send.
+ * @param size          The number of bytes to send.
+ * @param to            The %netaddr of the destined receiver.
+ * @param flags         See socket(2) for a description
  *
  * @return >0           Number of bytes actually sent.
  * @return -1           Something went wrong, check @a errno
  */
 //////////////////////////////////////////////////////////////////////
 int
-NetSocket::SendTo
+netsocket::send_to
 (
-	const void* Buffer,
-	const int Size,
-	const NetAddr& To,
-	const int Flags
+	const void*	buffer,
+	const int	size,
+	const netaddr&	to,
+	const int	flags
 )
 {
-	char* p       = (char*) Buffer;
-	int   left    = Size;
+	char* p       = (char*) buffer;
+	int   left    = size;
 	int   written = 0;
 	while ( left > 0 )
 	{
-		written = ::sendto ( m_Handle, p, left, MSG_NOSIGNAL,
-		  ( struct sockaddr* ) To.SockAddr(), To.AddrSize()
+		written = ::sendto ( m_handle, p, left, flags,
+		  to.sock_addr(), to.size()
 		);
 		if ( written == SOCKET_ERROR )
 		{
@@ -579,40 +718,40 @@ NetSocket::SendTo
 		left -= written;
 		p    += written;
 	}
-	return Size;
-} // NetSocket::SendTo ()
-//////////////////////////////////////////////////////////////////////
+	return size;
+} // netsocket::send_to ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Send a string to the specified %NetAddr.
+
+/** Send a string to the specified %netaddr.
  *
- * @param Msg           The message to send.
- * @param Size          The number of bytes to send.
- * @param To            The %NetAddr of the destined receiver.
- * @param Flags         See socket(2) for a description
+ * @param msg           The message to send.
+ * @param to            The %netaddr of the destined receiver.
+ * @param flags         See socket(2) for a description
  *
  * @return >0           Number of bytes actually sent.
  * @return -1           Something went wrong, check @a errno
  */
 //////////////////////////////////////////////////////////////////////
 int
-NetSocket::SendTo
+netsocket::send_to
 (
-	const string& Msg,
-	const NetAddr& To,
-	const int Flags
+	const std::string&	msg,
+	const netaddr&	to,
+	const int	flags
 )
 {
-	return SendTo ( ( const void* ) Msg.c_str(), Msg.length(), To, Flags );
-} // NetSocket::SendTo ()
-//////////////////////////////////////////////////////////////////////
+	return send_to ( ( const void* ) msg.c_str(), msg.length(), to, flags );
+} // netsocket::send_to ()
 
 //////////////////////////////////////////////////////////////////////
-/**
+
+/** Receive a single character over the current connection.
+ *
+ * @return the character read
  */
 int
-NetSocket::RecvChar
+netsocket::recv_char
 (
 	unsigned char& c
 )
@@ -620,7 +759,7 @@ NetSocket::RecvChar
 	int n;
 	while ( 1 )
 	{
-		n = ::recv ( m_Handle, ( char* ) &c, 1, 0 );
+		n = ::recv ( m_handle, ( char* ) &c, 1, 0 );
 		if ( n == SOCKET_ERROR )
 		{
 			if ( RECOVERABLE_ERROR )
@@ -632,175 +771,164 @@ NetSocket::RecvChar
 		return n;
 	}
 	return n;
-} // NetSocket::RecvChar ()
-//////////////////////////////////////////////////////////////////////
+} // netsocket::recv_char ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Receive data over the current socket.
+
+/** Receive data over the current socket.
  *
- * @param Buffer        The data is stored in this buffer.
- * @param Size          The buffer has a capacity of this size.
- * @param Flags         see recv(2) for a description
+ * @param buffer        The data is stored in this buffer.
+ * @param size          The buffer has a capacity of this size.
+ * @param flags         see recv(2) for a description
  *
  * @return >0           The number of bytes received.
  * @return -1           Something went wrong, check @a errno.
  */
 //////////////////////////////////////////////////////////////////////
 int
-NetSocket::Recv
+netsocket::recv
 (
-	void* Buffer,
-	const int Size,
-	const int Flags
+	void*     buffer,
+	const int size,
+	const int flags
 )
 {
-	return ::recv ( m_Handle, ( char* ) Buffer, Size, Flags );
-} // NetSocket::Recv ()
-//////////////////////////////////////////////////////////////////////
+	return ::recv ( m_handle, ( char* ) buffer, size, flags );
+} // netsocket::recv ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Receive data over the current socket.
+
+/** Receive data over the current socket.
  *
- * @param Buffer        The data is stored in this buffer.
- * @param Flags         see recv(2) for a description
+ * @param buffer        The data is stored in this buffer.
+ * @param flags         see recv(2) for a description
  *
  * @return >0           The number of bytes received.
  * @return -1           Something went wrong, check @a errno.
  */
 //////////////////////////////////////////////////////////////////////
 int
-NetSocket::Recv
+netsocket::recv
 (
-	NetPacket& Buffer,
-	const int Flags
+	NetPacket& buffer,
+	const int  flags
 )
 {
-	int read_bytes = ::recv ( m_Handle,
-	  ( char* ) Buffer.Buffer(), Buffer.Capacity(), Flags );
-	Buffer.SetUsed ( read_bytes );
+	int read_bytes = ::recv ( m_handle,
+	  ( char* ) buffer.Buffer(), buffer.Capacity(), flags );
+	buffer.SetUsed ( read_bytes );
 	return ( read_bytes );
-} // NetSocket::Recv ()
-//////////////////////////////////////////////////////////////////////
+} // netsocket::recv ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Receive data over the current socket.
+
+/** Receive data over the current socket.
  *
- * @param Buffer        The data is stored in this buffer.
- * @param Size          The buffer has a capacity of this size.
- * @param Flags         See recv(2) for a description.
- * @param From          The senders IP is strored here.
+ * @param buffer        The data is stored in this buffer.
+ * @param size          The buffer has a capacity of this size.
+ * @param flags         See recv(2) for a description.
+ * @param from          The senders IP is strored here.
  *
  * @return >0           The number of bytes received.
  * @return -1           Something went wrong, check @a errno.
  */
 //////////////////////////////////////////////////////////////////////
 int
-NetSocket::RecvFrom
+netsocket::recv_from
 (
-	void* Buffer,
-	const int Size,
-	NetAddr& From,
-	const int Flags
+	void*     buffer,
+	const int size,
+	netaddr&  from,
+	const int flags
 )
 {
-	struct sockaddr_in6 SockAddr;
-	socklen_t AddrSize = sizeof ( SockAddr );
-	int read_bytes = ::recvfrom ( m_Handle,
-	  ( char* ) Buffer, Size, Flags,
-	  ( sockaddr* ) &SockAddr, &AddrSize );
-	From.Assign ( ( sockaddr* ) &SockAddr );
+	uint32_t addr_size = from.size();
+
+	int read_bytes = ::recvfrom ( m_handle, ( char* ) buffer,
+	  size, flags, from.sock_addr(), & addr_size );
 	return ( read_bytes );
-} // NetSocket::RecvFrom ()
-//////////////////////////////////////////////////////////////////////
+} // netsocket::recv_from ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Receive data over the current socket.
+
+/** Receive data over the current socket.
  *
- * @param Buffer        The data is stored in this buffer.
- * @param From          The senders IP is strored here.
- * @param Flags         See recv(2) for a description.
+ * @param buffer        The data is stored in this buffer.
+ * @param from          The senders IP is strored here.
+ * @param flags         See recv(2) for a description.
  *
  * @return >0           The number of bytes received.
  * @return -1           Something went wrong, check @a errno.
  */
 //////////////////////////////////////////////////////////////////////
 int
-NetSocket::RecvFrom
+netsocket::recv_from
 (
-	NetPacket& Buffer,
-	NetAddr& From,
-	const int Flags
+	NetPacket& buffer,
+	netaddr&   from,
+	const int  flags
 )
 {
-	struct sockaddr_in6 SockAddr;
-	socklen_t AddrSize = sizeof ( SockAddr );
-	int read_bytes = ::recvfrom ( m_Handle,
-	  ( char* ) Buffer.Buffer(), Buffer.Capacity(), Flags,
-	  ( sockaddr* ) &SockAddr, &AddrSize );
-	Buffer.SetUsed ( read_bytes );
-	From.Assign ( ( sockaddr* ) &SockAddr );
+	uint32_t addr_size = from.size();
+
+	int read_bytes = ::recvfrom ( m_handle, ( char* ) buffer.Buffer(),
+	  buffer.Capacity(), flags, from.sock_addr(), & addr_size );
+	buffer.SetUsed ( read_bytes );
 	return ( read_bytes );
-} // NetSocket::RecvFrom ()
-//////////////////////////////////////////////////////////////////////
+} // netsocket::recv_from ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Close the socket, if active.
+
+/** Close the socket, if active.
  */
-//////////////////////////////////////////////////////////////////////
 void
-NetSocket::Close
-( void )
+netsocket::close
+()
 {
-	if ( m_Handle != -1 )
+	if ( m_handle != -1 )
 	{
 #if defined(UL_CYGWIN) || !defined (UL_WIN32)
 		errno = 0;
-		if ( ::close ( m_Handle ) != 0 )
+		if ( ::close ( m_handle ) != 0 )
 		{
-			printf ( "NetSocket::close: %s (%u)\n",
-				 strerror ( errno ), m_Handle );
+			printf ( "netsocket::close: %s (%u)\n",
+				 strerror ( errno ), m_handle );
 		}
 #else
-		::closesocket ( m_Handle );
+		::closesocket ( m_handle );
 #endif
-		m_Handle = -1;
+		m_handle = -1;
 	}
-} // NetSocket::Close ()
-//////////////////////////////////////////////////////////////////////
+} // netsocket::close ()
 
 //////////////////////////////////////////////////////////////////////
-/**
- * Forcibly shut down the socket.
+
+/** Forcibly shut down the socket.
  */
 //////////////////////////////////////////////////////////////////////
 void
-NetSocket::Shutdown
-( void )
+netsocket::shutdown
+()
 {
-	if ( m_Handle != -1 )
+	if ( m_handle != -1 )
 	{
 #if defined(UL_CYGWIN) || !defined (UL_WIN32)
-		if ( m_IsStream )
+		if ( m_is_stream )
 		{
 			errno = 0;
-			if ( ::shutdown ( m_Handle, SHUT_RDWR ) != 0 )
+			if ( ::shutdown ( m_handle, SHUT_RDWR ) != 0 )
 			{
-				printf ( "NetSocket::shutdown: %s on fd %u\n",
-					 strerror ( errno ), m_Handle );
+				printf ( "netsocket::shutdown: %s on fd %u\n",
+					 strerror ( errno ), m_handle );
 			}
 		}
 #endif
-		m_Handle = -1 ;
+		m_handle = -1 ;
 	}
-} // NetSocket::Shutdown ()
-//////////////////////////////////////////////////////////////////////
+} // netsocket::shutdown ()
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * If an error occured, you can check if it was caused due to
  * non-blocking socket operations.
@@ -808,9 +936,8 @@ NetSocket::Shutdown
  * @return true         Error was in cause of non-blocking operation
  * @return false        Error was something else.
  */
-//////////////////////////////////////////////////////////////////////
 bool
-NetSocket::IsNonBlockingError
+netsocket::is_non_blocking_error
 ()
 {
 #if defined(UL_CYGWIN) || !defined (UL_WIN32)
@@ -841,62 +968,61 @@ NetSocket::IsNonBlockingError
 	}
 	return false;
 #endif
-} // NetSocket::IsNonBlockingError ()
-//////////////////////////////////////////////////////////////////////
+} // netsocket::is_non_blocking_error ()
 
 //////////////////////////////////////////////////////////////////////
+
 /**
- * Wait for a number of @a NetSockets to change state, i.e. there
+ * Wait for a number of @a netsockets to change state, i.e. there
  * is data to read, or the socket is ready to send.
  *
- * @param Reads         Array of %NetSocket to receive data from
- * @param Writes        Array of %NetSocket to send date
- * @param Timeout       The method returns after @a Timeout seconds
+ * @param reads         Array of %netsocket to receive data from
+ * @param writes        Array of %netsocket to send date
+ * @param timeout       The method returns after @a timeout seconds
  *                      regardless of state changes.
  *
  * @return >0           The number of filedescriptors which changed
  *                      state
  * @return -1           An error occured.
- * @return -2           Timeout
+ * @return -2           timeout
  */
-//////////////////////////////////////////////////////////////////////
 int
-NetSocket::Select
+netsocket::select
 (
-	NetSocket** Reads,
-	NetSocket** Writes,
-	const int Timeout
+	netsocket** reads,
+	netsocket** writes,
+	const int   timeout
 )
 {
-	fd_set  ReadSet;
-	fd_set  WriteSet;
-	int     Retval;
-	FD_ZERO ( & ReadSet );
-	FD_ZERO ( & WriteSet );
-	int I;
-	int Num = 0;
-	if ( Reads )
+	fd_set  read_set;
+	fd_set  write_set;
+	int     retval;
+	FD_ZERO ( & read_set );
+	FD_ZERO ( & write_set );
+	int i;
+	int num = 0;
+
+	if ( reads )
 	{
-		for ( I=0; Reads[I]; I++ )
+		for ( i=0; reads[i]; i++ )
 		{
-			int FD = Reads[I]->GetHandle();
-			FD_SET ( FD, & ReadSet );
-			Num++;
+			int FD = reads[i]->handle();
+			FD_SET ( FD, & read_set );
+			num++;
 		}
 	}
-	if ( Writes )
+	if ( writes )
 	{
-		for ( I=0; Writes[I]; I++ )
+		for ( i=0; writes[i]; i++ )
 		{
-			int FD = Writes[I]->GetHandle();
-			FD_SET ( FD, & WriteSet );
-			Num++;
+			int FD = writes[i]->handle();
+			FD_SET ( FD, & write_set );
+			num++;
 		}
 	}
-	if ( !Num )
+	if ( !num )
 	{
-		// nothing to do
-		return Num ;
+		return num ; // nothing to do
 	}
 	// It bothers me that select()'s first argument does not appear to
 	// work as advertised... [it hangs like this if called with
@@ -905,61 +1031,65 @@ NetSocket::Select
 	// need to use it.  The name is somewhat misleading - the only
 	// thing I have ever seen it used for is to detect urgent data -
 	// which is an unportable feature anyway.
-	if ( Timeout != 0 )
+	if ( timeout != 0 )
 	{
 		struct timeval TV ;
-		TV.tv_sec  = Timeout;
+		TV.tv_sec  = timeout;
 		TV.tv_usec = 0;
-		Retval = ::select ( FD_SETSIZE, & ReadSet, & WriteSet, 0, & TV );
+		retval = ::select ( FD_SETSIZE,
+		  & read_set, & write_set, 0, & TV );
 	}
 	else
 	{
-		Retval = ::select ( FD_SETSIZE, & ReadSet, & WriteSet, 0, 0 );
+		retval = ::select ( FD_SETSIZE,
+		  & read_set, & write_set, 0, 0 );
 	}
-	if ( Retval == 0 ) // timeout
+	if ( retval == 0 )
 	{
-		return ( -2 );
+		return ( -2 ); // timeout
 	}
-	if ( Retval == -1 ) // error
+	if ( retval == -1 )
 	{
-		return ( -1 );
+		return ( -1 ); // error
 	}
 	//remove sockets that had no activity
-	Num = 0 ;
-	if ( Reads )
+	num = 0 ;
+	if ( reads )
 	{
-		for ( I=0; Reads[I]; I++ )
+		for ( i=0; reads[i]; i++ )
 		{
-			int FD = Reads[I]->GetHandle();
-			if ( ! FD_ISSET ( FD, & ReadSet ) )
+			int FD = reads[i]->handle();
+			if ( ! FD_ISSET ( FD, & read_set ) )
 			{
-				Reads[I] = 0;
+				reads[i] = 0;
 			}
 			else
 			{
-				Num++;
+				num++;
 			}
 		}
-		Reads[I] = NULL ;
+		reads[i] = NULL ;
 	}
-	if ( Writes )
+	if ( writes )
 	{
-		for ( I=0; Writes[I]; I++ )
+		for ( i=0; writes[i]; i++ )
 		{
-			int FD = Writes[I]->GetHandle();
-			if ( ! FD_ISSET ( FD, & WriteSet ) )
+			int FD = writes[i]->handle();
+			if ( ! FD_ISSET ( FD, & write_set ) )
 			{
-				Writes[I] = 0;
+				writes[i] = 0;
 			}
 			else
 			{
-				Num++;
+				num++;
 			}
 		}
-		Writes[I] = NULL ;
+		writes[i] = NULL ;
 	}
-	return Num;
-} // NetSocket::Select ()
+	return num;
+} // netsocket::select ()
+
 //////////////////////////////////////////////////////////////////////
 
+} // namespace fgmp
 

@@ -50,8 +50,6 @@ using namespace std;
 #define DISCONNECT 1
 #define UPDATE     2
 
-void signal_handler ( int s );
-
 //////////////////////////////////////////////////////////////////////
 /**
  * @class FG_TRACKER
@@ -74,7 +72,7 @@ public:
 	string	m_domain;
 	string	m_ProtocolVersion;
 	bool	m_identified;			/* If fgtracker identified this fgms */
-	NetSocket* m_TrackerSocket;
+	fgmp::netsocket* m_TrackerSocket;
 	string m_version;
 
 	typedef std::vector<std::string> vMSG;	/* string vector */
@@ -93,7 +91,6 @@ public:
 	vMSG    msg_sent_queue;			/* the single message queue */
 	vMSG    msg_recv_queue;			/* the single message queue */
 	bool	WantExit;
-	// static, so it can be set from outside (signal handler)
 	static bool	m_connected;			/* If connected to fgtracker */
 	static inline void set_connected ( bool b )
 	{

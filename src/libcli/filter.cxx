@@ -23,7 +23,7 @@
 #include "common.hxx"
 #include "filter.hxx"
 
-namespace LIBCLI
+namespace libcli
 {
 
 using namespace std;
@@ -31,7 +31,7 @@ using namespace std;
 int
 filter_t::exec
 (
-	Client& Instance,
+	cli_client& Instance,
 	char *cmd
 )
 {
@@ -42,7 +42,7 @@ filter_t::exec
 int
 filter_t::exec
 (
-	Client& Instance,
+	cli_client& Instance,
 	char *cmd,
 	void *data
 )
@@ -51,5 +51,5 @@ filter_t::exec
 	return (CALL_MEMBER_FN (Instance, this->filter)(cmd, data));
 }
 
-}; // namespace LIBCLI
+}; // namespace libcli
 

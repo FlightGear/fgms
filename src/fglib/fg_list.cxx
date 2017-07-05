@@ -33,7 +33,7 @@ namespace fgmp
 const size_t ListElement::NONE_EXISTANT = (size_t) -1;
 
 //////////////////////////////////////////////////////////////////////
-ListElement::ListElement( const string& Name )
+ListElement::ListElement( const std::string& Name )
 {
 	ID		= NONE_EXISTANT;	// flag a non existant Element
 	Timeout		= 0;

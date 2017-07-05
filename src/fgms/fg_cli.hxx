@@ -38,7 +38,7 @@
 #include <fgms.hxx>
 #include <libcli.hxx>
 
-using namespace LIBCLI;
+using namespace libcli;
 using namespace std;
 
 class FG_CLI : public CLI
@@ -50,7 +50,6 @@ private:
 	//////////////////////////////////////////////////
 	// general  commands
 	//////////////////////////////////////////////////
-	int cmd_pager		( char *command, char *argv[], int argc );
 	int cmd_show_stats	( UNUSED(char *command),
 				  UNUSED(char *argv[]), UNUSED(int argc) );
 	int cmd_show_settings	( UNUSED(char *command),
@@ -102,10 +101,6 @@ private:
 private:
 	FGMS* fgms;
 	int cmd_NOT_IMPLEMENTED (  char *command, char *argv[], int argc );
-	//////////////////////////////////////////////////
-	//  utility functions
-	//////////////////////////////////////////////////
-	bool need_help (char* argv);
 };
 
 #endif

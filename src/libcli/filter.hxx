@@ -20,7 +20,7 @@
 #ifndef CLI_FILTER_H
 #define CLI_FILTER_H
 
-namespace LIBCLI
+namespace libcli
 {
 
 struct filter_cmds_t
@@ -30,8 +30,8 @@ struct filter_cmds_t
 };
 
 class CLI;
-class Client;
-typedef int (Client::*filter_callback_func) (char *cmd, void *data);
+class cli_client;
+typedef int (cli_client::*filter_callback_func) (char *cmd, void *data);
 
 class filter_t
 {
@@ -39,10 +39,10 @@ public:
 	filter_callback_func filter;
 	void *data;
 	filter_t *next;
-	int exec (Client& Instance, char *cmd);
-	int exec (Client& Instance, char *cmd, void *data);
+	int exec (cli_client& Instance, char *cmd);
+	int exec (cli_client& Instance, char *cmd, void *data);
 };
 
-}; // namespace LIBCLI
+}; // namespace libcli
 
 #endif

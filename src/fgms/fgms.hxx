@@ -145,14 +145,14 @@ protected:
 	//  private variables
 	//
 	//////////////////////////////////////////////////
-	typedef std::map<NetAddr,string>		mT_IP2Relay;
-	typedef std::map<NetAddr,string>::iterator	mT_RelayMapIt;
+	typedef std::map<fgmp::netaddr,string>		mT_IP2Relay;
+	typedef std::map<fgmp::netaddr,string>::iterator	mT_RelayMapIt;
 	bool		m_Initialized;
 	bool		m_ReinitData;
 	bool		m_ReinitTelnet;
 	bool		m_ReinitAdmin;
 	bool		m_Listening;
-	int		m_ListenPort;
+	int		m_DataPort;
 	int		m_TelnetPort;
 	int		m_AdminPort;
 	int		m_PlayerExpires;
@@ -173,9 +173,9 @@ protected:
 	bool		m_IsTracked;
 	string		m_ServerName;
 	string		m_TrackerServer;
-	NetSocket*	m_DataSocket;
-	NetSocket*	m_TelnetSocket;
-	NetSocket*	m_AdminSocket;
+	fgmp::netsocket*	m_DataSocket;
+	fgmp::netsocket*	m_TelnetSocket;
+	fgmp::netsocket*	m_AdminSocket;
 	mT_IP2Relay	m_RelayMap;
 	fgmp::FG_List	m_CrossfeedList;
 	fgmp::FG_List	m_WhiteList;
@@ -231,21 +231,21 @@ protected:
 	//  private methods
 	//
 	//////////////////////////////////////////////////
-	void  AddClient     ( const NetAddr& Sender, char* Msg );
-	void  AddBadClient  ( const NetAddr& Sender, string& ErrorMsg,
+	void  AddClient     ( const fgmp::netaddr& Sender, char* Msg );
+	void  AddBadClient  ( const fgmp::netaddr& Sender, string& ErrorMsg,
 	                      bool IsLocal, int Bytes );
-	bool  IsKnownRelay ( const NetAddr& SenderAddress, size_t Bytes );
+	bool  IsKnownRelay ( const fgmp::netaddr& SenderAddress, size_t Bytes );
 	bool  PacketIsValid ( int Bytes, T_MsgHdr* MsgHdr,
-	                      const NetAddr& SenderAddress );
+	                      const fgmp::netaddr& SenderAddress );
 	void  HandlePacket  ( char* sMsg, int Bytes,
-	                      const NetAddr& SenderAdress );
+	                      const fgmp::netaddr& SenderAdress );
 	int   UpdateTracker ( const string& callsign, const string& passwd, const string& modelname,
 	                      const time_t time, const int type );
 	void  DropClient    ( PlayerIt& CurrentPlayer ); 
 	bool  ReceiverWantsData ( const PlayerIt& SenderPos, const FG_Player& Receiver );
 	bool  ReceiverWantsChat ( const PlayerIt& SenderPos, const FG_Player& Receiver );
 	bool  IsInRange     ( const fgmp::ListElement& Relay,  const PlayerIt& SendingPlayer, uint32_t MsgId );
-	void  SendToCrossfeed ( char* Msg, int Bytes, const NetAddr& SenderAddress );
+	void  SendToCrossfeed ( char* Msg, int Bytes, const fgmp::netaddr& SenderAddress );
 	void  SendToRelays  ( char* Msg, int Bytes, PlayerIt& SendingPlayer );
 	void  WantExit ();
 }; // FGMS

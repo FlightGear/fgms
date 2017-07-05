@@ -1,4 +1,3 @@
-//                                                                                                                           
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -30,12 +29,12 @@
 #include "common.hxx"
 #include "filter.hxx"
 
-namespace LIBCLI
+namespace libcli
 {
 
 class CLI;
 
-class match_filter_state                                                                                                     
+class match_filter_state
 {       
 public: 
 	int flags;
@@ -50,22 +49,22 @@ public:
 	char* to;
 };      
 
-class Client
+class cli_client
 {
 public:
 	friend class CLI;
-	Client ( int fd );
-	~Client ();
+	cli_client ( int fd );
+	~cli_client ();
 	int wait_for_input ( int seconds );	// select()
 	int read_char ( unsigned char& c );
 	void put_char ( const char& c );
 
-	template <class T> Client& operator << ( T v );
-	Client& operator << ( Client& (*f) (Client&) );
+	template <class T> cli_client& operator << ( T v );
+	cli_client& operator << ( cli_client& (*f) (cli_client&) );
 
-	friend Client& commit ( Client& );
-	friend Client& CRLF ( Client& );
-	friend Client& UNFILTERED ( Client& );
+	friend cli_client& commit ( cli_client& );
+	friend cli_client& CRLF ( cli_client& );
+	friend cli_client& UNFILTERED ( cli_client& );
 	size_t  lines_out;
 	size_t  max_screen_lines;
 	filter_t*   filters;
@@ -78,7 +77,7 @@ protected:
 	int     range_filter ( char* cmd, void* data );
 	int     count_filter ( char* cmd, void* data );
 	PRINT_MODE		m_print_mode;
-	NetSocket*		m_socket;
+	fgmp::netsocket*	m_socket;
 	std::ostringstream	m_output;
 	#ifndef _MSC_VER
 	struct termios OldModes;
@@ -89,17 +88,17 @@ protected:
 //
 //////////////////////////////////////////////////////////////////////
 template <class T>
-Client& Client::operator << ( T v )
+cli_client& cli_client::operator << ( T v )
 {
 	m_output << v;
 	return *this;
 } // operator << ( class T );
 //////////////////////////////////////////////////////////////////////
 
-Client& commit ( Client& );
-Client& CRLF ( Client& out );
-Client& UNFILTERED ( Client& out );
+cli_client& commit ( cli_client& );
+cli_client& CRLF ( cli_client& out );
+cli_client& UNFILTERED ( cli_client& out );
 
-}; // namespace LIBCLI
+}; // namespace libcli
 
 #endif

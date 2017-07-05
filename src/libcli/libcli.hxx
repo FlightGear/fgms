@@ -1,4 +1,3 @@
-//                                                                                                                           
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -17,8 +16,8 @@
 // Copyright (C) 2011  Oliver Schroeder
 //
 
-#ifndef __LIBCLI_H__
-#define __LIBCLI_H__
+#ifndef __libcli_H__
+#define __libcli_H__
 
 #include <string>
 #include <map>
@@ -30,7 +29,7 @@
 #include "common.hxx"
 #include "command.hxx"
 
-namespace LIBCLI
+namespace libcli
 {
 
 class CLI
@@ -54,7 +53,7 @@ public:
 	int     privilege;
 	int     mode;
 	int     state;
-	Client  client;
+	cli_client  client;
 	unp	users;
 	Command<CLI>*   commands;
 	// filter_t*   filters;
@@ -109,7 +108,9 @@ protected:
 	int     internal_quit ( UNUSED ( char* command ), UNUSED ( char* argv[] ), UNUSED ( int argc ) );
 	int     internal_exit ( char* command, char* argv[], int argc );
 	int     internal_dump ( char* command, char* argv[], int argc );
-	int     int_configure_terminal ( UNUSED ( char* command ), UNUSED ( char* argv[] ), UNUSED ( int argc ) );
+	int     int_cmd_pager ( UNUSED ( char* command ), UNUSED ( char* argv[] ), UNUSED ( int argc ) );
+	int     int_configure_terminal ( char* command,
+		  char* argv[], int argc );
 	void    unregister_all ( Command<CLI> *command );
 	int	pager ();
 	// line editing and handling of special chars
@@ -133,6 +134,7 @@ protected:
 	bool	append ( const unsigned char& c );
 	void	insert ( const unsigned char& c );
 	bool	check_pager ();
+	bool	need_help ( char* argv );
 	unsigned char	map_esc ();
 	// Variables
 	bool	from_socket;
@@ -147,6 +149,6 @@ protected:
 #endif
 };
 
-}; // namespace LIBCLI
+}; // namespace libcli
 
 #endif

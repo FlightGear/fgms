@@ -22,7 +22,7 @@
 
 #include "common.hxx"
 
-namespace LIBCLI
+namespace libcli
 {
 
 using namespace std;
@@ -280,6 +280,6 @@ Command<C>::exec
 	return ( CALL_MEMBER_FN ( Instance, this->cpp_callback ) ( command, argv, argc ) );
 }
 
-}; // namespace LIBCLI
+}; // namespace libcli
 
 #endif

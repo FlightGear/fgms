@@ -61,7 +61,7 @@
 #include <stdio.h>
 #include "fg_tracker.hxx"
 #include <fglib/fg_util.hxx>
-#include <libcli/debug.hxx>
+#include <fglib/debug.hxx>
 #include <fglib/daemon.hxx>
 #include <fglib/fg_log.hxx>
 
@@ -149,7 +149,7 @@ FG_TRACKER::~FG_TRACKER
 	msg_recv_queue.clear ();
 	if ( m_TrackerSocket )
 	{
-		m_TrackerSocket->Close ();
+		m_TrackerSocket->close ();
 		delete m_TrackerSocket;
 		m_TrackerSocket = 0;
 	}
@@ -352,7 +352,7 @@ FG_TRACKER::TrackerRead
 	errno = 0;
 	//int bytes = m_TrackerSocket->recv ( res, MSGMAXLINE, MSG_NOSIGNAL );
 	/* -1 below is used to retain last byte of 0x23*/
-	int bytes = m_TrackerSocket->Recv ( bs->buf + bs->curlen, bs->maxlen - bs->curlen -1, MSG_NOSIGNAL );
+	int bytes = m_TrackerSocket->recv ( bs->buf + bs->curlen, bs->maxlen - bs->curlen -1, MSG_NOSIGNAL );
 	if ( bytes <= 0 )
 	{
 		/*check if NOT
@@ -420,7 +420,7 @@ FG_TRACKER::TrackerWrite
 	errno      = 0;
 	size_t s   = -1;
 
-	s = m_TrackerSocket->Send ( str.c_str(), l ,0 );
+	s = m_TrackerSocket->send ( str.c_str(), l ,0 );
 	if ( s != l )
 	{
 		set_connected ( false );
@@ -453,7 +453,7 @@ FG_TRACKER::TrackerWrite
 		<< l <<", msg_queue.size = "
 		<< msg_queue.size()
 		<< ", msg_sent_queue.size = "  << msg_sent_queue.size();
-	m_TrackerSocket->Send ( debug.str().c_str(), debug.str().size() + 1, 0 );
+	m_TrackerSocket->send ( debug.str().c_str(), debug.str().size() + 1, 0 );
 	BytesSent += s;
 	PktsSent++;
 	return s;
@@ -673,24 +673,15 @@ FG_TRACKER::Connect
 {
 	if ( m_TrackerSocket )
 	{
-		m_TrackerSocket->Close ();
+		m_TrackerSocket->close ();
 		delete m_TrackerSocket;
 		m_TrackerSocket = 0;
 	}
-	m_TrackerSocket = new NetSocket();
+	m_TrackerSocket = new fgmp::netsocket();
 	LOG ( log::DEBUG, "# FG_TRACKER::Connect: "
 	  << "Server: " << m_TrackerServer << ", Port: " << m_TrackerPort
 	);
-	if ( m_TrackerSocket->Open ( NetSocket::TCP ) == false )
-	{
-		LOG ( log::HIGH, "# FG_TRACKER::Connect: "
-		  << "Can't get socket..."
-		);
-		delete m_TrackerSocket;
-		m_TrackerSocket = 0;
-		return false;
-	}
-	if ( m_TrackerSocket->Connect ( m_TrackerServer, m_TrackerPort ) == false )
+	if ( ! m_TrackerSocket->connect ( m_TrackerServer, m_TrackerPort, fgmp::netsocket::TCP ) )
 	{
 		LOG ( log::HIGH, "# FG_TRACKER::Connect: "
 		  << "Connect to " << m_TrackerServer
@@ -700,12 +691,12 @@ FG_TRACKER::Connect
 		m_TrackerSocket = 0;
 		return false;
 	}
-	m_TrackerSocket->SetBlocking ( false );
+	m_TrackerSocket->set_blocking ( false );
 	LOG ( log::HIGH, "# FG_TRACKER::Connect: success" );
 	LastConnected	= time ( 0 );
 	std::stringstream ss;
 	ss.str("Please initialize");
-	m_TrackerSocket->Send ( ss.str().c_str(), ss.str().size()+1 ,0 );
+	m_TrackerSocket->send ( ss.str().c_str(), ss.str().size()+1 ,0 );
 	sleep ( 2 );
 	
 	/*Write Version header to FGTracker*/
@@ -719,122 +710,6 @@ FG_TRACKER::Connect
 	sleep ( 1 );
 	return true;
 } // Connect ()
-
-//////////////////////////////////////////////////////////////////////
-/**
- * @brief Signal handling
- * @param s int with the signal
- */
-void
-signal_handler
-(
-	int s
-)
-{
-#ifndef _MSC_VER
-	switch ( s )
-	{
-	case  1:
-		printf ( "SIGHUP received, exiting...\n" );
-		exit ( 0 );
-		break;
-	case  2:
-		printf ( "SIGINT received, exiting...\n" );
-		exit ( 0 );
-		break;
-	case  3:
-		printf ( "SIGQUIT received, exiting...\n" );
-		break;
-	case  4:
-		printf ( "SIGILL received\n" );
-		break;
-	case  5:
-		printf ( "SIGTRAP received\n" );
-		break;
-	case  6:
-		printf ( "SIGABRT received\n" );
-		break;
-	case  7:
-		printf ( "SIGBUS received\n" );
-		break;
-	case  8:
-		printf ( "SIGFPE received\n" );
-		break;
-	case  9:
-		printf ( "SIGKILL received\n" );
-		exit ( 0 );
-		break;
-	case 10:
-		printf ( "SIGUSR1 received\n" );
-		break;
-	case 11:
-		printf ( "SIGSEGV received. Exiting...\n" );
-		exit ( 1 );
-		break;
-	case 12:
-		printf ( "SIGUSR2 received\n" );
-		break;
-	case 13:
-		printf ( "SIGPIPE received. Connection Error.\n" );
-		FG_TRACKER::set_connected ( false );
-		break;
-	case 14:
-		printf ( "SIGALRM received\n" );
-		break;
-	case 15:
-		printf ( "SIGTERM received\n" );
-		exit ( 0 );
-		break;
-	case 16:
-		printf ( "SIGSTKFLT received\n" );
-		break;
-	case 17:
-		printf ( "SIGCHLD received\n" );
-		break;
-	case 18:
-		printf ( "SIGCONT received\n" );
-		break;
-	case 19:
-		printf ( "SIGSTOP received\n" );
-		break;
-	case 20:
-		printf ( "SIGTSTP received\n" );
-		break;
-	case 21:
-		printf ( "SIGTTIN received\n" );
-		break;
-	case 22:
-		printf ( "SIGTTOU received\n" );
-		break;
-	case 23:
-		printf ( "SIGURG received\n" );
-		break;
-	case 24:
-		printf ( "SIGXCPU received\n" );
-		break;
-	case 25:
-		printf ( "SIGXFSZ received\n" );
-		break;
-	case 26:
-		printf ( "SIGVTALRM received\n" );
-		break;
-	case 27:
-		printf ( "SIGPROF received\n" );
-		break;
-	case 28:
-		printf ( "SIGWINCH received\n" );
-		break;
-	case 29:
-		printf ( "SIGIO received\n" );
-		break;
-	case 30:
-		printf ( "SIGPWR received\n" );
-		break;
-	default:
-		printf ( "signal %d received\n",s );
-	}
-#endif
-}
 
 // eof - fg_tracker.cxx
 //////////////////////////////////////////////////////////////////////

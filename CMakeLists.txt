@@ -68,6 +68,8 @@ endif ( BUILD_SHARED_LIB )
 ##################################################
 if ( UNIX )
 	option ( ENABLE_DEBUG_SYMBOLS "Add debug symbols into the binary." OFF )
+	option ( ENABLE_DEBUG_OUTPUT "Add additional debug output." OFF )
+	option ( ENABLE_DEBUG_TRACE "Add trace info." OFF )
 endif ( UNIX )
 
 if ( CMAKE_COMPILER_IS_GNUCXX )
@@ -136,8 +138,64 @@ set ( CMAKE_CXX_FLAGS
 set ( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EXTRA_LD_FLAGS}" )
 
 if ( ENABLE_DEBUG_OUTPUT )
-	add_definitions( -DDEF_DEBUG_OUTPUT=true )
+	add_definitions( -DDEF_ENABLE_DEBUG )
 endif ( ENABLE_DEBUG_OUTPUT )
+
+if ( ENABLE_DEBUG_TRACE )
+	add_definitions( -DDEF_ENABLE_TRACE )
+endif ( ENABLE_DEBUG_TRACE )
+
+# to distinguish between debug and release lib
+if ( WIN32 )
+	set ( CMAKE_DEBUG_POSTFIX "d" )
+endif ( WIN32 )
+
+##################################################
+#
+# find the threads library
+#
+##################################################
+find_package ( Threads REQUIRED )
+if ( Threads_FOUND )
+	if ( WIN32 )
+		list ( APPEND add_LIBS winmm.lib ws2_32.lib )
+		###message( STATUS "*** ENV INCLUDE $ENV{INCLUDE}")
+		message ( STATUS
+		  "*** Finding pthread.h HINTS [${CMAKE_PREFIX_PATH}] PATHS [${CMAKE_INCLUDE_PATH}] PATH_SUFFIXES include"
+		)
+		###find_file( thread_INC pthread.h
+		find_path ( thread_INC pthread.h
+			HINTS ${CMAKE_PREFIX_PATH} $ENV{INCLUDE}
+			PATHS ${CMAKE_INCLUDE_PATH} $ENV{INCLUDE}
+			PATH_SUFFIXES include
+		)
+		if ( thread_INC )
+			include_directories ( SYSTEM ${thread_INC} )
+			message (STATUS "*** thread_INC: ${thread_INC}" )
+		else ( thread_INC )
+			message ( FATAL_ERROR
+			  "*** thread_INC: ${thread_INC} pthread.h NOT FOUND!"
+			)
+		endif ( thread_INC )
+		find_library ( thread_LIB pthreadVC2.lib
+			HINTS ${CMAKE_PREFIX_PATH} $ENV{LIB}
+			PATHS ${CMAKE_INCLUDE_PATH} $ENV{LIB}
+			PATH_SUFFIXES lib
+		)
+		if ( thread_LIB )
+			list ( APPEND add_LIBS ${thread_LIB} )
+			message ( STATUS "*** Found ${thread_LIB})" )
+		else ( thread_LIB )
+			message ( FATAL_ERROR
+			  "*** NOT FOUND target_link_libraries(pthread1 ${thread_LIB})"
+			)
+		endif ( thread_LIB )
+	else ( WIN32 )
+		list ( APPEND add_LIBS ${CMAKE_THREAD_LIBS_INIT} )
+	endif ( WIN32 )
+else ( Threads_FOUND )
+	message ( FATAL_ERROR "*** THREADS NOT FOUND!" )
+endif ( Threads_FOUND )
 
 # to distinguish between debug and release lib
 if ( WIN32 )
@@ -227,16 +285,14 @@ endif ( WIN32 )
 #### add_subdirectory( src/libcli )
 # Project [libcli] [Static Library] [noinst_LIBRARIES]
 set ( libcli_SRCS
-	src/libcli/debug.cxx
-	src/libcli/filter.cxx
-	src/libcli/cli_client.cxx
-	src/libcli/libcli.cxx
 	src/libcli/common.hxx
 	src/libcli/command.hxx
-	src/libcli/debug.hxx
-	src/libcli/filter.hxx
 	src/libcli/cli_client.hxx
+	src/libcli/cli_client.cxx
 	src/libcli/libcli.hxx
+	src/libcli/libcli.cxx
+	src/libcli/filter.hxx
+	src/libcli/filter.cxx
 )
 if ( WIN32 )
 	list ( APPEND libcli_SRCS src/libcli/crypt-win.c )
@@ -252,12 +308,16 @@ endif ( WIN32 )
 add_library (
 	Libfgmp ${LIB_TYPE}
 	src/fglib/mpmessages.hxx
+	src/fglib/debug.hxx
+	src/fglib/debug.cxx
 	src/fglib/fg_util.cxx 
 	src/fglib/fg_util.hxx 
 	src/fglib/encoding.hxx
 	src/fglib/encoding.cxx
 	src/fglib/netaddr.hxx
 	src/fglib/netaddr.cxx
+	src/fglib/ipaddr.hxx
+	src/fglib/ipaddr.cxx
 	src/fglib/netpacket.hxx
 	src/fglib/netpacket.cxx
 	src/fglib/netsocket.hxx
@@ -319,6 +379,8 @@ if ( BUILD_FGLS )
 	add_executable ( fgls
 		src/fgls/fgls.hxx
 		src/fgls/fgls.cxx
+		src/fgls/fgls_cli.hxx
+		src/fgls/fgls_cli.cxx
 	)
 	target_link_libraries ( fgls ${add_LIBS} )
 endif ( BUILD_FGLS )
@@ -332,6 +394,12 @@ if ( BUILD_TESTS )
 	# test_log
 	add_executable ( test_log src/tests/test_log.cxx )
 	target_link_libraries ( test_log  ${add_LIBS} )
+	# test_ipaddr
+	add_executable ( test_ipaddr src/tests/test_ipaddr.cxx )
+	target_link_libraries ( test_ipaddr  ${add_LIBS} )
+	# test_netaddr
+	add_executable ( test_netaddr src/tests/test_netaddr.cxx )
+	target_link_libraries ( test_netaddr  ${add_LIBS} )
 endif ( BUILD_TESTS )
 
 ##################################################
@@ -373,6 +441,22 @@ else ( ENABLE_DEBUG_SYMBOLS )
 	  "--- building without debug info.. Use -DENABLE_DEBUG_SYMBOLS:BOOL=TRUE to enable it."
 	)
 endif ( ENABLE_DEBUG_SYMBOLS )
+
+if ( ENABLE_DEBUG_OUTPUT )
+	message ( STATUS "+++ building with additinal debug output" )
+else ( ENABLE_DEBUG_OUTPUT )
+	message ( STATUS
+	  "--- building without additional debug info.. Use -DENABLE_DEBUG_OUTPUT:BOOL=TRUE to enable it."
+	)
+endif ( ENABLE_DEBUG_OUTPUT )
+
+if ( ENABLE_DEBUG_TRACE )
+	message ( STATUS "+++ building with trace info" )
+else ( ENABLE_DEBUG_TRACE )
+	message ( STATUS
+	  "--- building without trace info.. Use -DENABLE_DEBUG_TRACE:BOOL=TRUE to enable it."
+	)
+endif ( ENABLE_DEBUG_TRACE )
 
 if ( BUILD_TESTS )
 	message ( STATUS "+++ building test applications" )

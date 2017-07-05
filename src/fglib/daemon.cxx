@@ -63,100 +63,6 @@ void cDaemon::SigHandler ( int SigType )
 		printf("[%d] SIGPIPE received. Connection error.\n",childpid);
 		return;
 	}
-	switch (SigType)
-	{
-		case  1:cout << "killed by SIGHUP! ";
-			cout << "Hangup (POSIX)" << endl;
-			break;
-		case  2:cout << "killed by SIGINT! ";
-			cout << "Interrupt (ANSI)" << endl;
-			break;
-		case  3:cout << "killed by SIGQUIT! ";
-			cout << "Quit (POSIX)" << endl;
-			break;
-		case  4:cout << "killed by SIGILL! ";
-			cout << "Illegal instruction (ANSI)" << endl;
-			break;
-		case  5:cout << "killed by SIGTRAP! ";
-			cout << "Trace trap (POSIX)" << endl;
-			break;
-		case  6:cout << "killed by SIGABRT! ";
-			cout << "IOT trap (4.2 BSD)" << endl;
-			break;
-		case  7:cout << "killed by SIGBUS! ";
-			cout << "BUS error (4.2 BSD)" << endl;
-			break;
-		case  8:cout << "killed by SIGFPE! ";
-			cout << "Floating-point exception (ANSI)" << endl;
-			break;
-		case  9:cout << "killed by SIGKILL! ";
-			cout << "Kill, unblockable (POSIX)" << endl;
-			break;
-		case 10:cout << "killed by SIGUSR1! ";
-			cout << "User-defined signal 1 (POSIX)" << endl;
-			break;
-		case 11:cout << "killed by SIGSEGV! ";
-			cout << "Segmentation violation (ANSI)" << endl;
-			break;
-		case 12:cout << "killed by SIGUSR2! ";
-			cout << "User-defined signal 2 (POSIX)" << endl;
-			break;
-		case 13:cout << "killed by SIGPIPE! ";
-			cout << "Broken pipe (POSIX)" << endl;
-			break;
-		case 14:cout << "killed by SIGALRM! ";
-			cout << "Alarm clock (POSIX)" << endl;
-			break;
-		case 15:cout << "killed by SIGTERM! ";
-			cout << "Termination (ANSI)" << endl;
-			break;
-		case 16:cout << "killed by SIGSTKFLT! ";
-			cout << "Stack fault" << endl;
-			break;
-		case 17:cout << "killed by SIGCHLD! ";
-			cout << "Child status has changed (POSIX)" << endl;
-			break;
-		case 18:cout << "killed by SIGCONT! ";
-			cout << "Continue (POSIX)" << endl;
-			break;
-		case 19:cout << "killed by SIGSTOP! ";
-			cout << "Stop, unblockable (POSIX)" << endl;
-			break;
-		case 20: cout << "killed by SIGTSTP! ";
-			cout << "Keyboard stop (POSIX)" << endl;
-			break;
-		case 21:cout << "killed by SIGTTIN! ";
-			cout << "Background read from tty (POSIX)" << endl;
-			break;
-		case 22:cout << "killed by SIGTTOU! ";
-			cout << "Background write to tty (POSIX)" << endl;
-			break;
-		case 23:cout << "killed by SIGURG! ";
-			cout << "Urgent condition on socket (4.2 BSD)" << endl;
-			break;
-		case 24:cout << "killed by SIGXCPU! ";
-			cout << "CPU limit exceeded (4.2 BSD)" << endl;
-			break;
-		case 25:cout << "killed by SIGXFSZ! ";
-			cout << "File size limit exceeded (4.2 BSD)" << endl;
-			break;
-		case 26:cout << "killed by SIGVTALRM! ";
-			cout << "Virtual alarm clock (4.2 BSD)" << endl;
-			break;
-		case 27:cout << "killed by SIGPROF! ";
-			cout << "Profiling alarm clock (4.2 BSD)" << endl;
-			break;
-		case 28:cout << "killed by SIGWINCH! ";
-			cout << "Window size change (4.3 BSD, Sun)" << endl;
-			break;
-		case 29: cout << "killed by SIGIO! ";
-			cout << "I/O now possible (4.2 BSD)" << endl;
-			break;
-		case 30:cout << "killed by SIGPWR! ";
-			cout << "Power failure restart (System V)" << endl;
-			break;
-		default:cout << "killed by signal " << SigType << "!" << endl;
-	}
 	exit (0);
 }
 
@@ -242,9 +148,6 @@ cDaemon::cDaemon()
 	//
 	// catch some signals
 	//
-	signal (SIGINT,SigHandler);
-	signal (SIGHUP,SigHandler);
-	signal (SIGTERM,SigHandler);
 	signal (SIGCHLD,SigHandler);
 	signal (SIGPIPE,SigHandler);
 	PidOfDaemon = getpid(); 

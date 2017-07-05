@@ -17,7 +17,7 @@
 # define UNUSED(d) d
 #endif
 
-using namespace LIBCLI;
+using namespace libcli;
 using namespace std;
 
 class my_cli : public CLI
@@ -34,10 +34,10 @@ private:
 int  my_cli::check_auth (const string& username, const string& password)
 {
 	if (username != "fred")
-		return LIBCLI::ERROR_ANY;
+		return libcli::ERROR_ANY;
 	if (password != "fred")
-		return LIBCLI::ERROR_ANY;
-	return LIBCLI::OK;
+		return libcli::ERROR_ANY;
+	return libcli::OK;
 }
 
 int my_cli::check_enable(const string& password)
@@ -58,8 +58,8 @@ void my_cli::setup()
 	c = new Command<CLI> (
 		this,
 		"show",
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_ANY,
+		libcli::UNPRIVILEGED,
+		libcli::MODE_ANY,
 		"Show running system information"
 	);
 	register_command (c);
@@ -68,8 +68,8 @@ void my_cli::setup()
 		this,
 		"version",
 		static_cast<callback_ptr> (&my_cli::test),
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_ANY,
+		libcli::UNPRIVILEGED,
+		libcli::MODE_ANY,
 		"Show version information"
 	), c);
 
@@ -77,8 +77,8 @@ void my_cli::setup()
 		this,
 		"blacklist",
 		static_cast<callback_ptr> (&my_cli::test),
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_ANY,
+		libcli::UNPRIVILEGED,
+		libcli::MODE_ANY,
 		"Show list"
 	);
 	register_command (c2, c);
@@ -87,8 +87,8 @@ void my_cli::setup()
 		this,
 		"brief",
 		static_cast<callback_ptr> (&my_cli::test),
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_ANY,
+		libcli::UNPRIVILEGED,
+		libcli::MODE_ANY,
 		"Show list brief"
 	), c2);
 }

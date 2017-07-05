@@ -77,37 +77,9 @@ static bool     bHadConfig = false;
 #define SYSCONFDIR "/usr/etc"
 #endif
 
-//////////////////////////////////////////////////////////////////////
-/**
- * @brief Print a help screen for command line parameters, see \ref command_line
- */
-void
-PrintHelp ()
-{
-	cout << "fgms: version " << fgms.m_version
-	     << ", compiled on " << __DATE__ << ", at " << __TIME__ << endl;
-	cout << "\n"
-	     "options are:\n"
-	     "-h            print this help screen\n"
-	     "-a PORT       listen to PORT for telnet\n"
-	     "-c config     read 'config' as configuration file\n"
-	     "-p PORT       listen to PORT\n"
-	     "-t TTL        Time a client is active while not sending packets\n"
-	     "-o OOR        nautical miles two players must be apart to be out of reach\n"
-	     "-l LOGFILE    Log to LOGFILE\n"
-	     "-v LEVEL      verbosity (loglevel) in range 0 (few) and 4 (much). 5 to disable. (def=" << logger.priority() << ")\n"
-	     "-d            do _not_ run as a daemon (stay in foreground)\n"
-	     "-D            do run as a daemon\n"
-	     "\n"
-	     "the default is to run as a daemon, which can be overridden in the\n"
-	     "config file.\n"
-	     "\n";
-	exit ( 0 );
-} // PrintHelp ()
-//////////////////////////////////////////////////////////////////////
-
 #ifdef _MSC_VER
 // kludge for getopt() for WIN32
+// FIXME: put in libmsc
 static char* optarg;
 static int curr_arg = 0;
 int getopt ( int argcount, char* argvars[], char* args )
@@ -175,7 +147,7 @@ ProcessConfig ( const string& ConfigName )
 		  << "' => using defaults");
 		return ( false );
 	}
-	cout << "processing " << ConfigName << endl;
+	LOG ( log::ERROR, "processing " << ConfigName );
 	fgms.ConfigFile =  ConfigName;
 	Val = Config.Get ( "server.name" );
 	if ( Val != "" )
@@ -200,7 +172,7 @@ ProcessConfig ( const string& ConfigName )
 		if ( E )
 		{
 			LOG ( log::URGENT,
-			  "invalid value for DataPort: '" << optarg << "'"
+			  "invalid value for DataPort: '" << Val << "'"
 			);
 			exit ( 1 );
 		}
@@ -212,7 +184,7 @@ ProcessConfig ( const string& ConfigName )
 		if ( E )
 		{
 			LOG ( log::URGENT,
-			  "invalid value for TelnetPort: '" << optarg << "'"
+			  "invalid value for TelnetPort: '" << Val << "'"
 			);
 			exit ( 1 );
 		}
@@ -243,7 +215,7 @@ ProcessConfig ( const string& ConfigName )
 		if ( E )
 		{
 			LOG ( log::URGENT,
-			  "invalid value for AdminPort: '" << optarg << "'"
+			  "invalid value for AdminPort: '" << Val << "'"
 			);
 			exit ( 1 );
 		}
@@ -270,7 +242,7 @@ ProcessConfig ( const string& ConfigName )
 		if ( E )
 		{
 			LOG ( log::URGENT,
-			  "invalid value for out_of_reach: '" << optarg << "'"
+			  "invalid value for out_of_reach: '" << Val << "'"
 			);
 			exit ( 1 );
 		}
@@ -282,7 +254,7 @@ ProcessConfig ( const string& ConfigName )
 		if ( E )
 		{
 			LOG ( log::URGENT,
-			  "invalid value for max_radar_range: '" << optarg
+			  "invalid value for max_radar_range: '" << Val
 			  << "'"
 			);
 			exit ( 1 );
@@ -295,7 +267,7 @@ ProcessConfig ( const string& ConfigName )
 		if ( E )
 		{
 			LOG ( log::URGENT,
-			  "invalid value for Expire: '" << optarg << "'"
+			  "invalid value for Expire: '" << Val << "'"
 			);
 			exit ( 1 );
 		}
@@ -513,6 +485,49 @@ ProcessConfig ( const string& ConfigName )
 
 //////////////////////////////////////////////////////////////////////
 /**
+ * @brief Print a help screen for command line parameters, see \ref command_line
+ */
+void
+PrintVersion
+()
+{
+	cout << endl;
+	cout << "fgms version " << fgms.m_version
+	     << ", compiled on " << __DATE__ << " at " << __TIME__ << endl;
+	cout << endl;
+} // PrintVersion()
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Print a help screen for command line parameters, see \ref command_line
+ */
+void
+PrintHelp
+(
+	char* prog
+)
+{
+	PrintVersion ();
+	cout << "syntax: " << prog << " options" << endl;
+	cout << "\n"
+	     "options are:\n"
+	     "-h            print this help screen\n"
+	     "-a PORT       listen to PORT for telnet\n"
+	     "-c config     read 'config' as configuration file\n"
+	     "-p PORT       listen to PORT\n"
+	     "-t TTL        Time a client is active while not sending packets\n"
+	     "-o OOR        nautical miles two players must be apart to be out of reach\n"
+	     "-l LOGFILE    Log to LOGFILE\n"
+	     "-v LEVEL      verbosity (loglevel) in range 0 (few) and 3 (much). 5 to disable. (def=" << logger.priority() << ")\n"
+	     "-d            do _not_ run as a daemon (stay in foreground)\n"
+	     "-D            do run as a daemon (default)\n"
+	     "\n";
+	exit ( 0 );
+} // PrintHelp ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
  * @brief Parse commandline parameters
  * @param argcount
  * @param argvars
@@ -528,9 +543,7 @@ ParseParams ( int argcount, char* argvars[] )
 		switch ( m )
 		{
 		case 'h':
-			cerr << endl;
-			cerr << "syntax: " << argvars[0] << " options" << endl;
-			PrintHelp ();
+			PrintHelp (argvars[0]);
 			break; // never reached
 		case 'a':
 			fgms.SetTelnetPort ( StrToNum<int> ( optarg, E ) );
@@ -598,7 +611,7 @@ ParseParams ( int argcount, char* argvars[] )
 			break;
 		default:
 			cerr << endl << endl;
-			PrintHelp ();
+			PrintHelp (argvars[0]);
 			exit ( 1 );
 		} // switch ()
 	} // while ()
@@ -708,7 +721,6 @@ main
 {
 	int     I;
 
-	FG_VERSION v;
 #ifndef _MSC_VER
 	signal ( SIGHUP, SigHUPHandler );
 #endif

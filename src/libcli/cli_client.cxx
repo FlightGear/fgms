@@ -43,20 +43,20 @@
 	}
 #endif
 
-namespace LIBCLI
+namespace libcli
 {
 
 //////////////////////////////////////////////////////////////////////
-//
-//////////////////////////////////////////////////////////////////////
-Client::Client
+/** Construct a client connection
+ */
+cli_client::cli_client
 (
 	int fd
 )
 {
 	lines_out = 0;
 	filters   = 0;
-	max_screen_lines = 22;
+	max_screen_lines = 0;
 	m_print_mode	 = PRINT_FILTERED;
 	if (fd == fileno ( stdin ))
 	{	// setup terminal attributes
@@ -73,30 +73,37 @@ Client::Client
 			NewModes.c_cc[VTIME] = 1;
 			( void ) tcsetattr ( fileno ( stdin ), TCSANOW, &NewModes );
 		#else
-			AllocConsole(); // not required, but does not seem to harm
-			freopen ( "conin$", "r", stdin ); // needed to use WaitForSingleObject(GetStdHandle( STD_INPUT_HANDLE ),timeout_ms);
-			freopen ( "conout$", "w", stdout ); // only required IFF console output redirected
-			freopen ( "conout$", "w", stderr ); // this break the redirection, so CLI can be always seen
+			// not required, but does not seem to harm
+			AllocConsole();
+			// needed to use WaitForSingleObject(GetStdHandle
+			//   ( STD_INPUT_HANDLE ),timeout_ms);
+			freopen ( "conin$", "r", stdin );
+			// only required IFF console output redirected
+			freopen ( "conout$", "w", stdout );
+			// this break the redirection, so CLI can be
+			// always seen
+			freopen ( "conout$", "w", stderr );
  		#endif
 	}
 	else
 	{	// setup telnet session
-		m_socket = new NetSocket();
-		m_socket->SetHandle (fd);
+		m_socket = new fgmp::netsocket();
+		m_socket->handle (fd);
 		const char* negotiate =
 			"\xFF\xFB\x03"	// WILL SUPPRESS GO AHEAD OPTION
 			"\xFF\xFB\x01"	// WILL ECHO
 			"\xFF\xFD\x03"	// DO SUPPRESS GO AHEAD OPTION
 			"\xFF\xFD\x01";	// DO ECHO
-		m_socket->Send (negotiate, strlen ( negotiate ), 0 );
+		m_socket->send (negotiate, strlen ( negotiate ), 0 );
 	}
-} // Client::Client ()
+} // cli_client::cli_client ()
+
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-//
-//////////////////////////////////////////////////////////////////////
-Client::~Client
+/**
+ */
+cli_client::~cli_client
 ()
 {
 	if (m_socket == 0)
@@ -107,10 +114,11 @@ Client::~Client
 	}
 	else
 	{
-		m_socket->Close();
+		m_socket->close();
 		delete m_socket;
 	}
-} // Client::~Client ()
+} // cli_client::~cli_client ()
+
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -120,7 +128,7 @@ Client::~Client
 //	return <0:	error
 //////////////////////////////////////////////////////////////////////
 int
-Client::wait_for_input
+cli_client::wait_for_input
 (
 	int seconds
 )
@@ -133,13 +141,15 @@ Client::wait_for_input
 #endif
 	if (m_socket != 0)
 	{
-		NetSocket*  ListenSockets[2];
+		fgmp::netsocket*  ListenSockets[2];
 		ListenSockets[0] = m_socket;
 		ListenSockets[1] = 0;
-		return m_socket->Select ( ListenSockets, 0, seconds );
+		return m_socket->select ( ListenSockets, 0, seconds );
 	}
 	else
 	{
+	// FIXME: for console session
+	// should use m_socket->select(), too
 		struct timeval tv ;
 		tv.tv_sec = seconds;
 		tv.tv_usec = 0;
@@ -155,14 +165,14 @@ Client::wait_for_input
 //
 //////////////////////////////////////////////////////////////////////
 int
-Client::read_char
+cli_client::read_char
 (
 	unsigned char& c
 )
 {
 	if (m_socket != 0)
 	{
-		return m_socket->RecvChar(c);
+		return m_socket->recv_char(c);
 	}
 	c = getchar();
 	return 1;
@@ -173,14 +183,14 @@ Client::read_char
 //
 //////////////////////////////////////////////////////////////////////
 void
-Client::put_char
+cli_client::put_char
 (
 	const char& c
 )
 {
 	if (m_socket != 0)
 	{
-		m_socket->Send (&c, 1);
+		m_socket->send (&c, 1);
 	}
 	else
 	{
@@ -194,18 +204,18 @@ Client::put_char
 //////////////////////////////////////////////////////////////////////
 //
 //////////////////////////////////////////////////////////////////////
-Client&
-Client::operator <<
+cli_client&
+cli_client::operator <<
 (
-	Client& (*f) (Client&)
+	cli_client& (*f) (cli_client&)
 )
 {
 	return ((*f)(*this));
-} // operator << ( Client& (*f) )
+} // operator << ( cli_client& (*f) )
 //////////////////////////////////////////////////////////////////////
 
 char*
-Client::join_words
+cli_client::join_words
 (
 	int argc,
 	char** argv
@@ -237,7 +247,7 @@ Client::join_words
 }       
 
 int
-Client::match_filter_init
+cli_client::match_filter_init
 (
 	int argc,
 	char** argv,
@@ -249,9 +259,9 @@ Client::match_filter_init
 	if ( argc < 2 )
 	{
 		*this << UNFILTERED << "Match filter requires an argument" << CRLF;
-		return LIBCLI::ERROR_ANY;
+		return libcli::ERROR_ANY;
 	}
-	filt->filter = &Client::match_filter;
+	filt->filter = &cli_client::match_filter;
 	state = new match_filter_state;
 	filt->data = state;
 	state->flags = MATCH_NORM;
@@ -260,11 +270,11 @@ Client::match_filter_init
 		state->flags = MATCH_INVERT;
 	}
 	state->str = join_words ( argc-1, argv+1 );
-	return LIBCLI::OK;
+	return libcli::OK;
 }
 
 int
-Client::range_filter_init
+cli_client::range_filter_init
 (
 	int argc,
 	char** argv,
@@ -280,11 +290,11 @@ Client::range_filter_init
 		if ( argc < 3 )
 		{
 			*this << UNFILTERED << "Between filter requires 2 arguments" << CRLF;
-			return LIBCLI::ERROR_ANY;
+			return libcli::ERROR_ANY;
 		}
 		if ( ! ( from = strdup ( argv[1] ) ) )
 		{
-			return LIBCLI::ERROR_ANY;
+			return libcli::ERROR_ANY;
 		}
 		to = join_words ( argc-2, argv+2 );
 	}
@@ -293,21 +303,21 @@ Client::range_filter_init
 		if ( argc < 2 )
 		{
 			*this << UNFILTERED << "Begin filter requires an argument" << CRLF;
-			return LIBCLI::ERROR_ANY;
+			return libcli::ERROR_ANY;
 		}
 		from = join_words ( argc-1, argv+1 );
 	}
-	filt->filter = &Client::range_filter;
+	filt->filter = &cli_client::range_filter;
 	state = new range_filter_state;
 	filt->data = state;
 	state->matched = 0;
 	state->from = from;
 	state->to = to;
-	return LIBCLI::OK;
+	return libcli::OK;
 }
 
 int
-Client::count_filter_init
+cli_client::count_filter_init
 (
 	int argc,
 	UNUSED ( char** argv ),
@@ -318,19 +328,19 @@ Client::count_filter_init
 	if ( argc > 1 )
 	{
 		*this << UNFILTERED << "Count filter does not take arguments" << CRLF;
-		return LIBCLI::ERROR_ANY;
+		return libcli::ERROR_ANY;
 	}
-	filt->filter = &Client::count_filter;
+	filt->filter = &cli_client::count_filter;
 	filt->data = new int(0);
 	if ( ! filt->data )
 	{
-		return LIBCLI::ERROR_ANY;
+		return libcli::ERROR_ANY;
 	}
-	return LIBCLI::OK;
+	return libcli::OK;
 }
 
 int
-Client::match_filter
+cli_client::match_filter
 (
 	char* cmd,
 	void* data
@@ -338,33 +348,33 @@ Client::match_filter
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	match_filter_state* state = reinterpret_cast<match_filter_state*> ( data );
-	int r = LIBCLI::ERROR_ANY;
+	int r = libcli::ERROR_ANY;
 	if ( !cmd ) // clean up
 	{
 		free ( state->str );
 		free ( state );
-		return LIBCLI::OK;
+		return libcli::OK;
 	}
 	if ( strstr ( cmd, state->str ) )
 	{
-		r = LIBCLI::OK;
+		r = libcli::OK;
 	}
 	if ( state->flags & MATCH_INVERT )
 	{
-		if ( r == LIBCLI::OK )
+		if ( r == libcli::OK )
 		{
-			r = LIBCLI::ERROR_ANY;
+			r = libcli::ERROR_ANY;
 		}
 		else
 		{
-			r = LIBCLI::OK;
+			r = libcli::OK;
 		}
 	}
 	return r;
 }
 
 int
-Client::range_filter
+cli_client::range_filter
 (
 	char* cmd,
 	void* data
@@ -372,13 +382,13 @@ Client::range_filter
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	range_filter_state* state = ( range_filter_state* ) data;
-	int r = LIBCLI::ERROR_ANY;
+	int r = libcli::ERROR_ANY;
 	if ( !cmd ) // clean up
 	{
 		free_z ( state->from );
 		free_z ( state->to );
 		free_z ( state );
-		return LIBCLI::OK;
+		return libcli::OK;
 	}
 	if ( !state->matched )
 	{
@@ -386,7 +396,7 @@ Client::range_filter
 	}
 	if ( state->matched )
 	{
-		r = LIBCLI::OK;
+		r = libcli::OK;
 		if ( state->to && strstr ( cmd, state->to ) )
 		{
 			state->matched = 0;
@@ -396,7 +406,7 @@ Client::range_filter
 }
 
 int     
-Client::count_filter
+cli_client::count_filter
 (
 	char* cmd,
 	void* data
@@ -409,7 +419,7 @@ Client::count_filter
 		// print count
 		*this << UNFILTERED << NumToStr (*count, 0) << CRLF;
 		free ( count ); 
-	return LIBCLI::OK; 
+	return libcli::OK; 
 	}
 	while ( isspace ( *cmd ) )
 	{
@@ -419,15 +429,15 @@ Client::count_filter
 	{
 		( *count ) ++;        // only count non-blank lines
 	}
-	return LIBCLI::ERROR_ANY; // no output
+	return libcli::ERROR_ANY; // no output
 }
 
 //////////////////////////////////////////////////////////////////////
 //
 //////////////////////////////////////////////////////////////////////
-Client& commit
+cli_client& commit
 (
-	Client& out
+	cli_client& out
 )
 {
 	filter_t* f = (out.m_print_mode & PRINT_FILTERED) ? out.filters : 0;
@@ -436,7 +446,7 @@ Client& commit
 	char* p = (char*) out.m_output.str().c_str();
 	while (print && f)
 	{
-		print = ( f->exec ( out, p, f->data ) == LIBCLI::OK );
+		print = ( f->exec ( out, p, f->data ) == libcli::OK );
 		f = f->next;
 	}
 	if (print)
@@ -445,7 +455,7 @@ Client& commit
 		{
 			string s = out.m_output.str();
 			size_t l = s.size();
-			out.m_socket->Send (s.c_str(), l);
+			out.m_socket->send (s.c_str(), l);
 		}
 		else
 		{
@@ -460,15 +470,15 @@ Client& commit
 	out.m_output.str ("");
 	out.m_print_mode = PRINT_FILTERED;
 	return out;
-} // Client& commit()
+} // cli_client& commit()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 //
 //////////////////////////////////////////////////////////////////////
-Client& CRLF
+cli_client& CRLF
 (
-	Client& out
+	cli_client& out
 )
 {
 	out.m_output << "\r\n";
@@ -480,9 +490,9 @@ Client& CRLF
 //////////////////////////////////////////////////////////////////////
 //
 //////////////////////////////////////////////////////////////////////
-Client& UNFILTERED
+cli_client& UNFILTERED
 (
-	Client& out
+	cli_client& out
 )
 {
 	out.m_print_mode = PRINT_PLAIN;
@@ -490,4 +500,4 @@ Client& UNFILTERED
 } // UNFILTERED()
 //////////////////////////////////////////////////////////////////////
 
-}; // namespace LIBCLI
+}; // namespace libcli

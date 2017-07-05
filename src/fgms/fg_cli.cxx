@@ -59,7 +59,7 @@ FG_CLI::setup
 	//////////////////////////////////////////////////
 	// general setup
 	//////////////////////////////////////////////////
-	set_hostname (this->fgms->m_ServerName.c_str());
+	set_hostname (this->fgms->m_ServerName);
 	std::stringstream banner;
 	banner	<< "\r\n"
 		<< "------------------------------------------------\r\n"
@@ -81,20 +81,11 @@ FG_CLI::setup
 	//////////////////////////////////////////////////
 	// general commands
 	//////////////////////////////////////////////////
-	register_command ( new Command<CLI> (
-		this,
-		"pager",
-		static_cast<callback_ptr> (&FG_CLI::cmd_pager),
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_ANY,
-		"Set number of lines on a screen"
-	) );
-
 	c = new Command<CLI> (
 		this,
 		"show",
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_EXEC,
+		libcli::UNPRIVILEGED,
+		libcli::MODE_EXEC,
 		"show system information"
 	);
 	register_command (c);
@@ -103,8 +94,8 @@ FG_CLI::setup
 		this,
 		"stats",
 		static_cast<callback_ptr> (&FG_CLI::cmd_show_stats),
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_ANY,
+		libcli::UNPRIVILEGED,
+		libcli::MODE_ANY,
 		"Show statistical information"
 	), c);
 
@@ -112,8 +103,8 @@ FG_CLI::setup
 		this,
 		"settings",
 		static_cast<callback_ptr> (&FG_CLI::cmd_show_settings),
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_ANY,
+		libcli::UNPRIVILEGED,
+		libcli::MODE_ANY,
 		"Show general settings"
 	), c);
 
@@ -121,8 +112,8 @@ FG_CLI::setup
 		this,
 		"version",
 		static_cast<callback_ptr> (&FG_CLI::cmd_show_version),
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_ANY,
+		libcli::UNPRIVILEGED,
+		libcli::MODE_ANY,
 		"Show running version information"
 	), c);
 
@@ -130,8 +121,8 @@ FG_CLI::setup
 		this,
 		"uptime",
 		static_cast<callback_ptr> (&FG_CLI::cmd_show_uptime),
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_ANY,
+		libcli::UNPRIVILEGED,
+		libcli::MODE_ANY,
 		"Show uptime information"
 	), c);
 
@@ -139,8 +130,8 @@ FG_CLI::setup
 		this,
 		"log",
 		static_cast<callback_ptr> (&FG_CLI::cmd_show_log),
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_ANY,
+		libcli::UNPRIVILEGED,
+		libcli::MODE_ANY,
 		"Show log buffer"
 	), c);
 
@@ -148,8 +139,8 @@ FG_CLI::setup
 		this,
 		"whitelist",
 		static_cast<callback_ptr> (&FG_CLI::cmd_whitelist_show),
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_ANY,
+		libcli::UNPRIVILEGED,
+		libcli::MODE_ANY,
 		"Show entries in the whitelist"
 	), c);
 
@@ -157,8 +148,8 @@ FG_CLI::setup
 		this,
 		"blacklist",
 		static_cast<callback_ptr> (&FG_CLI::cmd_blacklist_show),
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_ANY,
+		libcli::UNPRIVILEGED,
+		libcli::MODE_ANY,
 		"Show entries in the blacklist"
 	), c);
 
@@ -166,8 +157,8 @@ FG_CLI::setup
 		this,
 		"crossfeeds",
 		static_cast<callback_ptr> (&FG_CLI::cmd_crossfeed_show),
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_ANY,
+		libcli::UNPRIVILEGED,
+		libcli::MODE_ANY,
 		"Show entries in the crossfeeds"
 	), c);
 
@@ -175,8 +166,8 @@ FG_CLI::setup
 		this,
 		"relay",
 		static_cast<callback_ptr> (&FG_CLI::cmd_relay_show),
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_ANY,
+		libcli::UNPRIVILEGED,
+		libcli::MODE_ANY,
 		"Show list of relays"
 	), c);
 
@@ -184,8 +175,8 @@ FG_CLI::setup
 		this,
 		"tracker",
 		static_cast<callback_ptr> (&FG_CLI::cmd_tracker_show),
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_ANY,
+		libcli::UNPRIVILEGED,
+		libcli::MODE_ANY,
 		"Show status of tracker"
 	), c);
 
@@ -193,8 +184,8 @@ FG_CLI::setup
 		this,
 		"users",
 		static_cast<callback_ptr> (&FG_CLI::cmd_user_show),
-		LIBCLI::UNPRIVILEGED,
-		LIBCLI::MODE_ANY,
+		libcli::UNPRIVILEGED,
+		libcli::MODE_ANY,
 		"Show list of users"
 	), c);
 
@@ -202,8 +193,8 @@ FG_CLI::setup
 		this,
 		"die",
 		static_cast<callback_ptr> (&FG_CLI::cmd_fgms_die),
-		LIBCLI::PRIVILEGED,
-		LIBCLI::MODE_EXEC,
+		libcli::PRIVILEGED,
+		libcli::MODE_EXEC,
 		"force fgms to exit"
 	));
 
@@ -213,8 +204,8 @@ FG_CLI::setup
 	c = new Command<CLI> (
 		this,
 		"blacklist",
-		LIBCLI::PRIVILEGED,
-		LIBCLI::MODE_CONFIG,
+		libcli::PRIVILEGED,
+		libcli::MODE_CONFIG,
 		"show/modify blacklist"
 	);
 	register_command (c);
@@ -222,16 +213,16 @@ FG_CLI::setup
 		this,
 		"delete",
 		static_cast<callback_ptr> (&FG_CLI::cmd_blacklist_delete),
-		LIBCLI::PRIVILEGED,
-		LIBCLI::MODE_CONFIG,
+		libcli::PRIVILEGED,
+		libcli::MODE_CONFIG,
 		"Show entries in the blacklist"
 	), c);
 	register_command (new Command<CLI> (
 		this,
 		"add",
 		static_cast<callback_ptr> (&FG_CLI::cmd_blacklist_add),
-		LIBCLI::PRIVILEGED,
-		LIBCLI::MODE_CONFIG,
+		libcli::PRIVILEGED,
+		libcli::MODE_CONFIG,
 		"Show entries in the blacklist"
 	), c);
 
@@ -241,8 +232,8 @@ FG_CLI::setup
 	c = new Command<CLI> (
 		this,
 		"crossfeed",
-		LIBCLI::PRIVILEGED,
-		LIBCLI::MODE_CONFIG,
+		libcli::PRIVILEGED,
+		libcli::MODE_CONFIG,
 		"modify crossfeeds"
 	);
 	register_command (c);
@@ -250,16 +241,16 @@ FG_CLI::setup
 		this,
 		"delete",
 		static_cast<callback_ptr> (&FG_CLI::cmd_crossfeed_delete),
-		LIBCLI::PRIVILEGED,
-		LIBCLI::MODE_CONFIG,
+		libcli::PRIVILEGED,
+		libcli::MODE_CONFIG,
 		"Delete crossfeeds"
 	), c);
 	register_command (new Command<CLI> (
 		this,
 		"add",
 		static_cast<callback_ptr> (&FG_CLI::cmd_crossfeed_add),
-		LIBCLI::PRIVILEGED,
-		LIBCLI::MODE_CONFIG,
+		libcli::PRIVILEGED,
+		libcli::MODE_CONFIG,
 		"Add crossfeeds"
 	), c);
 
@@ -269,8 +260,8 @@ FG_CLI::setup
 	c = new Command<CLI> (
 		this,
 		"relay",
-		LIBCLI::PRIVILEGED,
-		LIBCLI::MODE_CONFIG,
+		libcli::PRIVILEGED,
+		libcli::MODE_CONFIG,
 		"modify relays"
 	);
 	register_command (c);
@@ -278,87 +269,20 @@ FG_CLI::setup
 		this,
 		"delete",
 		static_cast<callback_ptr> (&FG_CLI::cmd_relay_delete),
-		LIBCLI::PRIVILEGED,
-		LIBCLI::MODE_CONFIG,
+		libcli::PRIVILEGED,
+		libcli::MODE_CONFIG,
 		"Delete relay"
 	), c);
 	register_command (new Command<CLI> (
 		this,
 		"add",
 		static_cast<callback_ptr> (&FG_CLI::cmd_relay_add),
-		LIBCLI::PRIVILEGED,
-		LIBCLI::MODE_CONFIG,
+		libcli::PRIVILEGED,
+		libcli::MODE_CONFIG,
 		"Add relay"
 	), c);
 
 } // FG_CLI::setup ()
-
-// little helper function
-bool
-FG_CLI::need_help
-(
-	char* argv
-)
-{
-	if (! argv)
-		return false;
-	size_t l = strlen (argv);
-	if (argv[l-1] == '?')
-		return true;
-	return false;
-} // FG_CLI::need_help ()
-
-//////////////////////////////////////////////////
-/**
- *  @brief Set number of lines on a screen
- *
- *  possible arguments:
- *  pager num-lines
- */
-int
-FG_CLI::cmd_pager
-(
-	char *command,
-	char *argv[],
-	int argc
-)
-{
-	size_t	lines = -1;
-	int	invalid = -1;
-
-	for (int i=0; i < argc; i++)
-	{
-		switch (i)
-		{
-		case 0: // ID or IP or 'brief' or '?'
-			if ( need_help (argv[i]) )
-			{
-				client << "  " << left << setfill(' ') << setw(22)
-					<< "<0-512>" << "Number of lines on screen (0 for no pausing)" << CRLF;
-				client << "  " << left << setfill(' ') << setw(22)
-					<< "<cr>" << "show current number of lines" << CRLF;
-				return (0);
-			}
-			lines = StrToNum<size_t> ( argv[0], invalid );
-			if (invalid)
-			{
-				client << "% invalid argument" << CRLF;
-				return (0);
-			}
-			break;
-		default:
-			client << "% invalid argument" << CRLF;
-			break;
-		}
-	}
-	if ( argc > 0 )
-		client.max_screen_lines = lines;
-	if ( lines == 0 )
-		client << "disabled pausing" << CRLF;
-	else
-		client << "show " << client.max_screen_lines << " lines without pausing" << CRLF;
-	return 0;
-} // FG_CLI::cmd_pager ()
 
 //////////////////////////////////////////////////
 /**
@@ -539,7 +463,7 @@ FG_CLI::cmd_show_settings
 	client << CRLF;
 	client << "current settings:" << CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
-		<< "listen port:" << fgms->m_ListenPort
+		<< "listen port:" << fgms->m_DataPort
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "telnet port:" << fgms->m_TelnetPort
@@ -590,7 +514,7 @@ FG_CLI::cmd_fgms_die
 		return (0);
 	}
 	fgms->m_WantExit = true;
-	return LIBCLI::QUIT;
+	return libcli::QUIT;
 } // FG_CLI::cmd_fgms_die
 
 //////////////////////////////////////////////////
@@ -709,7 +633,7 @@ FG_CLI::cmd_whitelist_show
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	NetAddr		Address;
+	fgmp::netaddr	Address;
 	size_t		EntriesFound = 0;
 	for (int i=0; i < argc; i++)
 	{
@@ -733,8 +657,8 @@ FG_CLI::cmd_whitelist_show
 			}
 			else if (ID == 0)
 			{
-				Address.Assign (argv[0], 0);
-				if ( ! Address.IsValid() )
+				Address.assign (argv[0], 0);
+				if ( ! Address.is_valid() )
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -753,7 +677,7 @@ FG_CLI::cmd_whitelist_show
 			break;
 		default:
 			client << "% invalid argument" << CRLF;
-			break;
+			return libcli::ERROR_ARG;
 		}
 	}
 	int Count = fgms->m_WhiteList.Size ();
@@ -768,19 +692,25 @@ FG_CLI::cmd_whitelist_show
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_WhiteList[i];
-		if ( (ID == 0) && (Address.IsValid()) )
+		if ( (ID == 0) && (Address.is_valid()) )
 		{	// only list matching entries
 			if (Entry.Address != Address)
+			{
+			std::cout << "e1: " << Entry.Address << " != " << Address << std::endl;
 				continue;
+			}
 		}
 		else if (ID)
 		{
 			if (Entry.ID != ID)
+			{
+			std::cout << "e2: " << Entry.ID << " != " << ID << std::endl;
 				continue;
+			}
 		}
 		EntriesFound++;
 		client << "ID " << Entry.ID << ": "
-			<< Entry.Address.ToString() << " : " << Entry.Name
+			<< Entry.Address.to_string() << " : " << Entry.Name
 			<< CRLF; if (check_pager()) return 0;
 		client << "  entered      : " << timestamp_to_datestr (Entry.JoinTime)
 			<< CRLF; if (check_pager()) return 0;
@@ -828,7 +758,7 @@ FG_CLI::cmd_whitelist_delete
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	NetAddr		Address;
+	fgmp::netaddr		Address;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
 	{
@@ -848,8 +778,8 @@ FG_CLI::cmd_whitelist_delete
 			}
 			else if (ID == 0)
 			{
-				Address.Assign (argv[0], 0);
-				if (! Address.IsValid())
+				Address.assign (argv[0], 0);
+				if (! Address.is_valid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -865,15 +795,15 @@ FG_CLI::cmd_whitelist_delete
 			}
 		default:
 			client << "% invalid argument" << CRLF;
-			break;
+			return libcli::ERROR_ARG;
 		}
 	}
-	if ( (ID == 0) && (! Address.IsValid()) )
+	if ( (ID == 0) && (! Address.is_valid()) )
 	{
 		client << "% missing argument" << CRLF;
 		return 1;
 	}
-	if ( (ID == 0) && (Address.IsValid()) )
+	if ( (ID == 0) && (Address.is_valid()) )
 	{	// match IP
 		Entry = fgms->m_WhiteList.Find (Address);
 		if (Entry != fgms->m_WhiteList.End())
@@ -922,7 +852,7 @@ FG_CLI::cmd_whitelist_add
 {
 	time_t		TTL = -1;
 	int		I;
-	NetAddr		Address;
+	fgmp::netaddr		Address;
 	string		Reason;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
@@ -950,8 +880,8 @@ FG_CLI::cmd_whitelist_add
 					<< "IP" << "IP address which should be whitelisted" << CRLF;
 				return (0);
 			}
-			Address.Assign (argv[i], 0);
-			if (! Address.IsValid())
+			Address.assign (argv[i], 0);
+			if (! Address.is_valid())
 			{
 				client << "% invalid IP address" << CRLF;
 				return (1);
@@ -1016,7 +946,7 @@ FG_CLI::cmd_blacklist_show
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	NetAddr		Address;
+	fgmp::netaddr		Address;
 	bool		Brief = false;
 	size_t		EntriesFound = 0;
 	for (int i=0; i < argc; i++)
@@ -1047,8 +977,8 @@ FG_CLI::cmd_blacklist_show
 			}
 			else if (ID == 0)
 			{
-				Address.Assign (argv[0], 0);
-				if (! Address.IsValid())
+				Address.assign (argv[0], 0);
+				if (! Address.is_valid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -1076,7 +1006,7 @@ FG_CLI::cmd_blacklist_show
 			break;
 		default:
 			client << "% invalid argument" << CRLF;
-			break;
+			return libcli::ERROR_ARG;
 		}
 	}
 	int Count = fgms->m_BlackList.Size ();
@@ -1091,7 +1021,7 @@ FG_CLI::cmd_blacklist_show
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_BlackList[i];
-		if ( (ID == 0) && (Address.IsValid()) )
+		if ( (ID == 0) && (Address.is_valid()) )
 		{	// only list matching entries
 			if (Entry.Address != Address)
 				continue;
@@ -1103,7 +1033,7 @@ FG_CLI::cmd_blacklist_show
 		}
 		EntriesFound++;
 		client << "ID " << Entry.ID << ": "
-			<< Entry.Address.ToString() << " : " << Entry.Name
+			<< Entry.Address.to_string() << " : " << Entry.Name
 			<< CRLF; if (check_pager()) return 0;
 		if (Brief == true)
 		{
@@ -1164,7 +1094,7 @@ FG_CLI::cmd_blacklist_delete
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	NetAddr		Address;
+	fgmp::netaddr		Address;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
 	{
@@ -1184,8 +1114,8 @@ FG_CLI::cmd_blacklist_delete
 			}
 			else if (ID == 0)
 			{
-				Address.Assign (argv[0], 0);
-				if (! Address.IsValid())
+				Address.assign (argv[0], 0);
+				if (! Address.is_valid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -1201,15 +1131,15 @@ FG_CLI::cmd_blacklist_delete
 			}
 		default:
 			client << "% invalid argument" << CRLF;
-			break;
+			return libcli::ERROR_ARG;
 		}
 	}
-	if ( (ID == 0) && (! Address.IsValid()) )
+	if ( (ID == 0) && (! Address.is_valid()) )
 	{
 		client << "% missing argument" << CRLF;
 		return 1;
 	}
-	if ( (ID == 0) && (Address.IsValid()) )
+	if ( (ID == 0) && (Address.is_valid()) )
 	{	// match IP
 		Entry = fgms->m_BlackList.Find (Address);
 		if (Entry != fgms->m_BlackList.End())
@@ -1258,7 +1188,7 @@ FG_CLI::cmd_blacklist_add
 {
 	time_t		TTL = -1;
 	int		I;
-	NetAddr		Address;
+	fgmp::netaddr		Address;
 	string		Reason;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
@@ -1286,8 +1216,8 @@ FG_CLI::cmd_blacklist_add
 					<< "IP" << "IP address which should be blacklisted" << CRLF;
 				return (0);
 			}
-			Address.Assign (argv[i], 0);
-			if (! Address.IsValid())
+			Address.assign (argv[i], 0);
+			if (! Address.is_valid())
 			{
 				client << "% invalid IP address" << CRLF;
 				return (1);
@@ -1353,7 +1283,7 @@ FG_CLI::cmd_crossfeed_delete
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	NetAddr		Address;
+	fgmp::netaddr		Address;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
 	{
@@ -1373,8 +1303,8 @@ FG_CLI::cmd_crossfeed_delete
 			}
 			else if (ID == 0)
 			{
-				Address.Assign (argv[0], 0);
-				if (! Address.IsValid())
+				Address.assign (argv[0], 0);
+				if (! Address.is_valid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -1390,15 +1320,15 @@ FG_CLI::cmd_crossfeed_delete
 			}
 		default:
 			client << "% invalid argument" << CRLF;
-			break;
+			return libcli::ERROR_ARG;
 		}
 	}
-	if ( (ID == 0) && (! Address.IsValid()) )
+	if ( (ID == 0) && (! Address.is_valid()) )
 	{
 		client << "% missing argument" << CRLF;
 		return 1;
 	}
-	if ( (ID == 0) && (Address.IsValid()) )
+	if ( (ID == 0) && (Address.is_valid()) )
 	{	// match IP
 		Entry = fgms->m_CrossfeedList.Find (Address);
 		if (Entry != fgms->m_CrossfeedList.End())
@@ -1445,7 +1375,7 @@ FG_CLI::cmd_crossfeed_add
 	int argc
 )
 {
-	NetAddr		Address;
+	fgmp::netaddr		Address;
 	string		Name;
 	int		Port;
 	int		I;
@@ -1461,8 +1391,8 @@ FG_CLI::cmd_crossfeed_add
 					<< "IP" << "IP address of the crossfeed" << CRLF;
 				return (0);
 			}
-			Address.Assign (argv[i], 0);
-			if (! Address.IsValid())
+			Address.assign (argv[i], 0);
+			if (! Address.is_valid())
 			{
 				client << "% invalid IP address" << CRLF;
 				return (1);
@@ -1505,7 +1435,7 @@ FG_CLI::cmd_crossfeed_add
 	}
 	fgmp::ListElement E (Name);
 	E.Address = Address;
-	E.Address.SetPort (Port);
+	E.Address.port (Port);
 	size_t NewID;
 	ItList CurrentEntry = fgms->m_CrossfeedList.Find ( E.Address, true );
 	if ( CurrentEntry == fgms->m_CrossfeedList.End() )
@@ -1542,7 +1472,7 @@ FG_CLI::cmd_crossfeed_show
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	NetAddr		Address;
+	fgmp::netaddr		Address;
 	bool		Brief = false;
 	size_t		EntriesFound = 0;
 	for (int i=0; i < argc; i++)
@@ -1573,8 +1503,8 @@ FG_CLI::cmd_crossfeed_show
 			}
 			else if (ID == 0)
 			{
-				Address.Assign (argv[0], 0);
-				if (! Address.IsValid())
+				Address.assign (argv[0], 0);
+				if (! Address.is_valid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -1602,7 +1532,7 @@ FG_CLI::cmd_crossfeed_show
 			break;
 		default:
 			client << "% invalid argument" << CRLF;
-			break;
+			return libcli::ERROR_ARG;
 		}
 	}
 	int Count = fgms->m_CrossfeedList.Size ();
@@ -1616,7 +1546,7 @@ FG_CLI::cmd_crossfeed_show
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_CrossfeedList[i];
-		if ( (ID == 0) && (Address.IsValid()) )
+		if ( (ID == 0) && (Address.is_valid()) )
 		{	// only list matching entries
 			if (Entry.Address != Address)
 				continue;
@@ -1628,7 +1558,7 @@ FG_CLI::cmd_crossfeed_show
 		}
 		EntriesFound++;
 		client << "ID " << Entry.ID << ": "
-			<< Entry.Address.ToString() << ":" << Entry.Address.Port()
+			<< Entry.Address.to_string() << ":" << Entry.Address.port()
 			<< " : " << Entry.Name
 			<< CRLF; if (check_pager()) return 0;
 		if (Brief == true)
@@ -1684,7 +1614,7 @@ FG_CLI::cmd_relay_show
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	NetAddr		Address;
+	fgmp::netaddr		Address;
 	bool		Brief = false;
 	size_t		EntriesFound = 0;
 	string		Name;
@@ -1718,8 +1648,8 @@ FG_CLI::cmd_relay_show
 			}
 			else if (ID == 0)
 			{
-				Address.Assign (argv[0], 0);
-				if (! Address.IsValid())
+				Address.assign (argv[0], 0);
+				if (! Address.is_valid())
 				{
 					Name = argv[0];
 				}
@@ -1746,7 +1676,7 @@ FG_CLI::cmd_relay_show
 			break;
 		default:
 			client << "% invalid argument" << CRLF;
-			break;
+			return libcli::ERROR_ARG;
 		}
 	}
 	int Count = fgms->m_RelayList.Size ();
@@ -1760,7 +1690,7 @@ FG_CLI::cmd_relay_show
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_RelayList[i];
-		if ( (ID == 0) && (Address.IsValid()) )
+		if ( (ID == 0) && (Address.is_valid()) )
 		{	// only list matching entries
 			if (Entry.Address != Address)
 				continue;
@@ -1777,7 +1707,7 @@ FG_CLI::cmd_relay_show
 		}
 		EntriesFound++;
 		client << "ID " << Entry.ID << ": "
-			<< Entry.Address.ToString() << ":" << Entry.Address.Port()
+			<< Entry.Address.to_string() << ":" << Entry.Address.port()
 			<< " : " << Entry.Name
 			<< CRLF; if (check_pager()) return 0;
 		if (Brief == true)
@@ -1853,12 +1783,9 @@ FG_CLI::cmd_tracker_show
 					<< "|" << "output modifier" << CRLF;
 				return (0);
 			}
-			else
-				client << "% invalid argument" << CRLF;
-			break;
 		default:
 			client << "% invalid argument" << CRLF;
-			break;
+			return libcli::ERROR_ARG;
 		}
 	}
 	if (! fgms->m_IsTracked)
@@ -1938,7 +1865,7 @@ FG_CLI::cmd_relay_delete
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	NetAddr		Address;
+	fgmp::netaddr		Address;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
 	{
@@ -1958,8 +1885,8 @@ FG_CLI::cmd_relay_delete
 			}
 			else if (ID == 0)
 			{
-				Address.Assign (argv[0], 0);
-				if (! Address.IsValid())
+				Address.assign (argv[0], 0);
+				if (! Address.is_valid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -1975,15 +1902,15 @@ FG_CLI::cmd_relay_delete
 			}
 		default:
 			client << "% invalid argument" << CRLF;
-			break;
+			return libcli::ERROR_ARG;
 		}
 	}
-	if ( (ID == 0) && (! Address.IsValid()) )
+	if ( (ID == 0) && (! Address.is_valid()) )
 	{
 		client << "% missing argument" << CRLF;
 		return 1;
 	}
-	if ( (ID == 0) && (Address.IsValid()) )
+	if ( (ID == 0) && (Address.is_valid()) )
 	{	// match IP
 		Entry = fgms->m_RelayList.Find (Address);
 		if (Entry != fgms->m_RelayList.End())
@@ -2030,7 +1957,7 @@ FG_CLI::cmd_relay_add
 	int argc
 )
 {
-	NetAddr		Address;
+	fgmp::netaddr		Address;
 	string		Name;
 	int		Port;
 	int		I;
@@ -2046,8 +1973,8 @@ FG_CLI::cmd_relay_add
 					<< "IP" << "IP address of the relay" << CRLF;
 				return (0);
 			}
-			Address.Assign (argv[i], 0);
-			if (! Address.IsValid())
+			Address.assign (argv[i], 0);
+			if (! Address.is_valid())
 			{
 				client << "% invalid IP address" << CRLF;
 				return (1);
@@ -2086,7 +2013,7 @@ FG_CLI::cmd_relay_add
 	}
 	fgmp::ListElement E (Name);
 	E.Address = Address;
-	E.Address.SetPort (Port);
+	E.Address.port (Port);
 	size_t NewID;
 	ItList CurrentEntry = fgms->m_RelayList.Find ( E.Address, true );
 	if ( CurrentEntry == fgms->m_RelayList.End() )
@@ -2126,7 +2053,7 @@ FG_CLI::cmd_user_show
 {
 	size_t		ID = 0;
 	int		ID_invalid = -1;
-	NetAddr		Address;
+	fgmp::netaddr		Address;
 	string		Name;
 	bool		Brief = false;
 	bool		OnlyLocal = false;
@@ -2168,8 +2095,8 @@ FG_CLI::cmd_user_show
 			}
 			else if (ID == 0)
 			{
-				Address.Assign (argv[0], 0);
-				if (! Address.IsValid())
+				Address.assign (argv[0], 0);
+				if (! Address.is_valid())
 				{
 					Name = argv[0];
 				}
@@ -2196,7 +2123,7 @@ FG_CLI::cmd_user_show
 			break;
 		default:
 			client << "% invalid argument" << CRLF;
-			break;
+			return libcli::ERROR_ARG;
 		}
 	}
 	int Count = fgms->m_PlayerList.Size ();
@@ -2221,7 +2148,7 @@ FG_CLI::cmd_user_show
 		now = time(0);
 		difftime = now - fgms->m_Uptime;
 		Player = fgms->m_PlayerList[i];
-		if ( (ID == 0) && (Address.IsValid()) )
+		if ( (ID == 0) && (Address.is_valid()) )
 		{	// only list matching entries
 			if (Player.Address != Address)
 				continue;

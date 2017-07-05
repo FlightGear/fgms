@@ -126,6 +126,8 @@ logobject::operator << ( any_type v )
 	{
 		return *this;	// do not log anything
 	}
+	if ( ! is_open() )
+		return *this;
 	if ( m_logstream && (*m_logstream) )
 	{
 		(*m_logstream) << v;

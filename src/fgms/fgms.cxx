@@ -48,7 +48,7 @@
 #include "fg_cli.hxx"
 #include "fgms.hxx"    // includes pthread.h
 
-const FG_VERSION FGMS::m_version ( 1, 0, 0, "-dev2" );
+const FG_VERSION FGMS::m_version ( 1, 0, 0, "-dev3" );
 
 #ifdef _MSC_VER
 #include <conio.h> // for _kbhit(), _getch
@@ -192,12 +192,12 @@ FGMS::FGMS
 	m_ReinitData		= true; // init the data port
 	m_ReinitTelnet		= true; // init the telnet port
 	m_ReinitAdmin		= true; // init the telnet port
-	m_ListenPort		= 5000; // port for client connections
+	m_DataPort		= 5000; // port for client connections
 	m_PlayerExpires		= 10; // standard expiration period
 	m_Listening		= false;
 	m_DataSocket		= 0;
-	m_TelnetPort		= m_ListenPort+1;
-	m_AdminPort		= m_ListenPort+2;
+	m_TelnetPort		= m_DataPort+1;
+	m_AdminPort		= m_DataPort+2;
 	m_NumMaxClients		= 0;
 	m_PlayerIsOutOfReach	= 100;	// standard 100 nm
 	m_MaxRadarRange		= 2000;	// standard 2000 nm
@@ -326,6 +326,8 @@ FGMS::Init
 	{
 		SetLogfile ( m_LogFileName );
 	}
+	LOG ( log::ERROR, "# FlightGear Multiplayer Server v"
+		     << m_version.str() << " started" );
 	if ( m_Initialized == false )
 	{
 		if ( m_Listening )
@@ -344,19 +346,11 @@ FGMS::Init
 			delete m_DataSocket;
 			m_DataSocket = 0;
 		}
-		m_DataSocket = new NetSocket();
-		if ( m_DataSocket->Open ( NetSocket::UDP ) == 0 )
+		m_DataSocket = new fgmp::netsocket();
+		if ( ! m_DataSocket->listen_to ( m_BindAddress, m_DataPort, fgmp::netsocket::UDP ) )
 		{
 			LOG ( log::ERROR, "FGMS::Init() - "
-			  << "failed to create listener socket" );
-			return ( ERROR_CREATE_SOCKET );
-		}
-		m_DataSocket->SetBlocking ( false );
-		m_DataSocket->SetSocketOption ( SO_REUSEADDR, true );
-		if ( ! m_DataSocket->Bind ( m_BindAddress, m_ListenPort ) )
-		{
-			LOG ( log::ERROR, "FGMS::Init() - "
-			  << "failed to bind to port " << m_ListenPort );
+			  << "failed to bind to " << m_DataPort );
 			LOG ( log::ERROR, "already in use?" );
 			return ( ERROR_COULDNT_BIND );
 		}
@@ -372,24 +366,8 @@ FGMS::Init
 		m_TelnetSocket = 0;
 		if ( m_TelnetPort != 0 )
 		{
-			m_TelnetSocket = new NetSocket;
-			if ( m_TelnetSocket->Open ( NetSocket::TCP ) == 0 )
-			{
-				LOG ( log::ERROR, "FGMS::Init() - "
-				  << "failed to create telnet socket" );
-				return ( ERROR_CREATE_SOCKET );
-			}
-			m_TelnetSocket->SetBlocking ( false );
-			m_TelnetSocket->SetSocketOption ( SO_REUSEADDR, true );
-			if ( ! m_TelnetSocket->Bind ( m_BindAddress, m_TelnetPort ) )
-			{
-				LOG ( log::ERROR, "FGMS::Init() - "
-				  << "failed to bind telnet socket "
-				  << m_TelnetPort );
-				LOG ( log::ERROR, "already in use?" );
-				return ( ERROR_COULDNT_BIND );
-			}
-			if ( ! m_TelnetSocket->Listen ( MAX_TELNETS ) )
+			m_TelnetSocket = new fgmp::netsocket;
+			if ( ! m_TelnetSocket->listen_to ( m_BindAddress, m_TelnetPort, fgmp::netsocket::TCP ) )
 			{
 				LOG ( log::ERROR, "FGMS::Init() - "
 				  << "failed to listen to telnet port" );
@@ -407,39 +385,21 @@ FGMS::Init
 		m_AdminSocket = 0;
 		if ( m_AdminPort != 0 )
 		{
-			m_AdminSocket = new NetSocket;
-			if ( m_AdminSocket->Open ( NetSocket::TCP ) == 0 )
+			m_AdminSocket = new fgmp::netsocket;
+			if ( ! m_AdminSocket->listen_to ( m_BindAddress, m_AdminPort, fgmp::netsocket::TCP ) )
 			{
 				LOG ( log::ERROR, "FGMS::Init() - "
-				  << "failed to create admin socket" );
-				return ( ERROR_CREATE_SOCKET );
-			}
-			m_AdminSocket->SetBlocking ( false );
-			m_AdminSocket->SetSocketOption ( SO_REUSEADDR, true );
-			if ( ! m_AdminSocket->Bind ( m_BindAddress.c_str(), m_AdminPort ) )
-			{
-				LOG ( log::ERROR, "FGMS::Init() - "
-				  << "failed to bind admin socket "
-				  << m_AdminPort );
-				LOG ( log::ERROR, "already in use?" );
-				return ( ERROR_COULDNT_BIND );
-			}
-			if ( ! m_AdminSocket->Listen ( MAX_TELNETS ) )
-			{
-				LOG ( log::ERROR, "FGMS::Init() - "
-				  << "failed to listen to admin port" );
+				  << "could not create socket for admin" );
 				return ( ERROR_COULDNT_LISTEN );
 			}
 		}
 		m_ReinitAdmin = false;
 	}
 	LOG ( log::ERROR, "# This is " << m_ServerName << " (" << m_FQDN << ")" );
-	LOG ( log::ERROR, "# FlightGear Multiplayer Server v"
-		     << m_version.str() << " started" );
 	LOG ( log::ERROR, "# using protocol version v"
 		     << m_ProtoMajorVersion << "." << m_ProtoMinorVersion
 		     << " (LazyRelay enabled)" );
-	LOG ( log::ERROR, "# listening to port " << m_ListenPort );
+	LOG ( log::ERROR, "# listening to port " << m_DataPort );
 	if ( m_TelnetSocket )
 	{
 		LOG ( log::ERROR, "# telnet port " << m_TelnetPort );
@@ -494,7 +454,7 @@ FGMS::Init
 			continue;
 		}
 		LOG ( log::ERROR, "# relay " << Entry.Name
-			     << ":" << Entry.Address.Port()
+			     << ":" << Entry.Address.port()
 			     << " (" << Entry.Address << ")" );
 	}
 	//////////////////////////////////////////////////
@@ -510,7 +470,7 @@ FGMS::Init
 			continue;
 		}
 		LOG ( log::ERROR, "# crossfeed " << Entry.Name
-			     << ":" << Entry.Address.Port() );
+			     << ":" << Entry.Address.port() );
 	}
 	LOG ( log::ERROR, "# I have " << m_BlackList.Size()
 	  << " blacklisted IPs" );
@@ -691,23 +651,25 @@ FGMS::HandleTelnet
 )
 {
 	StrIt		Line;
-	NetSocket	NewTelnet;
-	NewTelnet.SetHandle ( Fd );
+	fgmp::netsocket	NewTelnet;
+	NewTelnet.handle ( Fd );
 	errno = 0;
 	m_Clients.Lock ();
 	for ( Line = m_Clients.begin(); Line != m_Clients.end(); Line++ )
 	{
-		if ( NewTelnet.Send ( *Line ) < 0 )
+		if ( NewTelnet.send ( *Line ) < 0 )
 		{
 			if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 			{
 				LOG ( log::URGENT, "FGMS::HandleTelnet() - "
 				  << strerror ( errno ) );
 			}
+			NewTelnet.close ();
+			m_Clients.Unlock ();
 			return ( 0 );
 		}
 	}
-	NewTelnet.Close ();
+	NewTelnet.close ();
 	m_Clients.Unlock ();
 	return ( 0 );
 } // FGMS::HandleTelnet ()
@@ -725,7 +687,7 @@ FGMS::HandleTelnet
 void
 FGMS::AddBadClient
 (
-	const NetAddr& Sender,
+	const fgmp::netaddr& Sender,
 	string&	ErrorMsg,
 	bool	IsLocal,
 	int	Bytes
@@ -759,7 +721,7 @@ FGMS::AddBadClient
 	}
 	NewPlayer.Name      = "* Bad Client *";
 	NewPlayer.ModelName     = "* unknown *";
-	NewPlayer.Origin        = Sender.ToString ();
+	NewPlayer.Origin        = Sender.to_string ();
 	NewPlayer.Address       = Sender;
 	NewPlayer.IsLocal       = IsLocal;
 	NewPlayer.HasErrors     = true;
@@ -780,7 +742,7 @@ FGMS::AddBadClient
 void
 FGMS::AddClient
 (
-	const NetAddr& Sender,
+	const fgmp::netaddr& Sender,
 	char* Msg
 )
 {
@@ -811,7 +773,7 @@ FGMS::AddClient
 	NewPlayer.Name	    = MsgHdr->Name;
 	NewPlayer.Passwd    = "test"; //MsgHdr->Passwd;
 	NewPlayer.ModelName = "* unknown *";
-	NewPlayer.Origin    = Sender.ToString ();
+	NewPlayer.Origin    = Sender.to_string ();
 	NewPlayer.Address   = Sender;
 	NewPlayer.IsLocal   = IsLocal;
 	NewPlayer.ProtoMajor	= tmp->High;
@@ -907,7 +869,7 @@ FGMS::AddClient
 	}
 	LOG ( log::MEDIUM, Message
 		 << NewPlayer.Name << "@"
-		 << Origin << ":" << Sender.Port()
+		 << Origin << ":" << Sender.port()
 		 << " (" << NewPlayer.ModelName << ")"
 		 << " current clients: "
 		 << NumClients << " max: " << m_NumMaxClients
@@ -928,19 +890,22 @@ FGMS::AddRelay
 )
 {
 	ListElement  B ( Relay );
-	B.Address.Assign ( Relay, Port );
-	if ( ! B.Address.IsValid () )
+	B.Address.assign ( Relay, Port );
+	if ( ! B.Address.is_valid () )
 	{
 		LOG ( log::URGENT,
 		  "could not resolve '" << Relay << "'" );
 		return;
 	}
+	// FIXME:
+	#if 0
 	if ( B.Address.IsLoopback() )
 	{
 		LOG ( log::URGENT,
 		  "relay points back to me '" << Relay << "'" );
 		return;
 	}
+	#endif
 	m_RelayList.Lock ();
 	ItList CurrentEntry = m_RelayList.Find ( B.Address, true );
 	m_RelayList.Unlock ();
@@ -948,7 +913,7 @@ FGMS::AddRelay
 	{
 		m_RelayList.Add ( B, 0 );
 		string S;
-		if ( B.Address.ToString () == Relay )
+		if ( B.Address.to_string () == Relay )
 		{
 			S = Relay;
 		}
@@ -990,7 +955,7 @@ FGMS::AddCrossfeed
 	}
 #endif // _MSC_VER
 	ListElement B ( s );
-	B.Address.Assign ( ( char* ) s.c_str(), Port );
+	B.Address.assign ( ( char* ) s.c_str(), Port );
 	m_CrossfeedList.Lock ();
 	ItList CurrentEntry = m_CrossfeedList.Find ( B.Address, true );
 	m_CrossfeedList.Unlock ();
@@ -1034,7 +999,7 @@ FGMS::AddWhitelist
 )
 {
 	ListElement B ( DottedIP );
-	B.Address.Assign ( DottedIP.c_str(), 0 );
+	B.Address.assign ( DottedIP.c_str(), 0 );
 	m_WhiteList.Lock ();
 	ItList CurrentEntry = m_WhiteList.Find ( B.Address );
 	m_WhiteList.Unlock ();
@@ -1042,7 +1007,7 @@ FGMS::AddWhitelist
 	{
 		m_WhiteList.Add ( B, 0 );
 	}
-} // FGMS::AddBlacklist()
+} // FGMS::AddWhitelist()
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -1058,7 +1023,7 @@ FGMS::AddBlacklist
 )
 {
 	ListElement B ( Reason );
-	B.Address.Assign ( DottedIP.c_str(), 0 );
+	B.Address.assign ( DottedIP.c_str(), 0 );
 	m_BlackList.Lock ();
 	ItList CurrentEntry = m_BlackList.Find ( B.Address );
 	m_BlackList.Unlock ();
@@ -1078,7 +1043,7 @@ FGMS::AddBlacklist
 bool
 FGMS::IsKnownRelay
 (
-	const NetAddr& SenderAddress,
+	const fgmp::netaddr& SenderAddress,
 	size_t Bytes
 )
 {
@@ -1102,9 +1067,9 @@ FGMS::IsKnownRelay
 	}
 	m_RelayList.Unlock ();
 	string ErrorMsg;
-	ErrorMsg  = SenderAddress.ToString ();
+	ErrorMsg  = SenderAddress.to_string ();
 	ErrorMsg += " is not a valid relay!";
-	AddBlacklist ( SenderAddress.ToString (), "not a valid relay", 0 );
+	AddBlacklist ( SenderAddress.to_string (), "not a valid relay", 0 );
 	LOG ( log::URGENT, "UNKNOWN RELAY: " << ErrorMsg );
 	return ( false );
 } // FGMS::IsKnownRelay ()
@@ -1123,7 +1088,7 @@ FGMS::PacketIsValid
 (
 	int		Bytes,
 	T_MsgHdr*	MsgHdr,
-	const NetAddr& SenderAddress
+	const fgmp::netaddr& SenderAddress
 )
 {
 	uint32_t        MsgMagic;
@@ -1138,13 +1103,13 @@ FGMS::PacketIsValid
 		int16_t		Low;
 	} converter;
 	converter*    tmp;
-	Origin   = SenderAddress.ToString ();
+	Origin   = SenderAddress.to_string ();
 	MsgMagic = XDR_decode_uint32 ( MsgHdr->Magic );
 	MsgId    = XDR_decode_uint32 ( MsgHdr->MsgId );
 	MsgLen   = XDR_decode_uint32 ( MsgHdr->MsgLen );
 	if ( Bytes < ( int ) sizeof ( MsgHdr ) )
 	{
-		ErrorMsg  = SenderAddress.ToString ();
+		ErrorMsg  = SenderAddress.to_string ();
 		ErrorMsg += " packet size is too small!";
 		AddBadClient ( SenderAddress, ErrorMsg, true, Bytes );
 		return ( false );
@@ -1205,7 +1170,7 @@ FGMS::SendToCrossfeed
 (
 	char* Msg,
 	int Bytes,
-	const NetAddr& SenderAddress 
+	const fgmp::netaddr& SenderAddress 
 )
 {
 	T_MsgHdr*       MsgHdr;
@@ -1218,12 +1183,12 @@ FGMS::SendToCrossfeed
 	m_CrossfeedList.Lock();
 	for ( Entry = m_CrossfeedList.Begin(); Entry != m_CrossfeedList.End(); Entry++ )
 	{
-		sent = m_DataSocket->SendTo ( Msg, Bytes, Entry->Address );
+		sent = m_DataSocket->send_to ( Msg, Bytes, Entry->Address );
 		m_CrossfeedList.UpdateSent ( Entry, sent );
 	}
 	m_CrossfeedList.Unlock();
 	MsgHdr->Magic = MsgMagic;  // restore the magic value
-} // FGMS::SendToCrossfeed ()
+} // FGMS::send_toCrossfeed ()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -1259,7 +1224,7 @@ FGMS::SendToRelays
 		{
 			if ( SendingPlayer->DoUpdate || IsInRange ( *CurrentRelay, SendingPlayer, MsgId ) )
 			{
-				m_DataSocket->SendTo ( Msg, Bytes, CurrentRelay->Address );
+				m_DataSocket->send_to ( Msg, Bytes, CurrentRelay->Address );
 				m_RelayList.UpdateSent ( CurrentRelay, Bytes );
 				PktsForwarded++;
 			}
@@ -1268,7 +1233,7 @@ FGMS::SendToRelays
 	}
 	m_RelayList.Unlock ();
 	MsgHdr->Magic = XDR_encode_uint32 ( MsgMagic ); // restore the magic value
-} // FGMS::SendToRelays ()
+} // FGMS::send_toRelays ()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -1337,7 +1302,7 @@ FGMS::HandlePacket
 (
 	char* Msg,
 	int Bytes,
-	const NetAddr& SenderAddress
+	const fgmp::netaddr& SenderAddress
 )
 {
 	T_MsgHdr*       MsgHdr;
@@ -1417,7 +1382,7 @@ FGMS::HandlePacket
 			// send packet verbatim back to sender
 			m_PingReceived++;
 			MsgHdr->MsgId = XDR_encode_uint32 ( FGFS::PONG );
-			m_DataSocket->SendTo ( Msg, Bytes, SenderAddress );
+			m_DataSocket->send_to ( Msg, Bytes, SenderAddress );
 			return;
 		}
 		else if ( MsgId == FGFS::PONG )
@@ -1597,7 +1562,7 @@ FGMS::HandlePacket
 		//////////////////////////////////////////////////
 		if ( CurrentPlayer->IsLocal )
 		{
-			m_DataSocket->SendTo ( Msg, Bytes, CurrentPlayer->Address );
+			m_DataSocket->send_to ( Msg, Bytes, CurrentPlayer->Address );
 			m_PlayerList.UpdateSent ( CurrentPlayer, Bytes );
 			PktsForwarded++;
 		}
@@ -1608,7 +1573,7 @@ FGMS::HandlePacket
 		// player not yet in our list
 		// should not happen, but test just in case
 		LOG ( log::URGENT, "## BAD => "
-		  << MsgHdr->Name << ":" << SenderAddress.ToString ()
+		  << MsgHdr->Name << ":" << SenderAddress.to_string ()
 		);
 		return;
 	}
@@ -1785,8 +1750,8 @@ FGMS::Loop
 {
 	int         Bytes;
 	char        Msg[MAX_PACKET_SIZE];
-	NetAddr     SenderAddress;
-	NetSocket*  ListenSockets[3 + MAX_TELNETS];
+	fgmp::netaddr     SenderAddress ( fgmp::netaddr::IPv6 );
+	fgmp::netsocket*  ListenSockets[3 + MAX_TELNETS];
 	time_t      LastTrackerUpdate;
 	time_t      CurrentTime;
 	PlayerIt    CurrentPlayer;
@@ -1801,7 +1766,7 @@ FGMS::Loop
 	{
 		if ( m_AdminSocket )
 		{
-			m_AdminSocket->Close();
+			m_AdminSocket->close();
 			delete m_AdminSocket;
 			m_AdminSocket = 0;
 			LOG ( log::ERROR,
@@ -1883,7 +1848,7 @@ FGMS::Loop
 		ListenSockets[1] = m_TelnetSocket;
 		ListenSockets[2] = m_AdminSocket;
 		ListenSockets[3] = 0;
-		Bytes = m_DataSocket->Select ( ListenSockets, 0, m_PlayerExpires );
+		Bytes = m_DataSocket->select ( ListenSockets, 0, m_PlayerExpires );
 		if ( Bytes < 0 )
 		{
 			// error
@@ -1896,7 +1861,8 @@ FGMS::Loop
 		if ( ListenSockets[0] > 0 )
 		{
 			// something on the wire (clients)
-			Bytes = m_DataSocket->RecvFrom ( Msg, MAX_PACKET_SIZE, SenderAddress );
+			Bytes = m_DataSocket->recv_from ( Msg,
+			  MAX_PACKET_SIZE, SenderAddress );
 			if ( Bytes <= 0 )
 			{
 				continue;
@@ -1907,9 +1873,8 @@ FGMS::Loop
 		else if ( ListenSockets[1] > 0 )
 		{
 			// something on the wire (telnet)
-			NetAddr TelnetAddress;
 			m_TelnetReceived++;
-			int Fd = m_TelnetSocket->Accept ( TelnetAddress );
+			int Fd = m_TelnetSocket->accept ( 0 );
 			if ( Fd < 0 )
 			{
 				if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
@@ -1928,9 +1893,9 @@ FGMS::Loop
 		else if ( ListenSockets[2] > 0 )
 		{
 			// something on the wire (admin port)
-			NetAddr AdminAddress;
+			fgmp::netaddr AdminAddress;
 			m_AdminReceived++;
-			int Fd = m_AdminSocket->Accept ( AdminAddress );
+			int Fd = m_AdminSocket->accept ( & AdminAddress );
 			if ( Fd < 0 )
 			{
 				if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
@@ -1942,7 +1907,7 @@ FGMS::Loop
 			}
 			LOG ( log::URGENT,
 			  "FGMS::Loop() - new Admin connection from "
-			  << AdminAddress.ToString () );
+			  << AdminAddress.to_string () );
 			st_telnet* t = new st_telnet;
 			t->Instance = this;
 			t->Fd       = Fd;
@@ -1970,13 +1935,13 @@ FGMS::SetDataPort
 	int Port
 )
 {
-	if ( Port != m_ListenPort )
+	if ( Port != m_DataPort )
 	{
-		m_ListenPort = Port;
+		m_DataPort = Port;
 		m_ReinitData   = true;
-		m_TelnetPort = m_ListenPort+1;
+		m_TelnetPort = m_DataPort+1;
 		m_ReinitTelnet = true;
-		m_AdminPort  = m_ListenPort+2;
+		m_AdminPort  = m_DataPort+2;
 		m_ReinitAdmin  = true;
 	}
 } // FGMS::SetPort ( unsigned int iPort )
@@ -2196,19 +2161,19 @@ FGMS::Done()
 	}
 	if ( m_TelnetSocket )
 	{
-		m_TelnetSocket->Close();
+		m_TelnetSocket->close();
 		delete m_TelnetSocket;
 		m_TelnetSocket = 0;
 	}
 	if ( m_AdminSocket )
 	{
-		m_AdminSocket->Close();
+		m_AdminSocket->close();
 		delete m_AdminSocket;
 		m_AdminSocket = 0;
 	}
 	if ( m_DataSocket )
 	{
-		m_DataSocket->Close();
+		m_DataSocket->close();
 		delete m_DataSocket;
 		m_DataSocket = 0;
 	}

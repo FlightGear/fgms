@@ -384,7 +384,8 @@ NetPacket::WriteOpaque
 	{
 		// no buffer, so nothing to do but something is wrong
 		throw ( std::runtime_error (
-				"NetPacket::WriteOpaque (): no buffer" ) );
+		  "NetPacket::WriteOpaque (): no buffer" )
+		);
 	}
 	if ( ( ! Data ) || ( Size == 0 ) )
 	{

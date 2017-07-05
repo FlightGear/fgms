@@ -27,15 +27,14 @@
 #       define UNUSED(d) d
 #endif
 
-#include <string.h>
-#include <stdlib.h>
 #include <exception>
 #include <iostream>
-#include "debug.hxx"
+#include <fglib/debug.hxx>
 
 #define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember)) 
 #define free_z(p) do { if (p) { free (p); (p) = 0; } } while (0)
-namespace LIBCLI
+
+namespace libcli
 {
 
 enum RETURN_CODES
@@ -90,7 +89,7 @@ public:
 	{
 		return reason;
 	}
-	const char*	reason;
+	const char* reason;
 };
 
 class mem_error : public std::exception
@@ -102,6 +101,6 @@ public:
 	}
 };
 
-}; // namespace LIBCLI
+}; // namespace libcli
 
 #endif

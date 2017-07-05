@@ -52,7 +52,7 @@ class ListElement
 {
 public:
 	/** every element has a a name */
-	ListElement ( const string& Name );
+	ListElement ( const std::string& Name );
 	ListElement ( const ListElement& P );
 	~ListElement ();
 	/** mark a nonexisting element */
@@ -62,9 +62,9 @@ public:
 	/** @brief The Timeout of this entry */
 	time_t		Timeout;
 	/** @brief The callsign (or name) */
-	string		Name;
+	std::string	Name;
 	/** @brief The network address of this element */
-	NetAddr		Address;
+	netaddr		Address;
 	/** @brief The time this entry was added to the list */
 	time_t		JoinTime;
 	/** @brief timestamp of last seen packet from this element */
@@ -97,10 +97,10 @@ template <class T>
 class List : public Lockable
 {
 public:
-	typedef vector<T> ListElements;
-	typedef typename vector<T>::iterator ListIterator;
+	typedef std::vector<T> ListElements;
+	typedef typename std::vector<T>::iterator ListIterator;
 	/** constructor, must supply a Name */
-	List   ( const string& Name );
+	List   ( const std::string& Name );
 	~List  ();
 	/** return the number of elements in this list */
 	size_t Size  ();
@@ -115,10 +115,10 @@ public:
 	/** delete an element of this list */
 	ListIterator Delete	( const ListIterator& Element );
 	/** find an element by its IP address */
-	ListIterator Find	( const NetAddr& Address,
+	ListIterator Find	( const netaddr& Address,
 		bool ComparePort = false );
 	/** find an element by its Name */
-	ListIterator FindByName	( const string& Name = "" );
+	ListIterator FindByName	( const std::string& Name = "" );
 	/** find an element by its ID */
 	ListIterator FindByID	( size_t ID );
 	/** return an iterator of the first element */
@@ -148,7 +148,7 @@ public:
 	/** @brief Count of bytes sent to client */
 	uint64_t	BytesSent;        
 	/** the name (or description) of this element */
-	string		Name;
+	std::string		Name;
 private:
 	/** @brief timestamp of last cleanup */
 	time_t	LastRun;
@@ -159,7 +159,7 @@ private:
 };
 
 typedef List<ListElement>		FG_List;
-typedef vector<ListElement>::iterator	ItList;
+typedef std::vector<ListElement>::iterator	ItList;
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -169,7 +169,7 @@ typedef vector<ListElement>::iterator	ItList;
 template <class T>
 List<T>::List
 (
-	const string& Name
+	const std::string& Name
 )
 {
 	this->Name	= Name;
@@ -252,7 +252,7 @@ List<T>::DeleteByPosition
  * @param Element iterator pointing to the element to delete
  */
 template <class T>
-typename vector<T>::iterator
+typename std::vector<T>::iterator
 List<T>::Delete
 (
 	const ListIterator& Element
@@ -278,10 +278,10 @@ List<T>::Delete
  *         could not be found
  */
 template <class T>
-typename vector<T>::iterator
+typename std::vector<T>::iterator
 List<T>::Find
 (
-	const NetAddr& Address,
+	const netaddr& Address,
 	bool ComparePort
 )
 {
@@ -297,7 +297,7 @@ List<T>::Find
 		{
 			if ( ComparePort ) 
 			{	// additionally check port
-				if ( Element->Address.Port() == Address.Port() )
+				if ( Element->Address.port() == Address.port() )
 				{
 					Element->LastSeen = this->LastRun;
 					RetElem = Element;
@@ -324,10 +324,10 @@ List<T>::Find
  *         could not be found
  */
 template <class T>
-typename vector<T>::iterator
+typename std::vector<T>::iterator
 List<T>::FindByName
 (
-	const string& Name
+	const std::string& Name
 )
 {
 	ListIterator Element;
@@ -358,7 +358,7 @@ List<T>::FindByName
  *         could not be found
  */
 template <class T>
-typename vector<T>::iterator
+typename std::vector<T>::iterator
 List<T>::FindByID
 (
 	size_t ID
@@ -392,7 +392,7 @@ List<T>::FindByID
  *         equals End()
  */
 template <class T>
-typename vector<T>::iterator
+typename std::vector<T>::iterator
 List<T>::Begin
 ()
 {
@@ -410,7 +410,7 @@ List<T>::Begin
  *         equals End()
  */
 template <class T>
-typename vector<T>::iterator
+typename std::vector<T>::iterator
 List<T>::Last
 ()
 {
@@ -426,7 +426,7 @@ List<T>::Last
  * @return the end of the list (which is not a valid entry!) 
  */
 template <class T>
-typename vector<T>::iterator
+typename std::vector<T>::iterator
 List<T>::End
 ()
 {
@@ -460,7 +460,7 @@ List<T>::CheckTTL
 	{
 		LOG ( log::MEDIUM, this->Name << ": TTL exceeded for "
 		  << Element->Name << "@"
-		  << Element->Address.ToString() << " " );
+		  << Element->Address.to_string() << " " );
 		  return false;
 	}
 	return true;

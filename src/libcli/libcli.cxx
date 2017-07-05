@@ -15,6 +15,7 @@
 // derived from libcli by David Parrish (david@dparrish.com)
 // Copyright (C) 2011  Oliver Schroeder
 //
+
 #ifdef HAVE_CONFIG_H
 	#include "config.h"
 #endif
@@ -45,7 +46,7 @@
 	#endif
 #endif
 
-namespace LIBCLI
+namespace libcli
 {
 
 using namespace std;
@@ -227,7 +228,7 @@ CLI::build_shortest
 			build_shortest ( c->children );
 		}
 	}
-	return LIBCLI::OK;
+	return libcli::OK;
 }
 
 int
@@ -241,7 +242,7 @@ CLI::set_privilege
 	this->privilege = priv;
 	if ( priv != old )
 	{
-		set_prompt ( priv == LIBCLI::PRIVILEGED ? "# " : "> " );
+		set_prompt ( priv == libcli::PRIVILEGED ? "# " : "> " );
 		build_shortest ( this->commands );
 	}
 	return old;
@@ -295,7 +296,7 @@ CLI::register_command
         Command<CLI>*   parent
 )
 {
-	DEBUG d ( CLI_TRACE );
+	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	if ( ! command )
 	{
 		return;
@@ -383,7 +384,7 @@ CLI::unregister_command
 	}
 	if ( !this->commands )
 	{
-		return LIBCLI::OK;
+		return libcli::OK;
 	}
 	for ( c = this->commands; c; c = c->next )
 	{
@@ -398,11 +399,11 @@ CLI::unregister_command
 				this->commands = c->next;
 			}
 			free_command ( c );
-			return LIBCLI::OK;
+			return libcli::OK;
 		}
 		p = c;
 	}
-	return LIBCLI::OK;
+	return libcli::OK;
 }
 
 int
@@ -414,22 +415,22 @@ CLI::internal_enable
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if ( this->privilege == LIBCLI::PRIVILEGED )
+	if ( this->privilege == libcli::PRIVILEGED )
 	{
-		return LIBCLI::OK;
+		return libcli::OK;
 	}
 	if ( (enable_password == "") && !this->enable_callback && !this->cpp_enable_callback)
 	{
 		/* no password required, set privilege immediately */
-		set_privilege ( LIBCLI::PRIVILEGED );
-		set_configmode ( LIBCLI::MODE_EXEC, "" );
+		set_privilege ( libcli::PRIVILEGED );
+		set_configmode ( libcli::MODE_EXEC, "" );
 	}
 	else
 	{
 		/* require password entry */
-		this->state = LIBCLI::STATE_ENABLE_PASSWORD;
+		this->state = libcli::STATE_ENABLE_PASSWORD;
 	}
-	return LIBCLI::OK;
+	return libcli::OK;
 }
 
 int
@@ -441,9 +442,9 @@ CLI::internal_disable
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	set_privilege ( LIBCLI::UNPRIVILEGED );
-	set_configmode ( LIBCLI::MODE_EXEC, "" );
-	return LIBCLI::OK;
+	set_privilege ( libcli::UNPRIVILEGED );
+	set_configmode ( libcli::MODE_EXEC, "" );
+	return libcli::OK;
 }
 
 int
@@ -469,7 +470,7 @@ CLI::internal_help
 		"   and you want to know what arguments match the input\r\n"
 		"   (e.g. 'show pr?'.)\r\n"
 		<< CRLF;
-	return LIBCLI::OK;
+	return libcli::OK;
 }
 
 int
@@ -482,7 +483,7 @@ CLI::internal_whoami
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	client << "You are '" << username << "'" << CRLF;
-	return LIBCLI::OK;
+	return libcli::OK;
 }
 
 int
@@ -496,14 +497,14 @@ CLI::internal_history
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	int i;
 	client << CRLF << "Command history:" << CRLF;
-	for ( i = 0; i < LIBCLI::MAX_HISTORY; i++ )
+	for ( i = 0; i < libcli::MAX_HISTORY; i++ )
 	{
 		if ( this->history[i] )
 		{
 			client << setw(3) << i << " " << this->history[i] << CRLF;
 		}
 	}
-	return LIBCLI::OK;
+	return libcli::OK;
 }
 
 int
@@ -515,9 +516,9 @@ CLI::internal_quit
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	set_privilege ( LIBCLI::UNPRIVILEGED );
-	set_configmode ( LIBCLI::MODE_EXEC, "" );
-	return LIBCLI::QUIT;
+	set_privilege ( libcli::UNPRIVILEGED );
+	set_configmode ( libcli::MODE_EXEC, "" );
+	return libcli::QUIT;
 }
 
 int
@@ -541,7 +542,53 @@ CLI::internal_exit
 	{
 		set_configmode ( MODE_EXEC, "" );
 	}
-	return LIBCLI::OK;
+	return libcli::OK;
+}
+
+int
+CLI::int_cmd_pager
+(
+	char* command,
+	char* argv[],
+	int argc
+)
+{
+	size_t	lines = -1;
+	int	invalid = -1;
+
+	for ( int i=0; i < argc; i++ )
+	{
+		switch ( i )
+		{
+		case 0:	// ID or IP or 'brief' or '?'
+			if ( need_help (argv[i]) )
+			{
+				client	<< "  " << left << setfill(' ')
+				  << setw(22) << "<0-512>"
+				  << "Number of lines on screen (0 for no pausing)"
+				  << CRLF;
+				return libcli::OK;
+			}
+			lines = StrToNum<size_t> ( argv[0], invalid );
+			if (invalid)
+			{
+				client << "% invalid argument" << CRLF;
+				return libcli::ERROR_ARG;
+			}
+			break;
+		default:
+			client << "% invalid argument" << CRLF;
+			return libcli::ERROR_ARG;
+		}
+	}
+	if ( argc > 0 )
+		client.max_screen_lines = lines;
+	if ( lines == 0 )
+		client << "disabled pausing" << CRLF;
+	else
+		client  << "show " << client.max_screen_lines
+			<< " lines without pausing" << CRLF;
+	return libcli::OK;
 }
 
 int
@@ -557,10 +604,10 @@ CLI::int_configure_terminal
 	{
 		client << "  " << left << setfill(' ') << setw(22)
 			<< "<cr>" << "switch to configure mode" << CRLF;
-		return LIBCLI::OK;
+		return libcli::OK;
 	}
 	set_configmode ( MODE_CONFIG, "" );
-	return LIBCLI::OK;
+	return libcli::OK;
 }
 
 CLI::CLI
@@ -589,69 +636,77 @@ CLI::CLI
 				this,
 				"help",
 				& CLI::internal_help,
-				LIBCLI::UNPRIVILEGED,
-				LIBCLI::MODE_ANY,
+				libcli::UNPRIVILEGED,
+				libcli::MODE_ANY,
 				"Description of the interactive help system"
 	) );
 	register_command ( new Command<CLI> (
 				this,
 				"whoami",
 				& CLI::internal_whoami,
-				LIBCLI::UNPRIVILEGED,
-				LIBCLI::MODE_EXEC,
+				libcli::UNPRIVILEGED,
+				libcli::MODE_EXEC,
 				"Show who you are"
 	) );
 	register_command ( new Command<CLI> (
 				this,
 				"quit",
 				& CLI::internal_quit,
-				LIBCLI::UNPRIVILEGED,
-				LIBCLI::MODE_EXEC,
+				libcli::UNPRIVILEGED,
+				libcli::MODE_EXEC,
 				"Disconnect"
 	) );
 	register_command ( new Command<CLI> (
 				this,
 				"exit",
 				& CLI::internal_exit,
-				LIBCLI::UNPRIVILEGED,
-				LIBCLI::MODE_ANY,
+				libcli::UNPRIVILEGED,
+				libcli::MODE_ANY,
 				"Exit from current mode"
 	) );
 	register_command ( new Command<CLI> (
 				this,
 				"history",
 				& CLI::internal_history,
-				LIBCLI::UNPRIVILEGED,
-				LIBCLI::MODE_EXEC,
+				libcli::UNPRIVILEGED,
+				libcli::MODE_EXEC,
 				"Show a list of previously run commands"
+	) );
+	register_command ( new Command<CLI> (
+				this,
+				"pager",
+				& CLI::int_cmd_pager,
+				libcli::UNPRIVILEGED,
+				libcli::MODE_EXEC,
+				"Set number of lines on a screen"
 	) );
 	register_command ( new Command<CLI> (
 				this,
 				"enable",
 				& CLI::internal_enable,
-				LIBCLI::UNPRIVILEGED,
-				LIBCLI::MODE_EXEC,
+				libcli::UNPRIVILEGED,
+				libcli::MODE_EXEC,
 				"Turn on privileged commands"
 	) );
 	register_command ( new Command<CLI> (
 				this,
 				"disable",
 				& CLI::internal_disable,
-				LIBCLI::PRIVILEGED,
-				LIBCLI::MODE_EXEC,
+				libcli::PRIVILEGED,
+				libcli::MODE_EXEC,
 				"Turn off privileged commands"
 	) );
 	register_command ( new Command<CLI> (
 				this,
 				"configure",
 				& CLI::int_configure_terminal,
-				LIBCLI::PRIVILEGED,
-				LIBCLI::MODE_EXEC,
+				libcli::PRIVILEGED,
+				libcli::MODE_EXEC,
 				"Enter configuration mode"
 	) );
 	this->privilege = this->mode = -1;
-	set_privilege ( LIBCLI::UNPRIVILEGED );
-	set_configmode ( LIBCLI::MODE_EXEC, "" );
+	set_privilege ( libcli::UNPRIVILEGED );
+	set_configmode ( libcli::MODE_EXEC, "" );
 }
 
 CLI::~CLI
@@ -722,11 +777,11 @@ CLI::add_history
 				if ( ! ( this->history[i] = strdup ( cmd ) ) )
 				{
 					in_history = i + 1;
-					return LIBCLI::ERROR_ANY;
+					return libcli::ERROR_ANY;
 				}
 			}
 			in_history = i + 1;
-			return LIBCLI::OK;
+			return libcli::OK;
 		}
 	}
 	// No space found, drop one off the beginning of the list
@@ -738,9 +793,9 @@ CLI::add_history
 	if ( ! ( this->history[MAX_HISTORY - 1] = strdup ( cmd ) ) )
 	{
 		in_history = MAX_HISTORY;
-		return LIBCLI::ERROR_ANY;
+		return libcli::ERROR_ANY;
 	}
-	return LIBCLI::OK;
+	return libcli::OK;
 }
 
 void
@@ -850,7 +905,7 @@ CLI::find_command
 	// Deal with ? for help
 	if ( ! words[start_word] )
 	{
-		return LIBCLI::ERROR_ANY;
+		return libcli::ERROR_ANY;
 	}
 	if ( words[start_word][strlen ( words[start_word] ) - 1] == '?' )
 	{
@@ -876,7 +931,7 @@ CLI::find_command
 			  << (commands->parent->help ? commands->parent->help : "")
 			  << CRLF;
 		}
-		return LIBCLI::OK;
+		return libcli::OK;
 	}
 	for ( c = commands; c; c = c->next )
 	{
@@ -895,7 +950,7 @@ CLI::find_command
 AGAIN:
 		if ( c->mode == this->mode || c->mode == MODE_ANY )
 		{
-			int rc = LIBCLI::OK;
+			int rc = libcli::OK;
 			int f;
 			filter_t** filt = &client.filters;
 			// Found a word!
@@ -905,7 +960,7 @@ AGAIN:
 				if ( ! c->have_callback )
 				{
 					client << UNFILTERED << "No callback for '" << c->command << "'" << CRLF;
-					return LIBCLI::ERROR_ANY;
+					return libcli::ERROR_ANY;
 				}
 			}
 			else
@@ -917,14 +972,14 @@ AGAIN:
 						goto CORRECT_CHECKS;
 					}
 					client << UNFILTERED << "Incomplete command" << CRLF;
-					return LIBCLI::ERROR_ANY;
+					return libcli::ERROR_ANY;
 				}
 				rc = find_command ( c->children, num_words, words, start_word + 1, filters );
-				if ( rc == LIBCLI::ERROR_ARG )
+				if ( rc == libcli::ERROR_ARG )
 				{
 					if ( c->have_callback )
 					{
-						rc = LIBCLI::OK;
+						rc = libcli::OK;
 						goto CORRECT_CHECKS;
 					}
 					else
@@ -939,10 +994,10 @@ AGAIN:
 			{
 				client << UNFILTERED << "Internal server error processing '" << c->command << "'"
 				  << CRLF;
-				return LIBCLI::ERROR_ANY;
+				return libcli::ERROR_ANY;
 			}
 CORRECT_CHECKS:
-			for ( f = 0; rc == LIBCLI::OK && filters[f]; f++ )
+			for ( f = 0; rc == libcli::OK && filters[f]; f++ )
 			{
 				int n = num_words;
 				char** argv;
@@ -955,7 +1010,7 @@ CORRECT_CHECKS:
 				if ( filters[f] == n - 1 )
 				{
 					client << UNFILTERED << "Missing filter" << CRLF;
-					return LIBCLI::ERROR_ANY;
+					return libcli::ERROR_ANY;
 				}
 				argv = words + filters[f] + 1;
 				argc = n - ( filters[f] + 1 );
@@ -984,12 +1039,12 @@ CORRECT_CHECKS:
 							client << "  <cr>" << CRLF;
 						}
 					}
-					return LIBCLI::OK;
+					return libcli::OK;
 				}
 				if ( argv[0][0] == 'b' && len < 3 ) // [beg]in, [bet]ween
 				{
 					client << UNFILTERED << "Ambiguous filter '" << argv[0] << "' (begin, between)" << CRLF;
-					return LIBCLI::ERROR_ANY;
+					return libcli::ERROR_ANY;
 				}
 				*filt = ( filter_t* ) calloc ( sizeof ( filter_t ), 1 );
 				if ( !strncmp ( "include", argv[0], len )
@@ -1009,9 +1064,9 @@ CORRECT_CHECKS:
 				else
 				{
 					client << UNFILTERED << "Invalid filter '" << argv[0] << "'" << CRLF;
-					rc = LIBCLI::ERROR_ANY;
+					rc = libcli::ERROR_ANY;
 				}
-				if ( rc == LIBCLI::OK )
+				if ( rc == libcli::OK )
 				{
 					filt = & ( *filt )->next;
 				}
@@ -1021,7 +1076,7 @@ CORRECT_CHECKS:
 					*filt = 0;
 				}
 			}
-			if ( rc == LIBCLI::OK )
+			if ( rc == libcli::OK )
 			{
 				rc = c->exec ( c->command, words + start_word + 1, c_words - start_word - 1 );
 			}
@@ -1054,7 +1109,7 @@ CORRECT_CHECKS:
 		client << UNFILTERED << "Invalid " << (commands->parent ? "argument" : "command")
 		  << " '" << words[start_word] << "'" << CRLF;
 	}
-	return LIBCLI::ERROR_ARG;
+	return libcli::ERROR_ARG;
 }
 
 int
@@ -1070,7 +1125,7 @@ CLI::run_command
 	int filters[128] = {0};
 	if ( ! command )
 	{
-		return LIBCLI::ERROR_ANY;
+		return libcli::ERROR_ANY;
 	}
 	while ( isspace ( *command ) )
 	{
@@ -1078,7 +1133,7 @@ CLI::run_command
 	}
 	if ( ! *command )
 	{
-		return LIBCLI::OK;
+		return libcli::OK;
 	}
 	num_words = parse_line ( command, words, sizeof ( words ) / sizeof ( words[0] ) );
 	for ( i = f = 0; i < num_words && f < sizeof ( filters ) / sizeof ( filters[0] ) - 1; i++ )
@@ -1095,17 +1150,17 @@ CLI::run_command
 	}
 	else
 	{
-		r = LIBCLI::ERROR_ANY;
+		r = libcli::ERROR_ANY;
 	}
 	for ( i = 0; i < num_words; i++ )
 	{
 		free ( words[i] );
 	}
-	if ( r == LIBCLI::QUIT )
+	if ( r == libcli::QUIT )
 	{
 		return r;
 	}
-	return LIBCLI::OK;
+	return libcli::OK;
 }
 
 int
@@ -1384,7 +1439,7 @@ CLI::get_input
 		}
 		if ( ret == 0 )
 		{	/* timeout every second */
-			if ( this->regular_callback && this->regular_callback() != LIBCLI::OK )
+			if ( this->regular_callback && this->regular_callback() != libcli::OK )
 				break;
 			continue;
 		}
@@ -1432,13 +1487,13 @@ CLI::check_enable ( const char* pass )
 	if ( allowed )
 	{
 		client << "-ok-" << CRLF;
-		state = LIBCLI::STATE_ENABLE;
-		set_privilege ( LIBCLI::PRIVILEGED );
+		state = libcli::STATE_ENABLE;
+		set_privilege ( libcli::PRIVILEGED );
 	}
 	else
 	{
 		client << CRLF << CRLF << "Access denied" << CRLF;
-		state = LIBCLI::STATE_NORMAL;
+		state = libcli::STATE_NORMAL;
 	}
 }
 
@@ -1453,14 +1508,14 @@ CLI::check_user_auth
 	int allowed = 0;
 	if ( this->auth_callback )
 	{
-		if ( this->auth_callback ( username, password ) == LIBCLI::OK )
+		if ( this->auth_callback ( username, password ) == libcli::OK )
 		{
 			allowed++;
 		}
 	}
 	else if ( this->cpp_auth_callback )
 	{
-		if ( CALL_MEMBER_FN ((*this), cpp_auth_callback)  ( username, password ) == LIBCLI::OK )
+		if ( CALL_MEMBER_FN ((*this), cpp_auth_callback)  ( username, password ) == libcli::OK )
 		{
 			allowed++;
 		}
@@ -1483,7 +1538,7 @@ CLI::check_user_auth
 	else
 	{
 		client << CRLF << CRLF << "Access denied" << CRLF;
-		this->state = LIBCLI::STATE_LOGIN;
+		this->state = libcli::STATE_LOGIN;
 	}
 	showprompt = true;
 }
@@ -1903,19 +1958,20 @@ CLI::loop
 	free_history ();
 	if ( ( cmd = ( char* ) malloc ( 4096 ) ) == NULL )
 	{
-		return LIBCLI::ERROR_ANY;
+		return libcli::ERROR_ANY;
 	}
 	if ( banner != "" )
 	{
 		client << banner << CRLF;
 	}
 	/* start off in unprivileged mode */
-	set_privilege ( LIBCLI::UNPRIVILEGED );
-	set_configmode ( LIBCLI::MODE_EXEC, "" );
+	set_privilege ( libcli::UNPRIVILEGED );
+	set_configmode ( libcli::MODE_EXEC, "" );
 	/* no auth required? */
 	if ( users.empty() && !this->auth_callback && !this->cpp_auth_callback )
 	{
 		this->state = STATE_NORMAL;
+		client << "type '?' or 'help' for help." << CRLF << CRLF;
 	}
 	showprompt = true;
 	cmd[0] = 0; // clear command buffer
@@ -2037,7 +2093,7 @@ CLI::loop
 		{
 			check_user_auth (username, cmd);
 		}
-		else if ( this->state == LIBCLI::STATE_ENABLE_PASSWORD )
+		else if ( this->state == libcli::STATE_ENABLE_PASSWORD )
 		{
 			check_enable (cmd);
 		}
@@ -2051,7 +2107,7 @@ CLI::loop
 			{
 				add_history ( cmd );
 			}
-			if ( run_command ( cmd ) == LIBCLI::QUIT )
+			if ( run_command ( cmd ) == libcli::QUIT )
 			{
 				break;
 			}
@@ -2071,7 +2127,7 @@ CLI::loop
 		}
 	}
 	free_z ( cmd );
-	return LIBCLI::OK;
+	return libcli::OK;
 }
 
 int
@@ -2120,14 +2176,14 @@ CLI::file
 		{
 			break;
 		}
-		if ( run_command ( cmd ) == LIBCLI::QUIT )
+		if ( run_command ( cmd ) == libcli::QUIT )
 		{
 			break;
 		}
 	}
 	set_privilege ( oldpriv );
 	set_configmode ( oldmode, "" /* didn't save desc */ );
-	return LIBCLI::OK;
+	return libcli::OK;
 }
 
 int
@@ -2165,6 +2221,21 @@ CLI::pager
 	client.put_char ('\r');
 	return 0;
 }
+
+// a little helper function
+bool
+CLI::need_help
+(
+	char* argv
+)
+{
+	if (! argv)
+		return false;
+	size_t l = strlen (argv);
+	if (argv[l-1] == '?')
+		return true;
+	return false;
+} // CLI::need_help ()
 
 bool
 CLI::check_pager
@@ -2205,5 +2276,5 @@ CLI::print
 	return check_pager();
 }
 
-}; // namespace LIBCLI
+}; // namespace libcli
 

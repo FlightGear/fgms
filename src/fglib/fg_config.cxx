@@ -89,7 +89,6 @@ FG_CONFIG::Get( const std::string &VarName)
 } // FGMS::Get ()
 
 
-
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief Set internal pointer to the first variable in list

@@ -1,4 +1,3 @@
-//                                                                                                                           
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -19,20 +18,25 @@
 #if !defined CLI_DEBUG_H
 #define CLI_DEBUG_H
 
-#define CLI_TRACE __FUNCTION__,__FILE__,__LINE__
+#include <iostream>
 
-//  #define DEBUG_OUTPUT
-#ifdef DEBUG_OUTPUT
-	define DEBUG_OUT(X) printf(X)
+#ifdef DEF_ENABLE_DEBUG
+	#define DEBUG_OUT(X) std::cerr << DEBUG::space() << X << std::endl;
+	#define DEBUG_TRACE  DEBUG __debug ( __FUNCTION__,__FILE__,__LINE__ );
+	#define DEBUG_LINE   std::cerr << DEBUG::space() << __FILE__ << " " << __LINE__ << std::endl;
 #else
 	#define DEBUG_OUT(X)
+	#define DEBUG_TRACE
+	#define DEBUG_LINE
 #endif
 
 class DEBUG
 {
 public:
 	DEBUG ( const char* function, const char* filename, const int line );
-	void trace ( const char* function, const char* filename, const int line );
+	void trace (const char* function,const char* filename,const int line );
+	static std::string space ();
+	static void dump ( void* data, int len );
 	~DEBUG ();
 private:
 	static int depth;

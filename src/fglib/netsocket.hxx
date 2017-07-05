@@ -1,13 +1,26 @@
-// netsocket.hxx - Provide a class for TCP/UDP internet connections
 //
-// Copied and modified version of the PLIB Library:
+// This file is part of fgms, the flightgear multiplayer server
+// https://sourceforge.net/projects/fgms/
 //
-//      PLIB - A Suite of Portable Game Libraries
-//      Copyright (C) 1998,2002  Steve Baker
-//      http://plib.sourceforge.net
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License as
+// published by the Free Software Foundation; either version 2 of the
+// License, or (at your option) any later version.
 //
-// This file is part of fgms
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
 //
+// You should have received a copy of the GNU General Public License
+// along with this program; if not see <http://www.gnu.org/licenses/>
+//
+
+/**
+ * @file	netsocket.hxx
+ * @author	Oliver Schroeder <fgms@o-schroeder.de>
+ * @date	07/2017
+ */
 
 #ifndef NET_SOCKET_HEADER
 #define NET_SOCKET_HEADER
@@ -18,101 +31,92 @@
 #include <string.h>
 #include <assert.h>
 #include <stdarg.h>
-#include "netaddr.hxx"
-#include "netpacket.hxx"
+#include <fglib/netaddr.hxx>
+#include <fglib/netpacket.hxx>
 
 #ifdef _MSC_VER
-static int recoverable_wsa_error()
-{
-	int wsa_errno = WSAGetLastError();
-	WSASetLastError ( 0 ); // clear the error
-	return ( wsa_errno == WSAEINTR ) ? 1 : 0;
-}
-#define RECOVERABLE_ERROR recoverable_wsa_error()
+	static int recoverable_wsa_error()
+	{
+		int wsa_errno = WSAGetLastError();
+		WSASetLastError ( 0 ); // clear the error
+		return ( wsa_errno == WSAEINTR ) ? 1 : 0;
+	}
+	#define RECOVERABLE_ERROR recoverable_wsa_error()
 #else
-#define RECOVERABLE_ERROR (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK )
-#define SOCKET_ERROR -1
+	#define RECOVERABLE_ERROR \
+	  (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK )
+	#define SOCKET_ERROR -1
 #endif
+
+namespace fgmp
+{
 
 /** A class for TCP/UDP internet connections.
  */
-class NetSocket
+class netsocket
 {
 public:
+	/** Types of socket connections we support.
+	 *
+	 * @todo unix domain sockets
+	 */
 	enum SOCKET_TYPES
 	{
 		UDP,
 		TCP
 	};
-	NetSocket ();
-	virtual ~NetSocket ();
-	/// Assign another socket
-	void Assign ( const NetSocket& Socket );
-	/// Return filedescriptor of current connection.
-	int GetHandle () const;
-	/// Set a filedescriptor for the current connection.
-	/// Set CloseOnExit=true if this NetSocket should close() on exit
-	void SetHandle ( int Handle );
-	/// Open a new connection.
-	bool Open ( const SOCKET_TYPES Type=TCP );
-	/// Close an existing connection.
-	void Close ( void );
-	/// Shutdown current connection.
-	void Shutdown ( void );
-	/// Bind to given address and port.
-	bool Bind ( const string& Host, const int Port );
-	/// Listen for new connections.
-	bool Listen ( const int Backlog );
-	/// Accept new connections.
-	int  Accept ( NetAddr& Addr );
-	/// Connect to the given host and port.
-	bool Connect     ( const string& Host, const int Port );
-	/// Send data over the current connection.
-	int  Send ( const void* Buffer, const int Size, const int Flags=0 );
-	/// Send a string over the current connection.
-	int  Send ( const string& Msg, const int Flags=0 );
-	/// Send a string over the current connection.
-	int  Send ( const char& C );
-	/// Send data to the given host and port.
-	int  SendTo ( const void* Buffer, const int Size,
-		      const NetAddr& To, const int Flags=0 );
-	/// Send a string to the given host and port.
-	int  SendTo ( const string& Msg,
-		      const NetAddr& To, const int Flags=0 );
-	/// Receive a single character over the current connection
-	int RecvChar ( unsigned char& c );
-	/// Receive data over the current connection.
-	int Recv ( void* Buffer, const int Size, const int Flags = 0 );
-	/// Receive data over the current connection.
-	int Recv ( NetPacket& Buffer, int Flags = 0 );
-	/// Receive data over the current connection, and record senders IP
-	int RecvFrom ( void* Buffer, const int Size, NetAddr& From,
-		       const int Flags = 0 );
-	/// Receive data over the current connection, and record senders IP
-	int RecvFrom ( NetPacket& Buffer, NetAddr& From , const int Flags = 0 );
-	/// Set current connection into blocking mode
-	void SetBlocking ( const bool Blocking );
-	/// return true if socket is valid
-	bool HasSocket()
+	netsocket ();
+	virtual ~netsocket ();
+	void assign ( const netsocket& socket );
+	int  handle () const;
+	void handle ( int handle );
+	bool open ( int family, const SOCKET_TYPES type=TCP );
+	void close ();
+	void shutdown ();
+	bool listen ( const int backlog );
+	int  accept ( netaddr* a ) const;
+	bool connect ( const std::string& host, const uint16_t port,
+			const SOCKET_TYPES type=TCP );
+	bool bind ( const std::string& host, const uint16_t port );
+	bool listen_all ( const uint16_t port, const SOCKET_TYPES type=TCP )
+			throw ( std::runtime_error );
+	bool listen_to ( const std::string& host, const uint16_t port,
+			 const SOCKET_TYPES type=TCP )
+			 throw ( std::runtime_error );
+	int  send ( const void* buffer, const int size,
+			const int flags = 0 );
+	int  send ( const std::string& msg, const int flags = MSG_NOSIGNAL );
+	int  send ( const char& c );
+	int  send_to ( const void* buffer, const int size,
+			const netaddr& to, const int flags = MSG_NOSIGNAL );
+	int  send_to ( const std::string& msg,
+			const netaddr& to, const int flags = MSG_NOSIGNAL );
+	int  recv_char ( unsigned char& c );
+	int  recv ( void* buffer, const int size,
+			const int flags = MSG_NOSIGNAL );
+	int  recv ( NetPacket& buffer, int flags = MSG_NOSIGNAL );
+	int  recv_from ( void* buffer, const int size, netaddr& from,
+			const int flags = MSG_NOSIGNAL );
+	int  recv_from ( NetPacket& buffer, netaddr& from,
+			const int flags = MSG_NOSIGNAL );
+	void set_blocking ( const bool is_blocking );
+	inline bool has_socket()
 	{
-		return ( m_Handle > -1 );
+		return ( m_handle > -1 );
 	};
-	/// set socket option, wrapper for setsockop()
-	void SetSocketOption ( const int SocketOption, const bool Set );
+	void set_sock_opt ( const int opt, const bool set );
 	/// deprecated
-	void SetBroadcast ( const bool Broadcast );
-	/// wtf?
-	static bool IsNonBlockingError ();
-	/// static select()
-	static int Select ( NetSocket** Reads, NetSocket** Writes,
-			    const int Timeout );
+	void set_broadcast ( const bool broadcast );
+	static int select ( netsocket** reads, netsocket** writes,
+			    const int timeout );
+	static bool is_non_blocking_error ();
 private:
-	/// The current filedescriptor
-	int   m_Handle;
-	/// true if *this is a TCP connection
-	bool  m_IsStream;
-}; // class NetSocket
+	int   m_handle;
+	bool  m_is_stream;
+}; // class netsocket
 //////////////////////////////////////////////////////////////////////
+
+} // namespace fgmp
 
 #endif // NET_SOCKET_HEADER
 

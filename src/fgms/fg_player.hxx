@@ -59,13 +59,13 @@ public:
 		ATC_DE,		// Departure
 		ATC_CT		// Center
 	} ATC_TYPE;
-	string	Origin;
+	std::string	Origin;
 	/** @brief The password 
 	 *  @warning This is not currently used
 	 */
-	string	Passwd;
+	std::string	Passwd;
 	/** @brief The model name */
-	string	ModelName;
+	std::string	ModelName;
 	/** @brief The last recorded position */
 	Point3D	LastPos;
 	/** @brief The last recorded position in geodectic coordinates (lat/lon/alt) */
@@ -85,7 +85,7 @@ public:
 	/** @brief in case of errors the reason is stored here 
 	 * @see FGMS::AddBadClient
 	 */
-	string	Error;    // in case of errors
+	std::string	Error;    // in case of errors
 	/** @brief \b true if this client has errors
 	 * @see FGMS::AddBadClient
 	 */
@@ -95,7 +95,7 @@ public:
 	/** \b true if we need to send updates to inactive relays */
 	bool	DoUpdate;
 	FG_Player ();
-	FG_Player ( const string& Name );
+	FG_Player ( const std::string& Name );
 	FG_Player ( const FG_Player& P);
 	~FG_Player ();
 	void operator =  ( const FG_Player& P );
@@ -105,7 +105,7 @@ private:
 }; // FG_Player
 
 typedef List<FG_Player>			PlayerList;
-typedef vector<FG_Player>::iterator	PlayerIt;
+typedef std::vector<FG_Player>::iterator	PlayerIt;
 
 } // namepsace fgmp
 

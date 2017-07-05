@@ -247,7 +247,7 @@ logobject::datestr
 
 	t = time ( 0 );
 	tmr = localtime ( &t );
-	sprintf (buf, "%2d.%02d.%04d %2d:%02d:%02d ",
+	sprintf (buf, "%02d.%02d.%04d %02d:%02d:%02d ",
 		tmr->tm_mday,
 		tmr->tm_mon+1,
 		tmr->tm_year+1900,
@@ -265,7 +265,6 @@ logobject::commit
 {
 	while ( m_logbuf.size() > m_logbufsize )
 	{
-		std::cout << "size: " << m_logbuf.size() << std::endl;
 		m_logbuf.pop_front ();
 	}
 	std::string s = m_logline.str ();
