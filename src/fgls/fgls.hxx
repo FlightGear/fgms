@@ -81,7 +81,11 @@ public:
 	friend class FGLS_CLI;
 protected:
 	/// Maximum number of concurrent telnets.
-	const int MAX_TELNETS = 5;
+#ifdef _MSC_VER
+    #define MAX_TELNETS 5
+#else
+    const int MAX_TELNETS = 5;
+#endif
 	/// List of known servers.
 	ServerList	m_server_list;
 	/// Current selected HUB.

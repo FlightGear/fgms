@@ -148,7 +148,7 @@ write_msg_log
 		msg_file = fopen ( msg_log, "ab" );
 		if ( !msg_file )
 		{
-			LOG ( fglog::ERROR,
+			LOG ( fglog::ERROR2,
 			  "ERROR: Failed to OPEN/append "
 			  << msg_log << " file !" )
 			msg_file = ( FILE* )-1;
@@ -166,7 +166,7 @@ write_msg_log
 		{
 			fclose ( msg_file );
 			msg_file = ( FILE* )-1;
-			LOG ( fglog::ERROR,
+			LOG ( fglog::ERROR2,
 			  "ERROR: Failed to WRITE "
 			  << wtn << " != " << len
 			  << " to " << msg_log );
@@ -372,10 +372,10 @@ FGMS::init_data_channel
 	}
 	catch ( std::runtime_error& e )
 	{
-		LOG ( fglog::ERROR, "FGMS::init() - "
+		LOG ( fglog::ERROR2, "FGMS::init() - "
 		  << "failed to bind to " << m_data_port );
-		LOG ( fglog::ERROR, "already in use?" );
-		LOG ( fglog::ERROR, e.what() );
+		LOG ( fglog::ERROR2, "already in use?" );
+		LOG ( fglog::ERROR2, e.what() );
 		return false;
 	}
 	return true;
@@ -414,7 +414,7 @@ FGMS::init_query_channel
 	}
 	catch ( std::runtime_error& e )
 	{
-		LOG ( fglog::ERROR, "FGMS::init() - "
+		LOG ( fglog::ERROR2, "FGMS::init() - "
 		  << "failed to listen to query port" );
 		return false;
 	}
@@ -454,7 +454,7 @@ FGMS::init_admin_channel
 	}
 	catch ( std::runtime_error& e )
 	{
-		LOG ( fglog::ERROR, "FGMS::init() - "
+		LOG ( fglog::ERROR2, "FGMS::init() - "
 		  << "could not create socket for admin" );
 		return false;
 	}
@@ -477,7 +477,7 @@ FGMS::init
 	{
 		set_logfile ( m_logfile_name );
 	}
-	LOG ( fglog::ERROR, "# FlightGear Multiplayer Server v"
+	LOG ( fglog::ERROR2, "# FlightGear Multiplayer Server v"
 	  << m_version.str() << " started" );
 	if ( m_initialized == false )
 	{
@@ -496,41 +496,41 @@ FGMS::init
 		return false;
 	if ( ! init_admin_channel () )
 		return false;
-	LOG ( fglog::ERROR, "# This is " << m_server_name << " (" << m_FQDN << ")" );
-	LOG ( fglog::ERROR, "# using protocol version v"
+	LOG ( fglog::ERROR2, "# This is " << m_server_name << " (" << m_FQDN << ")" );
+	LOG ( fglog::ERROR2, "# using protocol version v"
 	  << m_proto_major_version << "." << m_proto_minor_version
 	  << " (LazyRelay enabled)" );
-	LOG ( fglog::ERROR, "# listening to port " << m_data_port );
+	LOG ( fglog::ERROR2, "# listening to port " << m_data_port );
 	if ( m_query_channel )
 	{
-		LOG ( fglog::ERROR, "# telnet port " << m_query_port );
+		LOG ( fglog::ERROR2, "# telnet port " << m_query_port );
 	}
 	else
 	{
-		LOG ( fglog::ERROR, "# telnet port DISABLED" );
+		LOG ( fglog::ERROR2, "# telnet port DISABLED" );
 	}
 	if ( m_admin_channel )
 	{
-		LOG ( fglog::ERROR, "# admin port " << m_admin_port );
+		LOG ( fglog::ERROR2, "# admin port " << m_admin_port );
 	}
 	else
 	{
-		LOG ( fglog::ERROR, "# admin port DISABLED" );
+		LOG ( fglog::ERROR2, "# admin port DISABLED" );
 	}
-	LOG ( fglog::ERROR, "# using logfile '" << m_logfile_name << "'" );
+	LOG ( fglog::ERROR2, "# using logfile '" << m_logfile_name << "'" );
 	if ( m_bind_addr != "" )
 	{
-		LOG ( fglog::ERROR, "# listening on " << m_bind_addr );
+		LOG ( fglog::ERROR2, "# listening on " << m_bind_addr );
 	}
 	if ( m_me_is_hub )
 	{
-		LOG ( fglog::ERROR, "# I am a HUB Server" );
+		LOG ( fglog::ERROR2, "# I am a HUB Server" );
 	}
 	if ( ( m_is_tracked ) && ( m_tracker != 0 ) )
 	{
 		pthread_t th;
 		pthread_create ( &th, NULL, &detach_tracker, m_tracker );
-		LOG ( fglog::ERROR, "# tracked to "
+		LOG ( fglog::ERROR2, "# tracked to "
 		  << m_tracker->GetTrackerServer ()
 		  << ":" << m_tracker->GetTrackerPort ()
 		  << ", using a thread."
@@ -538,7 +538,7 @@ FGMS::init
 	}
 	else
 	{
-		LOG ( fglog::ERROR, "# tracking is disabled." );
+		LOG ( fglog::ERROR2, "# tracking is disabled." );
 	}
 	size_t Count;
 	ListElement Entry ( "" );
@@ -546,7 +546,7 @@ FGMS::init
 	// print list of all relays
 	//////////////////////////////////////////////////
 	Count = m_relay_list.Size();
-	LOG ( fglog::ERROR, "# I have " << Count << " relays" );
+	LOG ( fglog::ERROR2, "# I have " << Count << " relays" );
 	for ( size_t i = 0; i < Count; i++ )
 	{
 		Entry = m_relay_list[i];
@@ -554,7 +554,7 @@ FGMS::init
 		{
 			continue;
 		}
-		LOG ( fglog::ERROR, "# relay " << Entry.Name
+		LOG ( fglog::ERROR2, "# relay " << Entry.Name
 			     << ":" << Entry.Address.port()
 			     << " (" << Entry.Address << ")" );
 	}
@@ -562,7 +562,7 @@ FGMS::init
 	// print list of all crossfeeds
 	//////////////////////////////////////////////////
 	Count = m_cross_list.Size();
-	LOG ( fglog::ERROR, "# I have " << Count << " crossfeeds" );
+	LOG ( fglog::ERROR2, "# I have " << Count << " crossfeeds" );
 	for ( size_t i = 0; i < Count; i++ )
 	{
 		Entry = m_cross_list[i];
@@ -570,16 +570,16 @@ FGMS::init
 		{
 			continue;
 		}
-		LOG ( fglog::ERROR, "# crossfeed " << Entry.Name
+		LOG ( fglog::ERROR2, "# crossfeed " << Entry.Name
 		  << ":" << Entry.Address.port()
 		);
 	}
-	LOG ( fglog::ERROR, "# I have " << m_black_list.Size()
+	LOG ( fglog::ERROR2, "# I have " << m_black_list.Size()
 	  << " blacklisted IPs"
 	);
 	if ( m_use_exit_file && m_use_stat_file )
 	{	// only show this IFF both are enabled
-		LOG ( fglog::ERROR, "# Files: exit=[" << exit_file
+		LOG ( fglog::ERROR2, "# Files: exit=[" << exit_file
 		  << "] stat=[" << stat_file << "]"
 		);
 	}
@@ -1872,7 +1872,7 @@ FGMS::loop
 	LastTrackerUpdate = time ( 0 );
 	if ( m_listening == false )
 	{
-		LOG ( fglog::ERROR, "FGMS::loop() - "
+		LOG ( fglog::ERROR2, "FGMS::loop() - "
 			 << "not listening on any socket!" );
 		return false;
 	}
@@ -1883,12 +1883,12 @@ FGMS::loop
 			m_admin_channel->close();
 			delete m_admin_channel;
 			m_admin_channel = 0;
-			LOG ( fglog::ERROR,
+			LOG ( fglog::ERROR2,
 			  "# Admin port disabled, "
 			  "please set user and password" );
 		}
 	}
-	LOG ( fglog::ERROR, "# Main server started!" );
+	LOG ( fglog::ERROR2, "# Main server started!" );
 #ifdef _MSC_VER
 	LOG ( fglog::URGENT,
 	  "ESC key to EXIT (after select "
@@ -2109,7 +2109,7 @@ FGMS::set_logfile
 	m_logfile_name = logfile_name;
 	if ( ! logger.open ( m_logfile_name ) )
 	{
-		LOG ( fglog::ERROR, "FGMS::Init() - "
+		LOG ( fglog::ERROR2, "FGMS::Init() - "
 		  << "Failed to open log file " << m_logfile_name );
 	}
 	logger.priority ( fglog::MEDIUM );
@@ -2730,7 +2730,7 @@ FGMS::process_config
 		  << "' => using defaults");
 		return ( false );
 	}
-	LOG ( fglog::ERROR, "processing " << ConfigName );
+	LOG ( fglog::ERROR2, "processing " << ConfigName );
 	fgms.m_config_file =  ConfigName;
 	Val = Config.Get ( "server.name" );
 	if ( Val != "" )
@@ -3272,7 +3272,7 @@ FGMS::check_config
 {
 	if ( ( m_server_name == "fgms" ) && ( m_relay_list.Size () > 0) )
 	{
-		LOG ( fglog::ERROR, "If you want to provide a public "
+		LOG ( fglog::ERROR2, "If you want to provide a public "
 		  << "server, please provide a unique server name!"
 			
 		);
