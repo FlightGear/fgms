@@ -478,6 +478,13 @@ netaddr::to_string
 	else if ( m_addr->sa_family == AF_INET6 )
 	{
 		sys_sock6* s = (sys_sock6*) m_addr;
+		if ( is_mapped_v4() )
+		{
+			char* d = (char*) & s->sin6_addr;
+			uint32_t* ip4 = (uint32_t*) & d[12];
+			inet_ntop ( AF_INET, ip4, buffer, 50 );
+			return std::string (buffer);
+		}
 		inet_ntop ( m_addr->sa_family, & s->sin6_addr, buffer, 50 );
 	}
 #ifndef _MSC_VER

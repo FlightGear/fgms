@@ -90,7 +90,7 @@ public:
 	vMSG    msg_queue;			/* the single message queue */
 	vMSG    msg_sent_queue;			/* the single message queue */
 	vMSG    msg_recv_queue;			/* the single message queue */
-	bool	WantExit;
+	bool	want_exit;
 	static bool	m_connected;			/* If connected to fgtracker */
 	static inline void set_connected ( bool b )
 	{
@@ -113,7 +113,7 @@ public:
 	//  public methods
 	//
 	//////////////////////////////////////////////////
-	int	Loop ();
+	int	loop ();
 	void	AddMessage ( const string& message );
 
 	/**

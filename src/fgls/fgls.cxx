@@ -43,8 +43,8 @@ const FG_VERSION FGLS::m_version ( 0, 0, 1, "-dev" );
 	#define M_IS_DIR _S_IFDIR
 #else // !_MSC_VER
 	#define M_IS_DIR S_IFDIR
-	/** @brief An instance of ::cDaemon */
-	extern  cDaemon Myself;
+	/** @brief An instance of ::Daemon */
+	extern  Daemon Myself;
 #endif
 
 //////////////////////////////////////////////////////////////////////
@@ -136,7 +136,7 @@ FGLS::init
 #ifndef _MSC_VER
 	if ( m_run_as_daemon )
 	{
-		Myself.Daemonize ();
+		Myself.daemonize ();
 	}
 #endif
 	//
@@ -258,22 +258,21 @@ FGLS::init_data_channel
 ()
 {
 	if ( ! m_reinit_data )
+	{
 		return true;
+	}
 	if ( m_data_channel )
 	{
 		delete m_data_channel;
 		m_data_channel = 0;
 	}
 	m_data_channel = new fgmp::netsocket ();
-	if ( m_data_channel->open ( fgmp::netaddr::IPv6, fgmp::netsocket::UDP ) == 0 )
+	try
 	{
-		LOG ( log::URGENT, "FGMS::Init() - "
-		  << "failed to create data socket" );
-		return false;
+		m_data_channel->listen_to ( m_bind_addr, m_data_port,
+		  fgmp::netsocket::UDP );
 	}
-	m_data_channel->set_blocking ( false );
-	m_data_channel->set_sock_opt ( SO_REUSEADDR, true );
-	if ( ! m_data_channel->bind ( m_bind_addr, m_data_port ) )
+	catch ( std::runtime_error& e )
 	{
 		LOG ( log::URGENT, "FGLS::Init() - "
 		  << "failed to bind on " << m_bind_addr
@@ -301,35 +300,23 @@ FGLS::init_query_channel
 		delete m_query_channel;
 	}
 	m_query_channel = 0;
+	m_reinit_query = false;
 	if ( m_query_port == 0 )
 	{
-		m_reinit_query = false;
 		return true; // query channel disabled
 	}
 	m_query_channel = new fgmp::netsocket ();
-	if ( m_query_channel->open ( fgmp::netaddr::IPv6, fgmp::netsocket::TCP ) == 0 )
+	try
 	{
-		LOG ( log::URGENT, "FGLS::Init() - "
-		  << "failed to create Query socket" );
-		return false;
+		m_query_channel->listen_to ( m_bind_addr,
+		  m_query_port, fgmp::netsocket::TCP );
 	}
-	m_query_channel->set_blocking ( false );
-	m_query_channel->set_sock_opt ( SO_REUSEADDR, true );
-	if ( ! m_query_channel->bind ( m_bind_addr, m_query_port ) )
-	{
-		LOG ( log::URGENT, "FGLS::Init() - "
-		  << "failed to bind on " << m_bind_addr
-		  << ":" << m_query_port );
-		LOG ( log::URGENT, "already in use?" );
-		return false;
-	}
-	if ( ! m_query_channel->listen ( MAX_TELNETS ) )
+	catch ( std::runtime_error& e )
 	{
 		LOG ( log::URGENT, "FGLS::Init() - "
 		  << "failed to listen to query port" );
 		return false;
 	}
-	m_reinit_query = false;
 	return true;
 } // FGLS::init_query_channel()
 
@@ -342,44 +329,30 @@ bool
 FGLS::init_admin_channel
 ()
 {
-	if ( ( ! m_reinit_admin ) || ( ! m_add_cli ) )
+	if ( ! m_reinit_admin )
 		return true;
 	if ( m_admin_channel )
 	{
 		delete m_admin_channel;
 	}
 	m_admin_channel = 0;
-	if ( m_admin_cli == false )
-		return true;
-	if ( m_admin_port == 0 )
+	m_reinit_admin = false;
+	if  ( ( m_admin_port == 0 ) || ( m_admin_cli == false ) )
 	{
-		m_reinit_admin = false;
-		return true; // query channel disabled
+		return true; // admin channel disabled
 	}
 	m_admin_channel = new fgmp::netsocket ();
-	if ( m_admin_channel->open ( fgmp::netaddr::IPv6, fgmp::netsocket::TCP ) == 0 )
+	try
 	{
-		LOG ( log::URGENT, "FGLS::Init() - "
-		  << "failed to create Admin socket" );
-		return false;
+		m_admin_channel->listen_to ( m_bind_addr,
+		  m_admin_port, fgmp::netsocket::TCP );
 	}
-	m_admin_channel->set_blocking ( false );
-	m_admin_channel->set_sock_opt ( SO_REUSEADDR, true );
-	if ( ! m_admin_channel->bind ( m_bind_addr, m_admin_port ) )
-	{
-		LOG ( log::URGENT, "FGLS::Init() - "
-		  << "failed to bind on " << m_bind_addr
-		  << ":" << m_admin_port );
-		LOG ( log::URGENT, "already in use?" );
-		return false;
-	}
-	if ( ! m_admin_channel->listen ( MAX_TELNETS ) )
+	catch ( std::runtime_error& e )
 	{
 		LOG ( log::URGENT, "FGLS::Init() - "
 		  << "failed to listen to query port" );
 		return false;
 	}
-	m_reinit_admin = false;
 	return true;
 } // FGLS::init_admin_channel()
 
@@ -688,11 +661,11 @@ void
 FGLS::print_version
 ()
 {
-	std::cout << "\n";
+	std::cout << std::endl;
 	std::cout << "fgls version " << m_version
 		  << ", compiled on " << __DATE__
 		  << " at " << __TIME__ << std::endl;
-	std::cout << "\n";
+	std::cout << std::endl;
 } // FGLS::print_version()
 
 //////////////////////////////////////////////////////////////////////

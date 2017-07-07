@@ -25,6 +25,23 @@
 
 //////////////////////////////////////////////////////////////////////
 
+/** Initialisation via constructor only
+ *
+ * Increment 'patch' if source code has changed at all
+ * (e.g. bugfix).
+ *
+ * If the source has new features but is still
+ * compatible with older versions, increment
+ * 'minor' and set 'patch' to 0.
+ *
+ * If the source gets incompatible with older
+ * versions, increment 'major' and set 'minor'
+ * and 'patch' to 0.
+ *
+ * 'extra' can be used to mark the state of the
+ * source, eg. '-dev' or '-rc1'
+ *
+ */
 FG_VERSION::FG_VERSION
 (
 	char major,
@@ -43,6 +60,8 @@ FG_VERSION::FG_VERSION
 
 //////////////////////////////////////////////////////////////////////
 
+/** initialise all to 0
+ */
 FG_VERSION::FG_VERSION
 ()
 {
@@ -56,6 +75,8 @@ FG_VERSION::FG_VERSION
 
 //////////////////////////////////////////////////////////////////////
 
+/** return a string representation of the version
+ */
 void
 FG_VERSION::mk_str_rep
 ()
@@ -68,6 +89,11 @@ FG_VERSION::mk_str_rep
 
 //////////////////////////////////////////////////////////////////////
 
+/** return a 32-bit integer representation of the version
+ *
+ *  If one of 'major', 'minor' or 'patch' gets over 255
+ *  we need to switch to 64 bit.
+ */
 uint32_t
 FG_VERSION::num
 () const
@@ -78,6 +104,8 @@ FG_VERSION::num
 
 //////////////////////////////////////////////////////////////////////
 
+/** set an uint32_t as version
+ */
 void
 FG_VERSION::set_num
 (
@@ -91,40 +119,126 @@ FG_VERSION::set_num
 
 //////////////////////////////////////////////////////////////////////
 
+/** Compare two versions
+ *
+ * return true if they are equal.
+ */
 bool
 FG_VERSION::operator ==
 (
-	const FG_VERSION& V
+	const FG_VERSION& v
 ) const
 {
-	if ( (m_version.major == V.m_version.major)
-	&&   (m_version.minor == V.m_version.minor)
-	&&   (m_version.patch == V.m_version.patch)
-	&&   (m_version.dummy == V.m_version.dummy) )
+	if ( (m_version.major == v.m_version.major)
+	&&   (m_version.minor == v.m_version.minor)
+	&&   (m_version.patch == v.m_version.patch)
+	&&   (m_version.dummy == v.m_version.dummy) )
 		return true;
 	return false;
 } // FG_VERSION::operator == 
 
 //////////////////////////////////////////////////////////////////////
 
-
+/** Compare two versions
+ *
+ * return true if they are unequal.
+ */
 bool
 FG_VERSION::operator !=
 (
-	const FG_VERSION& V
+	const FG_VERSION& v
 ) const
 {
-	if ( (m_version.major != V.m_version.major)
-	||   (m_version.minor != V.m_version.minor)
-	||   (m_version.patch != V.m_version.patch)
-	||   (m_version.dummy != V.m_version.dummy) )
+	if ( (m_version.major != v.m_version.major)
+	||   (m_version.minor != v.m_version.minor)
+	||   (m_version.patch != v.m_version.patch)
+	||   (m_version.dummy != v.m_version.dummy) )
 		return true;
 	return false;
 } // FG_VERSION::operator != 
 
 //////////////////////////////////////////////////////////////////////
 
+/** Compare two versions
+ *
+ * return true if left is less than right
+ */
+bool
+FG_VERSION::operator <
+(
+	const FG_VERSION& v
+) const
+{
+	int *left = (int*)  & m_version;
+	int *right = (int*) & v.m_version;
+	if ( *left < *right )
+		return true;
+	return false;
+} // FG_VERSION::operator <
 
+//////////////////////////////////////////////////////////////////////
+
+/** Compare two versions
+ *
+ * return true if left is greater than right
+ */
+bool
+FG_VERSION::operator >
+(
+	const FG_VERSION& v
+) const
+{
+	int *left = (int*)  & m_version;
+	int *right = (int*) & v.m_version;
+	if ( *left > *right )
+		return true;
+	return false;
+} // FG_VERSION::operator >
+
+//////////////////////////////////////////////////////////////////////
+
+/** Compare two versions
+ *
+ * return true if left is less or equal to right
+ */
+bool
+FG_VERSION::operator <=
+(
+	const FG_VERSION& v
+) const
+{
+	int *left = (int*)  & m_version;
+	int *right = (int*) & v.m_version;
+	if ( *left <= *right )
+		return true;
+	return false;
+} // FG_VERSION::operator >=
+
+//////////////////////////////////////////////////////////////////////
+
+/** Compare two versions
+ *
+ * return true if left is greater or equal to right
+ */
+bool
+FG_VERSION::operator >=
+(
+	const FG_VERSION& v
+) const
+{
+	int *left = (int*)  & m_version;
+	int *right = (int*) & v.m_version;
+	if ( *left >= *right )
+		return true;
+	return false;
+} // FG_VERSION::operator >=
+
+//////////////////////////////////////////////////////////////////////
+
+/** Output operator
+ *
+ * Put this version on a stream.
+ */
 std::ostream&
 operator <<
 (

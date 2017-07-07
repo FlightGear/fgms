@@ -33,32 +33,9 @@
 class FG_VERSION
 {
 public:
-	/** Initialisation via constructor only
-	 *
-	 * Increment 'patch' if source code has changed at all
-	 * (e.g. bugfix).
-	 *
-	 * If the source has new features but is still
-	 * compatible with older versions, increment
-	 * 'minor' and set 'patch' to 0.
-	 *
-	 * If the source gets incompatible with older
-	 * versions, increment 'major' and set 'minor'
-	 * and 'patch' to 0.
-	 *
-	 * 'extra' can be used to mark the state of the
-	 * source, eg. '-dev' or '-rc1'
-	 *
-	 */
 	FG_VERSION ( char major, char minor, char patch, const char* extra );
-	/** initialise all to 0 */
 	FG_VERSION ();
-	/** return a string representation of the version */
 	inline std::string str () const { return m_str_rep; };
-	/** return a 32-bit integer representation of the version
-	 *  If one of 'major', 'minor' or 'patch' gets over 255
-	 *  we need to switch to 64 bit.
-	 */
 	uint32_t   num () const;
 	/** return a 'major' as an int */
 	inline int major () const { return m_version.major; };
@@ -66,13 +43,13 @@ public:
 	inline int minor () const { return m_version.minor; };
 	/** return a 'patch' as an int */
 	inline int patch () const { return m_version.patch; };
-	/** set an uint32_t as version */
 	void set_num ( uint32_t v );
-	// comparison operator
-	bool operator ==  ( const FG_VERSION& V ) const;
-	// comparison operator
-	bool operator !=  ( const FG_VERSION& V ) const;
-	/** output operator */
+	bool operator ==  ( const FG_VERSION& v ) const;
+	bool operator !=  ( const FG_VERSION& v ) const;
+	bool operator <   ( const FG_VERSION& v ) const;
+	bool operator >   ( const FG_VERSION& v ) const;
+	bool operator <=  ( const FG_VERSION& v ) const;
+	bool operator >=  ( const FG_VERSION& v ) const;
 	friend std::ostream& operator << ( std::ostream& o, const FG_VERSION& V );
 private:
 	FG_VERSION ( const FG_VERSION& );	// disable

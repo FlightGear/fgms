@@ -1,8 +1,7 @@
-/**
- * @file fg_cli.hxx
- * @author Oliver Schroeder
- */
-//                                                                              
+//
+// This file is part of fgms, the flightgear multiplayer server
+// https://sourceforge.net/projects/fgms/
+//
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -14,21 +13,20 @@
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
-//
-// Copyright (C) 2013  Oliver Schroeder
+// along with this program; if not see <http://www.gnu.org/licenses/>
 //
 
 /**
- * @class FG_CLI 
- * @brief cisco like command line interface
- * 
+ * @file	fg_cli.cxx
+ * @author	Oliver Schroeder <fgms@o-schroeder.de>
+ * @date	2013
  */
 
 #include <sstream>
 #include <fglib/fg_util.hxx>
 #include <fg_cli.hxx>
+
+//////////////////////////////////////////////////
 
 FG_CLI::FG_CLI
 (
@@ -59,24 +57,24 @@ FG_CLI::setup
 	//////////////////////////////////////////////////
 	// general setup
 	//////////////////////////////////////////////////
-	set_hostname (this->fgms->m_ServerName);
+	set_hostname (this->fgms->m_server_name);
 	std::stringstream banner;
 	banner	<< "\r\n"
 		<< "------------------------------------------------\r\n"
 		<< "FlightGear Multiplayer Server CLI\r\n"
-		<< "This is " << fgms->m_ServerName << " (" << fgms->m_FQDN << ")\r\n"
+		<< "This is " << fgms->m_server_name << " (" << fgms->m_FQDN << ")\r\n"
 		<< "------------------------------------------------\r\n";
 	set_banner ( banner.str() );
 	//////////////////////////////////////////////////
 	// setup authentication (if required)
 	//////////////////////////////////////////////////
-	if (fgms->m_AdminUser != "")
+	if (fgms->m_admin_user != "")
 	{
-		allow_user ( fgms->m_AdminUser.c_str(), fgms->m_AdminPass.c_str() );
+		allow_user ( fgms->m_admin_user, fgms->m_admin_pass );
 	}
-	if (fgms->m_AdminEnable != "")
+	if (fgms->m_admin_enable != "")
 	{
-		allow_enable (fgms->m_AdminEnable.c_str());
+		allow_enable ( fgms->m_admin_enable );
 	}
 	//////////////////////////////////////////////////
 	// general commands
@@ -215,7 +213,7 @@ FG_CLI::setup
 		static_cast<callback_ptr> (&FG_CLI::cmd_blacklist_delete),
 		libcli::PRIVILEGED,
 		libcli::MODE_CONFIG,
-		"Show entries in the blacklist"
+		"Delete entries in the blacklist"
 	), c);
 	register_command (new Command<CLI> (
 		this,
@@ -223,7 +221,7 @@ FG_CLI::setup
 		static_cast<callback_ptr> (&FG_CLI::cmd_blacklist_add),
 		libcli::PRIVILEGED,
 		libcli::MODE_CONFIG,
-		"Show entries in the blacklist"
+		"Add entries to the blacklist"
 	), c);
 
 	//////////////////////////////////////////////////
@@ -282,6 +280,34 @@ FG_CLI::setup
 		"Add relay"
 	), c);
 
+	//////////////////////////////////////////////////
+	// modify whitelist
+	//////////////////////////////////////////////////
+	c = new Command<CLI> (
+		this,
+		"whitelist",
+		libcli::PRIVILEGED,
+		libcli::MODE_CONFIG,
+		"modify whitelist"
+	);
+	register_command (c);
+	register_command (new Command<CLI> (
+		this,
+		"delete",
+		static_cast<callback_ptr> (&FG_CLI::cmd_whitelist_delete),
+		libcli::PRIVILEGED,
+		libcli::MODE_CONFIG,
+		"Delete whitelist entry"
+	), c);
+	register_command (new Command<CLI> (
+		this,
+		"add",
+		static_cast<callback_ptr> (&FG_CLI::cmd_whitelist_add),
+		libcli::PRIVILEGED,
+		libcli::MODE_CONFIG,
+		"Add entries to the whitelist"
+	), c);
+
 } // FG_CLI::setup ()
 
 //////////////////////////////////////////////////
@@ -308,116 +334,117 @@ FG_CLI::cmd_show_stats
 		return (0);
 	}
 	now = time(0);
-	difftime = now - fgms->m_Uptime;
+	difftime = now - fgms->m_uptime;
 	cmd_show_version (command, argv, argc);
 	client << CRLF;
-	client	<< "I have " << fgms->m_BlackList.Size ()
+	client	<< "I have " << fgms->m_black_list.Size ()
 		<< " entries in my blacklist"
 		<< CRLF; if (check_pager()) return 0;
-	client << "I have " << fgms->m_CrossfeedList.Size () << " crossfeeds"
+	client << "I have " << fgms->m_cross_list.Size () << " crossfeeds"
 		<< CRLF; if (check_pager()) return 0;
-	client << "I have " << fgms->m_RelayList.Size () << " relays"
+	client << "I have " << fgms->m_relay_list.Size () << " relays"
 		<< CRLF; if (check_pager()) return 0;
-	client << "I have " << fgms->m_PlayerList.Size () << " users ("
-		<< fgms->m_LocalClients << " local, "
-		<< fgms->m_RemoteClients << " remote, "
-		<< fgms->m_NumMaxClients << " max)"
+	client << "I have " << fgms->m_player_list.Size () << " users ("
+		<< fgms->m_local_clients << " local, "
+		<< fgms->m_remote_clients << " remote, "
+		<< fgms->m_num_max_clients << " max)"
 		<< CRLF; if (check_pager()) return 0;
 
 	client << "Sent counters:" << CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "to crossfeeds:"
-		<< fgms->m_CrossfeedList.PktsSent << " packets"
-		<< " (" << fgms->m_CrossfeedList.PktsSent / difftime << "/s)"
-		<< " / " << byte_counter (fgms->m_CrossfeedList.BytesSent)
-		<< " (" << byte_counter ((double) fgms->m_CrossfeedList.BytesSent / difftime) << "/s)"
+		<< fgms->m_cross_list.PktsSent << " packets"
+		<< " (" << fgms->m_cross_list.PktsSent / difftime << "/s)"
+		<< " / " << byte_counter (fgms->m_cross_list.BytesSent)
+		<< " (" << byte_counter ((double) fgms->m_cross_list.BytesSent / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "to relays:"
-		<< fgms->m_RelayList.PktsSent << " packets"
-		<< " (" << fgms->m_RelayList.PktsSent / difftime << "/s)"
-		<< " / " << byte_counter (fgms->m_RelayList.BytesSent)
-		<< " (" << byte_counter ((double) fgms->m_RelayList.BytesSent / difftime) << "/s)"
+		<< fgms->m_relay_list.PktsSent << " packets"
+		<< " (" << fgms->m_relay_list.PktsSent / difftime << "/s)"
+		<< " / " << byte_counter (fgms->m_relay_list.BytesSent)
+		<< " (" << byte_counter ((double) fgms->m_relay_list.BytesSent / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0; 
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "to users:"
-		<< fgms->m_PlayerList.PktsSent << " packets"
-		<< " (" << fgms->m_PlayerList.PktsSent / difftime << "/s)"
-		<< " / " << byte_counter (fgms->m_PlayerList.BytesSent)
-		<< " (" << byte_counter ((double) fgms->m_PlayerList.BytesSent / difftime) << "/s)"
+		<< fgms->m_player_list.PktsSent << " packets"
+		<< " (" << fgms->m_player_list.PktsSent / difftime << "/s)"
+		<< " / " << byte_counter (fgms->m_player_list.BytesSent)
+		<< " (" << byte_counter ((double) fgms->m_player_list.BytesSent / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 
 	client << "Receive counters:" << CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
-		<< "total:" <<  fgms->m_PacketsReceived
+		<< "total:" <<  fgms->m_packets_received
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
-		<< "pings:" <<  fgms->m_PingReceived
-		<< " (" << fgms->m_PongReceived << " pongs)"
+		<< "pings:" <<  fgms->m_ping_received
+		<< " (" << fgms->m_pong_received << " pongs)"
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "errors:"
-		<< "invalid packets:" << fgms->m_PacketsInvalid
-		<< " rejected:" << fgms->m_BlackRejected
-		<< " unknown relay:" << fgms->m_UnknownRelay
+		<< "invalid packets:" << fgms->m_packets_invalid
+		<< " rejected:" << fgms->m_black_rejected
+		<< " unknown relay:" << fgms->m_unknown_relay
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "valid data:"
-		<< "pos data:" << fgms->m_PositionData
-		<< " other:" << fgms->m_UnkownMsgID
+		<< "pos data:" << fgms->m_pos_data
+		<< " other:" << fgms->m_unknown_data
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "tracker:"
-		<< "connects:" << fgms->m_TrackerConnect
-		<< " disconnects:" << fgms->m_TrackerDisconnect
-		<< " positions:" << fgms->m_TrackerPosition
+		<< "connects:" << fgms->m_tracker_connect
+		<< " disconnects:" << fgms->m_tracker_disconnect
+		<< " positions:" << fgms->m_tracker_position
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
-		<< "admin connections:" << fgms->m_AdminReceived
+		<< "admin connections:" << fgms->m_admin_received
 		<< CRLF; if (check_pager()) return 0;
 	float telnet_per_second;
-	if (fgms->m_TelnetReceived)
-		telnet_per_second = (float) fgms->m_TelnetReceived / (time(0) - fgms->m_Uptime);
+	if (fgms->m_queries_received)
+		telnet_per_second = (float) fgms->m_queries_received /
+		(time(0) - fgms->m_uptime);
 	else
 		telnet_per_second = 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "telnet connections: "
-		<< fgms->m_TelnetReceived
+		<< fgms->m_queries_received
 		<< " (" << setprecision(2) << telnet_per_second << " t/s)"
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "blacklist:"
-		<< fgms->m_BlackList.PktsRcvd << " packets"
-		<< " (" << fgms->m_BlackList.PktsRcvd / difftime << "/s)"
-		<< " / " << byte_counter (fgms->m_BlackList.BytesRcvd)
-		<< " (" << byte_counter ((double) fgms->m_BlackList.BytesRcvd / difftime) << "/s)"
+		<< fgms->m_black_list.PktsRcvd << " packets"
+		<< " (" << fgms->m_black_list.PktsRcvd / difftime << "/s)"
+		<< " / " << byte_counter (fgms->m_black_list.BytesRcvd)
+		<< " (" << byte_counter ((double) fgms->m_black_list.BytesRcvd / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "relays:"
-		<< fgms->m_RelayList.PktsRcvd << " packets"
-		<< " (" << fgms->m_RelayList.PktsRcvd / difftime << "/s)"
-		<< " / " << byte_counter (fgms->m_RelayList.BytesRcvd)
-		<< " (" << byte_counter ((double) fgms->m_RelayList.BytesRcvd / difftime) << "/s)"
+		<< fgms->m_relay_list.PktsRcvd << " packets"
+		<< " (" << fgms->m_relay_list.PktsRcvd / difftime << "/s)"
+		<< " / " << byte_counter (fgms->m_relay_list.BytesRcvd)
+		<< " (" << byte_counter ((double) fgms->m_relay_list.BytesRcvd / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "users:"
-		<< fgms->m_PlayerList.PktsRcvd << " packets"
-		<< " (" << fgms->m_PlayerList.PktsRcvd / difftime << "/s)"
-		<< " / " << byte_counter (fgms->m_PlayerList.BytesRcvd)
-		<< " (" << byte_counter ((double) fgms->m_PlayerList.BytesRcvd / difftime) << "/s)"
+		<< fgms->m_player_list.PktsRcvd << " packets"
+		<< " (" << fgms->m_player_list.PktsRcvd / difftime << "/s)"
+		<< " / " << byte_counter (fgms->m_player_list.BytesRcvd)
+		<< " (" << byte_counter ((double) fgms->m_player_list.BytesRcvd / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
-	accumulated_sent	+= fgms->m_CrossfeedList.BytesSent;
-	accumulated_sent_pkts	+= fgms->m_CrossfeedList.PktsSent;
-	accumulated_sent	+= fgms->m_RelayList.BytesSent;
-	accumulated_sent_pkts	+= fgms->m_RelayList.PktsSent;
-	accumulated_sent	+= fgms->m_PlayerList.BytesSent;
-	accumulated_sent_pkts	+= fgms->m_PlayerList.PktsSent;
-	accumulated_rcvd	+= fgms->m_BlackList.BytesRcvd;
-	accumulated_rcvd_pkts	+= fgms->m_BlackList.PktsRcvd;
-	accumulated_rcvd	+= fgms->m_RelayList.BytesRcvd;
-	accumulated_rcvd_pkts	+= fgms->m_RelayList.PktsRcvd;
-	accumulated_rcvd	+= fgms->m_PlayerList.BytesRcvd;
-	accumulated_rcvd_pkts	+= fgms->m_PlayerList.PktsRcvd;
+	accumulated_sent	+= fgms->m_cross_list.BytesSent;
+	accumulated_sent_pkts	+= fgms->m_cross_list.PktsSent;
+	accumulated_sent	+= fgms->m_relay_list.BytesSent;
+	accumulated_sent_pkts	+= fgms->m_relay_list.PktsSent;
+	accumulated_sent	+= fgms->m_player_list.BytesSent;
+	accumulated_sent_pkts	+= fgms->m_player_list.PktsSent;
+	accumulated_rcvd	+= fgms->m_black_list.BytesRcvd;
+	accumulated_rcvd_pkts	+= fgms->m_black_list.PktsRcvd;
+	accumulated_rcvd	+= fgms->m_relay_list.BytesRcvd;
+	accumulated_rcvd_pkts	+= fgms->m_relay_list.PktsRcvd;
+	accumulated_rcvd	+= fgms->m_player_list.BytesRcvd;
+	accumulated_rcvd_pkts	+= fgms->m_player_list.PktsRcvd;
 	client << "Totals:" << CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "sent:"
@@ -455,33 +482,33 @@ FG_CLI::cmd_show_settings
 	}
 	std::string bind_addr;
 
-	if ( fgms->m_BindAddress == "" )
+	if ( fgms->m_bind_addr == "" )
 		bind_addr = "*";
 	else
-		bind_addr = fgms->m_BindAddress;
+		bind_addr = fgms->m_bind_addr;
 	cmd_show_version (command, argv, argc);
 	client << CRLF;
 	client << "current settings:" << CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
-		<< "listen port:" << fgms->m_DataPort
+		<< "listen port:" << fgms->m_data_port
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
-		<< "telnet port:" << fgms->m_TelnetPort
+		<< "telnet port:" << fgms->m_query_port
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
-		<< "admin port:" << fgms->m_AdminPort
+		<< "admin port:" << fgms->m_admin_port
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
-		<< "player expires:" << fgms->m_PlayerExpires
+		<< "player expires:" << fgms->m_player_expires
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
-		<< "out of reach:" << fgms->m_PlayerIsOutOfReach
+		<< "out of reach:" << fgms->m_out_of_reach
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
-		<< "radar range:" << fgms->m_MaxRadarRange
+		<< "radar range:" << fgms->m_max_radar_range
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
-		<< "logfile:" << fgms->m_LogFileName
+		<< "logfile:" << fgms->m_logfile_name
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "bind address:" << bind_addr
@@ -513,7 +540,7 @@ FG_CLI::cmd_fgms_die
 		}
 		return (0);
 	}
-	fgms->m_WantExit = true;
+	fgms->m_want_exit = true;
 	return libcli::QUIT;
 } // FG_CLI::cmd_fgms_die
 
@@ -538,8 +565,8 @@ FG_CLI::cmd_show_uptime
 		}
 		return (0);
 	}
-	client << "UP since " << timestamp_to_datestr(fgms->m_Uptime)
-		<< "(" << timestamp_to_days(fgms->m_Uptime) << ")" << CRLF;
+	client << "UP since " << timestamp_to_datestr(fgms->m_uptime)
+		<< "(" << timestamp_to_days(fgms->m_uptime) << ")" << CRLF;
 	return (0);
 } // FG_CLI::cmd_show_uptime
 
@@ -596,17 +623,18 @@ FG_CLI::cmd_show_version
 		return (0);
 	}
 	string s;
-	if (fgms->m_IamHUB)
+	if (fgms->m_me_is_hub)
 		s = "HUB";
 	else
 		s = "LEAVE";
-	client << "This is " << fgms->m_ServerName << " (" << fgms->m_FQDN << ")" << CRLF;
+	client << "This is " << fgms->m_server_name << " (" << fgms->m_FQDN << ")" << CRLF;
 	client << "FlightGear Multiplayer " << s << " Server version "
 	       << fgms->m_version.str() << CRLF; 
 	client << "using protocol version v"
-		<< fgms->m_ProtoMajorVersion << "." << fgms->m_ProtoMinorVersion << CRLF;
-	if (fgms->m_IsTracked)
-		client << "This server is tracked: " << fgms->m_Tracker->GetTrackerServer() << CRLF;
+		<< fgms->m_proto_major_version << "."
+		<< fgms->m_proto_minor_version << CRLF;
+	if (fgms->m_is_tracked)
+		client << "This server is tracked: " << fgms->m_tracker->GetTrackerServer() << CRLF;
 	else
 		client << "This server is NOT tracked" << CRLF;
 	cmd_show_uptime (command, argv, argc);
@@ -680,18 +708,18 @@ FG_CLI::cmd_whitelist_show
 			return libcli::ERROR_ARG;
 		}
 	}
-	int Count = fgms->m_WhiteList.Size ();
+	int Count = fgms->m_white_list.Size ();
 	fgmp::ListElement Entry("");
 	client << CRLF;
 	time_t  difftime;
 	time_t  now;
 	now = time(0);
-	difftime = now - fgms->m_Uptime;
-	client << fgms->m_WhiteList.Name << ":" << CRLF;
+	difftime = now - fgms->m_uptime;
+	client << fgms->m_white_list.Name << ":" << CRLF;
 	client << CRLF;
 	for (int i = 0; i < Count; i++)
 	{
-		Entry = fgms->m_WhiteList[i];
+		Entry = fgms->m_white_list[i];
 		if ( (ID == 0) && (Address.is_valid()) )
 		{	// only list matching entries
 			if (Entry.Address != Address)
@@ -727,10 +755,10 @@ FG_CLI::cmd_whitelist_show
 	if (EntriesFound)
 	{
 		client << "Total rcvd: "
-			<< fgms->m_WhiteList.PktsRcvd << " packets"
-			<< " (" << fgms->m_WhiteList.PktsRcvd / difftime << "/s)"
-			<< " / " << byte_counter (fgms->m_WhiteList.BytesRcvd)
-			<< " (" << byte_counter ((double) (fgms->m_WhiteList.BytesRcvd/difftime)) << "/s)"
+			<< fgms->m_white_list.PktsRcvd << " packets"
+			<< " (" << fgms->m_white_list.PktsRcvd / difftime << "/s)"
+			<< " / " << byte_counter (fgms->m_white_list.BytesRcvd)
+			<< " (" << byte_counter ((double) (fgms->m_white_list.BytesRcvd/difftime)) << "/s)"
 			<< CRLF; if (check_pager()) return 0;
 	}
 	return 0;
@@ -805,10 +833,10 @@ FG_CLI::cmd_whitelist_delete
 	}
 	if ( (ID == 0) && (Address.is_valid()) )
 	{	// match IP
-		Entry = fgms->m_WhiteList.Find (Address);
-		if (Entry != fgms->m_WhiteList.End())
+		Entry = fgms->m_white_list.Find (Address);
+		if (Entry != fgms->m_white_list.End())
 		{
-			fgms->m_WhiteList.Delete (Entry);
+			fgms->m_white_list.Delete (Entry);
 		}
 		else
 		{
@@ -817,10 +845,10 @@ FG_CLI::cmd_whitelist_delete
 		}
 		return 0;
 	}
-	Entry = fgms->m_WhiteList.FindByID (ID);
-	if (Entry != fgms->m_WhiteList.End())
+	Entry = fgms->m_white_list.FindByID (ID);
+	if (Entry != fgms->m_white_list.End())
 	{
-		fgms->m_WhiteList.Delete (Entry);
+		fgms->m_white_list.Delete (Entry);
 	}
 	else
 	{
@@ -911,10 +939,10 @@ FG_CLI::cmd_whitelist_add
 	fgmp::ListElement E (Reason);
 	E.Address = Address;
 	size_t NewID;
-	ItList CurrentEntry = fgms->m_WhiteList.Find ( E.Address );
-	if ( CurrentEntry == fgms->m_WhiteList.End() )
+	ItList CurrentEntry = fgms->m_white_list.Find ( E.Address );
+	if ( CurrentEntry == fgms->m_white_list.End() )
 	{       
-		NewID = fgms->m_WhiteList.Add (E, TTL);
+		NewID = fgms->m_white_list.Add (E, TTL);
 	}
 	else
 	{
@@ -1009,18 +1037,18 @@ FG_CLI::cmd_blacklist_show
 			return libcli::ERROR_ARG;
 		}
 	}
-	int Count = fgms->m_BlackList.Size ();
+	int Count = fgms->m_black_list.Size ();
 	fgmp::ListElement Entry("");
 	client << CRLF;
 	time_t  difftime;
 	time_t  now;
 	now = time(0);
-	difftime = now - fgms->m_Uptime;
-	client << fgms->m_BlackList.Name << ":" << CRLF;
+	difftime = now - fgms->m_uptime;
+	client << fgms->m_black_list.Name << ":" << CRLF;
 	client << CRLF;
 	for (int i = 0; i < Count; i++)
 	{
-		Entry = fgms->m_BlackList[i];
+		Entry = fgms->m_black_list[i];
 		if ( (ID == 0) && (Address.is_valid()) )
 		{	// only list matching entries
 			if (Entry.Address != Address)
@@ -1063,10 +1091,10 @@ FG_CLI::cmd_blacklist_show
 	if (EntriesFound)
 	{
 		client << "Total rcvd: "
-			<< fgms->m_BlackList.PktsRcvd << " packets"
-			<< " (" << fgms->m_BlackList.PktsRcvd / difftime << "/s)"
-			<< " / " << byte_counter (fgms->m_BlackList.BytesRcvd)
-			<< " (" << byte_counter ((double) (fgms->m_BlackList.BytesRcvd/difftime)) << "/s)"
+			<< fgms->m_black_list.PktsRcvd << " packets"
+			<< " (" << fgms->m_black_list.PktsRcvd / difftime << "/s)"
+			<< " / " << byte_counter (fgms->m_black_list.BytesRcvd)
+			<< " (" << byte_counter ((double) (fgms->m_black_list.BytesRcvd/difftime)) << "/s)"
 			<< CRLF; if (check_pager()) return 0;
 	}
 	return 0;
@@ -1141,10 +1169,10 @@ FG_CLI::cmd_blacklist_delete
 	}
 	if ( (ID == 0) && (Address.is_valid()) )
 	{	// match IP
-		Entry = fgms->m_BlackList.Find (Address);
-		if (Entry != fgms->m_BlackList.End())
+		Entry = fgms->m_black_list.Find (Address);
+		if (Entry != fgms->m_black_list.End())
 		{
-			fgms->m_BlackList.Delete (Entry);
+			fgms->m_black_list.Delete (Entry);
 		}
 		else
 		{
@@ -1153,10 +1181,10 @@ FG_CLI::cmd_blacklist_delete
 		}
 		return 0;
 	}
-	Entry = fgms->m_BlackList.FindByID (ID);
-	if (Entry != fgms->m_BlackList.End())
+	Entry = fgms->m_black_list.FindByID (ID);
+	if (Entry != fgms->m_black_list.End())
 	{
-		fgms->m_BlackList.Delete (Entry);
+		fgms->m_black_list.Delete (Entry);
 	}
 	else
 	{
@@ -1247,10 +1275,10 @@ FG_CLI::cmd_blacklist_add
 	fgmp::ListElement E (Reason);
 	E.Address = Address;
 	size_t NewID;
-	ItList CurrentEntry = fgms->m_BlackList.Find ( E.Address );
-	if ( CurrentEntry == fgms->m_BlackList.End() )
+	ItList CurrentEntry = fgms->m_black_list.Find ( E.Address );
+	if ( CurrentEntry == fgms->m_black_list.End() )
 	{       
-		NewID = fgms->m_BlackList.Add (E, TTL);
+		NewID = fgms->m_black_list.Add (E, TTL);
 	}
 	else
 	{
@@ -1330,10 +1358,10 @@ FG_CLI::cmd_crossfeed_delete
 	}
 	if ( (ID == 0) && (Address.is_valid()) )
 	{	// match IP
-		Entry = fgms->m_CrossfeedList.Find (Address);
-		if (Entry != fgms->m_CrossfeedList.End())
+		Entry = fgms->m_cross_list.Find (Address);
+		if (Entry != fgms->m_cross_list.End())
 		{
-			fgms->m_CrossfeedList.Delete (Entry);
+			fgms->m_cross_list.Delete (Entry);
 		}
 		else
 		{
@@ -1342,10 +1370,10 @@ FG_CLI::cmd_crossfeed_delete
 		}
 		return 0;
 	}
-	Entry = fgms->m_CrossfeedList.FindByID (ID);
-	if (Entry != fgms->m_CrossfeedList.End())
+	Entry = fgms->m_cross_list.FindByID (ID);
+	if (Entry != fgms->m_cross_list.End())
 	{
-		fgms->m_CrossfeedList.Delete (Entry);
+		fgms->m_cross_list.Delete (Entry);
 	}
 	else
 	{
@@ -1437,10 +1465,10 @@ FG_CLI::cmd_crossfeed_add
 	E.Address = Address;
 	E.Address.port (Port);
 	size_t NewID;
-	ItList CurrentEntry = fgms->m_CrossfeedList.Find ( E.Address, true );
-	if ( CurrentEntry == fgms->m_CrossfeedList.End() )
+	ItList CurrentEntry = fgms->m_cross_list.Find ( E.Address, true );
+	if ( CurrentEntry == fgms->m_cross_list.End() )
 	{       
-		NewID = fgms->m_CrossfeedList.Add (E, Port);
+		NewID = fgms->m_cross_list.Add (E, Port);
 	}
 	else
 	{
@@ -1535,17 +1563,17 @@ FG_CLI::cmd_crossfeed_show
 			return libcli::ERROR_ARG;
 		}
 	}
-	int Count = fgms->m_CrossfeedList.Size ();
+	int Count = fgms->m_cross_list.Size ();
 	fgmp::ListElement Entry("");
-	client << fgms->m_CrossfeedList.Name << ":" << CRLF;
+	client << fgms->m_cross_list.Name << ":" << CRLF;
 	client << CRLF;
 	time_t  difftime;
 	time_t  now;
 	now = time(0);
-	difftime = now - fgms->m_Uptime;
+	difftime = now - fgms->m_uptime;
 	for (int i = 0; i < Count; i++)
 	{
-		Entry = fgms->m_CrossfeedList[i];
+		Entry = fgms->m_cross_list[i];
 		if ( (ID == 0) && (Address.is_valid()) )
 		{	// only list matching entries
 			if (Entry.Address != Address)
@@ -1584,10 +1612,10 @@ FG_CLI::cmd_crossfeed_show
 	if (EntriesFound)
 	{
 		client << "Total sent: "
-			<< fgms->m_CrossfeedList.PktsSent << " packets"
-			<< "(" << fgms->m_CrossfeedList.PktsSent / difftime << "/s)"
-			<< " / " << byte_counter (fgms->m_CrossfeedList.BytesSent)
-			<< "(" << byte_counter ((double) (fgms->m_CrossfeedList.BytesSent/difftime)) << "/s)"
+			<< fgms->m_cross_list.PktsSent << " packets"
+			<< "(" << fgms->m_cross_list.PktsSent / difftime << "/s)"
+			<< " / " << byte_counter (fgms->m_cross_list.BytesSent)
+			<< "(" << byte_counter ((double) (fgms->m_cross_list.BytesSent/difftime)) << "/s)"
 			<< CRLF;
 	}
 	return 0;
@@ -1679,17 +1707,17 @@ FG_CLI::cmd_relay_show
 			return libcli::ERROR_ARG;
 		}
 	}
-	int Count = fgms->m_RelayList.Size ();
+	int Count = fgms->m_relay_list.Size ();
 	fgmp::ListElement Entry("");
-	client << fgms->m_RelayList.Name << ":" << CRLF;
+	client << fgms->m_relay_list.Name << ":" << CRLF;
 	client << CRLF;
 	time_t  difftime;
 	time_t  now;
 	now = time(0);
-	difftime = now - fgms->m_Uptime;
+	difftime = now - fgms->m_uptime;
 	for (int i = 0; i < Count; i++)
 	{
-		Entry = fgms->m_RelayList[i];
+		Entry = fgms->m_relay_list[i];
 		if ( (ID == 0) && (Address.is_valid()) )
 		{	// only list matching entries
 			if (Entry.Address != Address)
@@ -1740,16 +1768,16 @@ FG_CLI::cmd_relay_show
 	}
 	client << "Totals:" << CRLF; if (check_pager()) return 0;
 	client << "  sent      : "
-		<< fgms->m_RelayList.PktsSent << " packets"
-		<< " (" << fgms->m_RelayList.PktsSent / difftime << "/s)"
-		<< " / " << byte_counter (fgms->m_RelayList.BytesSent)
-		<< " (" << byte_counter ((double) fgms->m_RelayList.BytesSent / difftime) << "/s)"
+		<< fgms->m_relay_list.PktsSent << " packets"
+		<< " (" << fgms->m_relay_list.PktsSent / difftime << "/s)"
+		<< " / " << byte_counter (fgms->m_relay_list.BytesSent)
+		<< " (" << byte_counter ((double) fgms->m_relay_list.BytesSent / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 	client << "  received  : "
-		<< fgms->m_RelayList.PktsRcvd << " packets"
-		<< " (" << fgms->m_RelayList.PktsRcvd / difftime << "/s)"
-		<< " / " << byte_counter (fgms->m_RelayList.BytesRcvd)
-		<< " (" << byte_counter ((double) fgms->m_RelayList.BytesRcvd / difftime) << "/s)"
+		<< fgms->m_relay_list.PktsRcvd << " packets"
+		<< " (" << fgms->m_relay_list.PktsRcvd / difftime << "/s)"
+		<< " / " << byte_counter (fgms->m_relay_list.BytesRcvd)
+		<< " (" << byte_counter ((double) fgms->m_relay_list.BytesRcvd / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 	return 0;
 } // FG_CLI::cmd_relay_show
@@ -1788,7 +1816,7 @@ FG_CLI::cmd_tracker_show
 			return libcli::ERROR_ARG;
 		}
 	}
-	if (! fgms->m_IsTracked)
+	if (! fgms->m_is_tracked)
 	{
 		client << "This server is NOT tracked" << CRLF;
 		client << CRLF;
@@ -1797,16 +1825,16 @@ FG_CLI::cmd_tracker_show
 	time_t  difftime;
 	time_t  now;
 	now = time(0);
-	difftime = now - fgms->m_Uptime;
+	difftime = now - fgms->m_uptime;
 	client << "This server is tracked: "
-		<< fgms->m_Tracker->GetTrackerServer() << ":"
-		<< fgms->m_Tracker->GetTrackerPort()
+		<< fgms->m_tracker->GetTrackerServer() << ":"
+		<< fgms->m_tracker->GetTrackerPort()
 		<< CRLF;
-	if (fgms->m_Tracker->m_connected)
+	if (fgms->m_tracker->m_connected)
 	{
 		client << "state: connected since "
-			<< timestamp_to_datestr(fgms->m_Tracker->LastConnected)
-			<< " (" << timestamp_to_days (fgms->m_Tracker->LastConnected) << " ago)"
+			<< timestamp_to_datestr(fgms->m_tracker->LastConnected)
+			<< " (" << timestamp_to_days (fgms->m_tracker->LastConnected) << " ago)"
 			<< CRLF;
 	}
 	else
@@ -1814,32 +1842,32 @@ FG_CLI::cmd_tracker_show
 		client << "state: NOT connected!" << CRLF;
 	}
 	string A = "NEVER";
-	if (fgms->m_Tracker->LastSeen != 0)
+	if (fgms->m_tracker->LastSeen != 0)
 	{
-		A = timestamp_to_days (fgms->m_Tracker->LastSeen);
+		A = timestamp_to_days (fgms->m_tracker->LastSeen);
 		A += " ago";
 	}
 	string B = "NEVER";
-	if (fgms->m_Tracker->LastSent != 0)
+	if (fgms->m_tracker->LastSent != 0)
 	{
-		B = timestamp_to_days (fgms->m_Tracker->LastSent);
+		B = timestamp_to_days (fgms->m_tracker->LastSent);
 		B += " ago";
 	}
 	client << "last seen " << A << ", last sent " << B << CRLF;
-	client << "I had " << fgms->m_Tracker->LostConnections << " lost connections" << CRLF;
+	client << "I had " << fgms->m_tracker->LostConnections << " lost connections" << CRLF;
 	client << CRLF;
 	client << "Counters:" << CRLF;
-	client << "  sent    : " << fgms->m_Tracker->PktsSent << " packets";
-	client << " (" << fgms->m_Tracker->PktsSent / difftime << "/s)";
-	client << " / " << byte_counter (fgms->m_Tracker->BytesSent);
-	client << " (" << byte_counter ((double) fgms->m_Tracker->BytesSent / difftime) << "/s)";
+	client << "  sent    : " << fgms->m_tracker->PktsSent << " packets";
+	client << " (" << fgms->m_tracker->PktsSent / difftime << "/s)";
+	client << " / " << byte_counter (fgms->m_tracker->BytesSent);
+	client << " (" << byte_counter ((double) fgms->m_tracker->BytesSent / difftime) << "/s)";
 	client << CRLF;
-	client << "  received: " << fgms->m_Tracker->PktsRcvd << " packets";
-	client << " (" << fgms->m_Tracker->PktsRcvd / difftime << "/s)";
-	client << " / " << byte_counter (fgms->m_Tracker->BytesRcvd);
-	client << " (" << byte_counter ((double) fgms->m_Tracker->BytesRcvd / difftime) << "/s)";
+	client << "  received: " << fgms->m_tracker->PktsRcvd << " packets";
+	client << " (" << fgms->m_tracker->PktsRcvd / difftime << "/s)";
+	client << " / " << byte_counter (fgms->m_tracker->BytesRcvd);
+	client << " (" << byte_counter ((double) fgms->m_tracker->BytesRcvd / difftime) << "/s)";
 	client << CRLF;
-	client << "  queue size: " << fgms->m_Tracker->msg_queue.size() << " messages" << CRLF;
+	client << "  queue size: " << fgms->m_tracker->msg_queue.size() << " messages" << CRLF;
 	return 0;
 } // FG_CLI::cmd_tracker_show
 
@@ -1912,10 +1940,10 @@ FG_CLI::cmd_relay_delete
 	}
 	if ( (ID == 0) && (Address.is_valid()) )
 	{	// match IP
-		Entry = fgms->m_RelayList.Find (Address);
-		if (Entry != fgms->m_RelayList.End())
+		Entry = fgms->m_relay_list.Find (Address);
+		if (Entry != fgms->m_relay_list.End())
 		{
-			fgms->m_RelayList.Delete (Entry);
+			fgms->m_relay_list.Delete (Entry);
 		}
 		else
 		{
@@ -1924,10 +1952,10 @@ FG_CLI::cmd_relay_delete
 		}
 		return 0;
 	}
-	Entry = fgms->m_RelayList.FindByID (ID);
-	if (Entry != fgms->m_RelayList.End())
+	Entry = fgms->m_relay_list.FindByID (ID);
+	if (Entry != fgms->m_relay_list.End())
 	{
-		fgms->m_RelayList.Delete (Entry);
+		fgms->m_relay_list.Delete (Entry);
 	}
 	else
 	{
@@ -2015,10 +2043,10 @@ FG_CLI::cmd_relay_add
 	E.Address = Address;
 	E.Address.port (Port);
 	size_t NewID;
-	ItList CurrentEntry = fgms->m_RelayList.Find ( E.Address, true );
-	if ( CurrentEntry == fgms->m_RelayList.End() )
+	ItList CurrentEntry = fgms->m_relay_list.Find ( E.Address, true );
+	if ( CurrentEntry == fgms->m_relay_list.End() )
 	{       
-		NewID = fgms->m_RelayList.Add (E, 0);
+		NewID = fgms->m_relay_list.Add (E, 0);
 	}
 	else
 	{
@@ -2126,12 +2154,12 @@ FG_CLI::cmd_user_show
 			return libcli::ERROR_ARG;
 		}
 	}
-	int Count = fgms->m_PlayerList.Size ();
+	int Count = fgms->m_player_list.Size ();
 	FG_Player	Player;
 	Point3D		PlayerPosGeod;
 	string		Origin;
 	string		FullName;
-	client << fgms->m_PlayerList.Name << ":" << CRLF;
+	client << fgms->m_player_list.Name << ":" << CRLF;
 	client << CRLF;
 	if (Name == "local")
 	{
@@ -2146,8 +2174,8 @@ FG_CLI::cmd_user_show
 	for (int i = 0; i < Count; i++)
 	{
 		now = time(0);
-		difftime = now - fgms->m_Uptime;
-		Player = fgms->m_PlayerList[i];
+		difftime = now - fgms->m_uptime;
+		Player = fgms->m_player_list[i];
 		if ( (ID == 0) && (Address.is_valid()) )
 		{	// only list matching entries
 			if (Player.Address != Address)
@@ -2180,8 +2208,8 @@ FG_CLI::cmd_user_show
 		}
 		else
 		{
-			FGMS::mT_RelayMapIt Relay = fgms->m_RelayMap.find ( Player.Address );
-			if ( Relay != fgms->m_RelayMap.end() )
+			FGMS::ip2relay_it Relay = fgms->m_relay_map.find ( Player.Address );
+			if ( Relay != fgms->m_relay_map.end() )
 			{
 				Origin = Relay->second;
 			}
@@ -2262,21 +2290,21 @@ FG_CLI::cmd_user_show
 			<< "inactive" << now - Player.LastRelayedToInactive
 			<< CRLF; if (check_pager()) return 0;
 	}
-	difftime = now - fgms->m_Uptime;
+	difftime = now - fgms->m_uptime;
 	client << CRLF;
 	client << EntriesFound << " entries found" << CRLF;
 	if (! Brief)
 	{
 		client << "Totals:" << CRLF; if (check_pager()) return 0;
-		client << "          sent    : " << fgms->m_PlayerList.PktsSent << " packets"
-			<< " (" << fgms->m_PlayerList.PktsSent / difftime << "/s)"
-			<< " / " << byte_counter (fgms->m_PlayerList.BytesSent)
-			<< " (" << byte_counter ((double) fgms->m_PlayerList.BytesSent / difftime) << "/s)"
+		client << "          sent    : " << fgms->m_player_list.PktsSent << " packets"
+			<< " (" << fgms->m_player_list.PktsSent / difftime << "/s)"
+			<< " / " << byte_counter (fgms->m_player_list.BytesSent)
+			<< " (" << byte_counter ((double) fgms->m_player_list.BytesSent / difftime) << "/s)"
 			<< CRLF; if (check_pager()) return 0;
-		client << "          received: " << fgms->m_PlayerList.PktsRcvd << " packets"
-			<< " (" << fgms->m_PlayerList.PktsRcvd / difftime << "/s)"
-			<< " / " << byte_counter (fgms->m_PlayerList.BytesRcvd) 
-			<< " (" << byte_counter ((double) fgms->m_PlayerList.BytesRcvd / difftime) << "/s)"
+		client << "          received: " << fgms->m_player_list.PktsRcvd << " packets"
+			<< " (" << fgms->m_player_list.PktsRcvd / difftime << "/s)"
+			<< " / " << byte_counter (fgms->m_player_list.BytesRcvd) 
+			<< " (" << byte_counter ((double) fgms->m_player_list.BytesRcvd / difftime) << "/s)"
 			<< CRLF; if (check_pager()) return 0;
 	}
 	return 0;

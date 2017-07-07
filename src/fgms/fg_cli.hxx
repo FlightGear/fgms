@@ -1,8 +1,7 @@
-/**
- * @file fg_cli.hxx
- * @author Oliver Schroeder
- */
-//                                                                              
+//
+// This file is part of fgms, the flightgear multiplayer server
+// https://sourceforge.net/projects/fgms/
+//
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -14,16 +13,13 @@
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
-//
-// Copyright (C) 2013  Oliver Schroeder
+// along with this program; if not see <http://www.gnu.org/licenses/>
 //
 
 /**
- * @class FG_CLI 
- * @brief cisco like command line interface
- * 
+ * @file	fg_cli.hxx
+ * @author	Oliver Schroeder <fgms@o-schroeder.de>
+ * @date	2013
  */
 
 //////////////////////////////////////////////////////////////////////
@@ -41,6 +37,11 @@
 using namespace libcli;
 using namespace std;
 
+/**
+ * @class FG_CLI 
+ * @brief cisco like command line interface
+ * 
+ */
 class FG_CLI : public CLI
 {
 public:

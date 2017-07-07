@@ -128,7 +128,7 @@ FG_TRACKER::FG_TRACKER
 	PktsRcvd	= 0;
 	LostConnections = 0;
 	LastConnected	= 0;
-	WantExit	= false;
+	want_exit	= false;
 	m_identified	= false;
 	m_PingInterval	= 55;
 	m_TimeoutStage	= 0;
@@ -546,10 +546,10 @@ FG_TRACKER::ReplyFromServer
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-//FG_TRACKER::Loop () - The infinite loop running the service
+//FG_TRACKER::loop () - The infinite loop running the service
 //////////////////////////////////////////////////////////////////////
 int
-FG_TRACKER::Loop
+FG_TRACKER::loop
 ()
 {
 	string	Msg;
@@ -564,16 +564,16 @@ FG_TRACKER::Loop
 	bs.maxlen = MSGMAXLINE;
 	bs.curlen = 0;
 #ifdef WIN32
-	LOG ( log::HIGH, "# FG_TRACKER::Loop: "
+	LOG ( log::HIGH, "# FG_TRACKER::loop: "
 	  << "started, thread ID " << MyThreadID.p
 	);
 #else
-	LOG ( log::HIGH, "# FG_TRACKER::Loop: "
+	LOG ( log::HIGH, "# FG_TRACKER::loop: "
 	  << "started, thread ID " << MyThreadID
 	);
 #endif
 	/*Infinite loop*/
-	while ( ! WantExit )
+	while ( ! want_exit )
 	{
 		if ( ! is_connected() )
 		{
@@ -583,13 +583,13 @@ FG_TRACKER::Loop
 			bs.curlen=0;
 			buffsock_free ( &bs );
 			m_identified=false;
-			LOG ( log::HIGH, "# FG_TRACKER::Loop: "
+			LOG ( log::HIGH, "# FG_TRACKER::loop: "
 			  << "trying to connect to FGTracker"
 			);
 			set_connected ( Connect() );
 			if ( ! is_connected() )
 			{
-				LOG ( log::HIGH, "# FG_TRACKER::Loop: "
+				LOG ( log::HIGH, "# FG_TRACKER::loop: "
 				  << "not connected, will sleep for "
 				  << tracker_conn_secs << " seconds"
 				);
@@ -639,7 +639,7 @@ FG_TRACKER::Loop
 			  ( char* ) "OUT: "
 			);
 #endif // #ifdef ADD_TRACKER_LOG
-			LOG ( log::DEBUG, "# FG_TRACKER::Loop: "
+			LOG ( log::DEBUG, "# FG_TRACKER::loop: "
 			  << "sending msg " << Msg.size() << "  bytes: " << Msg
 			);
 			if ( TrackerWrite ( Msg ) < 0 )
@@ -658,7 +658,7 @@ FG_TRACKER::Loop
 		CheckTimeout();
 	}
 	return ( 0 );
-} // Loop ()
+} // loop ()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////

@@ -338,7 +338,7 @@ netsocket::bind
  * @return true         On success.
  * @return false        If something went wrong.
  */
-bool
+void
 netsocket::listen_all
 (
 	const uint16_t port,
@@ -351,10 +351,13 @@ netsocket::listen_all
 	socklen_t len;
 
 	if ( type == TCP )
+	{
 		socktype = SOCK_STREAM;
+	}
 	else
+	{
 		socktype = SOCK_DGRAM;
-
+	}
 	m_handle = ::socket ( family, socktype, 0 );
 	if ( m_handle < 0 )
 	{
@@ -390,14 +393,12 @@ netsocket::listen_all
 	}
 	if ( ::bind ( m_handle, sa, len ) < 0 )
 	{
-		perror ( "netsocket::listen_all:" );
 		throw std::runtime_error (
 		  "netsocket::listen_all(): could not bind"
 		);
 	}
 	if ( ::getsockname ( m_handle, sa, &len ) < 0 )
 	{
-		perror ( "netsocket::listen_all:" );
 		throw std::runtime_error (
 		  "netsocket::listen_all(): getsockname"
 		);
@@ -406,11 +407,12 @@ netsocket::listen_all
 	{
 		if ( ! listen ( 5 ) )
 		{
-			return false;
+			throw std::runtime_error (
+			  "netsocket::listen_all(): could not listen"
+			);
 		}
 		m_is_stream = true;
 	}
-	return true;
 } // netsocket::listen_all ()
 
 //////////////////////////////////////////////////////////////////////
@@ -428,7 +430,7 @@ netsocket::listen_all
  * @return true         On success.
  * @return false        If something went wrong.
  */
-bool
+void
 netsocket::listen_to
 (
 	const std::string& host,
@@ -441,12 +443,12 @@ netsocket::listen_to
 		try
 		{
 			listen_all ( port, type );
-			return true;
 		}
 		catch ( std::runtime_error& e )
 		{
 			throw e;
 		}
+		return;
 	}
 	struct addrinfo  hints;
 	struct addrinfo* res;
@@ -457,11 +459,15 @@ netsocket::listen_to
 	hints.ai_flags = AI_PASSIVE;
 	hints.ai_family = AF_UNSPEC;
 	if ( type == TCP )
+	{
 		hints.ai_socktype = SOCK_STREAM;
+	}
 	else
+	{
 		hints.ai_socktype = SOCK_DGRAM;
-	n = getaddrinfo ( host.c_str(), NumToStr( port, 0 ).c_str(),
-	  &hints, &res );
+	}
+	n = getaddrinfo ( host.c_str(),
+	  NumToStr( port, 0 ).c_str(), &hints, &res );
 	if ( n != 0 )
 	{
 		throw std::runtime_error ( gai_strerror(n) );
@@ -471,27 +477,36 @@ netsocket::listen_to
 	{
 		m_handle = ::socket ( rp->ai_family, rp->ai_socktype, 0 );
 		if ( m_handle < 0 )
+		{
 			continue;
+		}
 		set_blocking ( false );
 		set_sock_opt ( SO_REUSEADDR, true );
 		if ( ::bind ( m_handle, rp->ai_addr, rp->ai_addrlen) == 0)
+		{
 			break; // success
+		}
 		close ();
 		rp = rp->ai_next;
 	} while ( rp != 0 );
 	if ( rp == 0 )
-		return false; // no suitable socket found
+	{
+		throw std::runtime_error (
+		  "netsocket::listen_to: could not find a suitable socket"
+		);
+	}
 	if ( type == TCP )
 	{
 		if ( ! listen ( 5 ) )
 		{
-			return false;
+			throw std::runtime_error (
+			  "netsocket::listen_to: could not listen"
+			);
 		}
 		m_is_stream = true;
 	}
 	freeaddrinfo ( rp );
-	return true;
-} // netsocket::bind ()
+} // netsocket::listen_to ()
 
 //////////////////////////////////////////////////////////////////////
 

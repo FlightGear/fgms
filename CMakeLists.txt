@@ -120,15 +120,6 @@ else ( WIN32 )
 	set ( WARNING_FLAGS "${WARNING_FLAGS} -Wno-unused-local-typedefs -Wno-unused-but-set-variable" )
 endif ( WIN32 )
 
-# FIXME: make this configurable via config file
-if ( BUILD_SERVER2 )
-	set ( EXE_NAME mp_server2 )
-	add_definitions (
-	  -DDEF_SERVER_LOG="fgms2.log" -DDEF_EXIT_FILE="fgms_exit2"
-	  -DDEF_RESET_FILE="fgms_reset2" -DDEF_STAT_FILE="fgms_stat2"
-	  -DDEF_CONF_FILE="fgms2.conf" -DIPCKEY=0xf9f6 )
-endif ( BUILD_SERVER2 )
-
 set ( CMAKE_C_FLAGS
   "${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${EXTRA_FLAGS} -D_REENTRANT"
 )
@@ -262,26 +253,6 @@ include_directories ( SYSTEM "${PROJECT_BINARY_DIR}"
 	src/libcli
 )
 
-### add_subdirectory( src/fgms )
-# Project [fgms] [Static Library] [noinst_LIBRARIES]
-add_library (
-	Libfgms ${LIB_TYPE}
-	src/fgms/fgms.hxx 
-	src/fgms/fgms.cxx 
-	src/fgms/fg_tracker.hxx 
-	src/fgms/fg_tracker.cxx 
-	src/fgms/fg_player.hxx 
-	src/fgms/fg_player.cxx 
-	src/fgms/fg_cli.hxx
-	src/fgms/fg_cli.cxx 
-)
-# NO INSTALL [noinst_LIBRARIES]
-if ( WIN32 )
-	list ( APPEND add_LIBS Libfgms )
-else ( WIN32 )
-	list ( APPEND add_LIBS -lLibfgms )
-endif ( WIN32 )
-
 #### add_subdirectory( src/libcli )
 # Project [libcli] [Static Library] [noinst_LIBRARIES]
 set ( libcli_SRCS
@@ -407,9 +378,24 @@ endif ( BUILD_TESTS )
 # build the fgms
 #
 ##################################################
+if ( BUILD_SERVER2 )
+	set ( EXE_NAME mp_server2 )
+	add_definitions (
+	  -DDEF_SERVER_LOG="fgms2.log" -DDEF_EXIT_FILE="fgms_exit2"
+	  -DDEF_RESET_FILE="fgms_reset2" -DDEF_STAT_FILE="fgms_stat2"
+	  -DDEF_CONF_FILE="fgms2.conf" -DIPCKEY=0xf9f6 )
+endif ( BUILD_SERVER2 )
 # Project [fgms] [Console Application] [sbin_PROGRAMS]
-set ( fgms_SRCS src/fgms/main.cxx )
-add_executable ( ${EXE_NAME} ${fgms_SRCS} )
+add_executable ( ${EXE_NAME}
+	src/fgms/fgms.hxx 
+	src/fgms/fgms.cxx 
+	src/fgms/fg_tracker.hxx 
+	src/fgms/fg_tracker.cxx 
+	src/fgms/fg_player.hxx 
+	src/fgms/fg_player.cxx 
+	src/fgms/fg_cli.hxx
+	src/fgms/fg_cli.cxx 
+)
 target_link_libraries ( ${EXE_NAME} ${add_LIBS} )
 if ( WIN32 )
 	set_target_properties ( ${EXE_NAME} PROPERTIES DEBUG_POSTFIX "d" )

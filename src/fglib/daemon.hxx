@@ -1,8 +1,7 @@
-/**
- * @file daemon.hxx
- * @author Oliver Schroeder
- */
-//                                                                              
+//
+// This file is part of fgms, the flightgear multiplayer server
+// https://sourceforge.net/projects/fgms/
+//
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -14,11 +13,14 @@
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
+// along with this program; if not see <http://www.gnu.org/licenses/>
 //
-// Copyright (C) 2006  Oliver Schroeder
-//
+
+/**
+ * @file	daemon.hxx
+ * @author	Oliver Schroeder <fgms@o-schroeder.de>
+ * @date	2006
+ */
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -31,34 +33,25 @@
 #define CDAEMON_HDR
 
 #ifndef _MSC_VER
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/signal.h>
-#include <list>
-#include <fcntl.h>
 
-using namespace std;
-
-/** @brief Implement everything necessary to become a daemon */
-class cDaemon
+/** Implement everything necessary to become a daemon
+ */
+class Daemon
 {
 	/** @brief remember who we are */
-	static pid_t PidOfDaemon;     
-	
-	/** @brief keep track of our children */
-	static list <pid_t> Children; 
+	static int my_pid;     
+
+	/** Keep track if we are already daemonized */
+	static bool already_daemon;
 
 public:
-	cDaemon();
-	~cDaemon ();
-	static void SigHandler ( int SigType );
-	static int  Daemonize (); // make us a daemon
-	static void KillAllChildren (); // kill our children and ourself
-	static void AddChild ( pid_t ChildsPid );
-	static int  NumChildren ();
-	
-	/** @brief Return pid of deamon */
-	static int  GetPid() { return PidOfDaemon; };
+	Daemon();
+	/** handle children which died unexpectedly */
+	static void sig_chld ( int SigType );
+	/** make ourself a daemon */
+	static int  daemonize ();
+	/** Return  our pid */
+	static int  get_pid() { return my_pid; };
 };
 
 #endif // #ifndef _MSC_VER
