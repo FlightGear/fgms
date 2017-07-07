@@ -272,7 +272,7 @@ add_library ( LibCLI ${LIB_TYPE} ${libcli_SRCS} )
 if ( WIN32 )
 	list ( APPEND add_LIBS LibCLI )
 else ( WIN32 )
-	list ( APPEND add_LIBS -lLibCLI -lcrypt )
+	list ( APPEND add_LIBS LibCLI crypt )
 endif ( WIN32 )
 
 #### add_subdirectory( src/libfgmp )
@@ -309,11 +309,7 @@ add_library (
 	src/fglib/fg_log.cxx 
 )
 # NO INSTALL [noinst_LIBRARIES]
-if ( WIN32 )
-	list ( APPEND add_LIBS Libfgmp )
-else ( WIN32 )
-	list ( APPEND add_LIBS -lLibfgmp )
-endif ( WIN32 )
+list ( APPEND add_LIBS Libfgmp )
 
 #### add_subdirectory( src/libmsc ) Windows Only
 # Project [libmsc] [Static Library] [noinst_LIBRARIES]
