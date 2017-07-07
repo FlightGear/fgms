@@ -30,9 +30,11 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#ifndef _MSC_VER
-	#include <signal.h>
+#ifdef _MSC_VER
+	#error "never include <fglib/daemon.hxx> on windows"
 #endif
+
+#include <signal.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -54,7 +56,6 @@ Daemon::sig_chld
 	int SigType
 )
 {
-#ifndef _MSC_VER
 	if (SigType == SIGCHLD)
 	{
 		int stat;
@@ -64,7 +65,6 @@ Daemon::sig_chld
 		return;
 	}
 	exit (0);
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -78,7 +78,6 @@ Daemon::daemonize
 {
 	if ( already_daemon )
 		return 0;
-#ifndef _MSC_VER
 	pid_t pid;
 
 	//
@@ -95,11 +94,9 @@ Daemon::daemonize
 	// well, my child, do well!
 	//
 	my_pid = getpid();
-	LOG ( log::URGENT, "# My PID is " << my_pid );
 	setsid ();	// become a session leader
 	// chdir ("/");	// make sure, we're not on a mounted fs
 	umask (0);	// clear the file creation mode
-#endif
 	already_daemon = true;
 	return (0);	// ok, that's all volks!
 }
@@ -111,13 +108,11 @@ Daemon::daemonize
 Daemon::Daemon
 ()
 {
-#ifndef _MSC_VER
 	//
 	// catch some signals
 	//
 	signal (SIGCHLD,sig_chld);
 	my_pid = getpid(); 
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////

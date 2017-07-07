@@ -22,6 +22,14 @@
  * @date	07/2017
  */
 
+#ifdef HAVE_CONFIG_H
+	#include "config.h" // for MSVC, always first
+#endif
+#ifdef _MSC_VER
+	#include <sys/timeb.h>
+	#include <libmsc/msc_unistd.hxx>
+#endif
+
 #if defined(UL_CYGWIN) || !defined (UL_WIN32)
 #       if defined(UL_MAC_OSX)
 #               include <netinet/in.h>

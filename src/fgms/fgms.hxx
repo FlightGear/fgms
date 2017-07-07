@@ -27,7 +27,7 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#if !defined FGMS_HXX
+#ifndef FGMS_HXX
 #define FGMS_HXX
 
 #include <iostream>
@@ -43,12 +43,15 @@
 #include <fglib/netsocket.hxx>
 #include <fglib/encoding.hxx>
 #include <fglib/mpmessages.hxx>
-#include <fglib/daemon.hxx>
 #include <fglib/fg_version.hxx>
 #include <fglib/fg_geometry.hxx>
 #include <fglib/fg_list.hxx>
 #include "fg_player.hxx"
 #include "fg_tracker.hxx"
+
+#ifndef _MSC_VER
+	#include <fglib/daemon.hxx>
+#endif
 
 using fgmp::FG_List;
 using fgmp::PlayerList;
@@ -64,7 +67,7 @@ using fgmp::StrIt;
  * @class FGMS
  * @brief The Main FGMS Class
  */
-class FGMS : public Daemon
+class FGMS 
 {
 public:
 
@@ -128,6 +131,9 @@ public:
 
 protected:
 
+#ifndef _MSC_VER
+	Daemon		m_myself;
+#endif
 	//////////////////////////////////////////////////
 	//
 	//  private variables

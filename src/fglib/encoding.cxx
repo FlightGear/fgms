@@ -88,6 +88,8 @@
 #   define SWAP64(arg) sg_bswap_64(arg)
 #endif
 
+using namespace fgmp;
+
 //////////////////////////////////////////////////////////////////////
 xdr_data_t
 XDR_encode_int8 ( const int8_t& Val )
@@ -331,7 +333,7 @@ XDR_encode_float ( const float& Val )
 	} tmp;
 	if ( sizeof ( float ) != sizeof ( xdr_data_t ) )
 	{
-		LOG ( log::DEBUG,  "XDR_encode_float: "
+		LOG ( fglog::DEBUG,  "XDR_encode_float: "
 		  << "sizeof (float) != sizeof (xdr_data_t) !!!" );
 	}
 	tmp.raw = Val;
@@ -351,7 +353,7 @@ XDR_decode_float ( const xdr_data_t& Val )
 	} tmp;
 	if ( sizeof ( float ) != sizeof ( xdr_data_t ) )
 	{
-		LOG ( log::DEBUG, "XDR_decode_float: "
+		LOG ( fglog::DEBUG, "XDR_decode_float: "
 		  << "sizeof (float) != sizeof (xdr_data_t) !!!" );
 	}
 	tmp.encoded = SWAP32 ( Val );
@@ -370,7 +372,7 @@ XDR_encode_double ( const double& Val )
 	} tmp;
 	if ( sizeof ( double ) != sizeof ( xdr_data2_t ) )
 	{
-		LOG ( log::DEBUG, "XDR_encode_double: "
+		LOG ( fglog::DEBUG, "XDR_encode_double: "
 		  << "sizeof (double) != sizeof (xdr_data2_t) !!!" );
 	}
 	tmp.raw = Val;
@@ -390,7 +392,7 @@ XDR_decode_double ( const xdr_data2_t& Val )
 	} tmp;
 	if ( sizeof ( double ) != sizeof ( xdr_data2_t ) )
 	{
-		LOG ( log::DEBUG, "XDR_decode_double: "
+		LOG ( fglog::DEBUG, "XDR_decode_double: "
 		  << "sizeof (double) != sizeof (xdr_data2_t) !!!" );
 	}
 	tmp.encoded = SWAP64 ( Val );
@@ -621,7 +623,7 @@ NET_encode_float ( const float& Val )
 	} tmp;
 	if ( sizeof ( float ) != sizeof ( uint32_t ) )
 	{
-		LOG ( log::DEBUG, "NET_encode_float: "
+		LOG ( fglog::DEBUG, "NET_encode_float: "
 		  << "sizeof (float) != 4 !!!" );
 	}
 	tmp.raw = Val;
@@ -641,7 +643,7 @@ NET_decode_float ( const uint32_t& Val )
 	} tmp;
 	if ( sizeof ( float ) != sizeof ( uint32_t ) )
 	{
-		LOG ( log::DEBUG, "NET_decode_float: "
+		LOG ( fglog::DEBUG, "NET_decode_float: "
 		  << "sizeof (float) != 4 !!!" );
 	}
 	tmp.net = SWAP32 ( Val );
@@ -660,7 +662,7 @@ NET_encode_double ( const double& Val )
 	} tmp;
 	if ( sizeof ( double ) != sizeof ( uint64_t ) )
 	{
-		LOG ( log::DEBUG, "NET_encode_double: "
+		LOG ( fglog::DEBUG, "NET_encode_double: "
 		  << "sizeof (double) != sizeof (uint64_t) !!!" );
 	}
 	tmp.raw = Val;
@@ -680,7 +682,7 @@ NET_decode_double ( const uint64_t& Val )
 	} tmp;
 	if ( sizeof ( double ) != sizeof ( uint64_t ) )
 	{
-		LOG ( log::DEBUG, "NET_decode_double: "
+		LOG ( fglog::DEBUG, "NET_decode_double: "
 		  << "sizeof (double) != sizeof (uint64_t) !!!" );
 	}
 	tmp.net = SWAP64 ( Val );

@@ -32,44 +32,44 @@
 
 #include "fg_log.hxx"
 
-log::logobject logger;
+fgmp::fglog logger;
 
-namespace log
+namespace fgmp
 {
 
 //////////////////////////////////////////////////////////////////////
 
-logobject::logobject
+fglog::fglog
 () : m_logstream(0), m_logfile(0)
 {
 	init ();
-} // logobject::logobject ()
+} // fglog::fglog ()
 
 //////////////////////////////////////////////////////////////////////
 
-logobject::logobject
+fglog::fglog
 (
 	int p
 ) : m_logstream(0), m_logfile(0)
 {
 	init ();
 	m_priority = p;
-} // logobject::logobject (int)
+} // fglog::fglog (int)
 
 //////////////////////////////////////////////////////////////////////
 
-logobject::logobject
+fglog::fglog
 (
 	std::string name
 ) : m_logstream(0), m_logfile(0)
 {
 	init ();
 	open ( name );
-} // logobject::logobject ( name )
+} // fglog::fglog ( name )
 
 //////////////////////////////////////////////////////////////////////
 
-logobject::logobject
+fglog::fglog
 (
 	std::string name,
 	int p
@@ -78,20 +78,20 @@ logobject::logobject
 	init ();
 	m_priority = p;
 	open ( name );
-} // logobject::logobject ( name, priority )
+} // fglog::fglog ( name, priority )
 
 //////////////////////////////////////////////////////////////////////
 
-logobject::~logobject
+fglog::~fglog
 ()
 {
 	close ();
-} // logobject::~logobject ()
+} // fglog::~fglog ()
 
 //////////////////////////////////////////////////////////////////////
 
 void
-logobject::init
+fglog::init
 ()
 {
 	m_flags		= WITH_DATE;
@@ -101,12 +101,12 @@ logobject::init
 	m_logstreambuf	= m_logstream->rdbuf ();
 	m_logbufsize	= 200;
 	m_date		= false;
-} // logobject::init()
+} // fglog::init()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-logobject::open
+fglog::open
 (
 	std::string name
 )
@@ -131,12 +131,12 @@ logobject::open
 		return false;
 	m_logstream->rdbuf ( m_logfile->rdbuf () );
 	return true;
-} // logobject::open ()
+} // fglog::open ()
 
 //////////////////////////////////////////////////////////////////////
 
 void
-logobject::close
+fglog::close
 ()
 {
 	if ( m_logfile && (*m_logfile) )
@@ -163,12 +163,12 @@ logobject::close
 		m_logfile = 0;
 	}
 	m_outprio	= NONE;
-} // logobject::close ()
+} // fglog::close ()
 
 //////////////////////////////////////////////////////////////////////
 
-logobject&
-logobject::log
+fglog&
+fglog::log
 ()
 {
 	m_outprio = m_priority;
@@ -179,12 +179,12 @@ logobject::log
 		m_date = false;
 	}
 	return *this;
-} // logobject::log ()
+} // fglog::log ()
 
 //////////////////////////////////////////////////////////////////////
 
-logobject&
-logobject::log
+fglog&
+fglog::log
 (
 	int p
 )
@@ -197,12 +197,12 @@ logobject::log
 		m_date = false;
 	}
 	return *this;
-} // logobject::log ( priority )
+} // fglog::log ( priority )
 
 //////////////////////////////////////////////////////////////////////
 
 void
-logobject::log
+fglog::log
 (
 	int p,
 	const char* format,
@@ -217,12 +217,12 @@ logobject::log
 	va_start ( vl,format );
 	log(p) << logfmt ( p, format,vl ) << endl;
 	va_end(vl);
-} // logobject::log ( priority, fmt )
+} // fglog::log ( priority, fmt )
 
 //////////////////////////////////////////////////////////////////////
 
 std::string
-logobject::logfmt
+fglog::logfmt
 (
 	int p,
 	const char* format,
@@ -233,12 +233,12 @@ logobject::logfmt
 	m_outprio = p;
 	vsprintf ( buf, format, vl );
 	return static_cast<std::string> (buf);
-} // logobject::logfmt ()
+} // fglog::logfmt ()
 
 //////////////////////////////////////////////////////////////////////
 
 std::string
-logobject::datestr
+fglog::datestr
 ()
 {
 	time_t		t;
@@ -260,7 +260,7 @@ logobject::datestr
 //////////////////////////////////////////////////////////////////////
 
 void
-logobject::commit
+fglog::commit
 ()
 {
 	while ( m_logbuf.size() > m_logbufsize )
@@ -276,10 +276,10 @@ logobject::commit
 
 //////////////////////////////////////////////////////////////////////
 
-logobject&
+fglog&
 endl
 (
-	logobject& l
+	fglog& l
 )
 {
 	l << "\r\n";
@@ -289,5 +289,5 @@ endl
 
 //////////////////////////////////////////////////////////////////////
 
-} // namespace log
+} // namespace fgmp
 

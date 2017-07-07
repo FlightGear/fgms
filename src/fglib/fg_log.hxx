@@ -36,35 +36,34 @@
 #include <stdarg.h>
 #include "fg_thread.hxx"
 
-namespace log
+namespace fgmp
 {
 
-enum priority
-{
-	NONE,
-	HIGH,		// error messages
-	MEDIUM,		// standard messages
-	DEBUG,		// debug messages
-	URGENT	= 64,	// log always, regardless of logging level
-	CONSOLE	= 128,	// log to terminal (too)
-	ERROR	= 192	// = URGENT | CONSOLE
-};
-enum logflags
-{
-	NO_DATE,
-	WITH_DATE
-};
-
-class logobject : public fgmp::Lockable
+class fglog : public fgmp::Lockable
 {
 public:
-	logobject ();
-	logobject ( int p );
-	logobject ( std::string name );
-	logobject ( std::string name, int p );
-	~logobject ();
-	template <class any_type> logobject &operator << (any_type var);
-	logobject& operator << (logobject& (*pf) (logobject&))
+	enum priority
+	{
+		NONE,
+		HIGH,		// error messages
+		MEDIUM,		// standard messages
+		DEBUG,		// debug messages
+		URGENT	= 64,	// log always, regardless of logging level
+		CONSOLE	= 128,	// log to terminal (too)
+		ERROR	= 192	// = URGENT | CONSOLE
+	};
+	enum logflags
+	{
+		NO_DATE,
+		WITH_DATE
+	};
+	fglog ();
+	fglog ( int p );
+	fglog ( std::string name );
+	fglog ( std::string name, int p );
+	~fglog ();
+	template <class any_type> fglog &operator << (any_type var);
+	fglog& operator << (fglog& (*pf) (fglog&))
 	  { return ((*pf)(*this)); };
 	operator void* () const { return (m_logfile? (void*) 1: (void*) 0); };
 	bool open ( std::string name );
@@ -76,16 +75,16 @@ public:
 	inline std::string get_name () { return m_logname; };
 	inline bool is_open () const
 	   { return m_logfile ? m_logfile->is_open() : false; };
-	logobject& log ();
-	logobject& log ( int p );
+	fglog& log ();
+	fglog& log ( int p );
 	void log ( int p, const char *format, ... );
 	void commit ();
 	// make sure to lock the logbuf before using it
 	fgmp::StrList* logbuf() { return &m_logbuf; };
 	inline void setbufsize ( size_t size ) { m_logbufsize = size; };
-	friend logobject& endl ( logobject& l );
+	friend fglog& endl ( fglog& l );
 private:
-	logobject ( const logobject& X ); // not available
+	fglog ( const fglog& X ); // not available
 	void init ();
 	std::string logfmt ( int p,const char *format, va_list ap );
 	std::string datestr ( void );
@@ -100,11 +99,11 @@ private:
 	fgmp::StrList	m_logbuf;
 	size_t		m_logbufsize;
 	bool		m_date;	// true when date is to be put on stream
-}; // class logobject
+}; // class fglog
 
 template <class any_type>
-logobject&
-logobject::operator << ( any_type v )
+fglog&
+fglog::operator << ( any_type v )
 {
 	int p_copy = m_outprio;
 
@@ -136,16 +135,16 @@ logobject::operator << ( any_type v )
 	return *this;
 }
 
-logobject& endl ( logobject& l );
+fglog& endl ( fglog& l );
 
-} // namespace log
+} // namespace fgmp
 
-/// define a global logobject
-extern log::logobject logger; // logobject.cxx
+/// define a global fglog
+extern fgmp::fglog logger; // fglog.cxx
 
 #define LOG(P,M) { \
 	logger.Lock (); \
-	logger.log (P) << M << log::endl; \
+	logger.log (P) << M << fgmp::endl; \
 	logger.Unlock (); \
 }
 

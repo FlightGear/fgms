@@ -38,6 +38,7 @@
  */
 class Daemon
 {
+protected:
 	/** @brief remember who we are */
 	static int my_pid;     
 

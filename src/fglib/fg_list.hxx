@@ -458,9 +458,6 @@ List<T>::CheckTTL
 	}
 	if ( (this->LastRun - Element->LastSeen) > Element->Timeout )
 	{
-		LOG ( log::MEDIUM, this->Name << ": TTL exceeded for "
-		  << Element->Name << "@"
-		  << Element->Address.to_string() << " " );
 		  return false;
 	}
 	return true;

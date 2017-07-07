@@ -1,22 +1,6 @@
-/**
- * @file fg_tracker.cxx
- * @author (c) 2006 Julien Pierru
- * @author (c) 2012 Rob Dosogne ( FreeBSD friendly )
- * @author (c) 2015 Hazuki Amamiya
- * @todo Pete To make a links here to the config and explain a bit
- *
- */
-
-//////////////////////////////////////////////////////////////////////
 //
-//  server tracker for FlightGear
-//  (c) 2006 Julien Pierru
-//  (c) 2012 Rob Dosogne ( FreeBSD friendly )
-//	(c) 2015 Hazuki Amamiya
-//  Licenced under GPL
-//
-//	Socket read buffer code is copied from Mark Tolonen's answer at
-//	http://stackoverflow.com/questions/5051701/recv-until-a-nul-byte-is-received
+// This file is part of fgms, the flightgear multiplayer server
+// https://sourceforge.net/projects/fgms/
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -29,41 +13,62 @@
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, US
-//////////////////////////////////////////////////////////////////////
+// along with this program; if not see <http://www.gnu.org/licenses/>
+//
+// Socket read buffer code is copied from Mark Tolonen's answer at
+// http://stackoverflow.com/questions/5051701/recv-until-a-nul-byte-is-received
+//
+
+/**
+ * @file fg_tracker.cxx
+ *
+ * Send data of online pilots to a tracking server.
+ *
+ * @author (c) 2006 Julien Pierru
+ * @author (c) 2012 Rob Dosogne ( FreeBSD friendly )
+ * @author (c) 2015 Hazuki Amamiya
+ * @author	Oliver Schroeder <fgms@o-schroeder.de>
+ * @date	2006
+ * @todo Pete To make a links here to the config and explain a bit
+ */
 
 #ifdef HAVE_CONFIG_H
-#include "config.h" // for MSVC, always first
+	#include "config.h" // for MSVC, always first
 #endif
 
 #include <iostream>
 #include <fstream>
 #include <list>
 #include <string>
-#include <string.h>
 #include <sstream>
+#include <string.h>
+#include <pthread.h>
 #ifdef _MSC_VER
-#include <sys/timeb.h>
-#include <libmsc/msc_unistd.hxx>
+	#include <sys/timeb.h>
+	#include <libmsc/msc_unistd.hxx>
 #else
-#include <errno.h>
-#include <time.h>
-#include <stdint.h>
-#include <unistd.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <sys/types.h>
-#include <signal.h>
-#include <sys/time.h>
+	#include <errno.h>
+	#include <time.h>
+	#include <stdint.h>
+	#include <unistd.h>
+	#include <sys/ipc.h>
+	#include <sys/msg.h>
+	#include <sys/types.h>
+	#include <signal.h>
+	#include <sys/time.h>
 #endif
 #include <unistd.h>
 #include <stdio.h>
-#include "fg_tracker.hxx"
 #include <fglib/fg_util.hxx>
 #include <fglib/debug.hxx>
 #include <fglib/daemon.hxx>
 #include <fglib/fg_log.hxx>
+#include "fg_tracker.hxx"
+
+
+using namespace fgmp;
+
+// FIXME: avoid using defines as much as possible
 
 #ifndef DEF_CONN_SECS
 #define DEF_CONN_SECS 30
@@ -117,7 +122,7 @@ FG_TRACKER::FG_TRACKER
 	m_domain = domain;
 	m_ProtocolVersion = "20151207";
 	m_TrackerSocket = 0;
-	LOG ( log::DEBUG, "# FG_TRACKER::FG_TRACKER:"
+	LOG ( fglog::DEBUG, "# FG_TRACKER::FG_TRACKER:"
 	  << m_TrackerServer << ", Port: " << m_TrackerPort
 	);
 	LastSeen	= 0;
@@ -225,7 +230,7 @@ FG_TRACKER::WriteQueue
 	queue_file.open ( "queue_file", ios::out|ios::app );
 	if ( ! queue_file )
 	{
-		LOG ( log::HIGH, "# FG_TRACKER::WriteQueue: "
+		LOG ( fglog::HIGH, "# FG_TRACKER::WriteQueue: "
 		  << "could not open queuefile!" );
 		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
 		return;
@@ -308,7 +313,7 @@ FG_TRACKER::CheckTimeout()
 		{
 			set_connected ( false );
 			LostConnections++;
-			LOG ( log::URGENT,
+			LOG ( fglog::URGENT,
 			  "# FG_TRACKER::CheckTimeout: "
 			  << "No data received from FGTracker for "
 			  << seconds
@@ -319,7 +324,7 @@ FG_TRACKER::CheckTimeout()
 		string reply = "PING";
 		if ( TrackerWrite ( reply ) < 0 )
 		{
-			LOG ( log::HIGH, "# FG_TRACKER::CheckTimeout: "
+			LOG ( fglog::HIGH, "# FG_TRACKER::CheckTimeout: "
 			  << "Tried to PING FGTracker "
 			  << "(No data from FGTracker for "
 			  << seconds
@@ -329,7 +334,7 @@ FG_TRACKER::CheckTimeout()
 		}
 		else
 		{
-			LOG ( log::DEBUG, "# FG_TRACKER::CheckTimeout: "
+			LOG ( fglog::DEBUG, "# FG_TRACKER::CheckTimeout: "
 			  << "PING FGTracker (No data from FGTracker for "
 			  << seconds << " seconds)"
 			);
@@ -363,7 +368,7 @@ FG_TRACKER::TrackerRead
 		{
 			set_connected ( false );
 			LostConnections++;
-			LOG ( log::HIGH, "# FG_TRACKER::TrackerRead: "
+			LOG ( fglog::HIGH, "# FG_TRACKER::TrackerRead: "
 			  << "lost connection to FGTracker"
 			);
 		}
@@ -399,7 +404,7 @@ FG_TRACKER::TrackerRead
 			PktsRcvd++;
 		}
 		BytesRcvd += bytes;
-		LOG ( log::DEBUG, "# FG_TRACKER::TrackerRead: "
+		LOG ( fglog::DEBUG, "# FG_TRACKER::TrackerRead: "
 		  << "received message from FGTracker - " << res );
 		ReplyFromServer ();
 	}
@@ -425,7 +430,7 @@ FG_TRACKER::TrackerWrite
 	{
 		set_connected ( false );
 		LostConnections++;
-		LOG ( log::HIGH, "# FG_TRACKER::TrackerWrite: "
+		LOG ( fglog::HIGH, "# FG_TRACKER::TrackerWrite: "
 		  << "lost connection to server. Netsocket returned size ="
 		  << s << ", actual size should be =" <<l
 		);
@@ -492,7 +497,7 @@ FG_TRACKER::ReplyFromServer
 			reply = "PONG";
 			if ( TrackerWrite ( reply ) < 0 )
 			{
-				LOG ( log::HIGH,
+				LOG ( fglog::HIGH,
 				  "# FG_TRACKER::ReplyFromServer: "
 				  << "PING from FGTracker received "
 				  << "but failed to sent PONG to FGTracker"
@@ -500,7 +505,7 @@ FG_TRACKER::ReplyFromServer
 			}
 			else
 			{
-				LOG ( log::DEBUG,
+				LOG ( fglog::DEBUG,
 				  "# FG_TRACKER::ReplyFromServer: "
 				  << "PING from FGTracker received"
 				);
@@ -508,13 +513,13 @@ FG_TRACKER::ReplyFromServer
 		}
 		else if ( str == "PONG" )
 		{
-			LOG ( log::DEBUG, "# FG_TRACKER::ReplyFromServer: "
+			LOG ( fglog::DEBUG, "# FG_TRACKER::ReplyFromServer: "
 			  << "PONG from FGTracker received"
 			);
 		}
 		else if ( pos_err == 0 )
 		{
-			LOG ( log::HIGH, "# FG_TRACKER::ReplyFromServer: "
+			LOG ( fglog::HIGH, "# FG_TRACKER::ReplyFromServer: "
 			  << "Received error message from FGTracker. Msg: '"
 			  << str <<"'"
 			);
@@ -524,7 +529,7 @@ FG_TRACKER::ReplyFromServer
 			reply = "ERROR Unrecognized message \"" + str + "\"";
 			if ( TrackerWrite ( reply ) < 0 )
 			{
-				LOG ( log::HIGH,
+				LOG ( fglog::HIGH,
 				  "# FG_TRACKER::ReplyFromServer: "
 				  << "Responce not recognized and failed "
 				  << "to notify FGTracker. Msg: '"
@@ -533,7 +538,7 @@ FG_TRACKER::ReplyFromServer
 			}
 			else
 			{
-				LOG ( log::HIGH,
+				LOG ( fglog::HIGH,
 				  "# FG_TRACKER::ReplyFromServer: "
 				  << "Responce from FGTracker not "
 				  << "recognized. Msg: '" << str << "'"
@@ -564,11 +569,11 @@ FG_TRACKER::loop
 	bs.maxlen = MSGMAXLINE;
 	bs.curlen = 0;
 #ifdef WIN32
-	LOG ( log::HIGH, "# FG_TRACKER::loop: "
+	LOG ( fglog::HIGH, "# FG_TRACKER::loop: "
 	  << "started, thread ID " << MyThreadID.p
 	);
 #else
-	LOG ( log::HIGH, "# FG_TRACKER::loop: "
+	LOG ( fglog::HIGH, "# FG_TRACKER::loop: "
 	  << "started, thread ID " << MyThreadID
 	);
 #endif
@@ -583,13 +588,13 @@ FG_TRACKER::loop
 			bs.curlen=0;
 			buffsock_free ( &bs );
 			m_identified=false;
-			LOG ( log::HIGH, "# FG_TRACKER::loop: "
+			LOG ( fglog::HIGH, "# FG_TRACKER::loop: "
 			  << "trying to connect to FGTracker"
 			);
 			set_connected ( Connect() );
 			if ( ! is_connected() )
 			{
-				LOG ( log::HIGH, "# FG_TRACKER::loop: "
+				LOG ( fglog::HIGH, "# FG_TRACKER::loop: "
 				  << "not connected, will sleep for "
 				  << tracker_conn_secs << " seconds"
 				);
@@ -639,7 +644,7 @@ FG_TRACKER::loop
 			  ( char* ) "OUT: "
 			);
 #endif // #ifdef ADD_TRACKER_LOG
-			LOG ( log::DEBUG, "# FG_TRACKER::loop: "
+			LOG ( fglog::DEBUG, "# FG_TRACKER::loop: "
 			  << "sending msg " << Msg.size() << "  bytes: " << Msg
 			);
 			if ( TrackerWrite ( Msg ) < 0 )
@@ -678,12 +683,12 @@ FG_TRACKER::Connect
 		m_TrackerSocket = 0;
 	}
 	m_TrackerSocket = new fgmp::netsocket();
-	LOG ( log::DEBUG, "# FG_TRACKER::Connect: "
+	LOG ( fglog::DEBUG, "# FG_TRACKER::Connect: "
 	  << "Server: " << m_TrackerServer << ", Port: " << m_TrackerPort
 	);
 	if ( ! m_TrackerSocket->connect ( m_TrackerServer, m_TrackerPort, fgmp::netsocket::TCP ) )
 	{
-		LOG ( log::HIGH, "# FG_TRACKER::Connect: "
+		LOG ( fglog::HIGH, "# FG_TRACKER::Connect: "
 		  << "Connect to " << m_TrackerServer
 		  << ":" << m_TrackerPort << " failed!"
 		);
@@ -692,7 +697,7 @@ FG_TRACKER::Connect
 		return false;
 	}
 	m_TrackerSocket->set_blocking ( false );
-	LOG ( log::HIGH, "# FG_TRACKER::Connect: success" );
+	LOG ( fglog::HIGH, "# FG_TRACKER::Connect: success" );
 	LastConnected	= time ( 0 );
 	std::stringstream ss;
 	ss.str("Please initialize");
@@ -704,7 +709,7 @@ FG_TRACKER::Connect
 	ss << "V" << m_ProtocolVersion << " " << m_version
 	   << " "<< m_domain << " " << m_FgmsName;
 	TrackerWrite ( ss.str() );
-	LOG ( log::DEBUG, "# FG_TRACKER::Connect: "
+	LOG ( fglog::DEBUG, "# FG_TRACKER::Connect: "
 	  << "Written Version header"
 	);
 	sleep ( 1 );

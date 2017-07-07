@@ -54,7 +54,7 @@ const uint32_t MSG_MAGIC = 0x46474653;  // "FGFS"
 /** @brief  The MP protocol version that is send with each packet
  * (currently 1.1).
  */
-const uint32_t PROTO_VER = 0x00010002;  // 1.1
+const uint32_t PROTO_VER = 0x00010001;  // 1.1
 
 /**
  * @brief  IDs of message types seen by fgms
