@@ -61,7 +61,9 @@
 #include <stdio.h>
 #include <fglib/fg_util.hxx>
 #include <fglib/debug.hxx>
+#ifndef _MSC_VER
 #include <fglib/daemon.hxx>
+#endif
 #include <fglib/fg_log.hxx>
 #include "fg_tracker.hxx"
 

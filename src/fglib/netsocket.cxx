@@ -25,6 +25,7 @@
 #ifdef HAVE_CONFIG_H
 	#include "config.h" // for MSVC, always first
 #endif
+
 #ifdef _MSC_VER
 	#include <sys/timeb.h>
 	#include <libmsc/msc_unistd.hxx>
@@ -557,7 +558,7 @@ netsocket::accept
 	{
 		return ::accept ( m_handle, NULL, NULL );
 	}
-	uint32_t size = addr->size();
+	socklen_t size = addr->size();
 	return ::accept ( m_handle, addr->sock_addr(), &size );
 } // netsocket::accept ()
 
@@ -865,7 +866,7 @@ netsocket::recv_from
 	const int flags
 )
 {
-	uint32_t addr_size = from.size();
+	socklen_t addr_size = from.size();
 
 	int read_bytes = ::recvfrom ( m_handle, ( char* ) buffer,
 	  size, flags, from.sock_addr(), & addr_size );
@@ -892,7 +893,7 @@ netsocket::recv_from
 	const int  flags
 )
 {
-	uint32_t addr_size = from.size();
+	socklen_t addr_size = from.size();
 
 	int read_bytes = ::recvfrom ( m_handle, ( char* ) buffer.Buffer(),
 	  buffer.Capacity(), flags, from.sock_addr(), & addr_size );

@@ -30,7 +30,9 @@
 
 #include <iostream>
 #include <unistd.h>	// getopt
+#ifndef _MSC_VER
 #include <fglib/daemon.hxx>
+#endif
 #include <fglib/fg_log.hxx>
 #include <fglib/fg_util.hxx>
 #include <fglib/fg_config.hxx>
@@ -171,7 +173,7 @@ FGLS::loop
 
 	if ( m_data_channel == 0 )
 	{
-		LOG ( fglog::ERROR, "FGLS::loop() - "
+		LOG ( fglog::ERROR2, "FGLS::loop() - "
 		  << "not listening on any socket!" );
 		return;
 	}
@@ -182,7 +184,7 @@ FGLS::loop
 			m_admin_channel->close ();
 			delete m_admin_channel;
 			m_admin_channel = 0;
-			LOG ( fglog::ERROR,
+			LOG ( fglog::ERROR2,
 			  "# Admin port disabled, "
 			  "please set user and password"
 			);
@@ -197,13 +199,13 @@ FGLS::loop
 		pthread_t th;
 		pthread_create ( &th, NULL, &detach_admin_cli, t );
 	}
-	LOG ( fglog::ERROR, "# Main server started!" );
+	LOG ( fglog::ERROR2, "# Main server started!" );
 	m_is_parent = true;
 	while ( m_want_exit == false )
 	{
 		if ( m_data_channel == 0 )
 		{
-			LOG ( fglog::ERROR, "lost data channel!" );
+			LOG ( fglog::ERROR2, "lost data channel!" );
 			return;
 		}
 		current_time = time ( 0 );
@@ -435,10 +437,10 @@ FGLS::process_config
 	}
 	if ( Config.Read ( config_name ) )
 	{
-	LOG ( fglog::ERROR, "failed to read " << config_name );
+	LOG ( fglog::ERROR2, "failed to read " << config_name );
 		return false;
 	}
-	LOG ( fglog::ERROR, "processing " << config_name );
+	LOG ( fglog::ERROR2, "processing " << config_name );
 	Val = Config.Get ( "fgls.name" );
 	if ( Val != "" )
 	{
@@ -648,7 +650,7 @@ FGLS::read_configs
 	// failed, try current directory
 	if ( process_config ( "fgls.conf" ) == true )
 		return true;
-	LOG ( fglog::ERROR,
+	LOG ( fglog::ERROR2,
 	  "Could not find a config file => using defaults");
 	return true;
 } // FGLS::read_configs ()

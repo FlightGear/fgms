@@ -50,7 +50,7 @@ public:
 		DEBUG,		// debug messages
 		URGENT	= 64,	// log always, regardless of logging level
 		CONSOLE	= 128,	// log to terminal (too)
-		ERROR	= 192	// = URGENT | CONSOLE
+		ERROR2	= 192	// = URGENT | CONSOLE
 	};
 	enum logflags
 	{

@@ -1,6 +1,7 @@
 #
 # single CMakeLists.txt for fgms-0-x - hand crafted - commenced 2012/07/03
 #
+# 20170707 - remove daemon.[cxx|hxx] from WIN32 build
 # 20170627 - reformmated this file
 #          - reordered entries
 #          - added status sumary at the end
@@ -84,12 +85,14 @@ if ( WIN32 )
 	if ( MSVC )
 		# turn off various warnings
 		set ( WARNING_FLAGS "${WARNING_FLAGS} /wd4996" )
+        # C4290: C++ exception specification ignored ...
+        #        is not __declspec(nothrow)
 		# C4146: unary minus operator applied to unsigned type,
 		#        result still unsigned
 		# C4267: '=' : conversion from 'size_t' to 'int',
 		#        possible loss of data
 		# foreach(warning 4244 4251 4267 4275 4290 4786 4305)
-		foreach ( warning 4146 4267 )
+		foreach ( warning 4146 4267 4290 )
 			set ( WARNING_FLAGS "${WARNING_FLAGS} /wd${warning}" )
 		endforeach ()
 
@@ -276,8 +279,7 @@ else ( WIN32 )
 endif ( WIN32 )
 
 #### add_subdirectory( src/libfgmp )
-add_library (
-	Libfgmp ${LIB_TYPE}
+set( Libfgmp_SRCS
 	src/fglib/mpmessages.hxx
 	src/fglib/debug.hxx
 	src/fglib/debug.cxx
@@ -295,8 +297,6 @@ add_library (
 	src/fglib/netsocket.cxx
 	src/fglib/fg_config.hxx 
 	src/fglib/fg_config.cxx 
-	src/fglib/daemon.hxx 
-	src/fglib/daemon.cxx 
 	src/fglib/fg_geometry.hxx
 	src/fglib/fg_geometry.cxx
 	src/fglib/fg_version.hxx
@@ -307,7 +307,15 @@ add_library (
 	src/fglib/fg_list.cxx 
 	src/fglib/fg_log.hxx 
 	src/fglib/fg_log.cxx 
-)
+    )
+if (NOT WIN32)
+    list( APPEND Libfgmp_SRCS
+        src/fglib/daemon.hxx 
+        src/fglib/daemon.cxx 
+        )
+endif ()
+    
+add_library ( Libfgmp ${LIB_TYPE} ${Libfgmp_SRCS} )
 # NO INSTALL [noinst_LIBRARIES]
 list ( APPEND add_LIBS Libfgmp )
 
