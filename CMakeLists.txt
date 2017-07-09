@@ -1,7 +1,6 @@
 #
 # single CMakeLists.txt for fgms-0-x - hand crafted - commenced 2012/07/03
 #
-# 20170707 - remove daemon.[cxx|hxx] from WIN32 build
 # 20170627 - reformmated this file
 #          - reordered entries
 #          - added status sumary at the end
@@ -85,14 +84,12 @@ if ( WIN32 )
 	if ( MSVC )
 		# turn off various warnings
 		set ( WARNING_FLAGS "${WARNING_FLAGS} /wd4996" )
-        # C4290: C++ exception specification ignored ...
-        #        is not __declspec(nothrow)
 		# C4146: unary minus operator applied to unsigned type,
 		#        result still unsigned
 		# C4267: '=' : conversion from 'size_t' to 'int',
 		#        possible loss of data
 		# foreach(warning 4244 4251 4267 4275 4290 4786 4305)
-		foreach ( warning 4146 4267 4290 )
+		foreach ( warning 4146 4267 )
 			set ( WARNING_FLAGS "${WARNING_FLAGS} /wd${warning}" )
 		endforeach ()
 
@@ -123,6 +120,7 @@ else ( WIN32 )
 	set ( WARNING_FLAGS "${WARNING_FLAGS} -Wno-unused-local-typedefs -Wno-unused-but-set-variable" )
 endif ( WIN32 )
 
+# do we use CMAKE_C_FLAGS ???
 set ( CMAKE_C_FLAGS
   "${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${EXTRA_FLAGS} -D_REENTRANT"
 )
@@ -140,61 +138,9 @@ if ( ENABLE_DEBUG_TRACE )
 endif ( ENABLE_DEBUG_TRACE )
 
 # to distinguish between debug and release lib
-if ( WIN32 )
-	set ( CMAKE_DEBUG_POSTFIX "d" )
-endif ( WIN32 )
-
-##################################################
-#
-# find the threads library
-#
-##################################################
-find_package ( Threads REQUIRED )
-if ( Threads_FOUND )
-	if ( WIN32 )
-		list ( APPEND add_LIBS winmm.lib ws2_32.lib )
-		###message( STATUS "*** ENV INCLUDE $ENV{INCLUDE}")
-		message ( STATUS
-		  "*** Finding pthread.h HINTS [${CMAKE_PREFIX_PATH}] PATHS [${CMAKE_INCLUDE_PATH}] PATH_SUFFIXES include"
-		)
-		###find_file( thread_INC pthread.h
-		find_path ( thread_INC pthread.h
-			HINTS ${CMAKE_PREFIX_PATH} $ENV{INCLUDE}
-			PATHS ${CMAKE_INCLUDE_PATH} $ENV{INCLUDE}
-			PATH_SUFFIXES include
-		)
-		if ( thread_INC )
-			include_directories ( SYSTEM ${thread_INC} )
-			message (STATUS "*** thread_INC: ${thread_INC}" )
-		else ( thread_INC )
-			message ( FATAL_ERROR
-			  "*** thread_INC: ${thread_INC} pthread.h NOT FOUND!"
-			)
-		endif ( thread_INC )
-		find_library ( thread_LIB pthreadVC2.lib
-			HINTS ${CMAKE_PREFIX_PATH} $ENV{LIB}
-			PATHS ${CMAKE_INCLUDE_PATH} $ENV{LIB}
-			PATH_SUFFIXES lib
-		)
-		if ( thread_LIB )
-			list ( APPEND add_LIBS ${thread_LIB} )
-			message ( STATUS "*** Found ${thread_LIB})" )
-		else ( thread_LIB )
-			message ( FATAL_ERROR
-			  "*** NOT FOUND target_link_libraries(pthread1 ${thread_LIB})"
-			)
-		endif ( thread_LIB )
-	else ( WIN32 )
-		list ( APPEND add_LIBS ${CMAKE_THREAD_LIBS_INIT} )
-	endif ( WIN32 )
-else ( Threads_FOUND )
-	message ( FATAL_ERROR "*** THREADS NOT FOUND!" )
-endif ( Threads_FOUND )
-
-# to distinguish between debug and release lib
-if ( WIN32 )
-	set ( CMAKE_DEBUG_POSTFIX "d" )
-endif ( WIN32 )
+#if ( WIN32 )
+#	set ( CMAKE_DEBUG_POSTFIX "d" )
+#endif ( WIN32 )
 
 ##################################################
 #
@@ -279,7 +225,8 @@ else ( WIN32 )
 endif ( WIN32 )
 
 #### add_subdirectory( src/libfgmp )
-set( Libfgmp_SRCS
+add_library (
+	Libfgmp ${LIB_TYPE}
 	src/fglib/mpmessages.hxx
 	src/fglib/debug.hxx
 	src/fglib/debug.cxx
@@ -297,6 +244,8 @@ set( Libfgmp_SRCS
 	src/fglib/netsocket.cxx
 	src/fglib/fg_config.hxx 
 	src/fglib/fg_config.cxx 
+	src/fglib/daemon.hxx 
+	src/fglib/daemon.cxx 
 	src/fglib/fg_geometry.hxx
 	src/fglib/fg_geometry.cxx
 	src/fglib/fg_version.hxx
@@ -307,15 +256,7 @@ set( Libfgmp_SRCS
 	src/fglib/fg_list.cxx 
 	src/fglib/fg_log.hxx 
 	src/fglib/fg_log.cxx 
-    )
-if (NOT WIN32)
-    list( APPEND Libfgmp_SRCS
-        src/fglib/daemon.hxx 
-        src/fglib/daemon.cxx 
-        )
-endif ()
-    
-add_library ( Libfgmp ${LIB_TYPE} ${Libfgmp_SRCS} )
+)
 # NO INSTALL [noinst_LIBRARIES]
 list ( APPEND add_LIBS Libfgmp )
 
@@ -331,6 +272,9 @@ endif ( MSVC )
 if ( WIN32 )
 	list ( APPEND add_LIBS libmsc )
 else ( WIN32 )
+	# this looks really odd
+	# we do not build on windows but check if we are using
+	# the microsoft compiler???
 	if ( MSVC )
 		list ( APPEND add_LIBS -llibmsc )
 	endif ( MSVC )
