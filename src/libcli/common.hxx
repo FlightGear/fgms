@@ -101,6 +101,6 @@ public:
 	}
 };
 
-}; // namespace libcli
+} // namespace libcli
 
 #endif

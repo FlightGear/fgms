@@ -245,7 +245,7 @@ netaddr::assign
 (
 	const std::string& host,
 	uint16_t port
-) throw ( std::runtime_error )
+)
 {
 	DEBUG_TRACE
 	struct addrinfo  hints;

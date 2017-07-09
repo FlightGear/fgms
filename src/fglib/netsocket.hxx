@@ -78,11 +78,9 @@ public:
 	bool connect ( const std::string& host, const uint16_t port,
 			const SOCKET_TYPES type=TCP );
 	bool bind ( const std::string& host, const uint16_t port );
-	void listen_all ( const uint16_t port, const SOCKET_TYPES type=TCP )
-			throw ( std::runtime_error );
+	void listen_all ( const uint16_t port, const SOCKET_TYPES type=TCP );
 	void listen_to ( const std::string& host, const uint16_t port,
-			 const SOCKET_TYPES type=TCP )
-			 throw ( std::runtime_error );
+			 const SOCKET_TYPES type=TCP );
 	int  send ( const void* buffer, const int size,
 			const int flags = 0 );
 	int  send ( const std::string& msg, const int flags = MSG_NOSIGNAL );

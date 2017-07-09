@@ -43,6 +43,6 @@ public:
 	int exec (cli_client& Instance, char *cmd, void *data);
 };
 
-}; // namespace libcli
+} // namespace libcli
 
 #endif

@@ -73,8 +73,7 @@ public:
 	~netaddr ();
 
 	bool is_valid() const;
-	void assign ( const std::string& host, uint16_t port )
-	  throw ( std::runtime_error );
+	void assign ( const std::string& host, uint16_t port );
 	void assign ( const sys_sock& addr );
 	void resolv ( const std::string& host, const std::string& port );
 	void port ( uint16_t port );

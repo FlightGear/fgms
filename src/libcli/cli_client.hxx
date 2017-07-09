@@ -99,6 +99,6 @@ cli_client& commit ( cli_client& );
 cli_client& CRLF ( cli_client& out );
 cli_client& UNFILTERED ( cli_client& out );
 
-}; // namespace libcli
+} // namespace libcli
 
 #endif

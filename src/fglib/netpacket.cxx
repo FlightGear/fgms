@@ -495,7 +495,7 @@ NetPacket::ReadOpaque
 (
 	void* Buffer,
 	uint32_t& Size
-) throw ( std::runtime_error )
+)
 {
 	uint32_t data_available = RemainingData();
 	if ( ( ! m_Buffer ) || ( data_available == 0 ) )
@@ -518,7 +518,7 @@ NetPacket::ReadOpaque
 
 std::string
 NetPacket::ReadString
-() throw ( std::runtime_error )
+()
 {
 	uint32_t data_available = RemainingData();
 	if ( ( ! m_Buffer ) || ( data_available == 0 ) )
@@ -541,7 +541,7 @@ NetPacket::ReadString
 
 std::string
 NetPacket::ReadCStr
-() throw ( std::runtime_error )
+()
 {
 	if ( ( ! m_Buffer ) || ( RemainingData() == 0 ) )
 	{
@@ -558,7 +558,7 @@ NetPacket::ReadCStr
 
 int8_t
 NetPacket::Read_XDR_int8
-() throw ( std::runtime_error )
+()
 {
 	uint32_t Data;
 	try
@@ -576,7 +576,7 @@ NetPacket::Read_XDR_int8
 
 uint8_t
 NetPacket::Read_XDR_uint8
-() throw ( std::runtime_error )
+()
 {
 	uint32_t Data;
 	try
@@ -594,7 +594,7 @@ NetPacket::Read_XDR_uint8
 
 int16_t
 NetPacket::Read_XDR_int16
-() throw ( std::runtime_error )
+()
 {
 	uint32_t Data;
 	try
@@ -612,7 +612,7 @@ NetPacket::Read_XDR_int16
 
 uint16_t
 NetPacket::Read_XDR_uint16
-() throw ( std::runtime_error )
+()
 {
 	uint32_t Data;
 	try
@@ -630,7 +630,7 @@ NetPacket::Read_XDR_uint16
 
 int32_t
 NetPacket::Read_XDR_int32
-() throw ( std::runtime_error )
+()
 {
 	uint32_t Data;
 	try
@@ -648,7 +648,7 @@ NetPacket::Read_XDR_int32
 
 uint32_t
 NetPacket::Read_XDR_uint32
-() throw ( std::runtime_error )
+()
 {
 	uint32_t Data;
 	try
@@ -666,7 +666,7 @@ NetPacket::Read_XDR_uint32
 
 int64_t
 NetPacket::Read_XDR_int64
-() throw ( std::runtime_error )
+()
 {
 	uint64_t Data;
 	try
@@ -684,7 +684,7 @@ NetPacket::Read_XDR_int64
 
 uint64_t
 NetPacket::Read_XDR_uint64
-() throw ( std::runtime_error )
+()
 {
 	uint64_t Data;
 	try
@@ -702,7 +702,7 @@ NetPacket::Read_XDR_uint64
 
 float
 NetPacket::Read_XDR_float
-() throw ( std::runtime_error )
+()
 {
 	uint32_t Data;
 	try
@@ -720,7 +720,7 @@ NetPacket::Read_XDR_float
 
 double
 NetPacket::Read_XDR_double
-() throw ( std::runtime_error )
+()
 {
 	uint64_t Data;
 	try
@@ -738,7 +738,7 @@ NetPacket::Read_XDR_double
 
 int8_t
 NetPacket::Read_NET_int8
-() throw ( std::runtime_error )
+()
 {
 	int8_t Data;
 	try
@@ -756,7 +756,7 @@ NetPacket::Read_NET_int8
 
 uint8_t
 NetPacket::Read_NET_uint8
-() throw ( std::runtime_error )
+()
 {
 	uint8_t Data;
 	try
@@ -774,7 +774,7 @@ NetPacket::Read_NET_uint8
 
 int16_t
 NetPacket::Read_NET_int16
-() throw ( std::runtime_error )
+()
 {
 	int16_t Data;
 	try
@@ -792,7 +792,7 @@ NetPacket::Read_NET_int16
 
 uint16_t
 NetPacket::Read_NET_uint16
-() throw ( std::runtime_error )
+()
 {
 	uint16_t Data;
 	try
@@ -810,7 +810,7 @@ NetPacket::Read_NET_uint16
 
 int32_t
 NetPacket::Read_NET_int32
-() throw ( std::runtime_error )
+()
 {
 	int32_t Data;
 	try
@@ -828,7 +828,7 @@ NetPacket::Read_NET_int32
 
 uint32_t
 NetPacket::Read_NET_uint32
-() throw ( std::runtime_error )
+()
 {
 	uint32_t Data;
 	try
@@ -846,7 +846,7 @@ NetPacket::Read_NET_uint32
 
 int64_t
 NetPacket::Read_NET_int64
-() throw ( std::runtime_error )
+()
 {
 	int64_t Data;
 	try
@@ -864,7 +864,7 @@ NetPacket::Read_NET_int64
 
 uint64_t
 NetPacket::Read_NET_uint64
-() throw ( std::runtime_error )
+()
 {
 	uint64_t Data;
 	try
@@ -882,7 +882,7 @@ NetPacket::Read_NET_uint64
 
 float
 NetPacket::Read_NET_float
-() throw ( std::runtime_error )
+()
 {
 	uint32_t Data;
 	try
@@ -900,7 +900,7 @@ NetPacket::Read_NET_float
 
 double
 NetPacket::Read_NET_double
-() throw ( std::runtime_error )
+()
 {
 	uint64_t Data;
 	try
@@ -918,7 +918,7 @@ NetPacket::Read_NET_double
 
 int8_t
 NetPacket::Read_NONE_int8
-() throw ( std::runtime_error )
+()
 {
 	unsigned int size;
 	size = sizeof ( int8_t );
@@ -936,7 +936,7 @@ NetPacket::Read_NONE_int8
 
 uint8_t
 NetPacket::Read_NONE_uint8
-() throw ( std::runtime_error )
+()
 {
 	unsigned int size;
 	size = sizeof ( uint8_t );
@@ -954,7 +954,7 @@ NetPacket::Read_NONE_uint8
 
 int16_t
 NetPacket::Read_NONE_int16
-() throw ( std::runtime_error )
+()
 {
 	unsigned int size;
 	size = sizeof ( int16_t );
@@ -972,7 +972,7 @@ NetPacket::Read_NONE_int16
 
 uint16_t
 NetPacket::Read_NONE_uint16
-() throw ( std::runtime_error )
+()
 {
 	unsigned int size;
 	size = sizeof ( uint16_t );
@@ -990,7 +990,7 @@ NetPacket::Read_NONE_uint16
 
 int32_t
 NetPacket::Read_NONE_int32
-() throw ( std::runtime_error )
+()
 {
 	unsigned int size;
 	size = sizeof ( int32_t );
@@ -1008,7 +1008,7 @@ NetPacket::Read_NONE_int32
 
 uint32_t
 NetPacket::Read_NONE_uint32
-() throw ( std::runtime_error )
+()
 {
 	unsigned int size;
 	size = sizeof ( uint32_t );
@@ -1026,7 +1026,7 @@ NetPacket::Read_NONE_uint32
 
 int64_t
 NetPacket::Read_NONE_int64
-() throw ( std::runtime_error )
+()
 {
 	unsigned int size;
 	size = sizeof ( int64_t );
@@ -1044,7 +1044,7 @@ NetPacket::Read_NONE_int64
 
 uint64_t
 NetPacket::Read_NONE_uint64
-() throw ( std::runtime_error )
+()
 {
 	unsigned int size;
 	size = sizeof ( uint64_t );
@@ -1062,7 +1062,7 @@ NetPacket::Read_NONE_uint64
 
 float
 NetPacket::Read_NONE_float
-() throw ( std::runtime_error )
+()
 {
 	unsigned int size;
 	size = sizeof ( float );
@@ -1085,7 +1085,7 @@ NetPacket::Read_NONE_float
 
 double
 NetPacket::Read_NONE_double
-() throw ( std::runtime_error )
+()
 {
 	unsigned int size;
 	size = sizeof ( double );
@@ -1108,7 +1108,7 @@ NetPacket::Read_NONE_double
 
 int8_t
 NetPacket::Read_int8
-() throw ( std::runtime_error )
+()
 {
 	if ( ! m_Buffer )
 	{
@@ -1141,7 +1141,7 @@ NetPacket::Read_int8
 
 uint8_t
 NetPacket::Read_uint8
-() throw ( std::runtime_error )
+()
 {
 	if ( ! m_Buffer )
 	{
@@ -1174,7 +1174,7 @@ NetPacket::Read_uint8
 
 int16_t
 NetPacket::Read_int16
-() throw ( std::runtime_error )
+()
 {
 	if ( ! m_Buffer )
 	{
@@ -1207,7 +1207,7 @@ NetPacket::Read_int16
 
 uint16_t
 NetPacket::Read_uint16
-() throw ( std::runtime_error )
+()
 {
 	if ( ! m_Buffer )
 	{
@@ -1240,7 +1240,7 @@ NetPacket::Read_uint16
 
 int32_t
 NetPacket::Read_int32
-() throw ( std::runtime_error )
+()
 {
 	if ( ! m_Buffer )
 	{
@@ -1273,7 +1273,7 @@ NetPacket::Read_int32
 
 uint32_t
 NetPacket::Read_uint32
-() throw ( std::runtime_error )
+()
 {
 	if ( ! m_Buffer )
 	{
@@ -1306,7 +1306,7 @@ NetPacket::Read_uint32
 
 int64_t
 NetPacket::Read_int64
-() throw ( std::runtime_error )
+()
 {
 	if ( ! m_Buffer )
 	{
@@ -1339,7 +1339,7 @@ NetPacket::Read_int64
 
 uint64_t
 NetPacket::Read_uint64
-() throw ( std::runtime_error )
+()
 {
 	if ( ! m_Buffer )
 	{
@@ -1372,7 +1372,7 @@ NetPacket::Read_uint64
 
 float
 NetPacket::Read_float
-() throw ( std::runtime_error )
+()
 {
 	if ( ! m_Buffer )
 	{
@@ -1405,7 +1405,7 @@ NetPacket::Read_float
 
 double
 NetPacket::Read_double
-() throw ( std::runtime_error )
+()
 {
 	if ( ! m_Buffer )
 	{

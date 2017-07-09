@@ -352,7 +352,7 @@ netsocket::listen_all
 (
 	const uint16_t port,
 	const SOCKET_TYPES type
-) throw ( std::runtime_error )
+)
 {
 	int socktype;
 	int family = AF_INET6; // try v6 first
@@ -445,7 +445,7 @@ netsocket::listen_to
 	const std::string& host,
 	const uint16_t port,
 	const SOCKET_TYPES type
-) throw ( std::runtime_error )
+)
 {
 	if ( ( host == "" ) || ( host == "any" ) )
 	{

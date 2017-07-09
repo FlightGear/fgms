@@ -51,5 +51,5 @@ filter_t::exec
 	return (CALL_MEMBER_FN (Instance, this->filter)(cmd, data));
 }
 
-}; // namespace libcli
+} // namespace libcli
 

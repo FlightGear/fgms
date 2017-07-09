@@ -149,6 +149,6 @@ protected:
 #endif
 };
 
-}; // namespace libcli
+} // namespace libcli
 
 #endif

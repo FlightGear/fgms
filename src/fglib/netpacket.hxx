@@ -231,25 +231,25 @@ public:
 	 * Read_methods Read data from the buffer
 	 */
 	/// Read a signed 8 bit value from the buffer
-	int8_t   Read_int8   () throw ( std::runtime_error );
+	int8_t   Read_int8   ();
 	/// Read an unsigned 8 bit value from the buffer
-	uint8_t  Read_uint8  () throw ( std::runtime_error );
+	uint8_t  Read_uint8  ();
 	/// Read a signed 16 bit value from the buffer
-	int16_t  Read_int16  () throw ( std::runtime_error );
+	int16_t  Read_int16  ();
 	/// Read an unsigned 8 bit value from the buffer
-	uint16_t Read_uint16 () throw ( std::runtime_error );
+	uint16_t Read_uint16 ();
 	/// Read a signed 32 bit value from the buffer
-	int32_t  Read_int32  () throw ( std::runtime_error );
+	int32_t  Read_int32  ();
 	/// Read an unsigned 32 bit value from the buffer
-	uint32_t Read_uint32 () throw ( std::runtime_error );
+	uint32_t Read_uint32 ();
 	/// Read a signed 64 bit value from the buffer
-	int64_t  Read_int64  () throw ( std::runtime_error );
+	int64_t  Read_int64  ();
 	/// Read an unsigned 64 bit value from the buffer
-	uint64_t Read_uint64 () throw ( std::runtime_error );
+	uint64_t Read_uint64 ();
 	/// Read a float value from the buffer
-	float    Read_float  () throw ( std::runtime_error );
+	float    Read_float  ();
 	/// Read a double value from the buffer
-	double   Read_double () throw ( std::runtime_error );
+	double   Read_double ();
 	/**
 	 * Return a pointer to arbitrary data,
 	 * increase internal pointer by 'Size' bytes. \n
@@ -260,16 +260,15 @@ public:
 	 *   The data is supposed to be raw, no byte ordering is
 	 *   applied to it.
 	 */
-	void ReadOpaque ( void* Buffer, uint32_t& Size  )
-	throw ( std::runtime_error );
+	void ReadOpaque ( void* Buffer, uint32_t& Size  );
 	/// Read a string from the buffer. \n
 	/// Like ReadOpaque(), but automatically inserts the length of the string
-	std::string ReadString () throw ( std::runtime_error );
+	std::string ReadString ();
 	/** compatabilty routine
 	 *
 	 * read a raw c-string from the buffer.
 	 */
-	std::string ReadCStr () throw ( std::runtime_error );
+	std::string ReadCStr ();
 	/// Get byte at index
 	inline int8_t Peek ( const int Index ) const
 	{
@@ -291,69 +290,69 @@ private:
 	NetPacket ( const NetPacket& Buffer );
 	/* read xdr encoded data */
 	///
-	int8_t   Read_XDR_int8   () throw ( std::runtime_error );
+	int8_t   Read_XDR_int8   ();
 	///
-	uint8_t  Read_XDR_uint8  () throw ( std::runtime_error );
+	uint8_t  Read_XDR_uint8  ();
 	///
-	int16_t  Read_XDR_int16  () throw ( std::runtime_error );
+	int16_t  Read_XDR_int16  ();
 	///
-	uint16_t Read_XDR_uint16 () throw ( std::runtime_error );
+	uint16_t Read_XDR_uint16 ();
 	///
-	int32_t  Read_XDR_int32  () throw ( std::runtime_error );
+	int32_t  Read_XDR_int32  ();
 	///
-	uint32_t Read_XDR_uint32 () throw ( std::runtime_error );
+	uint32_t Read_XDR_uint32 ();
 	///
-	int64_t  Read_XDR_int64  () throw ( std::runtime_error );
+	int64_t  Read_XDR_int64  ();
 	///
-	uint64_t Read_XDR_uint64 () throw ( std::runtime_error );
+	uint64_t Read_XDR_uint64 ();
 	///
-	float    Read_XDR_float  () throw ( std::runtime_error );
+	float    Read_XDR_float  ();
 	///
-	double   Read_XDR_double () throw ( std::runtime_error );
+	double   Read_XDR_double ();
 
 	/* read NET encoded data */
 	///
-	int8_t   Read_NET_int8   () throw ( std::runtime_error );
+	int8_t   Read_NET_int8   ();
 	///
-	uint8_t  Read_NET_uint8  () throw ( std::runtime_error );
+	uint8_t  Read_NET_uint8  ();
 	///
-	int16_t  Read_NET_int16  () throw ( std::runtime_error );
+	int16_t  Read_NET_int16  ();
 	///
-	uint16_t Read_NET_uint16 () throw ( std::runtime_error );
+	uint16_t Read_NET_uint16 ();
 	///
-	int32_t  Read_NET_int32  () throw ( std::runtime_error );
+	int32_t  Read_NET_int32  ();
 	///
-	uint32_t Read_NET_uint32 () throw ( std::runtime_error );
+	uint32_t Read_NET_uint32 ();
 	///
-	int64_t  Read_NET_int64  () throw ( std::runtime_error );
+	int64_t  Read_NET_int64  ();
 	///
-	uint64_t Read_NET_uint64 () throw ( std::runtime_error );
+	uint64_t Read_NET_uint64 ();
 	///
-	float    Read_NET_float  () throw ( std::runtime_error );
+	float    Read_NET_float  ();
 	///
-	double   Read_NET_double () throw ( std::runtime_error );
+	double   Read_NET_double ();
 
 	/* read unecoded data */
 	///
-	int8_t   Read_NONE_int8   () throw ( std::runtime_error );
+	int8_t   Read_NONE_int8   ();
 	///
-	uint8_t  Read_NONE_uint8  () throw ( std::runtime_error );
+	uint8_t  Read_NONE_uint8  ();
 	///
-	int16_t  Read_NONE_int16  () throw ( std::runtime_error );
+	int16_t  Read_NONE_int16  ();
 	///
-	uint16_t Read_NONE_uint16 () throw ( std::runtime_error );
+	uint16_t Read_NONE_uint16 ();
 	///
-	int32_t  Read_NONE_int32  () throw ( std::runtime_error );
+	int32_t  Read_NONE_int32  ();
 	///
-	uint32_t Read_NONE_uint32 () throw ( std::runtime_error );
+	uint32_t Read_NONE_uint32 ();
 	///
-	int64_t  Read_NONE_int64  () throw ( std::runtime_error );
+	int64_t  Read_NONE_int64  ();
 	///
-	uint64_t Read_NONE_uint64 () throw ( std::runtime_error );
+	uint64_t Read_NONE_uint64 ();
 	///
-	float    Read_NONE_float  () throw ( std::runtime_error );
+	float    Read_NONE_float  ();
 	///
-	double   Read_NONE_double () throw ( std::runtime_error );
+	double   Read_NONE_double ();
 
 	/* write XDR encoded data */
 	///

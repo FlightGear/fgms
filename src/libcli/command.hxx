@@ -280,6 +280,6 @@ Command<C>::exec
 	return ( CALL_MEMBER_FN ( Instance, this->cpp_callback ) ( command, argv, argc ) );
 }
 
-}; // namespace libcli
+} // namespace libcli
 
 #endif

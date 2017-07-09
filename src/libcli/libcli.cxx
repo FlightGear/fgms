@@ -2276,5 +2276,5 @@ CLI::print
 	return check_pager();
 }
 
-}; // namespace libcli
+} // namespace libcli
 
