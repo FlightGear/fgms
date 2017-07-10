@@ -23,11 +23,6 @@
 ///
 /// @author	Oliver Schroeder <fgms@o-schroeder.de>
 /// @date	2008-2015
-/// @copyright	GPLv3
-///
-/// This is the list server for the flightgear multiplayer
-/// network. All servers register at this server. All clients ask fgls
-/// which server they should use.
 ///
 
 #include "fg_log.hxx"
@@ -39,6 +34,12 @@ namespace fgmp
 
 //////////////////////////////////////////////////////////////////////
 
+/** Create a standard fglog
+ *
+ * Default priority is \c MEDIUM
+ * @see fglog::priority
+ * @see fglog::init
+ */
 fglog::fglog
 () : m_logstream(0), m_logfile(0)
 {
@@ -47,6 +48,12 @@ fglog::fglog
 
 //////////////////////////////////////////////////////////////////////
 
+/** Create a fglog and set the output priority
+ *
+ * @param p log only messages with priority \c p
+ * @see fglog::priority
+ * @see fglog::init
+ */
 fglog::fglog
 (
 	int p
@@ -58,6 +65,11 @@ fglog::fglog
 
 //////////////////////////////////////////////////////////////////////
 
+/** Create a fglog and log all messages into a file
+ *
+ * @param name The logfile to use
+ * @see fglog::init
+ */
 fglog::fglog
 (
 	std::string name
@@ -69,6 +81,14 @@ fglog::fglog
 
 //////////////////////////////////////////////////////////////////////
 
+/** Create a fglog and log all messages into a file
+ * and use priotity \c p
+ *
+ * @param name The logfile to use
+ * @param p log only messages with priority \c p
+ * @see fglog::priority
+ * @see fglog::init
+ */
 fglog::fglog
 (
 	std::string name,
@@ -82,6 +102,8 @@ fglog::fglog
 
 //////////////////////////////////////////////////////////////////////
 
+/** Close the logstream and all opened files.
+ */
 fglog::~fglog
 ()
 {
@@ -90,6 +112,13 @@ fglog::~fglog
 
 //////////////////////////////////////////////////////////////////////
 
+/** Initialise to default values.
+ *
+ * defaults are:
+ * - log with date
+ * - output priority is 'MEDIUM'
+ * - use std::cout as output stream
+ */
 void
 fglog::init
 ()
@@ -105,6 +134,10 @@ fglog::init
 
 //////////////////////////////////////////////////////////////////////
 
+/** Open (and use) a logfile
+ *
+ * @param name The logfile to use
+ */
 bool
 fglog::open
 (
@@ -135,6 +168,8 @@ fglog::open
 
 //////////////////////////////////////////////////////////////////////
 
+/** Close all opened logstreams
+ */
 void
 fglog::close
 ()
@@ -167,6 +202,138 @@ fglog::close
 
 //////////////////////////////////////////////////////////////////////
 
+/** set output priority for following log requests.
+ *
+ * Only messages with a priority euqal to or higher \c p will be
+ * logged.
+ */
+void
+fglog::priority
+(
+	int p
+)
+{
+	m_priority = p;
+} // fglog::priority (p)
+
+//////////////////////////////////////////////////////////////////////
+
+/** return the current priority
+ */
+int
+fglog::priority
+() const
+{
+	return m_priority;
+} // fglog::priority (p)
+
+//////////////////////////////////////////////////////////////////////
+
+/** set flags for following log requests.
+ * @see fglog::logflags
+ */
+void
+fglog::flags
+(
+	logflags f
+)
+{
+	m_flags = f;
+} // fglog::flags(f)
+
+//////////////////////////////////////////////////////////////////////
+
+/** flush the logstream
+ */
+void
+fglog::flush
+()
+{
+	m_logstream->flush ();
+} // fglog::flush()
+
+//////////////////////////////////////////////////////////////////////
+
+/** return the name of the current logfile (if any)
+ */
+std::string
+fglog::get_name
+() const
+{
+	return m_logname;
+} // fglog::get_name()
+
+//////////////////////////////////////////////////////////////////////
+
+/** return true if there is a logfile in use
+ */
+bool
+fglog::is_open
+() const
+{
+	return m_logfile ? m_logfile->is_open() : false;
+} // fglog::is_open()
+
+//////////////////////////////////////////////////////////////////////
+
+/** Return the internal buffer  of logged messages.
+ *
+ * All logged messages are stored in an internal buffer which can
+ * be accessed using this method.
+ * Used in *_cli to be able to view the log messages within the cli.
+ *
+ * Example:
+ * @code
+ * fgmp::StrList*  buf = logger.logbuf();
+ * fgmp::StrIt     it;
+ * buf->Lock ();	// lock the buffer !
+ * for ( it = buf->begin(); it != buf->end(); it++ )
+ * {
+ * 	...
+ * }
+ * buf->Unlock ();
+ * @endcode
+ *
+ * @note make sure to lock the logbuf before using it, to ensure no lines
+ * are deleted while accessing it.
+ */
+fgmp::StrList*
+fglog::logbuf
+()
+{
+	return &m_logbuf;
+} // fglog::logbuf()
+
+//////////////////////////////////////////////////////////////////////
+
+/** Set the size of our internal buffer.
+ *
+ * @param size	lines to keep in the internal buffer.
+ */
+void
+fglog::setbufsize
+(
+	size_t size
+)
+{
+	m_logbufsize = size;
+} // fglog::setbufsize(s)
+
+//////////////////////////////////////////////////////////////////////
+
+/** log something to the logstream
+ *
+ * The message is logged with the last priority used.
+ *
+ * Example:
+ *
+ * @code
+ * fgmp::fglog log;
+ *
+ * log.log ( fglog::HIGH ) << "Output with priority HIGH" << fgmp::endl;
+ * log.log () << "Output with priority HIGH, too" << fgmp::endl;
+ * @endcode
+ */
 fglog&
 fglog::log
 ()
@@ -183,6 +350,20 @@ fglog::log
 
 //////////////////////////////////////////////////////////////////////
 
+/** log something to the logstream
+ *
+ * The message is logged with the priority provided.
+ *
+ * @param p the priority to use
+ *
+ * Example:
+ *
+ * @code
+ * fgmp::fglog log;
+ *
+ * log.log ( fglog::HIGH ) << "Output with priority HIGH" << fgmp::endl;
+ * @endcode
+ */
 fglog&
 fglog::log
 (
@@ -201,6 +382,22 @@ fglog::log
 
 //////////////////////////////////////////////////////////////////////
 
+/** log something to the logstream
+ *
+ * The message is provided in a format string and logged with the
+ * priority provided. endl is automatically appended.
+ *
+ * @param p the priority to use
+ *
+ * Example:
+ *
+ * @code
+ * fgmp::fglog log;
+ *
+ * log.log ( fglog::HIGH, "temperature: %d", temperature );
+ * @endcode
+ *
+ */
 void
 fglog::log
 (
@@ -215,12 +412,14 @@ fglog::log
 	}
 	va_list vl;
 	va_start ( vl,format );
-	log(p) << logfmt ( p, format,vl ) << endl;
+	log(p) << logfmt ( p, format,vl ) << fgmp::endl;
 	va_end(vl);
 } // fglog::log ( priority, fmt )
 
 //////////////////////////////////////////////////////////////////////
 
+/** internal, handling of format strings
+ */
 std::string
 fglog::logfmt
 (
@@ -237,6 +436,8 @@ fglog::logfmt
 
 //////////////////////////////////////////////////////////////////////
 
+/** internal, generate a string representing the current time and date.
+ */
 std::string
 fglog::datestr
 ()
@@ -259,6 +460,9 @@ fglog::datestr
 
 //////////////////////////////////////////////////////////////////////
 
+/** internal, put the logged message into our internal buffer of
+ * log messages.
+ */
 void
 fglog::commit
 ()
@@ -276,6 +480,9 @@ fglog::commit
 
 //////////////////////////////////////////////////////////////////////
 
+/** put a newline character on the stream and the complete string into
+ * the internal buffer of log messages.
+ */
 fglog&
 endl
 (

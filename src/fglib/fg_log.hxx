@@ -23,7 +23,6 @@
 ///
 /// @author	Oliver Schroeder <fgms@o-schroeder.de>
 /// @date	2003
-/// @copyright	GPLv3
 ///
 
 #ifndef FG_LOGOBJECT
@@ -39,19 +38,31 @@
 namespace fgmp
 {
 
+/**
+ * @brief Provide a logging class for fgms
+ *
+ * The purpose is to have logging priorities and only really log messages
+ * of the priority we want to see. The 'output' priority can be changed
+ * at runtime.
+ * Additionally all logged messages are stored in a buffer, which can be
+ * accessed from the outside.
+ */
 class fglog : public fgmp::Lockable
 {
 public:
+	/// The available priorities
 	enum priority
 	{
-		NONE,
-		HIGH,		// error messages
-		MEDIUM,		// standard messages
-		DEBUG,		// debug messages
-		URGENT	= 64,	// log always, regardless of logging level
-		CONSOLE	= 128,	// log to terminal (too)
-		ERROR2	= 192	// = URGENT | CONSOLE
+		NONE,		///< do not log at all
+		HIGH,		///< error messages
+		MEDIUM,		///< standard messages
+		DEBUG,		///< debug messages
+		URGENT	= 64,	///< log always, regardless of logging level
+		CONSOLE	= 128,	///< log to terminal (too)
+		ERROR2	= 192	///< = URGENT | CONSOLE
 	};
+	/// Define whether logged lines should be prefixed with a date or not.
+	/// Default is with date.
 	enum logflags
 	{
 		NO_DATE,
@@ -63,28 +74,27 @@ public:
 	fglog ( std::string name, int p );
 	~fglog ();
 	template <class any_type> fglog &operator << (any_type var);
+	// black c++ magic
 	fglog& operator << (fglog& (*pf) (fglog&))
 	  { return ((*pf)(*this)); };
 	operator void* () const { return (m_logfile? (void*) 1: (void*) 0); };
 	bool open ( std::string name );
 	void close ();
-	inline void priority ( int p ) { m_priority = p; };
-	inline int  priority () { return m_priority; };
-	inline void flags ( logflags f ) { m_flags = f; };
-	inline void flush () { m_logstream->flush (); };
-	inline std::string get_name () { return m_logname; };
-	inline bool is_open () const
-	   { return m_logfile ? m_logfile->is_open() : false; };
+	void priority ( int p );
+	int  priority () const;
+	void flags ( logflags f );
+	void flush ();
+	std::string get_name () const;
+	bool is_open () const;
+	fgmp::StrList* logbuf();
+	void setbufsize ( size_t size );
 	fglog& log ();
 	fglog& log ( int p );
 	void log ( int p, const char *format, ... );
 	void commit ();
-	// make sure to lock the logbuf before using it
-	fgmp::StrList* logbuf() { return &m_logbuf; };
-	inline void setbufsize ( size_t size ) { m_logbufsize = size; };
 	friend fglog& endl ( fglog& l );
 private:
-	fglog ( const fglog& X ); // not available
+	fglog ( const fglog& X ); // disable copy constructor
 	void init ();
 	std::string logfmt ( int p,const char *format, va_list ap );
 	std::string datestr ( void );
@@ -101,6 +111,13 @@ private:
 	bool		m_date;	// true when date is to be put on stream
 }; // class fglog
 
+/**
+ * @brief Output operator for fglog
+ *
+ * This method evaluates if the output is really put on the stream,
+ * depending on the current output priority and the output priority
+ * defined by the application.
+ */
 template <class any_type>
 fglog&
 fglog::operator << ( any_type v )
@@ -139,9 +156,22 @@ fglog& endl ( fglog& l );
 
 } // namespace fgmp
 
-/// define a global fglog
+/**
+ * @brief define a global fglog
+ *
+ * This object is globally accessible by all. If you need a second
+ * logfile, use a second fgmp::fglog
+ */
 extern fgmp::fglog logger; // fglog.cxx
 
+/**
+ * @brief Define a logging macro for convinience
+ *
+ * Example:
+ * @code
+ * LOG ( fglog::DEBUG,  "log me" );
+ * @endcode
+ */
 #define LOG(P,M) { \
 	logger.Lock (); \
 	logger.log (P) << M << fgmp::endl; \

@@ -37,7 +37,7 @@ namespace fgmp
 {
 
 /**
- * Add a mutex to an abitrary class.
+ * @brief Add a mutex to an abitrary class.
  *
  * Example:
  * @code
@@ -47,24 +47,21 @@ namespace fgmp
  * }
  * @endcode
  *
- * will add a mutex to \c my_class. Additionally adds to methods
+ * will add a mutex to \c my_class. Additionally adds two methods
  * \c Lock() and \c Unlock()
  */
 class Lockable
 {
 public:
-	/// initialise the mutex
 	Lockable ();
-	/// lock the mutex
 	void Lock ();
-	/// unlock the mutex
 	void Unlock ();
 protected:
 	pthread_mutex_t m_Mutex;
 }; // class Lockable
 
 /**
- * Guard a mutex.
+ * @brief Guard a mutex.
  *
  * The constructor locks the provided mutex, the destructor
  * automatically unlocks it.
@@ -83,6 +80,7 @@ protected:
  *
  * The mutex gets automatically unlocked when the my_func() ends.
  *
+ * @note The mutex is expected to be already initialised.
  */
 class LockGuard
 {
@@ -93,11 +91,20 @@ protected:
 	pthread_mutex_t *m_Mutex;
 }; // class LockGuard
 
+/**
+ * @brief a std::list<> protected by Lockable
+ */
 template<class T>
 class lock_list_t: public std::list<T>, public Lockable
 { }; // class lock_list_t
 
+/**
+ * @brief a lock_list<string> 
+ */
 typedef lock_list_t<std::string>           StrList;
+/**
+ * @brief an iterator for a lock_list_t<std::string>
+ */
 typedef lock_list_t<std::string>::iterator StrIt;
 
 } // namespace fgmp
