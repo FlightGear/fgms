@@ -97,6 +97,7 @@ if ( WIN32 )
 		# if (${MSVC_VERSION} EQUAL 1600)
 		#    list(APPEND EXTRA_LD_FLAGS "/FORCE:MULTIPLE" )
 		# endif (${MSVC_VERSION} EQUAL 1600)
+        set ( CMAKE_DEBUG_POSTFIX "d" )
 	endif ( MSVC )
 	set ( NOMINMAX 1 )
 	add_definitions (
@@ -136,11 +137,6 @@ endif ( ENABLE_DEBUG_OUTPUT )
 if ( ENABLE_DEBUG_TRACE )
 	add_definitions( -DDEF_ENABLE_TRACE )
 endif ( ENABLE_DEBUG_TRACE )
-
-# to distinguish between debug and release lib
-#if ( WIN32 )
-#	set ( CMAKE_DEBUG_POSTFIX "d" )
-#endif ( WIN32 )
 
 ##################################################
 #
@@ -196,7 +192,6 @@ endif ( Threads_FOUND )
 ##################################################
 include_directories ( SYSTEM "${PROJECT_BINARY_DIR}"
 	src
-	src/flightgear/MultiPlayer
 	src/fgms
 	src/fglib
 	src/libcli
@@ -216,17 +211,14 @@ set ( libcli_SRCS
 )
 if ( WIN32 )
 	list ( APPEND libcli_SRCS src/libcli/crypt-win.c )
-endif ()
-add_library ( LibCLI ${LIB_TYPE} ${libcli_SRCS} )
-if ( WIN32 )
-	list ( APPEND add_LIBS LibCLI )
 else ( WIN32 )
-	list ( APPEND add_LIBS LibCLI crypt )
+	list ( APPEND add_LIBS crypt )
 endif ( WIN32 )
+add_library ( LibCLI ${LIB_TYPE} ${libcli_SRCS} )
+list ( APPEND add_LIBS LibCLI )
 
 #### add_subdirectory( src/libfgmp )
-add_library (
-	Libfgmp ${LIB_TYPE}
+set ( Libfgmp_SRCS
 	src/fglib/mpmessages.hxx
 	src/fglib/debug.hxx
 	src/fglib/debug.cxx
@@ -244,8 +236,6 @@ add_library (
 	src/fglib/netsocket.cxx
 	src/fglib/fg_config.hxx 
 	src/fglib/fg_config.cxx 
-	src/fglib/daemon.hxx 
-	src/fglib/daemon.cxx 
 	src/fglib/fg_geometry.hxx
 	src/fglib/fg_geometry.cxx
 	src/fglib/fg_version.hxx
@@ -256,7 +246,14 @@ add_library (
 	src/fglib/fg_list.cxx 
 	src/fglib/fg_log.hxx 
 	src/fglib/fg_log.cxx 
-)
+    )
+if (NOT MSVC)
+    list(APPEND Libfgmp_SRCS
+		src/fglib/daemon.hxx 
+		src/fglib/daemon.cxx 
+	)
+endif (NOT MSVC)        
+add_library ( Libfgmp ${LIB_TYPE} ${Libfgmp_SRCS} )
 # NO INSTALL [noinst_LIBRARIES]
 list ( APPEND add_LIBS Libfgmp )
 
@@ -268,17 +265,8 @@ if ( MSVC )
 		src/libmsc/msc_unistd.cxx
 		src/libmsc/msc_unistd.hxx
 	)
-endif ( MSVC )
-if ( WIN32 )
 	list ( APPEND add_LIBS libmsc )
-else ( WIN32 )
-	# this looks really odd
-	# we do not build on windows but check if we are using
-	# the microsoft compiler???
-	if ( MSVC )
-		list ( APPEND add_LIBS -llibmsc )
-	endif ( MSVC )
-endif ( WIN32 )
+endif ( MSVC )
 
 # Project [sgutils] [Static Library] [noinst_LIBRARIES]
 add_library (
@@ -345,12 +333,10 @@ add_executable ( ${EXE_NAME}
 	src/fgms/fg_cli.cxx 
 )
 target_link_libraries ( ${EXE_NAME} ${add_LIBS} )
-if ( WIN32 )
+if ( MSVC )
 	set_target_properties ( ${EXE_NAME} PROPERTIES DEBUG_POSTFIX "d" )
-	install ( TARGETS ${EXE_NAME} DESTINATION bin )
-else ( WIN32 )
-	install ( TARGETS ${EXE_NAME} DESTINATION ${SBINDIR} )
-endif ( WIN32 )
+endif ( MSVC )
+install ( TARGETS ${EXE_NAME} DESTINATION ${SBINDIR} )
 
 ##################################################
 #
