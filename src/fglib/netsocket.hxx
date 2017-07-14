@@ -51,7 +51,18 @@
 namespace fgmp
 {
 
-/** A class for TCP/UDP internet connections.
+/** A wrapper class around unix sockets
+ *
+ * Sockets are the uniform interface between the user process and the
+ * network protocol stacks in the kernel. They generally support
+ * several, even nowadays exotic, protocolls like IPX, APPLETALK and
+ * AX25.
+ * We do not need most of them and so we don't support them. This class
+ * supports the follging protocolls:
+ * - IPv4
+ * - IPv6
+ * - Unix local domain (not fully, yet)
+ *
  */
 class netsocket
 {

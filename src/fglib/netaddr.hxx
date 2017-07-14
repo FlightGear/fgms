@@ -43,8 +43,9 @@ namespace fgmp
  */
 typedef struct ::sockaddr	sys_sock;
 
+const int MAXSOCKADDR = 128; // unix domain socket
+
 /**
- * @class netaddr
  * @brief Socket address, internet style.
  *
  * This class handles systems socket addresses
@@ -53,17 +54,18 @@ typedef struct ::sockaddr	sys_sock;
  *
  * This class handles IPv4, IPv6 and Unix domain sockets
  */
-	const int MAXSOCKADDR = 128; // unix domain socket
 class netaddr
 {
 	sys_sock* m_addr;
 public:
+	/** The address families we support
+	 */
 	enum FAMILY
 	{
 		IPv4 = AF_INET,
 		IPv6 = AF_INET6,
 		UNIX = AF_UNIX,
-		ANY  = AF_UNSPEC
+		ANY  = AF_UNSPEC	///< unspecified
 	};
 	netaddr ();
 	netaddr ( FAMILY family );
@@ -75,7 +77,6 @@ public:
 	bool is_valid() const;
 	void assign ( const std::string& host, uint16_t port );
 	void assign ( const sys_sock& addr );
-	void resolv ( const std::string& host, const std::string& port );
 	void port ( uint16_t port );
 	uint16_t port() const ;
 	uint32_t family () const ;
@@ -92,8 +93,6 @@ public:
 	bool operator >  ( const netaddr& Addr ) const;
 	inline sockaddr* sock_addr () { return &(*m_addr); };
 	inline const sockaddr* sock_addr () const { return &(*m_addr); };
-	//inline sockaddr* operator & () { return &(*m_addr); };
-	//inline const sockaddr* operator & () const { return &(*m_addr); };
 	friend std::ostream& operator <<
 	  ( std::ostream& o, const netaddr& addr );
 private:

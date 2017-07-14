@@ -69,8 +69,8 @@ typedef struct ::sockaddr_un	sys_unix;
 /** Construct an empty \c netaddr
  *
  * The allocated buffer is large enough to hold any type
- * of sockets addresses, but gets reallocated when ::assign()
- * is called.
+ * of sockets addresses, but gets reallocated when
+ * netaddr::assign() is called.
  */
 netaddr::netaddr
 ()
@@ -134,7 +134,7 @@ netaddr::netaddr
 
 /** Copy constructor
  *
- * @note using a std::shared_ptr for @c m_addr might be faster
+ * @note using a std::shared_ptr for \c m_addr might be faster
  *       than using a copy constructor
  */
 netaddr::netaddr
@@ -167,6 +167,11 @@ netaddr::~netaddr
 
 //////////////////////////////////////////////////////////////////////
 
+/** Check if *this is a valid socket address
+ *
+ * @return true
+ * @return false
+ */
 bool
 netaddr::is_valid
 () const
@@ -267,7 +272,6 @@ netaddr::assign
 	if (s != 0)
 	{
 		throw std::runtime_error ( gai_strerror(s) );
-		return;
 	}
 	if ( rp->ai_family == AF_INET )
 	{
@@ -353,74 +357,6 @@ netaddr::assign
 		);
 	}
 } // netaddr::assign(sock_addr)
-
-//////////////////////////////////////////////////////////////////////
-
-/**
- *
- */
-void
-netaddr::resolv
-(
-	const std::string& host,
-	const std::string& port
-)
-{
-	DEBUG_TRACE
-	struct addrinfo  hints;
-	struct addrinfo* rp;
-
-	memset ( &hints, 0, sizeof(struct addrinfo) );
-	hints.ai_family   = AF_UNSPEC;
-	hints.ai_socktype = SOCK_DGRAM;
-	int s;
-	if ( ( host == "any" ) || ( host == "" ) )
-	{
-		hints.ai_flags = AI_PASSIVE;
-		//s = getaddrinfo ( "::0", "500", &hints, &rp );
-		s = getaddrinfo ( 0, port.c_str(), &hints, &rp );
-	}
-	else
-	{
-		s = getaddrinfo ( host.c_str(), port.c_str(), &hints, &rp );
-	}
-	if (s != 0)
-	{
-		throw std::runtime_error ( gai_strerror(s) );
-		return;
-	}
-	
-
-	struct addrinfo* i = rp;
-	char	buffer[50];
-	while ( i != NULL )
-	{
-		if ( i->ai_family == AF_INET )
-		{
-			sys_sock4* s = (sys_sock4*) & i->ai_addr;
-			inet_ntop ( AF_INET, & s->sin_addr, buffer, 50 );
-			std::cout << "resolved v4: "
-				<< i->ai_family << " "
-				<< buffer << std::endl;
-		}
-		else if ( i->ai_family == AF_INET6 )
-		{
-			sys_sock6* s = (sys_sock6*) & i->ai_addr;
-			inet_ntop ( AF_INET6, & s->sin6_addr, buffer, 50 );
-			std::cout << "resolved v6: "
-				<< i->ai_family << " "
-				<< buffer << std::endl;
-		}
-		else
-		{
-			std::cout << "resolved unknown: "
-				<< i->ai_family << std::endl;
-		}
-		std::cout << "---" << std::endl;
-		i = rp->ai_next;
-	}
-	freeaddrinfo ( rp );
-} // netaddr::resolv(host,port)
 
 //////////////////////////////////////////////////////////////////////
 
