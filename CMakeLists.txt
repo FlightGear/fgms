@@ -31,19 +31,19 @@ set ( EXE_NAME fgms )
 # setup directories
 #
 ##################################################
-IF ( NOT DEFINED USER_INSTALL_PREFIX )
-	SET ( CMAKE_INSTALL_PREFIX "/usr" )
-ELSE ( NOT DEFINED USER_INSTALL_PREFIX )
-	SET ( CMAKE_INSTALL_PREFIX ${USER_INSTALL_PREFIX} )
-ENDIF ( NOT DEFINED USER_INSTALL_PREFIX )
-
+if ( NOT DEFINED CMAKE_INSTALL_PREFIX )
+	set ( CMAKE_INSTALL_PREFIX "/usr" )
+endif ( NOT DEFINED CMAKE_INSTALL_PREFIX )
+if ( NOT DEFINED SBINDIR )
+	if ( MSVC )
+		set( SBINDIR bin ) 
+	else ()
+		set( SBINDIR "${CMAKE_INSTALL_PREFIX}/sbin" )
+	endif()
+endif()
 if ( NOT DEFINED SYSCONFDIR )
 	set ( SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/etc" )
 endif ( NOT DEFINED SYSCONFDIR )
-
-if ( NOT DEFINED SBINDIR )
-	set ( SBINDIR "${CMAKE_INSTALL_PREFIX}/sbin" )
-endif ( NOT DEFINED SBINDIR )
 add_definitions( -DSYSCONFDIR="${SYSCONFDIR}" )
 
 ##################################################
@@ -61,13 +61,17 @@ if ( BUILD_SHARED_LIB )
 	set ( LIB_TYPE SHARED )
 endif ( BUILD_SHARED_LIB )
 
+# set build type so it's not empty
+if ( NOT DEFINED CMAKE_BUILD_TYPE )
+	set ( CMAKE_BUILD_TYPE Release )
+endif()
+
 ##################################################
 #
 # setup compile flags
 #
 ##################################################
 if ( UNIX )
-	option ( ENABLE_DEBUG_SYMBOLS "Add debug symbols into the binary." OFF )
 	option ( ENABLE_DEBUG_OUTPUT "Add additional debug output." OFF )
 	option ( ENABLE_DEBUG_TRACE "Add trace info." OFF )
 endif ( UNIX )
@@ -114,9 +118,6 @@ if ( WIN32 )
 	) 
 else ( WIN32 )
 	set ( EXTRA_FLAGS "-std=c++11" )
-	if ( ENABLE_DEBUG_SYMBOLS )
-		set ( EXTRA_FLAGS "${EXTRA_FLAGS} -g" )
-	endif ( ENABLE_DEBUG_SYMBOLS )
 	list ( APPEND EXTRA_LD_FLAGS -L. )
 	set ( WARNING_FLAGS "${WARNING_FLAGS} -Wno-unused-local-typedefs -Wno-unused-but-set-variable" )
 endif ( WIN32 )
@@ -343,64 +344,71 @@ install ( TARGETS ${EXE_NAME} DESTINATION ${SBINDIR} )
 # print summary of build settings
 #
 ##################################################
-message ( STATUS "*** Will install binary to ${SBINDIR}" )
-message ( STATUS "*** Will read config from ${SYSCONFDIR}" )
+message ( STATUS )
+message ( STATUS "SUMMARY" )
+message ( STATUS )
+message ( STATUS "    Will install binary to ${SBINDIR}" )
+message ( STATUS "    Will read config from ${SYSCONFDIR}" )
+message ( STATUS "    Build type is: ${CMAKE_BUILD_TYPE}" )
+if ( CMAKE_BUILD_TYPE STREQUAL Debug )
+	message ( STATUS "    use -DCMAKE_BUILD_TYPE=Release to change" )
+else()
+	message ( STATUS "    use -DCMAKE_BUILD_TYPE=Debug to change" )
+endif()
 if ( BUILD_SHARED_LIB )
-	message( STATUS "*** Building DLL library ${LIB_TYPE}" )
+	message( STATUS "    Building DLL library ${LIB_TYPE}" )
 else (BUILD_SHARED_LIB )
-	message(STATUS "*** Building static library ${LIB_TYPE}")
+	message(STATUS "    Building static library ${LIB_TYPE}")
 endif ( BUILD_SHARED_LIB )
-message ( STATUS "*** set CXX FLAGS [${CMAKE_CXX_FLAGS}]" )
-message ( STATUS "*** set C FLAGS [${CMAKE_C_FLAGS}]" )
-message ( STATUS "*** target_link_libraries( ${EXE_NAME} ${add_LIBS} )" )
+message ( STATUS "    set CXX FLAGS [${CMAKE_CXX_FLAGS}]" )
+message ( STATUS "    set C FLAGS [${CMAKE_C_FLAGS}]" )
+message ( STATUS "    target_link_libraries( ${EXE_NAME} ${add_LIBS} )" )
 
-if ( ENABLE_DEBUG_SYMBOLS )
-	message ( STATUS "+++ building with debug info" )
-else ( ENABLE_DEBUG_SYMBOLS )
-	message ( STATUS
-	  "--- building without debug info.. Use -DENABLE_DEBUG_SYMBOLS:BOOL=TRUE to enable it."
-	)
-endif ( ENABLE_DEBUG_SYMBOLS )
 
 if ( ENABLE_DEBUG_OUTPUT )
-	message ( STATUS "+++ building with additinal debug output" )
+	message ( STATUS "    building with additinal debug output" )
 else ( ENABLE_DEBUG_OUTPUT )
 	message ( STATUS
-	  "--- building without additional debug info.. Use -DENABLE_DEBUG_OUTPUT:BOOL=TRUE to enable it."
+	  "    building without additional debug info.. Use -DENABLE_DEBUG_OUTPUT:BOOL=TRUE to enable it."
 	)
 endif ( ENABLE_DEBUG_OUTPUT )
 
 if ( ENABLE_DEBUG_TRACE )
-	message ( STATUS "+++ building with trace info" )
+	message ( STATUS "    building with trace info" )
 else ( ENABLE_DEBUG_TRACE )
 	message ( STATUS
-	  "--- building without trace info.. Use -DENABLE_DEBUG_TRACE:BOOL=TRUE to enable it."
+	  "    building without trace info.. Use -DENABLE_DEBUG_TRACE:BOOL=TRUE to enable it."
 	)
 endif ( ENABLE_DEBUG_TRACE )
 
 if ( BUILD_TESTS )
-	message ( STATUS "+++ building test applications" )
+	message ( STATUS "    building test applications" )
 else ( BUILD_TESTS )
 	message ( STATUS
-	  "--- test apps NOT being built. Use -DBUILD_TESTS:BOOL=TRUE to enable it."
+	  "    test apps NOT being built. Use -DBUILD_TESTS:BOOL=TRUE to enable it."
 	)
 endif ( BUILD_TESTS )
 
 if ( BUILD_FGLS )
-	message ( STATUS "+++ building fgls" )
+	message ( STATUS "    building fgls" )
 else ( BUILD_FGLS )
 	message ( STATUS
-	  "--- fgls NOT being built. Use -DBUILD_FGLS:BOOL=TRUE to enable it."
+	  "    fgls NOT being built. Use -DBUILD_FGLS:BOOL=TRUE to enable it."
 	)
 endif ( BUILD_FGLS )
 
 if ( BUILD_SERVER2 )
-	message ( STATUS "+++ Building server 2. File fgms2.log fgms_exit2 fgms_reset2 fgms_stat2 fgms2.conf")
+	message ( STATUS "    Building server 2. File fgms2.log fgms_exit2 fgms_reset2 fgms_stat2 fgms2.conf")
 else ( BUILD_SERVER2 )
 	message ( STATUS
-	  "--- server2 NOT being built. Use -DBUILD_SERVER2:BOOL=TRUE to enable it."
+	  "    server2 NOT being built. Use -DBUILD_SERVER2:BOOL=TRUE to enable it."
 	)
-	message ( STATUS "+++ Building FGMS")
+	message ( STATUS "    Building FGMS")
 endif ( BUILD_SERVER2 )
+
+message ( STATUS )
+message ( STATUS "type 'make' to build all parts" )
+message ( STATUS "type 'make VERBOSE=1' for verbose build" )
+message ( STATUS )
 
 # eof - CMakeLists.txt

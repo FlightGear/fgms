@@ -19,8 +19,6 @@ main
 		return 0;
 	}
 
-	a.resolv ( argv[1], argv[2] );
-	#if 0
 	b.assign ( argv[2], 5000 );
 	std::cout << "a: " << a << std::endl;
 	std::cout << "b: " << b << std::endl;
@@ -28,6 +26,5 @@ main
 	std::cout << "a != b: " << (a != b) << std::endl;
 	std::cout << "a < b: " << (a < b) << std::endl;
 	std::cout << "a > b: " << (a > b) << std::endl;
-	#endif
 	return 0;
 }

@@ -1,4 +1,4 @@
-1.0.0-dev3
+1.0.0
 	[NEW]	gave netaddr and netsocket a complete overhaul.
 		they support IPv6 now.
 	[MISC]	elaborated fgls a bit more, but it still doesn't really do
@@ -8,7 +8,6 @@
 	[MISC]	moved some more files to src/fglib
 	[MISC]	general code cleanup on some of the files
 
-1.0.0-dev2
 	[MISC]	moved contrib/etc to etc
 	[MISC]	CMakeList.txt: reordered, reformatted
 		added a summary at the end
@@ -27,7 +26,6 @@
 	[NEW]	added etc/fgls_skel.conf
 	[FIX]
 
-1.0.0
 	[MISC]	moved files which are used from other servers
 		from src/server to src/fglib
 	[NEW]	incorporated files from fgms-1.x
