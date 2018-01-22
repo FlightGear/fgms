@@ -20,8 +20,9 @@
 // Copyright (C) 2017  Oliver Schroeder
 //
 
+#include <arpa/inet.h>
 #include "fg_version.hxx"
-#include "fg_util.hxx"
+// #include "fg_util.hxx"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -48,13 +49,12 @@ FG_VERSION::FG_VERSION
 	char minor,
 	char patch,
 	const char* extra
-)
+) : m_extra ( extra )
 {
 	m_version.major = major;
 	m_version.minor = minor;
 	m_version.patch = patch;
 	m_version.dummy = 0;
-	m_extra = extra;
 	mk_str_rep ();
 } // FG_VERSION::FG_VERSION ()
 
@@ -63,14 +63,12 @@ FG_VERSION::FG_VERSION
 /** initialise all to 0
  */
 FG_VERSION::FG_VERSION
-()
+() : m_extra ( "" ), m_str_rep ( "" )
 {
 	m_version.major = 0;
 	m_version.minor = 0;
 	m_version.patch = 0;
 	m_version.dummy = 0;
-	m_extra = "";
-	mk_str_rep ();
 } // FG_VERSION::FG_VERSION ()
 
 //////////////////////////////////////////////////////////////////////
@@ -81,9 +79,14 @@ void
 FG_VERSION::mk_str_rep
 ()
 {
+	#if 0
 	m_str_rep =  NumToStr (m_version.major, 0) + ".";
 	m_str_rep += NumToStr (m_version.minor, 0) + ".";
 	m_str_rep += NumToStr (m_version.patch, 0);
+	#endif
+	m_str_rep =  std::to_string (m_version.major) + ".";
+	m_str_rep += std::to_string (m_version.minor) + ".";
+	m_str_rep += std::to_string (m_version.patch);
 	m_str_rep += m_extra;
 } // FG_VERSION::mk_str_rep ()
 
@@ -98,8 +101,7 @@ uint32_t
 FG_VERSION::num
 () const
 {
-	int* v = (int*) & m_version;
-	return *v;
+	return ntohl ( * ((uint32_t*) & m_version) );
 } // FG_VERSION::num ()
 
 //////////////////////////////////////////////////////////////////////
@@ -112,8 +114,8 @@ FG_VERSION::set_num
 	uint32_t v
 )
 {
-	int *i = (int*) & m_version;
-	*i = v;
+	uint32_t* i = (uint32_t*) & m_version;
+	*i = htonl ( v );
 	mk_str_rep ();
 } // FG_VERSION::set_num ()
 
@@ -169,9 +171,7 @@ FG_VERSION::operator <
 	const FG_VERSION& v
 ) const
 {
-	int *left = (int*)  & m_version;
-	int *right = (int*) & v.m_version;
-	if ( *left < *right )
+	if ( num() < v.num() )
 		return true;
 	return false;
 } // FG_VERSION::operator <
@@ -188,9 +188,7 @@ FG_VERSION::operator >
 	const FG_VERSION& v
 ) const
 {
-	int *left = (int*)  & m_version;
-	int *right = (int*) & v.m_version;
-	if ( *left > *right )
+	if ( num() > v.num() )
 		return true;
 	return false;
 } // FG_VERSION::operator >
@@ -207,9 +205,7 @@ FG_VERSION::operator <=
 	const FG_VERSION& v
 ) const
 {
-	int *left = (int*)  & m_version;
-	int *right = (int*) & v.m_version;
-	if ( *left <= *right )
+	if ( num() <= v.num() )
 		return true;
 	return false;
 } // FG_VERSION::operator >=
@@ -226,12 +222,29 @@ FG_VERSION::operator >=
 	const FG_VERSION& v
 ) const
 {
-	int *left = (int*)  & m_version;
-	int *right = (int*) & v.m_version;
-	if ( *left >= *right )
+	if ( num() >= v.num() )
 		return true;
 	return false;
 } // FG_VERSION::operator >=
+
+//////////////////////////////////////////////////////////////////////
+
+/** Am i compatible to v?
+ * Two versions are compatible if
+ *   major == v.major and
+ *   minor >= v.minor
+ */
+bool
+FG_VERSION::is_compatible
+(
+	const FG_VERSION& v
+) const
+{
+	if ( ( m_version.major == v.m_version.major )
+	&&   ( m_version.minor >= v.m_version.minor ) )
+		return true;
+	return false;
+} // FG_VERSION::is_compatible ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -243,10 +256,10 @@ std::ostream&
 operator <<
 (
 	std::ostream& o,
-	const FG_VERSION& V
+	const FG_VERSION& v
 )
 {
-	o << V.str();
+	o << v.str();
 	return o;
 } // ostream << FG_VERSION
 

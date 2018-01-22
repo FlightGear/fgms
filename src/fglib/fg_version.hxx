@@ -50,7 +50,8 @@ public:
 	bool operator >   ( const FG_VERSION& v ) const;
 	bool operator <=  ( const FG_VERSION& v ) const;
 	bool operator >=  ( const FG_VERSION& v ) const;
-	friend std::ostream& operator << ( std::ostream& o, const FG_VERSION& V );
+	bool is_compatible ( const FG_VERSION& v ) const;
+	friend std::ostream& operator << ( std::ostream& o, const FG_VERSION& v );
 private:
 	FG_VERSION ( const FG_VERSION& );	// disable
 	struct
