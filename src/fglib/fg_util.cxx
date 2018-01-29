@@ -13,7 +13,7 @@
  * @brief convert a unix timestamp to a string
  * representation of a date
  */
-string
+std::string
 timestamp_to_datestr
 (
 	time_t date
@@ -29,7 +29,7 @@ timestamp_to_datestr
 		  tmr->tm_hour,
 		  tmr->tm_min,
 		  tmr->tm_sec );
-	return ( string ) buf;
+	return ( std::string ) buf;
 } // timestamp_to_datestr()
 //////////////////////////////////////////////////////////////////////
 
@@ -38,7 +38,7 @@ timestamp_to_datestr
  * @brief calculate the difference of a timestamp to now and convert
  * the difference to a string representation of the form "3 days 2 hours"
  */
-string
+std::string
 timestamp_to_days
 (
 	time_t Date
@@ -54,7 +54,7 @@ timestamp_to_days
  * @brief convert a time duration expressed in seconds to a string
  * representation of the form "3 days 2 hours"
  */
-string
+std::string
 diff_to_days
 (
 	time_t Date
@@ -62,33 +62,33 @@ diff_to_days
 {
 	time_t Diff = Date;
 	unsigned int temp = 0;
-	string Result;
+	std::string Result;
 	if ( Diff > 31536000 )	// years
 	{
 		temp = Diff / 31536000;
-		Result += NumToStr ( temp, 0 ) + " years";
+		Result += num_to_str ( temp, 2 ) + " years";
 		return Result;
 	}
 	if ( Diff > 86400 )	// days
 	{
 		temp = Diff / 86400;
-		Result += NumToStr ( temp, 0 ) + " days";
+		Result += num_to_str ( temp ) + " days";
 		return Result;
 	}
 	if ( Diff > 3600 )	// hours
 	{
 		temp = Diff / 3600;
-		Result += NumToStr ( temp, 0 ) + " hours";
+		Result += num_to_str ( temp ) + " hours";
 		return Result;
 	}
 	if ( Diff > 60 )		// minutes
 	{
 		temp = Diff / 60;
-		Result += NumToStr ( temp, 0 ) + " minutes";
+		Result += num_to_str ( temp ) + " minutes";
 		return Result;
 	}
 	temp = Diff;
-	Result += NumToStr ( temp, 0 ) + " seconds";
+	Result += num_to_str ( temp ) + " seconds";
 	return Result;
 } // diff_to_days
 //////////////////////////////////////////////////////////////////////
@@ -100,39 +100,39 @@ diff_to_days
  * The units conform to IEC,
  * see http://physics.nist.gov/cuu/Units/binary.html
  */
-string
+std::string
 byte_counter
 (
 	double bytes
 )
 {
 	double ret_val;
-	string ret_str;
+	std::string ret_str;
 	if ( bytes > 1099511627776. )
 	{
 		ret_val = ( bytes / 1099511627776. );
-		ret_str = NumToStr ( ret_val ) + " TiB";
+		ret_str = num_to_str ( ret_val, 2 ) + " TiB";
 		return ret_str;
 	}
 	else if ( bytes > 1073741824. )
 	{
 		ret_val = ( bytes / 1073741824. );
-		ret_str = NumToStr ( ret_val ) + " GiB";
+		ret_str = num_to_str ( ret_val, 2 ) + " GiB";
 		return ret_str;
 	}
 	else if ( bytes > 1048576 )
 	{
 		ret_val = ( bytes / 1048576 );
-		ret_str = NumToStr ( ret_val ) + " MiB";
+		ret_str = num_to_str ( ret_val, 2 ) + " MiB";
 		return ret_str;
 	}
 	else if ( bytes > 1024 )
 	{
 		ret_val = ( bytes / 1024 );
-		ret_str = NumToStr ( ret_val ) + " KiB";
+		ret_str = num_to_str ( ret_val, 2 ) + " KiB";
 		return ret_str;
 	}
-	ret_str = NumToStr ( bytes ) + " b";
+	ret_str = num_to_str ( bytes, 2 ) + " b";
 	return ret_str;
 } // byte_counter()
 //////////////////////////////////////////////////////////////////////

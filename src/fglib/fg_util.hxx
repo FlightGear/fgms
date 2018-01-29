@@ -7,8 +7,6 @@
 #ifndef TYPCNVTHDR
 #define TYPCNVTHDR 1
 
-using namespace std;
-
 #include <string>
 #include <cstdlib>
 #include <ctype.h>		// toupper()
@@ -58,7 +56,13 @@ bool str_ends_with ( std::string const& value, std::string const& ending );
  *        - n_Error >0:     index of non-numeric
  */
 template < class T >
-T StrToNum ( string str_Number, int& n_Error, int n_Base = 10 )
+T
+str_to_num
+(
+	std::string str_Number,
+	int& n_Error,
+	int n_Base = 10
+)
 {
 	int n_Length;
 	int n_Current;
@@ -178,7 +182,7 @@ T StrToNum ( string str_Number, int& n_Error, int n_Base = 10 )
 		T_Result = -T_Result;
 	}
 	return ( T_Result );
-} // StrToNum ()
+} // str_to_num ()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -189,10 +193,16 @@ T StrToNum ( string str_Number, int& n_Error, int n_Base = 10 )
  * @param n_Base	the base of the string representation
  */
 template < typename T >
-string NumToStr ( T n_Number, int n_Precision = 2, int n_Base = 10 )
+std::string
+num_to_str
+(
+	T n_Number,
+	int n_Precision = 0,
+	int n_Base = 10
+)
 {
 	const char	Numbers[] = "0123456789abcdef";
-	string		str_Return = "";
+	std::string	str_Return = "";
 	t_longlong	n_WorkNumber;
 	int		n_Factor;
 	int		n;
@@ -260,7 +270,7 @@ string NumToStr ( T n_Number, int n_Precision = 2, int n_Base = 10 )
 		str_Return = "-" + str_Return;
 	}
 	return ( str_Return );
-} // NumToStr ()
+} // num_to_str ()
 //////////////////////////////////////////////////////////////////////
 
 #endif

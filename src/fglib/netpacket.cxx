@@ -28,8 +28,6 @@
 #include "fg_log.hxx"
 #include "netpacket.hxx"
 
-using namespace fgmp;
-
 //////////////////////////////////////////////////////////////////////
 
 NetPacket::NetPacket
@@ -319,12 +317,12 @@ NetPacket::Encrypt
 	uint32_t Mod = Len % XTEA_BLOCK_SIZE;
 	if ( ( ! m_Buffer ) || ( m_BytesInUse == 0 ) )
 	{
-		LOG(fglog::DEBUG, "NetPacket::Encrypt() - nothing to encrypt!" );
+		LOG(log_prio::DEBUG, "NetPacket::Encrypt() - nothing to encrypt!" );
 		return;
 	}
 	if ( m_BytesInUse <= Offset )
 	{
-		LOG ( fglog::DEBUG,
+		LOG ( log_prio::DEBUG,
 		  "NetPacket::Enrypt() - Offset>Used Bytes!" );
 		return;
 	}
@@ -352,13 +350,13 @@ NetPacket::Decrypt
 	uint32_t Mod = Len % XTEA_BLOCK_SIZE;
 	if ( ( ! m_Buffer ) || ( m_BytesInUse == 0 ) )
 	{
-		LOG ( fglog::DEBUG,
+		LOG ( log_prio::DEBUG,
 		  "NetPacket::Decrypt() - nothing to encrypt!" );
 		return;
 	}
 	if ( m_BytesInUse <= Offset )
 	{
-		LOG ( fglog::DEBUG,
+		LOG ( log_prio::DEBUG,
 		  "NetPacket::Decrypt() - Offset>Used Bytes!" );
 		return;
 	}

@@ -35,6 +35,18 @@
 namespace fgmp
 {
 
+	enum class ATC_TYPE
+	{
+		NONE,	// not an ATC
+		ATC,		// undefined ATC
+		ATC_DL,		// Clearance Delivery
+		ATC_GN,		// Ground
+		ATC_TW,		// Tower
+		ATC_AP,		// Approach
+		ATC_DE,		// Departure
+		ATC_CT		// Center
+	};
+
 //////////////////////////////////////////////////////////////////////
 /** 
  * @class FG_Player
@@ -48,64 +60,54 @@ namespace fgmp
 class FG_Player : public ListElement
 {
 public:
-	typedef enum
-	{
-		ATC_NONE,	// not an ATC
-		ATC,		// undefined ATC
-		ATC_DL,		// Clearance Delivery
-		ATC_GN,		// Ground
-		ATC_TW,		// Tower
-		ATC_AP,		// Approach
-		ATC_DE,		// Departure
-		ATC_CT		// Center
-	} ATC_TYPE;
-	std::string	Origin;
+
+	std::string	origin;
 	/** @brief The password 
 	 *  @warning This is not currently used
 	 */
-	std::string	Passwd;
+	std::string	passwd;
 	/** @brief The model name */
-	std::string	ModelName;
+	std::string	model_name;
 	/** @brief The last recorded position */
-	Point3D	LastPos;
+	Point3D	last_pos;
 	/** @brief The last recorded position in geodectic coordinates (lat/lon/alt) */
-	Point3D	GeodPos;
+	Point3D	geod_pos;
 	/** @brief The last recorded orientation */
-	Point3D	LastOrientation;
+	Point3D	last_orientation;
 	/** @brief \b true if this client is directly connected to this \ref fgms instance */
-	bool	IsLocal;
+	bool	is_local;
 	/** @brief \b true if this client is an ATC */
-	ATC_TYPE IsATC;
+	ATC_TYPE is_ATC;
 	/** @brief client provided radar range */
-	uint16_t RadarRange;
+	uint16_t radar_range;
 	/** @brief client major protocol version */
-	uint16_t ProtoMajor;
+	uint16_t proto_major;
 	/** @brief client minor protocol version */
-	uint16_t ProtoMinor;
+	uint16_t proto_minor;
 	/** @brief in case of errors the reason is stored here 
 	 * @see FGMS::AddBadClient
 	 */
-	std::string	Error;    // in case of errors
+	std::string	error;    // in case of errors
 	/** @brief \b true if this client has errors
 	 * @see FGMS::AddBadClient
 	 */
-	bool	HasErrors;
+	bool	has_errors;
 	/** when did we sent updates of this player to inactive relays */
-	time_t	LastRelayedToInactive;
+	time_t	last_relayed_to_inactive;
 	/** \b true if we need to send updates to inactive relays */
-	bool	DoUpdate;
+	bool	do_update;
 	FG_Player ();
-	FG_Player ( const std::string& Name );
-	FG_Player ( const FG_Player& P);
-	~FG_Player ();
-	void operator =  ( const FG_Player& P );
-	virtual bool operator ==  ( const FG_Player& P );
+	FG_Player ( const std::string& name );
+	FG_Player ( const FG_Player& p);
+	virtual ~FG_Player ();
+	void operator =  ( const FG_Player& p );
+	virtual bool operator ==  ( const FG_Player& p );
 private:
-	void assign ( const FG_Player& P );
+	void assign ( const FG_Player& p );
 }; // FG_Player
 
-typedef List<FG_Player>			PlayerList;
-typedef std::vector<FG_Player>::iterator	PlayerIt;
+using PlayerList = List<FG_Player>;
+using PlayerIt   = std::vector<FG_Player>::iterator;
 
 } // namepsace fgmp
 

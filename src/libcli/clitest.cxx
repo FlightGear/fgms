@@ -18,20 +18,19 @@
 #endif
 
 using namespace libcli;
-using namespace std;
 
 class my_cli : public CLI
 {
 public:
 	void setup();
-	int  check_auth (const string& username, const string& password);
-	int  check_enable(const string& password);
+	int  check_auth (const std::string& username, const string& password);
+	int  check_enable(const std::string& password);
 
 private:
 	int test (char *command, char *argv[], int argc);
 };
 
-int  my_cli::check_auth (const string& username, const string& password)
+int  my_cli::check_auth (const std::string& username, const std::string& password)
 {
 	if (username != "fred")
 		return libcli::ERROR_ANY;
@@ -40,7 +39,7 @@ int  my_cli::check_auth (const string& username, const string& password)
 	return libcli::OK;
 }
 
-int my_cli::check_enable(const string& password)
+int my_cli::check_enable(const std::string& password)
 {
 	return (password == "fred");
 }

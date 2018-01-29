@@ -33,46 +33,52 @@ namespace fgmp
 const size_t ListElement::NONE_EXISTANT = (size_t) -1;
 
 //////////////////////////////////////////////////////////////////////
-ListElement::ListElement( const std::string& Name )
+ListElement::ListElement
+(
+	const std::string& name
+) : name(name)
 {
-	ID		= NONE_EXISTANT;	// flag a non existant Element
-	Timeout		= 0;
-	this->Name	= Name;
-	JoinTime	= time (0);
-	LastSeen	= JoinTime;
-	LastSent	= JoinTime;
-	PktsSent	= 0;
-	PktsRcvd	= 0;
-	BytesRcvd	= 0;
-	BytesSent	= 0;
+	id		= NONE_EXISTANT;	// flag a non existant Element
+	timeout		= 0;
+	join_time	= time (0);
+	last_seen	= join_time;
+	last_sent	= join_time;
+	pkts_sent	= 0;
+	pkts_rcvd	= 0;
+	bytes_rcvd	= 0;
+	bytes_sent	= 0;
 }
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-ListElement::ListElement()
+ListElement::ListElement
+() : name("")
 {
-	ID		= NONE_EXISTANT;	// flag a non existant Element
-	Timeout		= 0;
-	Name		= "";
-	JoinTime	= time (0);
-	LastSeen	= JoinTime;
-	LastSent	= JoinTime;
-	PktsSent	= 0;
-	PktsRcvd	= 0;
-	BytesRcvd	= 0;
-	BytesSent	= 0;
+	id		= NONE_EXISTANT;	// flag a non existant Element
+	timeout		= 0;
+	join_time	= time (0);
+	last_seen	= join_time;
+	last_sent	= join_time;
+	pkts_sent	= 0;
+	pkts_rcvd	= 0;
+	bytes_rcvd	= 0;
+	bytes_sent	= 0;
 }
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-ListElement::ListElement( const ListElement& P )
+ListElement::ListElement
+(
+	const ListElement& P
+)
 {
 	this->assign (P);
 }
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-ListElement::~ListElement()
+ListElement::~ListElement
+()
 {
 }
 //////////////////////////////////////////////////////////////////////
@@ -90,7 +96,7 @@ bool
 ListElement::operator ==( const ListElement& P )
 {
 	// FIXME: compare the name, too?
-	if (Address == P.Address)
+	if (address == P.address)
 		return true;
 	return false;
 }
@@ -100,40 +106,40 @@ ListElement::operator ==( const ListElement& P )
 void
 ListElement::assign( const ListElement& P )
 {
-	ID		= P.ID;
-	Timeout		= P.Timeout;
-        Name		= P.Name.c_str();
-        Address 	= P.Address;
-        JoinTime 	= P.JoinTime;
-        LastSeen	= P.LastSeen;
-        LastSent	= P.LastSent;
-        PktsSent	= P.PktsSent;
-	BytesSent	= P.BytesSent;
-        PktsRcvd	= P.PktsRcvd;
-	BytesRcvd	= P.BytesRcvd;
+	id		= P.id;
+	timeout		= P.timeout;
+        name		= P.name.c_str();
+        address 	= P.address;
+        join_time 	= P.join_time;
+        last_seen	= P.last_seen;
+        last_sent	= P.last_sent;
+        pkts_sent	= P.pkts_sent;
+	bytes_sent	= P.bytes_sent;
+        pkts_rcvd	= P.pkts_rcvd;
+	bytes_rcvd	= P.bytes_rcvd;
 }
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 void
-ListElement::UpdateSent( size_t bytes )
+ListElement::update_sent( size_t bytes )
 {
-	PktsSent++;
-	BytesSent += bytes;
-	LastSent = time(0);
+	pkts_sent++;
+	bytes_sent += bytes;
+	last_sent = time(0);
 }
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 void
-ListElement::UpdateRcvd
+ListElement::update_rcvd
 (
 	size_t bytes
 )
 {
-	PktsRcvd++;
-	BytesRcvd += bytes;
-	LastSeen = time(0);
+	pkts_rcvd++;
+	bytes_rcvd += bytes;
+	last_seen = time(0);
 }
 //////////////////////////////////////////////////////////////////////
 

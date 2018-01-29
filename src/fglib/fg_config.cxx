@@ -31,72 +31,75 @@
 
 //////////////////////////////////////////////////////////////////////
 /** @brief  Read in the config file 
- * @param ConfigName - the file to read
+ * @param config_name - the file to read
  * @retval int 1 for error, 0 for success
  */
 int
-FG_CONFIG::Read
+FG_CONFIG::read
 (
-	const std::string &ConfigName
+	const std::string &config_name
 )
 {
-	std::ifstream   ConfigFile;
-	std::string     ConfigLine;
-	int             LineNumber;
+	std::ifstream   config_file;
+	std::string     config_line;
+	int             line_number;
 
-	ConfigFile.open (ConfigName.c_str ());
-	if (!ConfigFile)
+	config_file.open (config_name.c_str ());
+	if (!config_file)
 	{
 		return (1);
 	}
-	LineNumber = 0;
-	while (ConfigFile)
+	line_number = 0;
+	while (config_file)
 	{
-		getline (ConfigFile, ConfigLine);
-		LineNumber++;
-		if (ParseLine (ConfigLine))
+		getline (config_file, config_line);
+		line_number++;
+		if (parse_line (config_line))
 		{
-			std::cout << "error in line " << LineNumber
-				<< " in file " << ConfigName
+			std::cout << "error in line " << line_number
+				<< " in file " << config_name
 				<< std::endl;
 		}
 	}
-	ConfigFile.close ();
-	m_CurrentVar = m_VarList.begin ();
+	config_file.close ();
+	m_current_var = m_var_list.begin ();
 	return (0);
-} // FG_CONFIG::Read ()
+} // FG_CONFIG::read ()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-
 /** @brief Find a variable in the internal list and return its value
  * @param VarName - the variable to find
  * @retval string - with contents of variable, or blank string if not found
 */
 std::string
-FG_CONFIG::Get( const std::string &VarName)
+FG_CONFIG::get
+(
+	const std::string & var_name
+)
 {
-	m_CurrentVar = m_VarList.begin();
-	while (m_CurrentVar != m_VarList.end())
+	m_current_var = m_var_list.begin();
+	while (m_current_var != m_var_list.end())
 	{
-		if (m_CurrentVar->first == VarName)
+		if (m_current_var->first == var_name)
 		{
-			return (m_CurrentVar->second);
+			return (m_current_var->second);
 		}
-		m_CurrentVar++;
+		m_current_var++;
 	}
 	return ("");
-} // FGMS::Get ()
-
+} // FGMS::get ()
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief Set internal pointer to the first variable in list
  */
 void
-FG_CONFIG::SetStart()
+FG_CONFIG::set_start
+()
 {
-	m_CurrentVar = m_VarList.begin();
+	m_current_var = m_var_list.begin();
 } // FG_CONFIG::SetStart ()
 //////////////////////////////////////////////////////////////////////
 
@@ -106,21 +109,21 @@ FG_CONFIG::SetStart()
  * @retval int 1 for success, else 0
  */
 int
-FG_CONFIG::Next()
+FG_CONFIG::next
+()
 {
-	if (m_CurrentVar == m_VarList.end())
+	if (m_current_var == m_var_list.end())
 	{
 		return (0);
 	}
-	m_CurrentVar++;
-	if (m_CurrentVar == m_VarList.end())
+	m_current_var++;
+	if (m_current_var == m_var_list.end())
 	{
 		return (0);
 	}
 	return (1);
-} // FG_CONFIG::Next()
-
-
+} // FG_CONFIG::next()
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -128,16 +131,16 @@ FG_CONFIG::Next()
  * @retval string The variable name, or empty string if not found.
  */
 std::string
-FG_CONFIG::GetName()
+FG_CONFIG::get_name
+()
 {
-	if (m_CurrentVar != m_VarList.end())
+	if (m_current_var != m_var_list.end())
 	{
-		return (m_CurrentVar->first);
+		return (m_current_var->first);
 	}
 	return ("");
-} // FG_CONFIG::GetName ()
-
-
+} // FG_CONFIG::get_name ()
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -145,16 +148,16 @@ FG_CONFIG::GetName()
  * \retval string The variable name, or empty string if not found.
  */
 std::string
-FG_CONFIG::GetValue()
+FG_CONFIG::get_value
+()
 {
-	if (m_CurrentVar != m_VarList.end())
+	if (m_current_var != m_var_list.end())
 	{
-		return (m_CurrentVar->second);
+		return (m_current_var->second);
 	}
 	return ("");
-} // FG_CONFIG::GetValue ()
-
-
+} // FG_CONFIG::get_value ()
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -164,22 +167,25 @@ FG_CONFIG::GetValue()
  * @retval int 1 on success, else 0
  */
 int
-FG_CONFIG::SetSection( const std::string &SecName )
+FG_CONFIG::set_section
+(
+	const std::string &sec_name
+)
 {
-	SetStart ();
-	while (m_CurrentVar != m_VarList.end())
+	set_start ();
+	while (m_current_var != m_var_list.end())
 	{
-		if (m_CurrentVar->first.compare(0,SecName.size(),SecName) == 0)
+		if (m_current_var->first.compare(0,
+		    sec_name.size(),sec_name) == 0)
 		{
-			m_CurrentSection = SecName;
+			m_current_section = sec_name;
 			return (1);
 		}
-		m_CurrentVar++;
+		m_current_var++;
 	}
 	return (0);
-} // FG_CONFIG::SetSection ( const std::string &SecName )
-
-
+} // FG_CONFIG::set_section ( const std::string &SecName )
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -187,20 +193,21 @@ FG_CONFIG::SetSection( const std::string &SecName )
  * @retval int 1 on success, 0 else
  */
 int
-FG_CONFIG::SecNext()
+FG_CONFIG::sec_next
+()
 {
-	if (!Next())
+	if ( ! next() )
 	{
 		return (0);
 	}
-	if (m_CurrentVar->first.compare (0,
-	    m_CurrentSection.size(), m_CurrentSection) != 0)
+	if (m_current_var->first.compare (0,
+	    m_current_section.size(), m_current_section) != 0)
 	{
 		return (0);
 	}
 	return (1);
 } // FG_CONFIG::GetSecNextVar ()
-
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -208,22 +215,21 @@ FG_CONFIG::SecNext()
  * @retval string The variable name, or empty string if not found
  */
 std::string
-FG_CONFIG::GetSecNextVar
+FG_CONFIG::get_sec_next_var
 ()
 {
-	if (!Next())
+	if ( ! next() )
 	{
 		return ("");
 	}
-	if (m_CurrentVar->first.compare (0,
-	    m_CurrentSection.size(), m_CurrentSection) != 0)
+	if (m_current_var->first.compare (0,
+	    m_current_section.size(), m_current_section) != 0)
 	{
 		return ("");
 	}
-	return (m_CurrentVar->first);
-} // FG_CONFIG::GetSecNextVar ()
-
-
+	return (m_current_var->first);
+} // FG_CONFIG::get_sec_next_var ()
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -231,22 +237,21 @@ FG_CONFIG::GetSecNextVar
  * @retval string The value or empty string if not found
  */
 std::string
-FG_CONFIG::GetSecNextVal
+FG_CONFIG::get_sec_next_val
 ()
 {
-	if (!Next())
+	if ( ! next() )
 	{
 		return ("");
 	}
-	if (m_CurrentVar->first.compare (0,
-	    m_CurrentSection.size(), m_CurrentSection) != 0)
+	if (m_current_var->first.compare (0,
+	    m_current_section.size(), m_current_section) != 0)
 	{
 		return ("");
 	}
-	return (m_CurrentVar->second);
-} // FG_CONFIG::GetSecNextVal ()
-
-
+	return (m_current_var->second);
+} // FG_CONFIG::get_sec_next_val ()
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -254,90 +259,89 @@ FG_CONFIG::GetSecNextVal
  * @retval string The value or empty string if not found
  */
 std::string
-FG_CONFIG::GetNext
+FG_CONFIG::get_next
 ()
 {
-	if (!Next())
+	if ( ! next() )
 	{
 		return ("");
 	}
-	return (m_CurrentVar->second);
-} // FG_CONFIG::GetNext ()
-
-
+	return (m_current_var->second);
+} // FG_CONFIG::get_next ()
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief Just for debugging to cout
  */
 void
-FG_CONFIG::Dump
+FG_CONFIG::dump
 ()
 {
-	m_CurrentVar = m_VarList.begin();
+	m_current_var = m_var_list.begin();
 	std::cout << std::endl;
 	std::cout << "dumping variables:" << std::endl;
-	while (m_CurrentVar != m_VarList.end())
+	while (m_current_var != m_var_list.end())
 	{
-		std::cout << " Var: '" << m_CurrentVar->first << "'";
-		std::cout << " Val: '" << m_CurrentVar->second << "'";
+		std::cout << " Var: '" << m_current_var->first << "'";
+		std::cout << " Val: '" << m_current_var->second << "'";
 		std::cout << std::endl;
-		m_CurrentVar++;
+		m_current_var++;
 	}
 	std::cout << std::endl;
 	std::cout << "done." << std::endl;
 	std::cout << std::endl;
-} // FGMS::Dump ()
-
-
+} // FGMS::dump ()
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief Parse the given line, split it into name/value pairs
  *        and put in the internal list
- * @param ConfigLine The line to parse
+ * @param config_line The line to parse
  * @retval int
  */
 int
-FG_CONFIG::ParseLine
+FG_CONFIG::parse_line
 (
-	const std::string &ConfigLine
+	const std::string & config_line
 )
 {
-	size_t          nVarNameStart, nVarNameEnd;
-	size_t          nVarValueStart, nVarValueEnd;
-	mT_VarValue     NewVar;
+	size_t          var_name_start, var_name_end;
+	size_t          var_value_start, var_value_end;
+	var_value_t     new_var;
 
-	if (ConfigLine.size() < 2) // ignore dos/windows 0x0d only
+	if (config_line.size() < 2) // ignore dos/windows 0x0d only
 	{
 		return (0);
 	}
-	if (ConfigLine[0] == '#')
+	if (config_line[0] == '#')
 	{
 		return (0);
 	}
-	nVarNameStart = ConfigLine.find_first_not_of (" \t\n");
-	nVarNameEnd = ConfigLine.find ('=');
-	if ((nVarNameStart == std::string::npos)
-	||  (nVarNameEnd == std::string::npos))
+	var_name_start = config_line.find_first_not_of (" \t\n");
+	var_name_end = config_line.find ('=');
+	if ((var_name_start == std::string::npos)
+	||  (var_name_end == std::string::npos))
 	{
 		return (1);
 	}
-	nVarValueStart = ConfigLine.find_first_not_of (" \t\n", nVarNameEnd+1);
-	nVarValueEnd = ConfigLine.size();
-	while (isspace (ConfigLine[nVarNameEnd-1]))
+	var_value_start = config_line.find_first_not_of (
+	  " \t\n", var_name_end+1 );
+	var_value_end = config_line.size();
+	while (isspace (config_line[var_name_end-1]))
 	{
-		nVarNameEnd--;
+		var_name_end--;
 	}
-	while (isspace (ConfigLine[nVarValueEnd-1]))
+	while (isspace (config_line[var_value_end-1]))
 	{
-		nVarValueEnd--;
+		var_value_end--;
 	}
-	NewVar.first = ConfigLine.substr
-		(nVarNameStart, nVarNameEnd - nVarNameStart);
-	NewVar.second = ConfigLine.substr
-		(nVarValueStart, nVarValueEnd - nVarValueStart);
-	m_VarList.push_back (NewVar);
+	new_var.first = config_line.substr
+		(var_name_start, var_name_end - var_name_start);
+	new_var.second = config_line.substr
+		(var_value_start, var_value_end - var_value_start);
+	m_var_list.push_back (new_var);
 	return (0);
 } // FGMS::ParseLine ()
 //////////////////////////////////////////////////////////////////////

@@ -42,7 +42,7 @@
 #include <fglib/fg_log.hxx>
 #include "daemon.hxx"
 
-int Daemon::my_pid; // remember who we are
+int  Daemon::my_pid; // remember who we are
 bool Daemon::already_daemon = false;
 
 //////////////////////////////////////////////////////////////////////

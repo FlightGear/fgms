@@ -476,7 +476,7 @@ netsocket::listen_to
 		hints.ai_socktype = SOCK_DGRAM;
 	}
 	n = getaddrinfo ( host.c_str(),
-	  NumToStr( port, 0 ).c_str(), &hints, &res );
+	  num_to_str( port ).c_str(), &hints, &res );
 	if ( n != 0 )
 	{
 		throw std::runtime_error ( gai_strerror(n) );
@@ -591,7 +591,7 @@ netsocket::connect
 		hints.ai_socktype = SOCK_STREAM;
 	else
 		hints.ai_socktype = SOCK_DGRAM;
-	n = getaddrinfo ( host.c_str(), NumToStr( port, 0 ).c_str(),
+	n = getaddrinfo ( host.c_str(), num_to_str( port ).c_str(),
 	  &hints, &res );
 	if ( n != 0 )
 	{

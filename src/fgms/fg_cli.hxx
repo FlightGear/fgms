@@ -35,7 +35,7 @@
 #include <libcli.hxx>
 
 using namespace libcli;
-using namespace std;
+// using namespace std;
 
 /**
  * @class FG_CLI 

@@ -131,13 +131,13 @@ FGLS_CLI::cmd_show_log
 	}
 	fgmp::StrList*  buf = logger.logbuf();
 	fgmp::StrIt     it;
-	buf->Lock ();
+	buf->lock ();
 	for ( it = buf->begin(); it != buf->end(); it++ )
 	{
 		client << *it << commit;
 		if (check_pager()) return libcli::OK;
 	}
-	buf->Unlock ();
+	buf->unlock ();
 	return libcli::OK;
 } // FGLS_CLI::cmd_show_log()
 

@@ -56,12 +56,12 @@ fglog::fglog
  */
 fglog::fglog
 (
-	int p
+	log_prio p
 ) : m_logstream(0), m_logfile(0)
 {
 	init ();
 	m_priority = p;
-} // fglog::fglog (int)
+} // fglog::fglog (log_prio)
 
 //////////////////////////////////////////////////////////////////////
 
@@ -92,7 +92,7 @@ fglog::fglog
 fglog::fglog
 (
 	std::string name,
-	int p
+	log_prio p
 ) : m_logstream(0), m_logfile(0)
 {
 	init ();
@@ -124,8 +124,8 @@ fglog::init
 ()
 {
 	m_flags		= WITH_DATE;
-	m_priority	= MEDIUM;
-	m_outprio	= MEDIUM;
+	m_priority	= log_prio::MEDIUM;
+	m_outprio	= log_prio::MEDIUM;
 	m_logstream	= new std::ostream ( std::cout.rdbuf () );
 	m_logstreambuf	= m_logstream->rdbuf ();
 	m_logbufsize	= 200;
@@ -197,7 +197,7 @@ fglog::close
 		delete m_logfile;
 		m_logfile = 0;
 	}
-	m_outprio	= NONE;
+	m_outprio	= log_prio::NONE;
 } // fglog::close ()
 
 //////////////////////////////////////////////////////////////////////
@@ -210,7 +210,7 @@ fglog::close
 void
 fglog::priority
 (
-	int p
+	log_prio p
 )
 {
 	m_priority = p;
@@ -224,7 +224,7 @@ int
 fglog::priority
 () const
 {
-	return m_priority;
+	return static_cast<int> (m_priority);
 } // fglog::priority (p)
 
 //////////////////////////////////////////////////////////////////////
@@ -286,12 +286,12 @@ fglog::is_open
  * @code
  * fgmp::StrList*  buf = logger.logbuf();
  * fgmp::StrIt     it;
- * buf->Lock ();	// lock the buffer !
+ * buf->lock ();	// lock the buffer !
  * for ( it = buf->begin(); it != buf->end(); it++ )
  * {
  * 	...
  * }
- * buf->Unlock ();
+ * buf->unlock ();
  * @endcode
  *
  * @note make sure to lock the logbuf before using it, to ensure no lines
@@ -367,7 +367,7 @@ fglog::log
 fglog&
 fglog::log
 (
-	int p
+	log_prio p
 )
 {
 	m_outprio = p;
@@ -401,7 +401,7 @@ fglog::log
 void
 fglog::log
 (
-	int p,
+	log_prio p,
 	const char* format,
 	...
 )
@@ -423,7 +423,7 @@ fglog::log
 std::string
 fglog::logfmt
 (
-	int p,
+	log_prio p,
 	const char* format,
 	va_list vl
 )

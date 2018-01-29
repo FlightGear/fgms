@@ -47,10 +47,9 @@ void
 FG_CLI::setup
 ()
 {
-	typedef Command<CLI>::cpp_callback_func callback_ptr;
-	typedef Command<CLI>::cpp_callback_func callback_ptr;
-	typedef CLI::cpp_auth_func auth_callback;                                                                            
-	typedef CLI::cpp_enable_func enable_callback;
+	using callback_ptr	= Command<CLI>::cpp_callback_func;
+	using auth_callback	= CLI::cpp_auth_func;
+	using enable_callback	= CLI::cpp_enable_func;
 	Command<CLI>* c;
 	// Command<CLI>* c2;
 
@@ -213,7 +212,7 @@ FG_CLI::setup
 		static_cast<callback_ptr> (&FG_CLI::cmd_blacklist_delete),
 		libcli::PRIVILEGED,
 		libcli::MODE_CONFIG,
-		"Delete entries in the blacklist"
+		"delete entries in the blacklist"
 	), c);
 	register_command (new Command<CLI> (
 		this,
@@ -241,7 +240,7 @@ FG_CLI::setup
 		static_cast<callback_ptr> (&FG_CLI::cmd_crossfeed_delete),
 		libcli::PRIVILEGED,
 		libcli::MODE_CONFIG,
-		"Delete crossfeeds"
+		"delete crossfeeds"
 	), c);
 	register_command (new Command<CLI> (
 		this,
@@ -269,7 +268,7 @@ FG_CLI::setup
 		static_cast<callback_ptr> (&FG_CLI::cmd_relay_delete),
 		libcli::PRIVILEGED,
 		libcli::MODE_CONFIG,
-		"Delete relay"
+		"delete relay"
 	), c);
 	register_command (new Command<CLI> (
 		this,
@@ -297,7 +296,7 @@ FG_CLI::setup
 		static_cast<callback_ptr> (&FG_CLI::cmd_whitelist_delete),
 		libcli::PRIVILEGED,
 		libcli::MODE_CONFIG,
-		"Delete whitelist entry"
+		"delete whitelist entry"
 	), c);
 	register_command (new Command<CLI> (
 		this,
@@ -337,14 +336,14 @@ FG_CLI::cmd_show_stats
 	difftime = now - fgms->m_uptime;
 	cmd_show_version (command, argv, argc);
 	client << CRLF;
-	client	<< "I have " << fgms->m_black_list.Size ()
+	client	<< "I have " << fgms->m_black_list.size ()
 		<< " entries in my blacklist"
 		<< CRLF; if (check_pager()) return 0;
-	client << "I have " << fgms->m_cross_list.Size () << " crossfeeds"
+	client << "I have " << fgms->m_cross_list.size () << " crossfeeds"
 		<< CRLF; if (check_pager()) return 0;
-	client << "I have " << fgms->m_relay_list.Size () << " relays"
+	client << "I have " << fgms->m_relay_list.size () << " relays"
 		<< CRLF; if (check_pager()) return 0;
-	client << "I have " << fgms->m_player_list.Size () << " users ("
+	client << "I have " << fgms->m_player_list.size () << " users ("
 		<< fgms->m_local_clients << " local, "
 		<< fgms->m_remote_clients << " remote, "
 		<< fgms->m_num_max_clients << " max)"
@@ -353,24 +352,24 @@ FG_CLI::cmd_show_stats
 	client << "Sent counters:" << CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "to crossfeeds:"
-		<< fgms->m_cross_list.PktsSent << " packets"
-		<< " (" << fgms->m_cross_list.PktsSent / difftime << "/s)"
-		<< " / " << byte_counter (fgms->m_cross_list.BytesSent)
-		<< " (" << byte_counter ((double) fgms->m_cross_list.BytesSent / difftime) << "/s)"
+		<< fgms->m_cross_list.pkts_sent << " packets"
+		<< " (" << fgms->m_cross_list.pkts_sent / difftime << "/s)"
+		<< " / " << byte_counter (fgms->m_cross_list.bytes_sent)
+		<< " (" << byte_counter ((double) fgms->m_cross_list.bytes_sent / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "to relays:"
-		<< fgms->m_relay_list.PktsSent << " packets"
-		<< " (" << fgms->m_relay_list.PktsSent / difftime << "/s)"
-		<< " / " << byte_counter (fgms->m_relay_list.BytesSent)
-		<< " (" << byte_counter ((double) fgms->m_relay_list.BytesSent / difftime) << "/s)"
+		<< fgms->m_relay_list.pkts_sent << " packets"
+		<< " (" << fgms->m_relay_list.pkts_sent / difftime << "/s)"
+		<< " / " << byte_counter (fgms->m_relay_list.bytes_sent)
+		<< " (" << byte_counter ((double) fgms->m_relay_list.bytes_sent / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0; 
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "to users:"
-		<< fgms->m_player_list.PktsSent << " packets"
-		<< " (" << fgms->m_player_list.PktsSent / difftime << "/s)"
-		<< " / " << byte_counter (fgms->m_player_list.BytesSent)
-		<< " (" << byte_counter ((double) fgms->m_player_list.BytesSent / difftime) << "/s)"
+		<< fgms->m_player_list.pkts_sent << " packets"
+		<< " (" << fgms->m_player_list.pkts_sent / difftime << "/s)"
+		<< " / " << byte_counter (fgms->m_player_list.bytes_sent)
+		<< " (" << byte_counter ((double) fgms->m_player_list.bytes_sent / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 
 	client << "Receive counters:" << CRLF; if (check_pager()) return 0;
@@ -414,37 +413,37 @@ FG_CLI::cmd_show_stats
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "blacklist:"
-		<< fgms->m_black_list.PktsRcvd << " packets"
-		<< " (" << fgms->m_black_list.PktsRcvd / difftime << "/s)"
-		<< " / " << byte_counter (fgms->m_black_list.BytesRcvd)
-		<< " (" << byte_counter ((double) fgms->m_black_list.BytesRcvd / difftime) << "/s)"
+		<< fgms->m_black_list.pkts_rcvd << " packets"
+		<< " (" << fgms->m_black_list.pkts_rcvd / difftime << "/s)"
+		<< " / " << byte_counter (fgms->m_black_list.bytes_rcvd)
+		<< " (" << byte_counter ((double) fgms->m_black_list.bytes_rcvd / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "relays:"
-		<< fgms->m_relay_list.PktsRcvd << " packets"
-		<< " (" << fgms->m_relay_list.PktsRcvd / difftime << "/s)"
-		<< " / " << byte_counter (fgms->m_relay_list.BytesRcvd)
-		<< " (" << byte_counter ((double) fgms->m_relay_list.BytesRcvd / difftime) << "/s)"
+		<< fgms->m_relay_list.pkts_rcvd << " packets"
+		<< " (" << fgms->m_relay_list.pkts_rcvd / difftime << "/s)"
+		<< " / " << byte_counter (fgms->m_relay_list.bytes_rcvd)
+		<< " (" << byte_counter ((double) fgms->m_relay_list.bytes_rcvd / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "users:"
-		<< fgms->m_player_list.PktsRcvd << " packets"
-		<< " (" << fgms->m_player_list.PktsRcvd / difftime << "/s)"
-		<< " / " << byte_counter (fgms->m_player_list.BytesRcvd)
-		<< " (" << byte_counter ((double) fgms->m_player_list.BytesRcvd / difftime) << "/s)"
+		<< fgms->m_player_list.pkts_rcvd << " packets"
+		<< " (" << fgms->m_player_list.pkts_rcvd / difftime << "/s)"
+		<< " / " << byte_counter (fgms->m_player_list.bytes_rcvd)
+		<< " (" << byte_counter ((double) fgms->m_player_list.bytes_rcvd / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
-	accumulated_sent	+= fgms->m_cross_list.BytesSent;
-	accumulated_sent_pkts	+= fgms->m_cross_list.PktsSent;
-	accumulated_sent	+= fgms->m_relay_list.BytesSent;
-	accumulated_sent_pkts	+= fgms->m_relay_list.PktsSent;
-	accumulated_sent	+= fgms->m_player_list.BytesSent;
-	accumulated_sent_pkts	+= fgms->m_player_list.PktsSent;
-	accumulated_rcvd	+= fgms->m_black_list.BytesRcvd;
-	accumulated_rcvd_pkts	+= fgms->m_black_list.PktsRcvd;
-	accumulated_rcvd	+= fgms->m_relay_list.BytesRcvd;
-	accumulated_rcvd_pkts	+= fgms->m_relay_list.PktsRcvd;
-	accumulated_rcvd	+= fgms->m_player_list.BytesRcvd;
-	accumulated_rcvd_pkts	+= fgms->m_player_list.PktsRcvd;
+	accumulated_sent	+= fgms->m_cross_list.bytes_sent;
+	accumulated_sent_pkts	+= fgms->m_cross_list.pkts_sent;
+	accumulated_sent	+= fgms->m_relay_list.bytes_sent;
+	accumulated_sent_pkts	+= fgms->m_relay_list.pkts_sent;
+	accumulated_sent	+= fgms->m_player_list.bytes_sent;
+	accumulated_sent_pkts	+= fgms->m_player_list.pkts_sent;
+	accumulated_rcvd	+= fgms->m_black_list.bytes_rcvd;
+	accumulated_rcvd_pkts	+= fgms->m_black_list.pkts_rcvd;
+	accumulated_rcvd	+= fgms->m_relay_list.bytes_rcvd;
+	accumulated_rcvd_pkts	+= fgms->m_relay_list.pkts_rcvd;
+	accumulated_rcvd	+= fgms->m_player_list.bytes_rcvd;
+	accumulated_rcvd_pkts	+= fgms->m_player_list.pkts_rcvd;
 	client << "Totals:" << CRLF; if (check_pager()) return 0;
 	client << "  " << left << setfill(' ') << setw(22)
 		<< "sent:"
@@ -592,13 +591,13 @@ FG_CLI::cmd_show_log
 	}
 	fgmp::StrList*  buf = logger.logbuf();
 	fgmp::StrIt     it;
-	buf->Lock ();
+	buf->lock ();
 	for ( it = buf->begin(); it != buf->end(); it++ )
 	{
 		client << *it << commit;
 		if (check_pager()) return 0;
 	}
-	buf->Unlock ();
+	buf->unlock ();
 	return (0);
 } // FG_CLI::cmd_show_uptime
 
@@ -634,7 +633,7 @@ FG_CLI::cmd_show_version
 		<< fgms->m_proto_major_version << "."
 		<< fgms->m_proto_minor_version << CRLF;
 	if (fgms->m_is_tracked)
-		client << "This server is tracked: " << fgms->m_tracker->GetTrackerServer() << CRLF;
+		client << "This server is tracked: " << fgms->m_tracker->get_server () << CRLF;
 	else
 		client << "This server is NOT tracked" << CRLF;
 	cmd_show_uptime (command, argv, argc);
@@ -648,8 +647,8 @@ FG_CLI::cmd_show_version
  *  possible arguments:
  *  show whitelist ?
  *  show whitelist <cr>
- *  show whitelist ID
- *  show whitelist IP-Address
+ *  show whitelist id
+ *  show whitelist IP-address
  */
 int
 FG_CLI::cmd_whitelist_show
@@ -659,34 +658,34 @@ FG_CLI::cmd_whitelist_show
 	int argc
 )
 {
-	size_t		ID = 0;
-	int		ID_invalid = -1;
-	fgmp::netaddr	Address;
+	size_t		id = 0;
+	int		id_invalid = -1;
+	fgmp::netaddr	address;
 	size_t		EntriesFound = 0;
 	for (int i=0; i < argc; i++)
 	{
-		ID  = StrToNum<size_t> ( argv[0], ID_invalid );
-		if (ID_invalid)
-			ID = 0;
+		id  = str_to_num<size_t> ( argv[0], id_invalid );
+		if (id_invalid)
+			id = 0;
 		switch (i)
 		{
-		case 0: // ID or IP or 'brief' or '?'
+		case 0: // id or IP or 'brief' or '?'
 			if ( need_help (argv[i]) )
 			{
 				client << "  " << left << setfill(' ') << setw(22)
-					<< "ID" << "show entry with ID" << CRLF;
+					<< "id" << "show entry with id" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
-					<< "IP" << "show entry with IP-Address" << CRLF;
+					<< "IP" << "show entry with IP-address" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "<cr>" << "show long listing" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "|" << "output modifier" << CRLF;
 				return (0);
 			}
-			else if (ID == 0)
+			else if (id == 0)
 			{
-				Address.assign (argv[0], 0);
-				if ( ! Address.is_valid() )
+				address.assign (argv[0], 0);
+				if ( ! address.is_valid() )
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -708,45 +707,45 @@ FG_CLI::cmd_whitelist_show
 			return libcli::ERROR_ARG;
 		}
 	}
-	int Count = fgms->m_white_list.Size ();
+	int Count = fgms->m_white_list.size ();
 	fgmp::ListElement Entry("");
 	client << CRLF;
 	time_t  difftime;
 	time_t  now;
 	now = time(0);
 	difftime = now - fgms->m_uptime;
-	client << fgms->m_white_list.Name << ":" << CRLF;
+	client << fgms->m_white_list.name << ":" << CRLF;
 	client << CRLF;
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_white_list[i];
-		if ( (ID == 0) && (Address.is_valid()) )
+		if ( (id == 0) && (address.is_valid()) )
 		{	// only list matching entries
-			if (Entry.Address != Address)
+			if (Entry.address != address)
 			{
-			std::cout << "e1: " << Entry.Address << " != " << Address << std::endl;
+			std::cout << "e1: " << Entry.address << " != " << address << std::endl;
 				continue;
 			}
 		}
-		else if (ID)
+		else if (id)
 		{
-			if (Entry.ID != ID)
+			if (Entry.id != id)
 			{
-			std::cout << "e2: " << Entry.ID << " != " << ID << std::endl;
+			std::cout << "e2: " << Entry.id << " != " << id << std::endl;
 				continue;
 			}
 		}
 		EntriesFound++;
-		client << "ID " << Entry.ID << ": "
-			<< Entry.Address.to_string() << " : " << Entry.Name
+		client << "id " << Entry.id << ": "
+			<< Entry.address.to_string() << " : " << Entry.name
 			<< CRLF; if (check_pager()) return 0;
-		client << "  entered      : " << timestamp_to_datestr (Entry.JoinTime)
+		client << "  entered      : " << timestamp_to_datestr (Entry.join_time)
 			<< CRLF; if (check_pager()) return 0;
-		client << "  last seen    : " << timestamp_to_days (Entry.LastSeen)
+		client << "  last seen    : " << timestamp_to_days (Entry.last_seen)
 			<< CRLF; if (check_pager()) return 0;
-		client << "  rcvd packets : " << Entry.PktsRcvd
+		client << "  rcvd packets : " << Entry.pkts_rcvd
 			<< CRLF; if (check_pager()) return 0;
-		client << "  rcvd bytes   : " << byte_counter (Entry.BytesRcvd)
+		client << "  rcvd bytes   : " << byte_counter (Entry.bytes_rcvd)
 			<< CRLF; if (check_pager()) return 0;
 	}
 	if (EntriesFound)
@@ -755,10 +754,10 @@ FG_CLI::cmd_whitelist_show
 	if (EntriesFound)
 	{
 		client << "Total rcvd: "
-			<< fgms->m_white_list.PktsRcvd << " packets"
-			<< " (" << fgms->m_white_list.PktsRcvd / difftime << "/s)"
-			<< " / " << byte_counter (fgms->m_white_list.BytesRcvd)
-			<< " (" << byte_counter ((double) (fgms->m_white_list.BytesRcvd/difftime)) << "/s)"
+			<< fgms->m_white_list.pkts_rcvd << " packets"
+			<< " (" << fgms->m_white_list.pkts_rcvd / difftime << "/s)"
+			<< " / " << byte_counter (fgms->m_white_list.bytes_rcvd)
+			<< " (" << byte_counter ((double) (fgms->m_white_list.bytes_rcvd/difftime)) << "/s)"
 			<< CRLF; if (check_pager()) return 0;
 	}
 	return 0;
@@ -766,14 +765,14 @@ FG_CLI::cmd_whitelist_show
 
 //////////////////////////////////////////////////
 /**
- *  @brief Delete whitelist entry
+ *  @brief delete whitelist entry
  *
  *  ONLY in config mode
  *
  *  possible arguments:
  *  whitelist delete ?
- *  whitelist delete ID
- *  whitelist delete IP-Address
+ *  whitelist delete id
+ *  whitelist delete IP-address
  *  whitelist delete [...] <cr>
  */
 int
@@ -784,30 +783,30 @@ FG_CLI::cmd_whitelist_delete
 	int argc
 )
 {
-	size_t		ID = 0;
-	int		ID_invalid = -1;
-	fgmp::netaddr		Address;
+	size_t		id = 0;
+	int		id_invalid = -1;
+	fgmp::netaddr		address;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
 	{
-		ID  = StrToNum<size_t> ( argv[0], ID_invalid );
-		if (ID_invalid)
-			ID = 0;
+		id  = str_to_num<size_t> ( argv[0], id_invalid );
+		if (id_invalid)
+			id = 0;
 		switch (i)
 		{
-		case 0: // ID or IP or 'brief' or '?'
+		case 0: // id or IP or 'brief' or '?'
 			if ( need_help (argv[i]) )
 			{
 				client << "  " << left << setfill(' ') << setw(22)
-					<< "ID" << "delete entry with ID" << CRLF;
+					<< "id" << "delete entry with id" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "IP" << "delete entry with IP address" << CRLF;
 				return (0);
 			}
-			else if (ID == 0)
+			else if (id == 0)
 			{
-				Address.assign (argv[0], 0);
-				if (! Address.is_valid())
+				address.assign (argv[0], 0);
+				if (! address.is_valid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -826,17 +825,17 @@ FG_CLI::cmd_whitelist_delete
 			return libcli::ERROR_ARG;
 		}
 	}
-	if ( (ID == 0) && (! Address.is_valid()) )
+	if ( (id == 0) && (! address.is_valid()) )
 	{
 		client << "% missing argument" << CRLF;
 		return 1;
 	}
-	if ( (ID == 0) && (Address.is_valid()) )
+	if ( (id == 0) && (address.is_valid()) )
 	{	// match IP
-		Entry = fgms->m_white_list.Find (Address);
-		if (Entry != fgms->m_white_list.End())
+		Entry = fgms->m_white_list.find (address);
+		if (Entry != fgms->m_white_list.end())
 		{
-			fgms->m_white_list.Delete (Entry);
+			fgms->m_white_list.erase (Entry);
 		}
 		else
 		{
@@ -845,10 +844,10 @@ FG_CLI::cmd_whitelist_delete
 		}
 		return 0;
 	}
-	Entry = fgms->m_white_list.FindByID (ID);
-	if (Entry != fgms->m_white_list.End())
+	Entry = fgms->m_white_list.find_by_id (id);
+	if (Entry != fgms->m_white_list.end())
 	{
-		fgms->m_white_list.Delete (Entry);
+		fgms->m_white_list.erase (Entry);
 	}
 	else
 	{
@@ -867,7 +866,7 @@ FG_CLI::cmd_whitelist_delete
  *
  *  possible arguments:
  *  blacklist add ?
- *  blacklist add TTL IP-Address [reason]
+ *  blacklist add TTL IP-address [reason]
  *  blacklist add [...] <cr>
  */
 int
@@ -880,7 +879,7 @@ FG_CLI::cmd_whitelist_add
 {
 	time_t		TTL = -1;
 	int		I;
-	fgmp::netaddr		Address;
+	fgmp::netaddr		address;
 	string		Reason;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
@@ -891,10 +890,10 @@ FG_CLI::cmd_whitelist_add
 			if ( need_help (argv[i]) )
 			{
 				client << "  " << left << setfill(' ') << setw(22)
-					<< "TTL" << "Timeout of the new entry in seconds" << CRLF;
+					<< "TTL" << "timeout of the new entry in seconds" << CRLF;
 				return (0);
 			}
-			TTL  = StrToNum<size_t> ( argv[0], I );
+			TTL  = str_to_num<size_t> ( argv[0], I );
 			if (I)
 			{
 				client << "% invalid TTL" << CRLF;
@@ -908,8 +907,8 @@ FG_CLI::cmd_whitelist_add
 					<< "IP" << "IP address which should be whitelisted" << CRLF;
 				return (0);
 			}
-			Address.assign (argv[i], 0);
-			if (! Address.is_valid())
+			address.assign (argv[i], 0);
+			if (! address.is_valid())
 			{
 				client << "% invalid IP address" << CRLF;
 				return (1);
@@ -937,19 +936,19 @@ FG_CLI::cmd_whitelist_add
 		}
 	}
 	fgmp::ListElement E (Reason);
-	E.Address = Address;
-	size_t NewID;
-	ItList CurrentEntry = fgms->m_white_list.Find ( E.Address );
-	if ( CurrentEntry == fgms->m_white_list.End() )
+	E.address = address;
+	size_t Newid;
+	ItList CurrentEntry = fgms->m_white_list.find ( E.address );
+	if ( CurrentEntry == fgms->m_white_list.end() )
 	{       
-		NewID = fgms->m_white_list.Add (E, TTL);
+		Newid = fgms->m_white_list.add (E, TTL);
 	}
 	else
 	{
-		client << "% entry already exists (ID " << CurrentEntry->ID << ")!" << CRLF;
+		client << "% entry already exists (id " << CurrentEntry->id << ")!" << CRLF;
 		return 1;
 	}
-	client << "added with ID " << NewID << CRLF;
+	client << "added with id " << Newid << CRLF;
 	return (0);
 } // FG_CLI::cmd_whitelist_add
 
@@ -960,8 +959,8 @@ FG_CLI::cmd_whitelist_add
  *  possible arguments:
  *  show blacklist ?
  *  show blacklist <cr>
- *  show blacklist ID
- *  show blacklist IP-Address
+ *  show blacklist id
+ *  show blacklist IP-address
  *  show blacklist [...] brief
  */
 int
@@ -972,27 +971,27 @@ FG_CLI::cmd_blacklist_show
 	int argc
 )
 {
-	size_t		ID = 0;
-	int		ID_invalid = -1;
-	fgmp::netaddr		Address;
+	size_t		id = 0;
+	int		id_invalid = -1;
+	fgmp::netaddr		address;
 	bool		Brief = false;
 	size_t		EntriesFound = 0;
 	for (int i=0; i < argc; i++)
 	{
-		ID  = StrToNum<size_t> ( argv[0], ID_invalid );
-		if (ID_invalid)
-			ID = 0;
+		id  = str_to_num<size_t> ( argv[0], id_invalid );
+		if (id_invalid)
+			id = 0;
 		switch (i)
 		{
-		case 0: // ID or IP or 'brief' or '?'
+		case 0: // id or IP or 'brief' or '?'
 			if ( need_help (argv[i]) )
 			{
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "brief" << "show brief listing" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
-					<< "ID" << "show entry with ID" << CRLF;
+					<< "id" << "show entry with id" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
-					<< "IP" << "show entry with IP-Address" << CRLF;
+					<< "IP" << "show entry with IP-address" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "<cr>" << "show long listing" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
@@ -1003,10 +1002,10 @@ FG_CLI::cmd_blacklist_show
 			{
 				Brief = true;
 			}
-			else if (ID == 0)
+			else if (id == 0)
 			{
-				Address.assign (argv[0], 0);
-				if (! Address.is_valid())
+				address.assign (argv[0], 0);
+				if (! address.is_valid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -1037,48 +1036,48 @@ FG_CLI::cmd_blacklist_show
 			return libcli::ERROR_ARG;
 		}
 	}
-	int Count = fgms->m_black_list.Size ();
+	int Count = fgms->m_black_list.size ();
 	fgmp::ListElement Entry("");
 	client << CRLF;
 	time_t  difftime;
 	time_t  now;
 	now = time(0);
 	difftime = now - fgms->m_uptime;
-	client << fgms->m_black_list.Name << ":" << CRLF;
+	client << fgms->m_black_list.name << ":" << CRLF;
 	client << CRLF;
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_black_list[i];
-		if ( (ID == 0) && (Address.is_valid()) )
+		if ( (id == 0) && (address.is_valid()) )
 		{	// only list matching entries
-			if (Entry.Address != Address)
+			if (Entry.address != address)
 				continue;
 		}
-		else if (ID)
+		else if (id)
 		{
-			if (Entry.ID != ID)
+			if (Entry.id != id)
 				continue;
 		}
 		EntriesFound++;
-		client << "ID " << Entry.ID << ": "
-			<< Entry.Address.to_string() << " : " << Entry.Name
+		client << "id " << Entry.id << ": "
+			<< Entry.address.to_string() << " : " << Entry.name
 			<< CRLF; if (check_pager()) return 0;
 		if (Brief == true)
 		{
 			continue;
 		}
 		string expire = "NEVER";
-		if (Entry.Timeout != 0)
+		if (Entry.timeout != 0)
 		{
-			expire = NumToStr (Entry.Timeout, 0) + " seconds";
+			expire = num_to_str (Entry.timeout, 0) + " seconds";
 		}
-		client << "  entered      : " << timestamp_to_datestr (Entry.JoinTime)
+		client << "  entered      : " << timestamp_to_datestr (Entry.join_time)
 			<< CRLF; if (check_pager()) return 0;
-		client << "  last seen    : " << timestamp_to_days (Entry.LastSeen)
+		client << "  last seen    : " << timestamp_to_days (Entry.last_seen)
 			<< CRLF; if (check_pager()) return 0;
-		client << "  rcvd packets : " << Entry.PktsRcvd
+		client << "  rcvd packets : " << Entry.pkts_rcvd
 			<< CRLF; if (check_pager()) return 0;
-		client << "  rcvd bytes   : " << byte_counter (Entry.BytesRcvd)
+		client << "  rcvd bytes   : " << byte_counter (Entry.bytes_rcvd)
 			<< CRLF; if (check_pager()) return 0;
 		client << "  expire in    : " << expire
 			<< CRLF; if (check_pager()) return 0;
@@ -1091,10 +1090,10 @@ FG_CLI::cmd_blacklist_show
 	if (EntriesFound)
 	{
 		client << "Total rcvd: "
-			<< fgms->m_black_list.PktsRcvd << " packets"
-			<< " (" << fgms->m_black_list.PktsRcvd / difftime << "/s)"
-			<< " / " << byte_counter (fgms->m_black_list.BytesRcvd)
-			<< " (" << byte_counter ((double) (fgms->m_black_list.BytesRcvd/difftime)) << "/s)"
+			<< fgms->m_black_list.pkts_rcvd << " packets"
+			<< " (" << fgms->m_black_list.pkts_rcvd / difftime << "/s)"
+			<< " / " << byte_counter (fgms->m_black_list.bytes_rcvd)
+			<< " (" << byte_counter ((double) (fgms->m_black_list.bytes_rcvd/difftime)) << "/s)"
 			<< CRLF; if (check_pager()) return 0;
 	}
 	return 0;
@@ -1102,14 +1101,14 @@ FG_CLI::cmd_blacklist_show
 
 //////////////////////////////////////////////////
 /**
- *  @brief Delete Blacklist entry
+ *  @brief delete Blacklist entry
  *
  *  ONLY in config mode
  *
  *  possible arguments:
  *  blacklist delete ?
- *  blacklist delete ID
- *  blacklist delete IP-Address
+ *  blacklist delete id
+ *  blacklist delete IP-address
  *  blacklist delete [...] <cr>
  */
 int
@@ -1120,30 +1119,30 @@ FG_CLI::cmd_blacklist_delete
 	int argc
 )
 {
-	size_t		ID = 0;
-	int		ID_invalid = -1;
-	fgmp::netaddr		Address;
+	size_t		id = 0;
+	int		id_invalid = -1;
+	fgmp::netaddr		address;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
 	{
-		ID  = StrToNum<size_t> ( argv[0], ID_invalid );
-		if (ID_invalid)
-			ID = 0;
+		id  = str_to_num<size_t> ( argv[0], id_invalid );
+		if (id_invalid)
+			id = 0;
 		switch (i)
 		{
-		case 0: // ID or IP or 'brief' or '?'
+		case 0: // id or IP or 'brief' or '?'
 			if ( need_help (argv[i]) )
 			{
 				client << "  " << left << setfill(' ') << setw(22)
-					<< "ID" << "delete entry with ID" << CRLF;
+					<< "id" << "delete entry with id" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "IP" << "delete entry with IP address" << CRLF;
 				return (0);
 			}
-			else if (ID == 0)
+			else if (id == 0)
 			{
-				Address.assign (argv[0], 0);
-				if (! Address.is_valid())
+				address.assign (argv[0], 0);
+				if (! address.is_valid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -1162,17 +1161,17 @@ FG_CLI::cmd_blacklist_delete
 			return libcli::ERROR_ARG;
 		}
 	}
-	if ( (ID == 0) && (! Address.is_valid()) )
+	if ( (id == 0) && (! address.is_valid()) )
 	{
 		client << "% missing argument" << CRLF;
 		return 1;
 	}
-	if ( (ID == 0) && (Address.is_valid()) )
+	if ( (id == 0) && (address.is_valid()) )
 	{	// match IP
-		Entry = fgms->m_black_list.Find (Address);
-		if (Entry != fgms->m_black_list.End())
+		Entry = fgms->m_black_list.find (address);
+		if (Entry != fgms->m_black_list.end())
 		{
-			fgms->m_black_list.Delete (Entry);
+			fgms->m_black_list.erase (Entry);
 		}
 		else
 		{
@@ -1181,10 +1180,10 @@ FG_CLI::cmd_blacklist_delete
 		}
 		return 0;
 	}
-	Entry = fgms->m_black_list.FindByID (ID);
-	if (Entry != fgms->m_black_list.End())
+	Entry = fgms->m_black_list.find_by_id (id);
+	if (Entry != fgms->m_black_list.end())
 	{
-		fgms->m_black_list.Delete (Entry);
+		fgms->m_black_list.erase (Entry);
 	}
 	else
 	{
@@ -1203,7 +1202,7 @@ FG_CLI::cmd_blacklist_delete
  *
  *  possible arguments:
  *  blacklist add ?
- *  blacklist add TTL IP-Address [reason]
+ *  blacklist add TTL IP-address [reason]
  *  blacklist add [...] <cr>
  */
 int
@@ -1216,7 +1215,7 @@ FG_CLI::cmd_blacklist_add
 {
 	time_t		TTL = -1;
 	int		I;
-	fgmp::netaddr		Address;
+	fgmp::netaddr		address;
 	string		Reason;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
@@ -1227,10 +1226,10 @@ FG_CLI::cmd_blacklist_add
 			if ( need_help (argv[i]) )
 			{
 				client << "  " << left << setfill(' ') << setw(22)
-					<< "TTL" << "Timeout of the new entry in seconds" << CRLF;
+					<< "TTL" << "timeout of the new entry in seconds" << CRLF;
 				return (0);
 			}
-			TTL  = StrToNum<size_t> ( argv[0], I );
+			TTL  = str_to_num<size_t> ( argv[0], I );
 			if (I)
 			{
 				client << "% invalid TTL" << CRLF;
@@ -1244,8 +1243,8 @@ FG_CLI::cmd_blacklist_add
 					<< "IP" << "IP address which should be blacklisted" << CRLF;
 				return (0);
 			}
-			Address.assign (argv[i], 0);
-			if (! Address.is_valid())
+			address.assign (argv[i], 0);
+			if (! address.is_valid())
 			{
 				client << "% invalid IP address" << CRLF;
 				return (1);
@@ -1273,32 +1272,32 @@ FG_CLI::cmd_blacklist_add
 		}
 	}
 	fgmp::ListElement E (Reason);
-	E.Address = Address;
-	size_t NewID;
-	ItList CurrentEntry = fgms->m_black_list.Find ( E.Address );
-	if ( CurrentEntry == fgms->m_black_list.End() )
+	E.address = address;
+	size_t Newid;
+	ItList CurrentEntry = fgms->m_black_list.find ( E.address );
+	if ( CurrentEntry == fgms->m_black_list.end() )
 	{       
-		NewID = fgms->m_black_list.Add (E, TTL);
+		Newid = fgms->m_black_list.add (E, TTL);
 	}
 	else
 	{
-		client << "% entry already exists (ID " << CurrentEntry->ID << ")!" << CRLF;
+		client << "% entry already exists (id " << CurrentEntry->id << ")!" << CRLF;
 		return 1;
 	}
-	client << "added with ID " << NewID << CRLF;
+	client << "added with id " << Newid << CRLF;
 	return (0);
 } // FG_CLI::cmd_blacklist_add
 
 //////////////////////////////////////////////////
 /**
- *  @brief Delete Crossfeed entry
+ *  @brief delete Crossfeed entry
  *
  *  ONLY in config mode
  *
  *  possible arguments:
  *  crossfeed delete ?
- *  crossfeed delete ID
- *  crossfeed delete IP-Address
+ *  crossfeed delete id
+ *  crossfeed delete IP-address
  *  crossfeed delete [...] <cr>
  */
 int
@@ -1309,30 +1308,30 @@ FG_CLI::cmd_crossfeed_delete
 	int argc
 )
 {
-	size_t		ID = 0;
-	int		ID_invalid = -1;
-	fgmp::netaddr		Address;
+	size_t		id = 0;
+	int		id_invalid = -1;
+	fgmp::netaddr		address;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
 	{
-		ID  = StrToNum<size_t> ( argv[0], ID_invalid );
-		if (ID_invalid)
-			ID = 0;
+		id  = str_to_num<size_t> ( argv[0], id_invalid );
+		if (id_invalid)
+			id = 0;
 		switch (i)
 		{
-		case 0: // ID or IP or 'brief' or '?'
+		case 0: // id or IP or 'brief' or '?'
 			if ( need_help (argv[i]) )
 			{
 				client << "  " << left << setfill(' ') << setw(22)
-					<< "ID" << "delete entry with ID" << CRLF;
+					<< "id" << "delete entry with id" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "IP" << "delete entry with IP address" << CRLF;
 				return (0);
 			}
-			else if (ID == 0)
+			else if (id == 0)
 			{
-				Address.assign (argv[0], 0);
-				if (! Address.is_valid())
+				address.assign (argv[0], 0);
+				if (! address.is_valid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -1351,17 +1350,17 @@ FG_CLI::cmd_crossfeed_delete
 			return libcli::ERROR_ARG;
 		}
 	}
-	if ( (ID == 0) && (! Address.is_valid()) )
+	if ( (id == 0) && (! address.is_valid()) )
 	{
 		client << "% missing argument" << CRLF;
 		return 1;
 	}
-	if ( (ID == 0) && (Address.is_valid()) )
+	if ( (id == 0) && (address.is_valid()) )
 	{	// match IP
-		Entry = fgms->m_cross_list.Find (Address);
-		if (Entry != fgms->m_cross_list.End())
+		Entry = fgms->m_cross_list.find (address);
+		if (Entry != fgms->m_cross_list.end())
 		{
-			fgms->m_cross_list.Delete (Entry);
+			fgms->m_cross_list.erase (Entry);
 		}
 		else
 		{
@@ -1370,10 +1369,10 @@ FG_CLI::cmd_crossfeed_delete
 		}
 		return 0;
 	}
-	Entry = fgms->m_cross_list.FindByID (ID);
-	if (Entry != fgms->m_cross_list.End())
+	Entry = fgms->m_cross_list.find_by_id (id);
+	if (Entry != fgms->m_cross_list.end())
 	{
-		fgms->m_cross_list.Delete (Entry);
+		fgms->m_cross_list.erase (Entry);
 	}
 	else
 	{
@@ -1392,7 +1391,7 @@ FG_CLI::cmd_crossfeed_delete
  *
  *  possible arguments:
  *  crossfeed add ?
- *  crossfeed add IP-Address Port Name
+ *  crossfeed add IP-address Port name
  *  crossfeed add [...] <cr>
  */
 int
@@ -1403,8 +1402,8 @@ FG_CLI::cmd_crossfeed_add
 	int argc
 )
 {
-	fgmp::netaddr		Address;
-	string		Name;
+	fgmp::netaddr		address;
+	string		name;
 	int		Port;
 	int		I;
 	ItList		Entry;
@@ -1419,8 +1418,8 @@ FG_CLI::cmd_crossfeed_add
 					<< "IP" << "IP address of the crossfeed" << CRLF;
 				return (0);
 			}
-			Address.assign (argv[i], 0);
-			if (! Address.is_valid())
+			address.assign (argv[i], 0);
+			if (! address.is_valid())
 			{
 				client << "% invalid IP address" << CRLF;
 				return (1);
@@ -1433,7 +1432,7 @@ FG_CLI::cmd_crossfeed_add
 					<< "Port" << "Port of the relay" << CRLF;
 				return (0);
 			}
-			Port  = StrToNum<int> ( argv[i], I );
+			Port  = str_to_num<int> ( argv[i], I );
 			if (I)
 			{
 				client << "% invalid port " << Port << CRLF;
@@ -1443,7 +1442,7 @@ FG_CLI::cmd_crossfeed_add
 		default:
 			if ( need_help (argv[i]) )
 			{
-				if (Name == "")
+				if (name == "")
 				{
 					client << "  " << left << setfill(' ') << setw(22)
 						<< "NAME" << "The name of this crossfeed" << CRLF;
@@ -1455,27 +1454,27 @@ FG_CLI::cmd_crossfeed_add
 				}
 				return 0;
 			}
-			Name += argv[i];
+			name += argv[i];
 			if (i+1 < argc)
-				Name += " ";
+				name += " ";
 			break;
 		}
 	}
-	fgmp::ListElement E (Name);
-	E.Address = Address;
-	E.Address.port (Port);
-	size_t NewID;
-	ItList CurrentEntry = fgms->m_cross_list.Find ( E.Address, true );
-	if ( CurrentEntry == fgms->m_cross_list.End() )
+	fgmp::ListElement E (name);
+	E.address = address;
+	E.address.port (Port);
+	size_t Newid;
+	ItList CurrentEntry = fgms->m_cross_list.find ( E.address, true );
+	if ( CurrentEntry == fgms->m_cross_list.end() )
 	{       
-		NewID = fgms->m_cross_list.Add (E, Port);
+		Newid = fgms->m_cross_list.add (E, Port);
 	}
 	else
 	{
-		client << "entry already exists (ID " << CurrentEntry->ID << ")" << CRLF;
+		client << "entry already exists (id " << CurrentEntry->id << ")" << CRLF;
 		return 1;
 	}
-	client << "added with ID " << NewID << CRLF;
+	client << "added with id " << Newid << CRLF;
 	return (0);
 } // FG_CLI::cmd_crossfeed_add
 
@@ -1486,8 +1485,8 @@ FG_CLI::cmd_crossfeed_add
  *  possible arguments:
  *  show blacklist ?
  *  show blacklist <cr>
- *  show blacklist ID
- *  show blacklist IP-Address
+ *  show blacklist id
+ *  show blacklist IP-address
  *  show blacklist [...] brief
  */
 int
@@ -1498,27 +1497,27 @@ FG_CLI::cmd_crossfeed_show
 	int argc
 )
 {
-	size_t		ID = 0;
-	int		ID_invalid = -1;
-	fgmp::netaddr		Address;
+	size_t		id = 0;
+	int		id_invalid = -1;
+	fgmp::netaddr		address;
 	bool		Brief = false;
 	size_t		EntriesFound = 0;
 	for (int i=0; i < argc; i++)
 	{
-		ID  = StrToNum<size_t> ( argv[0], ID_invalid );
-		if (ID_invalid)
-			ID = 0;
+		id  = str_to_num<size_t> ( argv[0], id_invalid );
+		if (id_invalid)
+			id = 0;
 		switch (i)
 		{
-		case 0: // ID or IP or 'brief' or '?'
+		case 0: // id or IP or 'brief' or '?'
 			if ( need_help (argv[i]) )
 			{
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "brief" << "show brief listing" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
-					<< "ID" << "show entry with ID" << CRLF;
+					<< "id" << "show entry with id" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
-					<< "IP" << "show entry with IP-Address" << CRLF;
+					<< "IP" << "show entry with IP-address" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "<cr>" << "show long listing" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
@@ -1529,10 +1528,10 @@ FG_CLI::cmd_crossfeed_show
 			{
 				Brief = true;
 			}
-			else if (ID == 0)
+			else if (id == 0)
 			{
-				Address.assign (argv[0], 0);
-				if (! Address.is_valid())
+				address.assign (argv[0], 0);
+				if (! address.is_valid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -1563,9 +1562,9 @@ FG_CLI::cmd_crossfeed_show
 			return libcli::ERROR_ARG;
 		}
 	}
-	int Count = fgms->m_cross_list.Size ();
+	int Count = fgms->m_cross_list.size ();
 	fgmp::ListElement Entry("");
-	client << fgms->m_cross_list.Name << ":" << CRLF;
+	client << fgms->m_cross_list.name << ":" << CRLF;
 	client << CRLF;
 	time_t  difftime;
 	time_t  now;
@@ -1574,34 +1573,34 @@ FG_CLI::cmd_crossfeed_show
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_cross_list[i];
-		if ( (ID == 0) && (Address.is_valid()) )
+		if ( (id == 0) && (address.is_valid()) )
 		{	// only list matching entries
-			if (Entry.Address != Address)
+			if (Entry.address != address)
 				continue;
 		}
-		else if (ID)
+		else if (id)
 		{
-			if (Entry.ID != ID)
+			if (Entry.id != id)
 				continue;
 		}
 		EntriesFound++;
-		client << "ID " << Entry.ID << ": "
-			<< Entry.Address.to_string() << ":" << Entry.Address.port()
-			<< " : " << Entry.Name
+		client << "id " << Entry.id << ": "
+			<< Entry.address.to_string() << ":" << Entry.address.port()
+			<< " : " << Entry.name
 			<< CRLF; if (check_pager()) return 0;
 		if (Brief == true)
 		{
 			continue;
 		}
-		client << "  entered      : " << timestamp_to_datestr (Entry.JoinTime)
+		client << "  entered      : " << timestamp_to_datestr (Entry.join_time)
 			<< CRLF; if (check_pager()) return 0;
-		client << "  last sent    : " << timestamp_to_days (Entry.LastSent)
+		client << "  last sent    : " << timestamp_to_days (Entry.last_sent)
 			<< CRLF; if (check_pager()) return 0;
-		client << "  sent packets : " << Entry.PktsSent
-			<< "(" << (double) (Entry.PktsSent / difftime) << " packets/s)"
+		client << "  sent packets : " << Entry.pkts_sent
+			<< "(" << (double) (Entry.pkts_sent / difftime) << " packets/s)"
 			<< CRLF; if (check_pager()) return 0;
-		client << "  sent bytes   : " << byte_counter (Entry.BytesSent)
-			<< "(" << byte_counter ((double) Entry.BytesSent / difftime) << "/s)"
+		client << "  sent bytes   : " << byte_counter (Entry.bytes_sent)
+			<< "(" << byte_counter ((double) Entry.bytes_sent / difftime) << "/s)"
 			<< CRLF; if (check_pager()) return 0;
 	}
 	if (EntriesFound)
@@ -1612,10 +1611,10 @@ FG_CLI::cmd_crossfeed_show
 	if (EntriesFound)
 	{
 		client << "Total sent: "
-			<< fgms->m_cross_list.PktsSent << " packets"
-			<< "(" << fgms->m_cross_list.PktsSent / difftime << "/s)"
-			<< " / " << byte_counter (fgms->m_cross_list.BytesSent)
-			<< "(" << byte_counter ((double) (fgms->m_cross_list.BytesSent/difftime)) << "/s)"
+			<< fgms->m_cross_list.pkts_sent << " packets"
+			<< "(" << fgms->m_cross_list.pkts_sent / difftime << "/s)"
+			<< " / " << byte_counter (fgms->m_cross_list.bytes_sent)
+			<< "(" << byte_counter ((double) (fgms->m_cross_list.bytes_sent/difftime)) << "/s)"
 			<< CRLF;
 	}
 	return 0;
@@ -1628,8 +1627,8 @@ FG_CLI::cmd_crossfeed_show
  *  possible arguments:
  *  show relay ?
  *  show relay <cr>
- *  show relay ID
- *  show relay IP-Address
+ *  show relay id
+ *  show relay IP-address
  *  show relay [...] brief
  */
 int
@@ -1640,26 +1639,26 @@ FG_CLI::cmd_relay_show
 	int argc
 )
 {
-	size_t		ID = 0;
-	int		ID_invalid = -1;
-	fgmp::netaddr		Address;
+	size_t		id = 0;
+	int		id_invalid = -1;
+	fgmp::netaddr		address;
 	bool		Brief = false;
 	size_t		EntriesFound = 0;
-	string		Name;
+	string		name;
 	for (int i=0; i < argc; i++)
 	{
-		ID  = StrToNum<size_t> ( argv[0], ID_invalid );
-		if (ID_invalid)
-			ID = 0;
+		id  = str_to_num<size_t> ( argv[0], id_invalid );
+		if (id_invalid)
+			id = 0;
 		switch (i)
 		{
-		case 0: // ID or IP or 'brief' or '?'
+		case 0: // id or IP or 'brief' or '?'
 			if ( need_help (argv[i]) )
 			{
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "brief" << "show brief listing" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
-					<< "ID" << "show entry with ID" << CRLF;
+					<< "id" << "show entry with id" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "IP" << "show entry with IP-address" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
@@ -1674,12 +1673,12 @@ FG_CLI::cmd_relay_show
 			{
 				Brief = true;
 			}
-			else if (ID == 0)
+			else if (id == 0)
 			{
-				Address.assign (argv[0], 0);
-				if (! Address.is_valid())
+				address.assign (argv[0], 0);
+				if (! address.is_valid())
 				{
-					Name = argv[0];
+					name = argv[0];
 				}
 			}
 			break;
@@ -1707,9 +1706,9 @@ FG_CLI::cmd_relay_show
 			return libcli::ERROR_ARG;
 		}
 	}
-	int Count = fgms->m_relay_list.Size ();
+	int Count = fgms->m_relay_list.size ();
 	fgmp::ListElement Entry("");
-	client << fgms->m_relay_list.Name << ":" << CRLF;
+	client << fgms->m_relay_list.name << ":" << CRLF;
 	client << CRLF;
 	time_t  difftime;
 	time_t  now;
@@ -1718,45 +1717,45 @@ FG_CLI::cmd_relay_show
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_relay_list[i];
-		if ( (ID == 0) && (Address.is_valid()) )
+		if ( (id == 0) && (address.is_valid()) )
 		{	// only list matching entries
-			if (Entry.Address != Address)
+			if (Entry.address != address)
 				continue;
 		}
-		else if (ID)
+		else if (id)
 		{
-			if (Entry.ID != ID)
+			if (Entry.id != id)
 				continue;
 		}
-		else if (Name != "")
+		else if (name != "")
 		{
-			if (Entry.Name.find(Name) == string::npos)
+			if (Entry.name.find(name) == string::npos)
 				continue;
 		}
 		EntriesFound++;
-		client << "ID " << Entry.ID << ": "
-			<< Entry.Address.to_string() << ":" << Entry.Address.port()
-			<< " : " << Entry.Name
+		client << "id " << Entry.id << ": "
+			<< Entry.address.to_string() << ":" << Entry.address.port()
+			<< " : " << Entry.name
 			<< CRLF; if (check_pager()) return 0;
 		if (Brief == true)
 		{
 			continue;
 		}
-		client << "  entered   : " << timestamp_to_datestr (Entry.JoinTime)
+		client << "  entered   : " << timestamp_to_datestr (Entry.join_time)
 			<< CRLF; if (check_pager()) return 0;
-		client << "  last seen : " << timestamp_to_datestr (Entry.LastSeen)
+		client << "  last seen : " << timestamp_to_datestr (Entry.last_seen)
 			<< CRLF; if (check_pager()) return 0;
 		client << "  sent      : "
-			<< Entry.PktsSent << " packets"
-			<< " (" << Entry.PktsSent / difftime << "/s)"
-			<< " / " << byte_counter (Entry.BytesSent)
-			<< " (" << byte_counter ((double) Entry.BytesSent / difftime) << "/s)"
+			<< Entry.pkts_sent << " packets"
+			<< " (" << Entry.pkts_sent / difftime << "/s)"
+			<< " / " << byte_counter (Entry.bytes_sent)
+			<< " (" << byte_counter ((double) Entry.bytes_sent / difftime) << "/s)"
 			<< CRLF; if (check_pager()) return 0;
 		client << "  rcvd      : "
-			<< Entry.PktsRcvd << " packets"
-			<< " (" << Entry.PktsRcvd / difftime << "/s)"
-			<< " / " << byte_counter (Entry.BytesRcvd)
-			<< " (" << byte_counter ((double) Entry.BytesRcvd / difftime) << "/s)"
+			<< Entry.pkts_rcvd << " packets"
+			<< " (" << Entry.pkts_rcvd / difftime << "/s)"
+			<< " / " << byte_counter (Entry.bytes_rcvd)
+			<< " (" << byte_counter ((double) Entry.bytes_rcvd / difftime) << "/s)"
 			<< CRLF; if (check_pager()) return 0;
 	}
 	client << CRLF;
@@ -1768,16 +1767,16 @@ FG_CLI::cmd_relay_show
 	}
 	client << "Totals:" << CRLF; if (check_pager()) return 0;
 	client << "  sent      : "
-		<< fgms->m_relay_list.PktsSent << " packets"
-		<< " (" << fgms->m_relay_list.PktsSent / difftime << "/s)"
-		<< " / " << byte_counter (fgms->m_relay_list.BytesSent)
-		<< " (" << byte_counter ((double) fgms->m_relay_list.BytesSent / difftime) << "/s)"
+		<< fgms->m_relay_list.pkts_sent << " packets"
+		<< " (" << fgms->m_relay_list.pkts_sent / difftime << "/s)"
+		<< " / " << byte_counter (fgms->m_relay_list.bytes_sent)
+		<< " (" << byte_counter ((double) fgms->m_relay_list.bytes_sent / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 	client << "  received  : "
-		<< fgms->m_relay_list.PktsRcvd << " packets"
-		<< " (" << fgms->m_relay_list.PktsRcvd / difftime << "/s)"
-		<< " / " << byte_counter (fgms->m_relay_list.BytesRcvd)
-		<< " (" << byte_counter ((double) fgms->m_relay_list.BytesRcvd / difftime) << "/s)"
+		<< fgms->m_relay_list.pkts_rcvd << " packets"
+		<< " (" << fgms->m_relay_list.pkts_rcvd / difftime << "/s)"
+		<< " / " << byte_counter (fgms->m_relay_list.bytes_rcvd)
+		<< " (" << byte_counter ((double) fgms->m_relay_list.bytes_rcvd / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 	return 0;
 } // FG_CLI::cmd_relay_show
@@ -1827,14 +1826,14 @@ FG_CLI::cmd_tracker_show
 	now = time(0);
 	difftime = now - fgms->m_uptime;
 	client << "This server is tracked: "
-		<< fgms->m_tracker->GetTrackerServer() << ":"
-		<< fgms->m_tracker->GetTrackerPort()
+		<< fgms->m_tracker->get_server () << ":"
+		<< fgms->m_tracker->get_port()
 		<< CRLF;
-	if (fgms->m_tracker->m_connected)
+	if (fgms->m_tracker->is_connected ())
 	{
 		client << "state: connected since "
-			<< timestamp_to_datestr(fgms->m_tracker->LastConnected)
-			<< " (" << timestamp_to_days (fgms->m_tracker->LastConnected) << " ago)"
+			<< timestamp_to_datestr(fgms->m_tracker->last_connected)
+			<< " (" << timestamp_to_days (fgms->m_tracker->last_connected) << " ago)"
 			<< CRLF;
 	}
 	else
@@ -1842,45 +1841,45 @@ FG_CLI::cmd_tracker_show
 		client << "state: NOT connected!" << CRLF;
 	}
 	string A = "NEVER";
-	if (fgms->m_tracker->LastSeen != 0)
+	if (fgms->m_tracker->last_seen != 0)
 	{
-		A = timestamp_to_days (fgms->m_tracker->LastSeen);
+		A = timestamp_to_days (fgms->m_tracker->last_seen);
 		A += " ago";
 	}
 	string B = "NEVER";
-	if (fgms->m_tracker->LastSent != 0)
+	if (fgms->m_tracker->last_sent != 0)
 	{
-		B = timestamp_to_days (fgms->m_tracker->LastSent);
+		B = timestamp_to_days (fgms->m_tracker->last_sent);
 		B += " ago";
 	}
 	client << "last seen " << A << ", last sent " << B << CRLF;
-	client << "I had " << fgms->m_tracker->LostConnections << " lost connections" << CRLF;
+	client << "I had " << fgms->m_tracker->lost_connections << " lost connections" << CRLF;
 	client << CRLF;
 	client << "Counters:" << CRLF;
-	client << "  sent    : " << fgms->m_tracker->PktsSent << " packets";
-	client << " (" << fgms->m_tracker->PktsSent / difftime << "/s)";
-	client << " / " << byte_counter (fgms->m_tracker->BytesSent);
-	client << " (" << byte_counter ((double) fgms->m_tracker->BytesSent / difftime) << "/s)";
+	client << "  sent    : " << fgms->m_tracker->pkts_sent << " packets";
+	client << " (" << fgms->m_tracker->pkts_sent / difftime << "/s)";
+	client << " / " << byte_counter (fgms->m_tracker->bytes_sent);
+	client << " (" << byte_counter ((double) fgms->m_tracker->bytes_sent / difftime) << "/s)";
 	client << CRLF;
-	client << "  received: " << fgms->m_tracker->PktsRcvd << " packets";
-	client << " (" << fgms->m_tracker->PktsRcvd / difftime << "/s)";
-	client << " / " << byte_counter (fgms->m_tracker->BytesRcvd);
-	client << " (" << byte_counter ((double) fgms->m_tracker->BytesRcvd / difftime) << "/s)";
+	client << "  received: " << fgms->m_tracker->pkts_rcvd << " packets";
+	client << " (" << fgms->m_tracker->pkts_rcvd / difftime << "/s)";
+	client << " / " << byte_counter (fgms->m_tracker->bytes_rcvd);
+	client << " (" << byte_counter ((double) fgms->m_tracker->bytes_rcvd / difftime) << "/s)";
 	client << CRLF;
-	client << "  queue size: " << fgms->m_tracker->msg_queue.size() << " messages" << CRLF;
+	client << "  queue size: " << fgms->m_tracker->queue_size () << " messages" << CRLF;
 	return 0;
 } // FG_CLI::cmd_tracker_show
 
 //////////////////////////////////////////////////
 /**
- *  @brief Delete Relay entry
+ *  @brief delete Relay entry
  *
  *  ONLY in config mode
  *
  *  possible arguments:
  *  relay delete ?
- *  relay delete ID
- *  relay delete IP-Address
+ *  relay delete id
+ *  relay delete IP-address
  *  relay delete [...] <cr>
  */
 int
@@ -1891,30 +1890,30 @@ FG_CLI::cmd_relay_delete
 	int argc
 )
 {
-	size_t		ID = 0;
-	int		ID_invalid = -1;
-	fgmp::netaddr		Address;
+	size_t		id = 0;
+	int		id_invalid = -1;
+	fgmp::netaddr		address;
 	ItList		Entry;
 	for (int i=0; i < argc; i++)
 	{
-		ID  = StrToNum<size_t> ( argv[0], ID_invalid );
-		if (ID_invalid)
-			ID = 0;
+		id  = str_to_num<size_t> ( argv[0], id_invalid );
+		if (id_invalid)
+			id = 0;
 		switch (i)
 		{
-		case 0: // ID or IP or 'brief' or '?'
+		case 0: // id or IP or 'brief' or '?'
 			if ( need_help (argv[i]) )
 			{
 				client << "  " << left << setfill(' ') << setw(22)
-					<< "ID" << "delete entry with ID" << CRLF;
+					<< "id" << "delete entry with id" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "IP" << "delete entry with IP address" << CRLF;
 				return (0);
 			}
-			else if (ID == 0)
+			else if (id == 0)
 			{
-				Address.assign (argv[0], 0);
-				if (! Address.is_valid())
+				address.assign (argv[0], 0);
+				if (! address.is_valid())
 				{
 					client << "% invalid IP address" << CRLF;
 					return (1);
@@ -1933,17 +1932,17 @@ FG_CLI::cmd_relay_delete
 			return libcli::ERROR_ARG;
 		}
 	}
-	if ( (ID == 0) && (! Address.is_valid()) )
+	if ( (id == 0) && (! address.is_valid()) )
 	{
 		client << "% missing argument" << CRLF;
 		return 1;
 	}
-	if ( (ID == 0) && (Address.is_valid()) )
+	if ( (id == 0) && (address.is_valid()) )
 	{	// match IP
-		Entry = fgms->m_relay_list.Find (Address);
-		if (Entry != fgms->m_relay_list.End())
+		Entry = fgms->m_relay_list.find (address);
+		if (Entry != fgms->m_relay_list.end())
 		{
-			fgms->m_relay_list.Delete (Entry);
+			fgms->m_relay_list.erase (Entry);
 		}
 		else
 		{
@@ -1952,10 +1951,10 @@ FG_CLI::cmd_relay_delete
 		}
 		return 0;
 	}
-	Entry = fgms->m_relay_list.FindByID (ID);
-	if (Entry != fgms->m_relay_list.End())
+	Entry = fgms->m_relay_list.find_by_id (id);
+	if (Entry != fgms->m_relay_list.end())
 	{
-		fgms->m_relay_list.Delete (Entry);
+		fgms->m_relay_list.erase (Entry);
 	}
 	else
 	{
@@ -1974,7 +1973,7 @@ FG_CLI::cmd_relay_delete
  *
  *  possible arguments:
  *  relay add ?
- *  relay add IP-Address Port [Name]
+ *  relay add IP-address Port [name]
  *  relay add [...] <cr>
  */
 int
@@ -1985,8 +1984,8 @@ FG_CLI::cmd_relay_add
 	int argc
 )
 {
-	fgmp::netaddr		Address;
-	string		Name;
+	fgmp::netaddr		address;
+	string		name;
 	int		Port;
 	int		I;
 	ItList		Entry;
@@ -2001,8 +2000,8 @@ FG_CLI::cmd_relay_add
 					<< "IP" << "IP address of the relay" << CRLF;
 				return (0);
 			}
-			Address.assign (argv[i], 0);
-			if (! Address.is_valid())
+			address.assign (argv[i], 0);
+			if (! address.is_valid())
 			{
 				client << "% invalid IP address" << CRLF;
 				return (1);
@@ -2015,7 +2014,7 @@ FG_CLI::cmd_relay_add
 					<< "Port" << "Port of the relay" << CRLF;
 				return (0);
 			}
-			Port  = StrToNum<int> ( argv[i], I );
+			Port  = str_to_num<int> ( argv[i], I );
 			if (I)
 			{
 				client << "% invalid port " << Port << CRLF;
@@ -2025,7 +2024,7 @@ FG_CLI::cmd_relay_add
 		default: // '?' or <CR>
 			if ( need_help (argv[i]) )
 			{
-				if (Name == "")
+				if (name == "")
 					client << "  " << left << setfill(' ') << setw(22)
 						<< "NAME" << "the name of this relay" << CRLF;
 				else
@@ -2033,27 +2032,27 @@ FG_CLI::cmd_relay_add
 						<< "<cr>" << "add this relay" << CRLF;
 				return 0;
 			}
-			Name += argv[i];
+			name += argv[i];
 			if (i+1 < argc)
-				Name += " ";
+				name += " ";
 			break;
 		}
 	}
-	fgmp::ListElement E (Name);
-	E.Address = Address;
-	E.Address.port (Port);
-	size_t NewID;
-	ItList CurrentEntry = fgms->m_relay_list.Find ( E.Address, true );
-	if ( CurrentEntry == fgms->m_relay_list.End() )
+	fgmp::ListElement E (name);
+	E.address = address;
+	E.address.port (Port);
+	size_t Newid;
+	ItList CurrentEntry = fgms->m_relay_list.find ( E.address, true );
+	if ( CurrentEntry == fgms->m_relay_list.end() )
 	{       
-		NewID = fgms->m_relay_list.Add (E, 0);
+		Newid = fgms->m_relay_list.add (E, 0);
 	}
 	else
 	{
-		client << "entry already exists (ID " << CurrentEntry->ID << ")" << CRLF;
+		client << "entry already exists (id " << CurrentEntry->id << ")" << CRLF;
 		return 1;
 	}
-	client << "added with ID " << NewID << CRLF;
+	client << "added with id " << Newid << CRLF;
 	return (0);
 } // FG_CLI::cmd_relay_add
 
@@ -2064,9 +2063,9 @@ FG_CLI::cmd_relay_add
  *  possible arguments:
  *  show user ?
  *  show user <cr>
- *  show user ID <cr>
- *  show user IP-Address <cr>
- *  show user Name <cr>
+ *  show user id <cr>
+ *  show user IP-address <cr>
+ *  show user name <cr>
  *  show user local <cr>
  *  show user remote <cr>
  *  show user [...] brief <cr>
@@ -2079,10 +2078,10 @@ FG_CLI::cmd_user_show
 	int argc
 )
 {
-	size_t		ID = 0;
-	int		ID_invalid = -1;
-	fgmp::netaddr		Address;
-	string		Name;
+	size_t		id = 0;
+	int		id_invalid = -1;
+	fgmp::netaddr		address;
+	string		name;
 	bool		Brief = false;
 	bool		OnlyLocal = false;
 	bool		OnlyRemote = false;
@@ -2091,20 +2090,20 @@ FG_CLI::cmd_user_show
 	time_t		now = time(0);
 	for (int i=0; i < argc; i++)
 	{
-		ID  = StrToNum<size_t> ( argv[0], ID_invalid );
-		if (ID_invalid)
-			ID = 0;
+		id  = str_to_num<size_t> ( argv[0], id_invalid );
+		if (id_invalid)
+			id = 0;
 		switch (i)
 		{
-		case 0: // ID or IP or 'brief' or '?'
+		case 0: // id or IP or 'brief' or '?'
 			if ( need_help (argv[i]) )
 			{
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "brief" << "show brief listing" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
-					<< "ID" << "show user with ID" << CRLF;
+					<< "id" << "show user with id" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
-					<< "IP" << "show user with IP-Address" << CRLF;
+					<< "IP" << "show user with IP-address" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
 					<< "NAME" << "show user with NAME" << CRLF;
 				client << "  " << left << setfill(' ') << setw(22)
@@ -2121,12 +2120,12 @@ FG_CLI::cmd_user_show
 			{
 				Brief = true;
 			}
-			else if (ID == 0)
+			else if (id == 0)
 			{
-				Address.assign (argv[0], 0);
-				if (! Address.is_valid())
+				address.assign (argv[0], 0);
+				if (! address.is_valid())
 				{
-					Name = argv[0];
+					name = argv[0];
 				}
 			}
 			break;
@@ -2154,140 +2153,141 @@ FG_CLI::cmd_user_show
 			return libcli::ERROR_ARG;
 		}
 	}
-	int Count = fgms->m_player_list.Size ();
+	int Count = fgms->m_player_list.size ();
 	FG_Player	Player;
 	Point3D		PlayerPosGeod;
 	string		Origin;
-	string		FullName;
-	client << fgms->m_player_list.Name << ":" << CRLF;
+	string		Fullname;
+	client << fgms->m_player_list.name << ":" << CRLF;
 	client << CRLF;
-	if (Name == "local")
+	if (name == "local")
 	{
 		OnlyLocal = true;
-		Name = "";
+		name = "";
 	}
-	if (Name == "remote")
+	if (name == "remote")
 	{
 		OnlyRemote = true;
-		Name = "";
+		name = "";
 	}
 	for (int i = 0; i < Count; i++)
 	{
 		now = time(0);
 		difftime = now - fgms->m_uptime;
 		Player = fgms->m_player_list[i];
-		if ( (ID == 0) && (Address.is_valid()) )
+		if ( (id == 0) && (address.is_valid()) )
 		{	// only list matching entries
-			if (Player.Address != Address)
+			if (Player.address != address)
 				continue;
 		}
-		else if (ID)
+		else if (id)
 		{
-			if (Player.ID != ID)
+			if (Player.id != id)
 				continue;
 		}
-		else if (Name != "")
+		else if (name != "")
 		{
-			if (Player.Name.find(Name) == string::npos)
+			if (Player.name.find(name) == string::npos)
 				continue;
 		}
 		else if (OnlyLocal == true)
 		{
-			if (Player.IsLocal == false)
+			if (Player.is_local == false)
 				continue;
 		}
 		else if (OnlyRemote == true)
 		{
-			if (Player.IsLocal == true)
+			if (Player.is_local == true)
 				continue;
 		}
-		sgCartToGeod ( Player.LastPos, PlayerPosGeod );
-		if (Player.IsLocal)
+		cart_to_geod ( Player.last_pos, PlayerPosGeod );
+		if (Player.is_local)
 		{
 			Origin = "LOCAL";
 		}
 		else
 		{
-			FGMS::ip2relay_it Relay = fgms->m_relay_map.find ( Player.Address );
+			FGMS::ip2relay_it Relay = fgms->m_relay_map.find ( Player.address );
 			if ( Relay != fgms->m_relay_map.end() )
 			{
 				Origin = Relay->second;
 			}
 			else
 			{
-				Origin = Player.Origin;
+				Origin = Player.origin;
 			}
 		}
-		FullName = Player.Name + string("@") + Origin;
+		Fullname = Player.name + string("@") + Origin;
 		std::string ATC;
-		switch ( Player.IsATC )
+		using fgmp::ATC_TYPE;
+		switch ( Player.is_ATC )
 		{
-		case FG_Player::ATC_NONE:	ATC = ", a normal pilot"; break;
-		case FG_Player::ATC:		ATC = ", an ATC"; break;
-		case FG_Player::ATC_DL:		ATC = ", a clearance delivery ATC"; break;
-		case FG_Player::ATC_GN:		ATC = ", a ground ATC"; break;
-		case FG_Player::ATC_TW:		ATC = ", a tower ATC"; break;
-		case FG_Player::ATC_AP:		ATC = ", an approach ATC"; break;
-		case FG_Player::ATC_DE:		ATC = ", a departure ATC"; break;
-		case FG_Player::ATC_CT:		ATC = ", a center ATC"; break;
+		case ATC_TYPE::NONE:	ATC = ", a normal pilot"; break;
+		case ATC_TYPE::ATC:	ATC = ", an ATC"; break;
+		case ATC_TYPE::ATC_DL:	ATC = ", a clearance delivery ATC"; break;
+		case ATC_TYPE::ATC_GN:	ATC = ", a ground ATC"; break;
+		case ATC_TYPE::ATC_TW:	ATC = ", a tower ATC"; break;
+		case ATC_TYPE::ATC_AP:	ATC = ", an approach ATC"; break;
+		case ATC_TYPE::ATC_DE:	ATC = ", a departure ATC"; break;
+		case ATC_TYPE::ATC_CT:	ATC = ", a center ATC"; break;
 		}
-		client << "ID " << Player.ID << ": "
-			<< FullName << ATC
+		client << "id " << Player.id << ": "
+			<< Fullname << ATC
 			<< CRLF; if (check_pager()) return 0;
 		EntriesFound++;
 		if (Brief == true)
 		{
 			continue;
 		}
-		if (Player.HasErrors == true)
+		if (Player.has_errors == true)
 		{
 			client << "         " << left << setfill(' ') << setw(15)
-				<< "ERROR" << Player.Error
+				<< "ERROR" << Player.error
 				<< CRLF; if (check_pager()) return 0;
 		}
 		client << "         " << left << setfill(' ') << setw(15)
-			<< "protocoll" << Player.ProtoMajor << "." << Player.ProtoMinor
+			<< "protocoll" << Player.proto_major << "." << Player.proto_minor
 			<< CRLF; if (check_pager()) return 0;
 		client << "         " << left << setfill(' ') << setw(15)
-			<< "radar range" << Player.RadarRange
+			<< "radar range" << Player.radar_range
 			<< CRLF; if (check_pager()) return 0;
-		int expires = Player.Timeout - (now - Player.LastSeen);
+		int expires = Player.timeout - (now - Player.last_seen);
 		client << "         " << left << setfill(' ') << setw(15)
-			<< "entered" << timestamp_to_days (Player.JoinTime) << " ago"
-			<< CRLF; if (check_pager()) return 0;
-		client << "         " << left << setfill(' ') << setw(15)
-			<< "joined" << timestamp_to_datestr(Player.JoinTime)
+			<< "entered" << timestamp_to_days (Player.join_time) << " ago"
 			<< CRLF; if (check_pager()) return 0;
 		client << "         " << left << setfill(' ') << setw(15)
-			<< "last seen" << timestamp_to_datestr(Player.LastSeen)
+			<< "joined" << timestamp_to_datestr(Player.join_time)
 			<< CRLF; if (check_pager()) return 0;
 		client << "         " << left << setfill(' ') << setw(15)
-			<< "using model" << Player.ModelName
+			<< "last seen" << timestamp_to_datestr(Player.last_seen)
 			<< CRLF; if (check_pager()) return 0;
-		if (Player.IsLocal)
+		client << "         " << left << setfill(' ') << setw(15)
+			<< "using model" << Player.model_name
+			<< CRLF; if (check_pager()) return 0;
+		if (Player.is_local)
 		{
 			client << "         " << left << setfill(' ') << setw(15)
-				<< "real origin" << Player.Origin
+				<< "real origin" << Player.origin
 				<< CRLF; if (check_pager()) return 0;
 			client << "         " << left << setfill(' ') << setw(15)
-				<< "sent" << Player.PktsSent << " packets "
-				<< "(" << Player.PktsSent / difftime << "/s)"
-				<< " / " << byte_counter (Player.BytesSent)
-				<< " (" << byte_counter ((double) Player.BytesSent / difftime) << "/s)"
+				<< "sent" << Player.pkts_sent << " packets "
+				<< "(" << Player.pkts_sent / difftime << "/s)"
+				<< " / " << byte_counter (Player.bytes_sent)
+				<< " (" << byte_counter ((double) Player.bytes_sent / difftime) << "/s)"
 				<< CRLF; if (check_pager()) return 0;
 		}
 
 		client << "         " << left << setfill(' ') << setw(15)
-			<< "rcvd" << Player.PktsRcvd << " packets "
-			<< "(" << Player.PktsRcvd / difftime << "/s)"
-			<< " / " << byte_counter (Player.BytesRcvd)
-			<< " (" << byte_counter ((double) Player.BytesRcvd / difftime) << "/s)"
+			<< "rcvd" << Player.pkts_rcvd << " packets "
+			<< "(" << Player.pkts_rcvd / difftime << "/s)"
+			<< " / " << byte_counter (Player.bytes_rcvd)
+			<< " (" << byte_counter ((double) Player.bytes_rcvd / difftime) << "/s)"
 			<< CRLF; if (check_pager()) return 0;
 		client << "         " << left << setfill(' ') << setw(15)
 			<< "expires in" << expires
 			<< CRLF; if (check_pager()) return 0;
 		client << "         " << left << setfill(' ') << setw(15)
-			<< "inactive" << now - Player.LastRelayedToInactive
+			<< "inactive" << now - Player.last_relayed_to_inactive
 			<< CRLF; if (check_pager()) return 0;
 	}
 	difftime = now - fgms->m_uptime;
@@ -2296,15 +2296,15 @@ FG_CLI::cmd_user_show
 	if (! Brief)
 	{
 		client << "Totals:" << CRLF; if (check_pager()) return 0;
-		client << "          sent    : " << fgms->m_player_list.PktsSent << " packets"
-			<< " (" << fgms->m_player_list.PktsSent / difftime << "/s)"
-			<< " / " << byte_counter (fgms->m_player_list.BytesSent)
-			<< " (" << byte_counter ((double) fgms->m_player_list.BytesSent / difftime) << "/s)"
+		client << "          sent    : " << fgms->m_player_list.pkts_sent << " packets"
+			<< " (" << fgms->m_player_list.pkts_sent / difftime << "/s)"
+			<< " / " << byte_counter (fgms->m_player_list.bytes_sent)
+			<< " (" << byte_counter ((double) fgms->m_player_list.bytes_sent / difftime) << "/s)"
 			<< CRLF; if (check_pager()) return 0;
-		client << "          received: " << fgms->m_player_list.PktsRcvd << " packets"
-			<< " (" << fgms->m_player_list.PktsRcvd / difftime << "/s)"
-			<< " / " << byte_counter (fgms->m_player_list.BytesRcvd) 
-			<< " (" << byte_counter ((double) fgms->m_player_list.BytesRcvd / difftime) << "/s)"
+		client << "          received: " << fgms->m_player_list.pkts_rcvd << " packets"
+			<< " (" << fgms->m_player_list.pkts_rcvd / difftime << "/s)"
+			<< " / " << byte_counter (fgms->m_player_list.bytes_rcvd) 
+			<< " (" << byte_counter ((double) fgms->m_player_list.bytes_rcvd / difftime) << "/s)"
 			<< CRLF; if (check_pager()) return 0;
 	}
 	return 0;

@@ -2,8 +2,6 @@
 
 const char* LOGFILE = "example.log";
 
-using namespace fgmp;
-
 int
 main
 (
@@ -11,11 +9,11 @@ main
 	char* argv[]
 )
 {
-	logger.log ( fglog::URGENT ) << "Output to console" << fgmp::endl;
+	logger.log ( log_prio::URGENT ) << "Output to console" << fgmp::endl;
 	logger << "+ Output to console" << fgmp::endl;
-	LOG ( fglog::DEBUG, "NO Output to console" );
+	LOG ( log_prio::DEBUG, "NO Output to console" );
 	logger.open ( LOGFILE );
-	LOG ( fglog::HIGH, "this should go into the logfile" );
+	LOG ( log_prio::HIGH, "this should go into the logfile" );
 
 	fgmp::StrList*	buf = logger.logbuf();
 	fgmp::StrIt	it;

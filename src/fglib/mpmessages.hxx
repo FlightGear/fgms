@@ -43,9 +43,6 @@
 #include <simgear/math/SGMath.hxx>
 #include "encoding.hxx"
 
-/** @brief  ID  of a "chat" message */
-#define CHAT_MSG_ID             1
-
 /** @brief The `Magic` value for message (currently FGFS). The magic is at
  * the start of every packet and is used for packet validation.
  */
@@ -65,10 +62,10 @@ namespace FGFS
 /**
  * Message identifiers
  */
-typedef enum
+enum MSG_ID
 {
 	//@{ deprecated message ids
-	U1 = 1,	// old CHAT_MSG_ID
+	CHAT_MSG = 1,	// old CHAT_MSG_ID
 	U2,	// old pos data
 	U3,	// old pos data,
 	U4,	// old pos data,
@@ -81,7 +78,7 @@ typedef enum
 	/// a ping packet is send verbatim back to sender
 	PING,	// request
 	PONG,	// answer
-} MSG_ID;
+};
 
 } // namspace FGFS
 
@@ -109,22 +106,22 @@ typedef enum
 struct T_MsgHdr
 {
 	/** @brief Magic Value */
-	xdr_data_t  Magic;   
+	xdr_data_t  magic;   
 	/** @brief Protocol version */
-	xdr_data_t  Version;           
+	xdr_data_t  version;           
 	/** @brief Message identifier  */
-	xdr_data_t  MsgId;     
+	xdr_data_t  msg_id;     
 	/** @brief Absolute length of message */
-	xdr_data_t  MsgLen;    
+	xdr_data_t  msg_len;    
 	/** @brief Player's radar range */
-	xdr_data_t  RadarRange;   
+	xdr_data_t  radar_range;   
 	/** @brief Player's receiver port
 	 * @deprecated Not used in current implementation
 	 * set to zero
 	 */
-	xdr_data_t  ReplyPort;   
+	xdr_data_t  reply_port;   
 	/** @brief Callsign used by the player */
-	char Name[MAX_CALLSIGN_LEN]; 
+	char name[MAX_CALLSIGN_LEN]; 
 };
 
 /** 
@@ -134,7 +131,7 @@ struct T_MsgHdr
 struct T_PositionMsg
 {
 	/** @brief  Name of the aircraft model */
-	char Model[MAX_MODEL_NAME_LEN]; 
+	char model[MAX_MODEL_NAME_LEN]; 
 	/** @brief Time when this packet was generated */
 	xdr_data2_t time;
 	/** @brief Time when this packet was generated */
@@ -149,19 +146,19 @@ struct T_PositionMsg
 	/** @brief Linear velocity wrt the earth centered frame measured in
 	 *         the earth centered frame
 	 */
-	xdr_data_t linearVel[3];
+	xdr_data_t linear_vel[3];
 	/** @brief Angular velocity wrt the earth centered frame measured in
 	 *          the earth centered frame
 	 */
-	xdr_data_t angularVel[3];
+	xdr_data_t angular_vel[3];
 	/** @brief Linear acceleration wrt the earth centered frame measured
 	 *         in the earth centered frame
 	 */
-	xdr_data_t linearAccel[3];
+	xdr_data_t linear_accel[3];
 	/** @brief Angular acceleration wrt the earth centered frame measured
 	 *         in the earth centered frame
 	 */
-	xdr_data_t angularAccel[3];
+	xdr_data_t angular_accel[3];
 };
 
 /** 
@@ -207,12 +204,17 @@ struct FGExternalMotionData
 	*/
 	SGVec3f linearVel;
 	/** 
-	* @brief Angular velocity wrt the earth centered frame measured in the earth centered frame
+	* @brief Angular velocity wrt the earth centered frame measured
+	*        in the earth centered frame
 	*/
 	SGVec3f angularVel;
-	/** @brief Linear acceleration wrt the earth centered frame measured in the earth centered frame */
+	/** @brief Linear acceleration wrt the earth centered frame
+	 *         measured in the earth centered frame
+	 */
 	SGVec3f linearAccel;
-	/** @brief Angular acceleration wrt the earth centered frame measured in the earth centered frame */
+	/** @brief Angular acceleration wrt the earth centered frame
+	 *         measured in the earth centered frame
+	 */
 	SGVec3f angularAccel;
 	/** @brief The set of properties recieved for this timeslot */
 	std::vector<FGFloatPropertyData> properties;

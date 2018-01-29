@@ -89,7 +89,7 @@ ipaddr::ipaddr
 //////////////////////////////////////////////////////////////////////
 ipaddr::ipaddr
 (
-	const string& Addr
+	const std::string& Addr
 )
 {
 	m_error = E_OK;
@@ -124,7 +124,7 @@ ipaddr::assign
 void
 ipaddr::assign
 (
-	const string& IP
+	const std::string& IP
 )
 {
 	m_error = E_OK;
@@ -194,7 +194,7 @@ ipaddr::assign
 void
 ipaddr::resolve
 (
-	const string& Host
+	const std::string& Host
 )
 {
 	m_error = E_OK;
@@ -266,7 +266,7 @@ ipaddr::set_error
  * @see set_error
  */
 //////////////////////////////////////////////////////////////////////
-string
+std::string
 ipaddr::get_error_msg
 () const
 {
@@ -564,7 +564,7 @@ ipaddr::operator >=
 void
 ipaddr::operator =
 (
-	const string& Addr
+	const std::string& Addr
 )
 {
 	from_string ( Addr );
@@ -1178,7 +1178,7 @@ ipaddr::build_from_mask
  * @see ADDRESS_BASE
  */
 //////////////////////////////////////////////////////////////////////
-string
+std::string
 ipaddr::to_string
 (
 	const ADDRESS_BASE nBase,
@@ -1499,7 +1499,7 @@ ipaddr::prescan_str
 void
 ipaddr::from_string
 (
-	const string& addr
+	const std::string& addr
 )
 {
 	bool is_ipv6  = false;

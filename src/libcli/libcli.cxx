@@ -569,7 +569,7 @@ CLI::int_cmd_pager
 				  << CRLF;
 				return libcli::OK;
 			}
-			lines = StrToNum<size_t> ( argv[0], invalid );
+			lines = str_to_num<size_t> ( argv[0], invalid );
 			if (invalid)
 			{
 				client << "% invalid argument" << CRLF;

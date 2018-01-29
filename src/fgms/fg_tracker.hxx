@@ -7,10 +7,10 @@
 
 //////////////////////////////////////////////////////////////////////
 //
-//  server tracker for FlightGear
-//  (c) 2006 Julien Pierru
-//	(c) 2015 Hazuki Amamiya
-//  Licenced under GPL
+// server tracker for FlightGear
+// (c) 2006 Julien Pierru
+// (c) 2015 Hazuki Amamiya
+// Licenced under GPL
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -28,11 +28,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #if !defined FG_TRACKER_HPP
-// #define FG_TRACKER_HPP
-
-using namespace std;
-
-// #define ADD_TRACKER_LOG
+#define FG_TRACKER_HPP
 
 #include <iostream>
 #include <fstream>
@@ -57,55 +53,67 @@ using namespace std;
  */
 class FG_TRACKER
 {
-public:
-
+private:
 	//////////////////////////////////////////////////
 	//
 	//  private variables
 	//
 	//////////////////////////////////////////////////
-	int	m_TrackerPort;
-	int	m_PingInterval;
-	int	m_TimeoutStage;
-	string	m_TrackerServer;
-	string	m_FgmsName;
-	string	m_domain;
-	string	m_ProtocolVersion;
-	bool	m_identified;			/* If fgtracker identified this fgms */
-	fgmp::netsocket* m_TrackerSocket;
-	string m_version;
+	int	m_tracker_port;
+	int	m_ping_interval;
+	int	m_timeout_stage;
+	std::string	m_tracker_server;
+	std::string	m_fgms_name;
+	std::string	m_domain;
+	std::string	m_proto_version;
+	bool	m_identified;			// If fgtracker identified this fgms
+	fgmp::netsocket* m_tracker_socket;
+	std::string m_version;
 
-	typedef std::vector<std::string> vMSG;	/* string vector */
-	typedef vMSG::iterator VI;		/* string vector iterator */
-	typedef struct buffsock   /*socket buffer*/
+	using  vMSG = std::vector<std::string>;	// string vector
+	using  VI   = vMSG::iterator;		// string vector iterator
+	struct buffsock_t  	 		// socket buffer
 	{
 		char* buf;
 		size_t maxlen;
 		size_t curlen;
-	} buffsock_t;
-	pthread_mutex_t msg_mutex;		/* message queue mutext */
-	pthread_mutex_t msg_sent_mutex;		/* message queue mutext */
-	pthread_mutex_t msg_recv_mutex;		/* message queue mutext */
-	pthread_cond_t  condition_var;		/* message queue condition */
-	vMSG    msg_queue;			/* the single message queue */
-	vMSG    msg_sent_queue;			/* the single message queue */
-	vMSG    msg_recv_queue;			/* the single message queue */
-	bool	want_exit;
-	static bool	m_connected;			/* If connected to fgtracker */
+	};
+	pthread_mutex_t msg_mutex;		// message queue mutext
+	pthread_mutex_t msg_sent_mutex;		// message queue mutext
+	pthread_mutex_t msg_recv_mutex;		// message queue mutext
+	vMSG    msg_queue;			// the single message queue
+	vMSG    msg_sent_queue;			// the single message queue
+	vMSG    msg_recv_queue;			// the single message queue
+	bool	want_exit;			// signal to exit
+	pthread_cond_t  condition_var;		// message queue condition
+	static bool	m_connected;		// If connected to fgtracker
+
+	//////////////////////////////////////////////////
+	//
+	//  private methods
+	//
+	//////////////////////////////////////////////////
+	bool 	connect ();
+	void	write_queue ();
+	void	read_queue ();
+	void 	requeue_msg ();
+	void 	buffsock_free ( buffsock_t* bs );
+	void	check_timeout ();
+	int	tracker_write ( const std::string& str );
+	void 	tracker_read ( buffsock_t* bs );
+	void 	reply_from_server ();
 	static inline void set_connected ( bool b )
 	{
 		m_connected = b;
 	};
-	static inline bool is_connected ()
-	{
-		return m_connected;
-	};
+public:
+
 	//////////////////////////////////////////////////
 	//
 	//  constructors
 	//
 	//////////////////////////////////////////////////
-	FG_TRACKER ( int port, string server, string m_ServerName, string m_domain, string m_version);
+	FG_TRACKER ( int port, std::string server, std::string m_server_name, std::string m_domain, std::string m_version);
 	~FG_TRACKER ();
 
 	//////////////////////////////////////////////////
@@ -114,55 +122,59 @@ public:
 	//
 	//////////////////////////////////////////////////
 	int	loop ();
-	void	AddMessage ( const string& message );
+	void	add_message ( const std::string& message );
+
+	void set_want_exit ()
+	{
+		want_exit = true;
+	};
+
+	static inline bool is_connected ()
+	{
+		return m_connected;
+	};
+
+	pthread_cond_t* get_cond_var ()
+	{
+		return &condition_var;
+	};
 
 	/**
 	 * @brief Return the server of the tracker
 	 * @retval string Return tracker server as string
 	 */
-	inline string GetTrackerServer ()
+	inline std::string get_server ()
 	{
-		return m_TrackerServer;
+		return m_tracker_server;
 	};
 
 	/**
 	 * @brief Return the port no of the tracker
 	 * @retval int Port Number
 	 */
-	inline int GetTrackerPort ()
+	inline int get_port ()
 	{
-		return m_TrackerPort;
+		return m_tracker_port;
 	};
-	pthread_t GetThreadID();
+	pthread_t get_thread_id ();
 
-
-	//////////////////////////////////////////////////
-	//
-	//  private methods
-	//
-	//////////////////////////////////////////////////
-	bool 	Connect ();
-	void	WriteQueue ();
-	void	ReadQueue ();
-	void 	ReQueueSentMsg ();
-	void 	buffsock_free ( buffsock_t* bs );
-	void	CheckTimeout();
-	int		TrackerWrite ( const string& str );
-	void 	TrackerRead ( buffsock_t* bs );
-	void 	ReplyFromServer ();
+	size_t	queue_size ()
+	{
+		return msg_queue.size ();
+	}
 
 	//////////////////////////////////////////////////
 	//	stats
 	//////////////////////////////////////////////////
-	time_t		LastConnected;
-	time_t		LastSeen;
-	time_t		LastSent;
-	uint64_t	BytesSent;
-	uint64_t	BytesRcvd;
-	uint64_t	PktsSent;
-	uint64_t	PktsRcvd;
-	size_t		LostConnections;
-	pthread_t 	MyThreadID;
+	time_t		last_connected;
+	time_t		last_seen;
+	time_t		last_sent;
+	uint64_t	bytes_sent;
+	uint64_t	bytes_rcvd;
+	uint64_t	pkts_sent;
+	uint64_t	pkts_rcvd;
+	size_t		lost_connections;
+	pthread_t 	m_thread_id;
 };
 #endif
 

@@ -332,6 +332,7 @@ add_executable ( ${EXE_NAME}
 	src/fgms/fg_player.cxx 
 	src/fgms/fg_cli.hxx
 	src/fgms/fg_cli.cxx 
+	src/fgms/main.cxx 
 )
 target_link_libraries ( ${EXE_NAME} ${add_LIBS} )
 if ( MSVC )

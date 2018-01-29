@@ -34,47 +34,63 @@
 
 typedef double t_Point3D;
 
-enum { X, Y, Z };
-enum { Lat, Lon, Alt };
 
 class Point3D
 {
-	public:
+public:
+	enum { X, Y, Z };
+	enum { LAT, LON, ALT };
 	Point3D();
-	Point3D ( const Point3D& P );
-	Point3D ( const t_Point3D& X, const t_Point3D& Y, const t_Point3D& Z );
-	t_Point3D GetX () { return m_X; };
-	t_Point3D GetY () { return m_Y; };
-	t_Point3D GetZ () { return m_Z; };
-	void SetX ( const t_Point3D& nV ) { m_X = nV; };
-	void SetY ( const t_Point3D& nV ) { m_Y = nV; };
-	void SetZ ( const t_Point3D& nV ) { m_Z = nV; };
-	void Set ( const t_Point3D& X, const t_Point3D& Y, const t_Point3D& Z );
-	void CartToPolar();
-	void PolarToCart();
+	Point3D ( const t_Point3D& x, const t_Point3D& y, const t_Point3D& z );
+	t_Point3D get_x () { return m_x; };
+	t_Point3D get_y () { return m_y; };
+	t_Point3D get_z () { return m_z; };
+	void set_x ( const t_Point3D& v ) { m_x = v; };
+	void set_y ( const t_Point3D& v ) { m_y = v; };
+	void set_z ( const t_Point3D& v ) { m_z = v; };
+	void set ( const t_Point3D& x, const t_Point3D& y, const t_Point3D& z );
 	//////////////////////////////////////////////////
 	//  operators
 	//////////////////////////////////////////////////
-	void operator =  ( const Point3D& P );
-	void operator =  ( const sgdVec3& P );
-	void operator += ( const Point3D& P );
-	void operator -= ( const Point3D& P );
-	void operator *= ( const Point3D& P );
-	void operator /= ( const Point3D& P );
-	void operator ^= ( const Point3D& P );
-	void operator *= ( const t_Point3D& nV );
-	void operator /= ( const t_Point3D& nV );
-	bool operator == ( const Point3D& P );
-	bool operator != ( const Point3D& P );
-	t_Point3D operator[] ( const int Index ) const;
-	t_Point3D& operator[] ( const int Index );
-	friend Point3D operator + ( const Point3D& P1, const Point3D& P2 );
-	friend Point3D operator - ( const Point3D& P1, const Point3D& P2 );
-	friend Point3D operator * ( const Point3D& P1, const Point3D& P2 );
-	friend Point3D operator / ( const Point3D& P1, const Point3D& P2 );
-	friend Point3D operator ^ ( const Point3D& P1, const Point3D& P2 );
-	friend Point3D operator * ( const t_Point3D& nV, const Point3D& P1 );
-	friend Point3D operator / ( const t_Point3D& nV, const Point3D& P1 );
+	Point3D& operator += ( const Point3D& p );
+	Point3D& operator -= ( const Point3D& p );
+	Point3D& operator *= ( const Point3D& p );
+	Point3D& operator /= ( const Point3D& p );
+	Point3D& operator ^= ( const Point3D& p );
+	Point3D& operator *= ( t_Point3D v );
+	Point3D& operator /= ( t_Point3D v );
+	bool operator == ( const Point3D& p );
+	bool operator != ( const Point3D& p );
+	t_Point3D operator[] ( const int index ) const;
+	t_Point3D& operator[] ( const int index );
+	friend Point3D operator + ( Point3D p1, const Point3D& p2 )
+	{
+		return p1 += p2;
+	}
+	friend Point3D operator - ( Point3D p1, const Point3D& p2 )
+	{
+		return p1 -= p2;
+	}
+	friend Point3D operator * ( Point3D p1, const Point3D& p2 )
+	{
+		return p1 *= p2;
+	}
+	friend Point3D operator / ( Point3D p1, const Point3D& p2 )
+	{
+		return p1 /= p2;
+	}
+	friend Point3D operator ^ ( Point3D p1, const Point3D& p2 )
+	{
+		return p1 ^= p2;
+	}
+	friend Point3D operator * ( Point3D p, t_Point3D v )
+	{
+		return p *= v;
+	}
+	friend Point3D operator / ( Point3D p, t_Point3D v )
+	{
+		return p /= v;
+	}
 	//////////////////////////////////////////////////
 	//  others
 	//////////////////////////////////////////////////
@@ -88,26 +104,14 @@ class Point3D
 	friend Point3D invert (const Point3D& P );
 	void clear ();
 
-	private:
-	t_Point3D m_X;
-	t_Point3D m_Y;
-	t_Point3D m_Z;
+private:
+	t_Point3D m_x;
+	t_Point3D m_y;
+	t_Point3D m_z;
 }; // class Point3D
 
-void CopyPos (  const Point3D& src, Point3D &dst );
-void Mat4ToCoord ( const sgMat4& src,  Point3D & dst );
-float Distance ( const Point3D & P1, const Point3D & P2 );
-float HeightAboveSea ( const Point3D & P );
-void sgCartToPolar3d(const Point3D& cp, Point3D& Polar );
-void CartToLatLon ( const Point3D& CartPoint , Point3D& LatLonAlt );
-double
-calc_gc_dist ( const Point3D& start, const Point3D& dest );
-
-bool IsWithinRMiles ( double lat1, double lon1, double lat2, double lon2, 
-    double R );
-
-void sgCartToGeod ( const Point3D& CartPoint , Point3D& GeodPoint );
-void sgGeodToCart(double lat, double lon, double alt, double* xyz);
+float distance ( const Point3D & P1, const Point3D & P2 );
+void cart_to_geod ( const Point3D& CartPoint , Point3D& GeodPoint );
 
 #endif
 

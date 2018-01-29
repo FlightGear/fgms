@@ -35,8 +35,6 @@
 	#include <netinet/in.h>
 #endif
 
-using namespace std;
-
 namespace fgmp
 {
 
@@ -130,14 +128,14 @@ public:
 	};
 	ipaddr ();
 	ipaddr ( const ipaddr& Addr );
-	ipaddr ( const string& Addr );
+	ipaddr ( const std::string& Addr );
 	void assign ( unsigned int ip );
-	void assign ( const string& ip );
+	void assign ( const std::string& ip );
 	void assign ( const ipaddr& addr );
 	void assign ( struct sockaddr* src_sockaddr );
-	void resolve ( const string& Host );
+	void resolve ( const std::string& Host );
 	void operator =  ( const ipaddr& Addr );
-	void operator =  ( const string& Addr );
+	void operator =  ( const std::string& Addr );
 	void operator ++  ( int CppIsStupid );
 	void operator --  ( int CppIsStupid );
 	bool operator ==  ( const ipaddr& Addr ) const;
@@ -146,7 +144,7 @@ public:
 	bool operator <= ( const ipaddr& Addr ) const;
 	bool operator >  ( const ipaddr& Addr ) const;
 	bool operator <  ( const ipaddr& Addr ) const;
-	string to_string (
+	std::string to_string (
 		const ADDRESS_BASE nBase = ipaddr::STD,
 		const ADDRESS_FORMAT nFormat = ipaddr::Full ) const;
 	inline uint32_t error () const
@@ -188,10 +186,10 @@ public:
 	struct sockaddr* to_sockaddr( const uint16_t port ) const;
 	void copy_sockaddr ();
 	socklen_t size () const;
-	string get_error_msg () const;
+	std::string get_error_msg () const;
 	friend std::ostream& operator << ( std::ostream& o, const ipaddr& Addr );
 private:
-	void from_string ( const string& addr );
+	void from_string ( const std::string& addr );
 	void init();
 	void set_error ( const ERROR_CODE error );
 	void build_from_mask ();

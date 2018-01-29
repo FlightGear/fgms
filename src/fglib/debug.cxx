@@ -22,8 +22,6 @@
 #include <string>
 #include "debug.hxx"
 
-using namespace std;
-
 int DEBUG::depth = 0;
 
 //////////////////////////////////////////////////////////////////////

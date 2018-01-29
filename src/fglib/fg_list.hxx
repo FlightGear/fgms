@@ -52,37 +52,37 @@ class ListElement
 {
 public:
 	/** every element has a a name */
-	ListElement ( const std::string& Name );
+	ListElement ( const std::string& name );
 	ListElement ( const ListElement& P );
-	~ListElement ();
+	virtual ~ListElement ();
 	/** mark a nonexisting element */
 	static const size_t NONE_EXISTANT;
-	/** @brief The ID of this entry */
-	size_t		ID;
-	/** @brief The Timeout of this entry */
-	time_t		Timeout;
+	/** @brief The id of this entry */
+	size_t		id;
+	/** @brief The timeout of this entry */
+	time_t		timeout;
 	/** @brief The callsign (or name) */
-	std::string	Name;
+	std::string	name;
 	/** @brief The network address of this element */
-	netaddr		Address;
+	netaddr		address;
 	/** @brief The time this entry was added to the list */
-	time_t		JoinTime;
+	time_t		join_time;
 	/** @brief timestamp of last seen packet from this element */
-	time_t		LastSeen;
+	time_t		last_seen;
 	/** @brief timestamp of last sent packet to this element */
-	time_t		LastSent;
+	time_t		last_sent;
 	/** @brief Count of packets recieved from client */
-	uint64_t	PktsRcvd;
+	uint64_t	pkts_rcvd;
 	/** @brief Count of packets sent to client */
-	uint64_t	PktsSent;
+	uint64_t	pkts_sent;
 	/** @brief Count of bytes recieved from client */
-	uint64_t	BytesRcvd;
+	uint64_t	bytes_rcvd;
 	/** @brief Count of bytes sent to client */
-	uint64_t	BytesSent;
+	uint64_t	bytes_sent;
 	void operator =  ( const ListElement& P );
 	virtual bool operator ==  ( const ListElement& P );
-	void UpdateSent ( size_t bytes );
-	void UpdateRcvd ( size_t bytes );
+	void update_sent ( size_t bytes );
+	void update_rcvd ( size_t bytes );
 protected:
 	ListElement ();
 	void assign ( const ListElement& P );
@@ -99,59 +99,59 @@ class List : public Lockable
 public:
 	typedef std::vector<T> ListElements;
 	typedef typename std::vector<T>::iterator ListIterator;
-	/** constructor, must supply a Name */
-	List   ( const std::string& Name );
+	/** constructor, must supply a name */
+	List   ( const std::string& name );
 	~List  ();
 	/** return the number of elements in this list */
-	size_t Size  ();
+	size_t size  ();
 	/** delete all elements of this list */
-	void   Clear ();
+	void   clear ();
 	/** add an element to this list */
-	size_t Add   ( T& Element, time_t TTL );
+	size_t add   ( T& Element, time_t TTL );
 	/** Check if the entry TTL expired*/
-	bool CheckTTL (int position);
+	bool check_ttl (int position);
 	/** delete an element of this list (by position) */
-	void DeleteByPosition (int position);
+	void delete_by_pos (int position);
 	/** delete an element of this list */
-	ListIterator Delete	( const ListIterator& Element );
+	ListIterator erase	( const ListIterator& Element );
 	/** find an element by its IP address */
-	ListIterator Find	( const netaddr& Address,
+	ListIterator find	( const netaddr& address,
 		bool ComparePort = false );
-	/** find an element by its Name */
-	ListIterator FindByName	( const std::string& Name = "" );
-	/** find an element by its ID */
-	ListIterator FindByID	( size_t ID );
+	/** find an element by its name */
+	ListIterator find_by_name	( const std::string& name = "" );
+	/** find an element by its id */
+	ListIterator find_by_id	( size_t id );
 	/** return an iterator of the first element */
-	ListIterator Begin	();
+	ListIterator begin	();
 	/** return an iterator of the last element */
-	ListIterator Last	();
+	ListIterator last	();
 	/** iterator of the end of the list */
-	ListIterator End	();
+	ListIterator end	();
 	/** update sent counter of an element and of the list */
-	void UpdateSent ( ListIterator& Element, size_t bytes );
+	void update_sent ( ListIterator& Element, size_t bytes );
 	/** update receive counter of an element and of the list */
-	void UpdateRcvd ( ListIterator& Element, size_t bytes );
+	void update_rcvd ( ListIterator& Element, size_t bytes );
 	/** update sent counter of the list */
-	void UpdateSent ( size_t bytes );
+	void update_sent ( size_t bytes );
 	/** update receive counter of the list */
-	void UpdateRcvd ( size_t bytes );
+	void update_rcvd ( size_t bytes );
 	/** return a copy of an element at position x (thread safe) */
 	T operator []( const size_t& Index );
 	/** @brief maximum entries this list ever had */
-	size_t		MaxID;
+	size_t		max_id;
 	/** @brief Count of packets recieved from client */
-	uint64_t	PktsRcvd;  
+	uint64_t	pkts_rcvd;  
 	/** @brief Count of packets sent to client */
-	uint64_t	PktsSent;
+	uint64_t	pkts_sent;
 	/** @brief Count of bytes recieved from client */
-	uint64_t	BytesRcvd;  
+	uint64_t	bytes_rcvd;  
 	/** @brief Count of bytes sent to client */
-	uint64_t	BytesSent;        
+	uint64_t	bytes_sent;        
 	/** the name (or description) of this element */
-	std::string		Name;
+	std::string	name;
 private:
 	/** @brief timestamp of last cleanup */
-	time_t	LastRun;
+	time_t	last_run;
 	/** do not allow standard constructor */
 	List ();
 	/** the actual storage of elements */
@@ -169,14 +169,14 @@ typedef std::vector<ListElement>::iterator	ItList;
 template <class T>
 List<T>::List
 (
-	const std::string& Name
+	const std::string& name
 )
 {
-	this->Name	= Name;
-	PktsSent	= 0;
-	BytesSent	= 0;
-	PktsRcvd	= 0;
-	BytesRcvd	= 0;
+	this->name	= name;
+	pkts_sent	= 0;
+	bytes_sent	= 0;
+	pkts_rcvd	= 0;
+	bytes_rcvd	= 0;
 }
 //////////////////////////////////////////////////////////////////////
 
@@ -185,7 +185,7 @@ template <class T>
 List<T>::~List
 ()
 {
-	Clear ();
+	clear ();
 }
 //////////////////////////////////////////////////////////////////////
 
@@ -193,13 +193,13 @@ List<T>::~List
 /** NOT thread safe
  *
  * Return the number of elements of this list.
- * If working with threads make sure to * use Lock() and Unlock()
- * @see Lock()
- * @see Unlock()
+ * If working with threads make sure to * use lock() and unlock()
+ * @see lock()
+ * @see unlock()
  */
 template <class T>
 size_t
-List<T>::Size
+List<T>::size
 ()
 {
 	return Elements.size ();
@@ -209,38 +209,38 @@ List<T>::Size
 //////////////////////////////////////////////////////////////////////
 /** thread safe
  *
- * Add an element to the list
+ * add an element to the list
  * @param Element the ListElement to add
  * @param TTL automatic expiry of the element (time-to-live)
- * @see Find()
+ * @see find()
  */
 template <class T>
 size_t
-List<T>::Add
+List<T>::add
 (
 	T& Element,
 	time_t TTL
 )
 {
-	this->MaxID++;
-	Element.ID	= this->MaxID;
-	Element.Timeout	= TTL;
+	this->max_id++;
+	Element.id	= this->max_id;
+	Element.timeout	= TTL;
 	Elements.push_back   ( Element );
-	return this->MaxID;
+	return this->max_id;
 }
 //////////////////////////////////////////////////////////////////////
 
 
 template <class T>
 void 
-List<T>::DeleteByPosition
+List<T>::delete_by_pos
 (
 	int position
 )
 {
-	LockGuard lg ( & this->m_Mutex );
+	LockGuard lg ( & this->m_mutex );
 	ListIterator Element;
-	this->LastRun = time (0);
+	this->last_run = time (0);
 	Element = Elements.begin();
 	std::advance (Element,position);
 	Elements.erase   ( Element );
@@ -248,17 +248,17 @@ List<T>::DeleteByPosition
 //////////////////////////////////////////////////////////////////////
 /** thread safe
  *
- * Delete an entry from the list
+ * erase an entry from the list
  * @param Element iterator pointing to the element to delete
  */
 template <class T>
 typename std::vector<T>::iterator
-List<T>::Delete
+List<T>::erase
 (
 	const ListIterator& Element
 )
 {
-	LockGuard lg ( & this->m_Mutex );
+	LockGuard lg ( & this->m_mutex );
 	ListIterator E;
 	E = Elements.erase   ( Element );
 	return (E);
@@ -268,44 +268,44 @@ List<T>::Delete
 //////////////////////////////////////////////////////////////////////
 /** NOT thread safe
  *
- * Find an element by IP-address (and optionally Name). Automatically
+ * Find an element by IP-address (and optionally name). Automatically
  * removes entries which TTL is expired, with the exception of the 'users'
  * list which entries are deleted in FGMS::HandlePacket()
- * @param Address IP address of the element
+ * @param address IP address of the element
  * @param ComparePort If true, element matches only if the port also
  *        matches
- * @return iterator pointing to the found element, or End() if element
+ * @return iterator pointing to the found element, or end() if element
  *         could not be found
  */
 template <class T>
 typename std::vector<T>::iterator
-List<T>::Find
+List<T>::find
 (
-	const netaddr& Address,
+	const netaddr& address,
 	bool ComparePort
 )
 {
 	ListIterator Element;
 	ListIterator RetElem;
 
-	this->LastRun = time (0);
+	this->last_run = time (0);
 	RetElem = Elements.end();
 	Element = Elements.begin();
 	while (Element != Elements.end())
 	{
-		if (Element->Address == Address)
+		if (Element->address == address)
 		{
 			if ( ComparePort ) 
 			{	// additionally check port
-				if ( Element->Address.port() == Address.port() )
+				if ( Element->address.port() == address.port() )
 				{
-					Element->LastSeen = this->LastRun;
+					Element->last_seen = this->last_run;
 					RetElem = Element;
 				}
 			}
 			else
 			{
-				Element->LastSeen = this->LastRun;
+				Element->last_seen = this->last_run;
 				RetElem = Element;
 			}
 		}
@@ -318,29 +318,29 @@ List<T>::Find
 //////////////////////////////////////////////////////////////////////
 /** NOT thread safe
  *
- * Find an element by Name.
- * @param Name The name (or description) of the element
- * @return iterator pointing to the found element, or End() if element
+ * Find an element by name.
+ * @param name The name (or description) of the element
+ * @return iterator pointing to the found element, or end() if element
  *         could not be found
  */
 template <class T>
 typename std::vector<T>::iterator
-List<T>::FindByName
+List<T>::find_by_name
 (
-	const std::string& Name
+	const std::string& name
 )
 {
 	ListIterator Element;
 	ListIterator RetElem;
 
-	this->LastRun = time (0);
+	this->last_run = time (0);
 	RetElem = Elements.end();
 	Element = Elements.begin();
 	while (Element != Elements.end())
 	{
-		if (Element->Name == Name)
+		if (Element->name == name)
 		{
-			Element->LastSeen = this->LastRun;
+			Element->last_seen = this->last_run;
 			return Element;
 		}
 		Element++;
@@ -352,26 +352,26 @@ List<T>::FindByName
 //////////////////////////////////////////////////////////////////////
 /** NOT thread safe
  *
- * Find an element by ID.
- * @param ID The ID of the element
- * @return iterator pointing to the found element, or End() if element
+ * Find an element by id.
+ * @param id The id of the element
+ * @return iterator pointing to the found element, or end() if element
  *         could not be found
  */
 template <class T>
 typename std::vector<T>::iterator
-List<T>::FindByID
+List<T>::find_by_id
 (
-	size_t ID
+	size_t id
 )
 {
 	ListIterator Element;
 	ListIterator RetElem;
-	this->LastRun = time (0);
+	this->last_run = time (0);
 	RetElem = Elements.end();
 	Element = Elements.begin();
 	while (Element != Elements.end())
 	{
-		if (Element->ID == ID)
+		if (Element->id == id)
 		{
 			RetElem = Element;
 			break;
@@ -389,11 +389,11 @@ List<T>::FindByID
  * to ensure propper locking youself!
  *
  * @return the first element of the list. If the list is empty this
- *         equals End()
+ *         equals end()
  */
 template <class T>
 typename std::vector<T>::iterator
-List<T>::Begin
+List<T>::begin
 ()
 {
 	return Elements.begin ();
@@ -407,11 +407,11 @@ List<T>::Begin
  * to ensure propper locking youself!
  *
  * @return the last element of the list. If the list is empty this
- *         equals End()
+ *         equals end()
  */
 template <class T>
 typename std::vector<T>::iterator
-List<T>::Last
+List<T>::last
 ()
 {
 	ListIterator RetElem = Elements.end ();
@@ -427,7 +427,7 @@ List<T>::Last
  */
 template <class T>
 typename std::vector<T>::iterator
-List<T>::End
+List<T>::end
 ()
 {
 	return Elements.end ();
@@ -441,22 +441,22 @@ List<T>::End
  */
 template <class T>
 bool
-List<T>::CheckTTL
+List<T>::check_ttl
 (
 	int position
 )
 {
-	LockGuard lg ( & this->m_Mutex );
+	LockGuard lg ( & this->m_mutex );
 	ListIterator Element;
-	this->LastRun = time (0);
+	this->last_run = time (0);
 	Element = Elements.begin();
 	std::advance (Element,position);
 
-	if (Element->Timeout == 0)
+	if (Element->timeout == 0)
 	{	// never timeouts
 		return true;
 	}
-	if ( (this->LastRun - Element->LastSeen) > Element->Timeout )
+	if ( (this->last_run - Element->last_seen) > Element->timeout )
 	{
 		  return false;
 	}
@@ -468,7 +468,7 @@ List<T>::CheckTTL
 /** thread safe
  * Use this for element access whenever possible. However, if you 
  * need to modify the element you have to use iterators which are not
- * thread safe and make sure to use Lock() and Unlock() yourself.
+ * thread safe and make sure to use lock() and unlock() yourself.
  * @param Index index of the element
  * @return a copy the the element at index Index
  */
@@ -497,15 +497,15 @@ List<T>::operator []
  */
 template <class T>
 void
-List<T>::UpdateSent
+List<T>::update_sent
 (
 	ListIterator& Element,
 	size_t bytes
 )
 {
-	PktsSent++;
-	BytesSent += bytes;
-	Element->UpdateSent (bytes);
+	pkts_sent++;
+	bytes_sent += bytes;
+	Element->update_sent (bytes);
 }
 //////////////////////////////////////////////////////////////////////
 
@@ -520,15 +520,15 @@ List<T>::UpdateSent
  */
 template <class T>
 void
-List<T>::UpdateRcvd
+List<T>::update_rcvd
 (
 	ListIterator& Element,
 	size_t bytes
 )
 {
-	PktsRcvd++;
-	BytesRcvd += bytes;
-	Element->UpdateRcvd (bytes);
+	pkts_rcvd++;
+	bytes_rcvd += bytes;
+	Element->update_rcvd (bytes);
 }
 //////////////////////////////////////////////////////////////////////
 
@@ -542,13 +542,13 @@ List<T>::UpdateRcvd
  */
 template <class T>
 void
-List<T>::UpdateSent
+List<T>::update_sent
 (
 	size_t bytes
 )
 {
-	PktsSent++;
-	BytesSent += bytes;
+	pkts_sent++;
+	bytes_sent += bytes;
 }
 //////////////////////////////////////////////////////////////////////
 
@@ -562,29 +562,29 @@ List<T>::UpdateSent
  */
 template <class T>
 void
-List<T>::UpdateRcvd
+List<T>::update_rcvd
 (
 	size_t bytes
 )
 {
-	PktsRcvd++;
-	BytesRcvd += bytes;
+	pkts_rcvd++;
+	bytes_rcvd += bytes;
 }
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 /**
  *
- * Delete all entries of the list.
+ * erase all entries of the list.
  */
 template <class T>
 void
-List<T>::Clear
+List<T>::clear
 ()
 {
-	Lock ();
+	lock ();
 	Elements.clear ();
-	Unlock ();
+	unlock ();
 }
 //////////////////////////////////////////////////////////////////////
 

@@ -48,16 +48,16 @@ namespace fgmp
  * @endcode
  *
  * will add a mutex to \c my_class. Additionally adds two methods
- * \c Lock() and \c Unlock()
+ * \c lock() and \c unlock()
  */
 class Lockable
 {
 public:
 	Lockable ();
-	void Lock ();
-	void Unlock ();
+	void lock ();
+	void unlock ();
 protected:
-	pthread_mutex_t m_Mutex;
+	pthread_mutex_t m_mutex;
 }; // class Lockable
 
 /**
@@ -85,10 +85,10 @@ protected:
 class LockGuard
 {
 public:
-	LockGuard ( pthread_mutex_t *Mutex );
+	LockGuard ( pthread_mutex_t *mutex );
 	~LockGuard ();
 protected:
-	pthread_mutex_t *m_Mutex;
+	pthread_mutex_t *m_mutex;
 }; // class LockGuard
 
 /**

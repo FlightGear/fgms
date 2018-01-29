@@ -194,8 +194,8 @@ cli_client::put_char
 	}
 	else
 	{
-		cout << c;	
-		cout.flush();
+		std::cout << c;	
+		std::cout.flush();
 	}
 	// m_output.str("");
 } // operator << ( c );
@@ -417,7 +417,7 @@ cli_client::count_filter
 	if ( !cmd ) // clean up
 	{
 		// print count
-		*this << UNFILTERED << NumToStr (*count, 0) << CRLF;
+		*this << UNFILTERED << num_to_str ( *count ) << CRLF;
 		free ( count ); 
 	return libcli::OK; 
 	}
@@ -453,14 +453,14 @@ cli_client& commit
 	{
 		if (out.m_socket != 0)
 		{
-			string s = out.m_output.str();
+			std::string s = out.m_output.str();
 			size_t l = s.size();
 			out.m_socket->send (s.c_str(), l);
 		}
 		else
 		{
-			cout << out.m_output.str();
-			cout.flush();
+			std::cout << out.m_output.str();
+			std::cout.flush();
 		}
 		if (out.m_print_mode == PRINT_FILTERED)
 		{	// only count lines in filtered mode

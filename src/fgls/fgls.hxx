@@ -66,6 +66,12 @@ typedef fgmp::lock_list_t<server>		ServerList;
 typedef fgmp::lock_list_t<server>::iterator	ServerIt;
 
 //////////////////////////////////////////////////////////////////////
+#ifdef _MSC_VER
+    #define MAX_TELNETS 5
+#else
+    constexpr int MAX_TELNETS = 5;
+#endif
+
 /** The List server
  */
 class FGLS
@@ -81,11 +87,6 @@ public:
 	friend class FGLS_CLI;
 protected:
 	/// Maximum number of concurrent telnets.
-#ifdef _MSC_VER
-    #define MAX_TELNETS 5
-#else
-    const int MAX_TELNETS = 5;
-#endif
 	/// List of known servers.
 	ServerList	m_server_list;
 	/// Current selected HUB.
@@ -146,7 +147,7 @@ protected:
 	/// log into this file
 	std::string	m_logfile_name;
 	/// we want to see only logs of this log priority
-	int		m_debug_level;
+	log_prio	m_debug_level;
 	/// true if logfile needs to be reopened.
 	bool		m_reinit_log;
 	/// true if have read a config file

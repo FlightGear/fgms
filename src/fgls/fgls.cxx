@@ -107,7 +107,7 @@ FGLS::FGLS
 	// logging
 	m_logfile_name	= "";
 	m_reinit_log	= true;
-	m_debug_level	= fglog::MEDIUM;
+	m_debug_level	= log_prio::MEDIUM;
 	// general
 	m_is_parent	= false;
 	m_check_interval = 5;
@@ -135,7 +135,7 @@ FGLS::init
 	{
 		open_logfile ();
 	}
-	logger.priority ( fglog::MEDIUM );
+	logger.priority ( log_prio::MEDIUM );
 	logger.flags ( fglog::WITH_DATE );
 #ifndef _MSC_VER
 	if ( m_run_as_daemon )
@@ -173,7 +173,7 @@ FGLS::loop
 
 	if ( m_data_channel == 0 )
 	{
-		LOG ( fglog::ERROR2, "FGLS::loop() - "
+		LOG ( log_prio::ERROR, "FGLS::loop() - "
 		  << "not listening on any socket!" );
 		return;
 	}
@@ -184,7 +184,7 @@ FGLS::loop
 			m_admin_channel->close ();
 			delete m_admin_channel;
 			m_admin_channel = 0;
-			LOG ( fglog::ERROR2,
+			LOG ( log_prio::ERROR,
 			  "# Admin port disabled, "
 			  "please set user and password"
 			);
@@ -199,13 +199,13 @@ FGLS::loop
 		pthread_t th;
 		pthread_create ( &th, NULL, &detach_admin_cli, t );
 	}
-	LOG ( fglog::ERROR2, "# Main server started!" );
+	LOG ( log_prio::ERROR, "# Main server started!" );
 	m_is_parent = true;
 	while ( m_want_exit == false )
 	{
 		if ( m_data_channel == 0 )
 		{
-			LOG ( fglog::ERROR2, "lost data channel!" );
+			LOG ( log_prio::ERROR, "lost data channel!" );
 			return;
 		}
 		current_time = time ( 0 );
@@ -235,12 +235,12 @@ FGLS::loop
 			{
 				if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 				{
-					LOG ( fglog::URGENT, "FGLS::Loop() - "
+					LOG ( log_prio::URGENT, "FGLS::Loop() - "
 					  << strerror ( errno ) );
 				}
 				continue;
 			}
-			LOG ( fglog::URGENT,
+			LOG ( log_prio::URGENT,
 			  "FGLS::Loop() - new Admin connection from "
 			  << admin_addr.to_string () );
 			st_telnet* t = new st_telnet;
@@ -278,10 +278,10 @@ FGLS::init_data_channel
 	}
 	catch ( std::runtime_error& e )
 	{
-		LOG ( fglog::URGENT, "FGLS::Init() - "
+		LOG ( log_prio::URGENT, "FGLS::Init() - "
 		  << "failed to bind on " << m_bind_addr
 		  << ":" << m_data_port );
-		LOG ( fglog::URGENT, "already in use?" );
+		LOG ( log_prio::URGENT, "already in use?" );
 		return false;
 	}
 	m_reinit_data = false;
@@ -317,7 +317,7 @@ FGLS::init_query_channel
 	}
 	catch ( std::runtime_error& e )
 	{
-		LOG ( fglog::URGENT, "FGLS::Init() - "
+		LOG ( log_prio::URGENT, "FGLS::Init() - "
 		  << "failed to listen to query port" );
 		return false;
 	}
@@ -353,7 +353,7 @@ FGLS::init_admin_channel
 	}
 	catch ( std::runtime_error& e )
 	{
-		LOG ( fglog::URGENT, "FGLS::Init() - "
+		LOG ( log_prio::URGENT, "FGLS::Init() - "
 		  << "failed to listen to query port" );
 		return false;
 	}
@@ -372,10 +372,10 @@ FGLS::open_logfile
 	{
 		return;
 	}
-	LOG ( fglog::CONSOLE, "# using logfile " << m_logfile_name );
+	LOG ( log_prio::CONSOLE, "# using logfile " << m_logfile_name );
 	if ( ! logger.open ( m_logfile_name ) )
 	{
-		LOG ( fglog::URGENT,
+		LOG ( log_prio::URGENT,
 		  "FGLS::open_logfile(): "
 		  << "Failed to open log file " << m_logfile_name );
 	}
@@ -390,7 +390,7 @@ FGLS::shutdown
 {
 	if ( ! m_is_parent )
 		return;
-	LOG ( fglog::URGENT, "FGLS::Shutdown() - exiting" );
+	LOG ( log_prio::URGENT, "FGLS::Shutdown() - exiting" );
 	logger.close ();
 	if ( m_data_channel )
 	{
@@ -427,133 +427,133 @@ FGLS::process_config
 	const std::string & config_name
 )
 {
-	FG_CONFIG	Config;
-	std::string	Val;
-	int		E;
+	FG_CONFIG	config;
+	std::string	val;
+	int		e;
 
 	if ( m_have_config )	// we already have a config, so ignore
 	{
 		return true;
 	}
-	if ( Config.Read ( config_name ) )
+	if ( config.read ( config_name ) )
 	{
-	LOG ( fglog::ERROR2, "failed to read " << config_name );
+	LOG ( log_prio::ERROR, "failed to read " << config_name );
 		return false;
 	}
-	LOG ( fglog::ERROR2, "processing " << config_name );
-	Val = Config.Get ( "fgls.name" );
-	if ( Val != "" )
+	LOG ( log_prio::ERROR, "processing " << config_name );
+	val = config.get ( "fgls.name" );
+	if ( val != "" )
 	{
-		m_server_name = Val;
+		m_server_name = val;
 	}
-	Val = Config.Get ( "fgls.bind_address" );
-	if ( Val != "" )
+	val = config.get ( "fgls.bind_address" );
+	if ( val != "" )
 	{
-		m_bind_addr = Val;
+		m_bind_addr = val;
 	}
-	Val = Config.Get ( "fgls.port" );
-	if ( Val != "" )
+	val = config.get ( "fgls.port" );
+	if ( val != "" )
 	{
-		m_data_port = StrToNum<uint16_t> ( Val, E );
-		if ( E )
+		m_data_port = str_to_num<uint16_t> ( val, e );
+		if ( e )
 		{
-			LOG ( fglog::URGENT,
-			  "invalid value for fgls.port: '" << Val << "'"
+			LOG ( log_prio::URGENT,
+			  "invalid value for fgls.port: '" << val << "'"
 			);
 			exit ( 1 );
 		}
 	}
-	Val = Config.Get ( "fgls.telnet" );
-	if ( Val != "" )
+	val = config.get ( "fgls.telnet" );
+	if ( val != "" )
 	{
-		m_query_port = StrToNum<uint16_t> ( Val, E );
-		if ( E )
+		m_query_port = str_to_num<uint16_t> ( val, e );
+		if ( e )
 		{
-			LOG ( fglog::URGENT,
-			  "invalid value for fgls.telnet: '" << Val << "'"
+			LOG ( log_prio::URGENT,
+			  "invalid value for fgls.telnet: '" << val << "'"
 			);
 			exit ( 1 );
 		}
 	}
-	Val = Config.Get ( "fgls.admin_cli" );
-	if ( Val != "" )
+	val = config.get ( "fgls.admin_cli" );
+	if ( val != "" )
 	{
-		if ( ( Val == "on" ) || ( Val == "true" ) )
+		if ( ( val == "on" ) || ( val == "true" ) )
 		{
 			m_admin_cli = true;
 		}
-		else if ( ( Val == "off" ) || ( Val == "false" ) )
+		else if ( ( val == "off" ) || ( val == "false" ) )
 		{
 			m_admin_cli = false;
 		}
 		else
 		{
-			LOG ( fglog::URGENT,
+			LOG ( log_prio::URGENT,
 			  "unknown value for fgls.admin_cli '"
-			  << Val << "'"
+			  << val << "'"
 			);
 		}
 	}
-	Val = Config.Get ( "fgls.admin_port" );
-	if ( Val != "" )
+	val = config.get ( "fgls.admin_port" );
+	if ( val != "" )
 	{
-		m_admin_port = StrToNum<uint16_t> ( Val, E );
-		if ( E )
+		m_admin_port = str_to_num<uint16_t> ( val, e );
+		if ( e )
 		{
-			LOG ( fglog::URGENT,
-			  "invalid value for fgls.admin_port: '" << Val << "'"
+			LOG ( log_prio::URGENT,
+			  "invalid value for fgls.admin_port: '" << val << "'"
 			);
 			exit ( 1 );
 		}
 	}
-	Val = Config.Get ( "fgls.admin_user" );
-	if ( Val != "" )
+	val = config.get ( "fgls.admin_user" );
+	if ( val != "" )
 	{
-		m_admin_user = Val;
+		m_admin_user = val;
 	}
-	Val = Config.Get ( "fgls.admin_pass" );
-	if ( Val != "" )
+	val = config.get ( "fgls.admin_pass" );
+	if ( val != "" )
 	{
-		m_admin_pass = Val;
+		m_admin_pass = val;
 	}
-	Val = Config.Get ( "fgls.admin_enable" );
-	if ( Val != "" )
+	val = config.get ( "fgls.admin_enable" );
+	if ( val != "" )
 	{
-		m_admin_enable = Val;
+		m_admin_enable = val;
 	}
-	Val = Config.Get ( "fgls.daemon" );
-	if ( Val != "" )
+	val = config.get ( "fgls.daemon" );
+	if ( val != "" )
 	{
-		if ( ( Val == "on" ) || ( Val == "true" ) )
+		if ( ( val == "on" ) || ( val == "true" ) )
 		{
 			m_run_as_daemon = true;
 		}
-		else if ( ( Val == "off" ) || ( Val == "false" ) )
+		else if ( ( val == "off" ) || ( val == "false" ) )
 		{
 			m_run_as_daemon = false;
 		}
 		else
 		{
-			LOG ( fglog::URGENT,
+			LOG ( log_prio::URGENT,
 			  "unknown value for fgls.daemon '"
-			  << Val << "'"
+			  << val << "'"
 			);
 		}
 	}
-	Val = Config.Get ( "fgls.logfile" );
-	if ( Val != "" )
+	val = config.get ( "fgls.logfile" );
+	if ( val != "" )
 	{
-		m_logfile_name = Val;
+		m_logfile_name = val;
 	}
-	Val = Config.Get ( "fgls.checkinterval" );
-	if ( Val != "" )
+	val = config.get ( "fgls.checkinterval" );
+	if ( val != "" )
 	{
-		m_check_interval = StrToNum<uint16_t> ( Val, E );
-		if ( E )
+		m_check_interval = str_to_num<uint16_t> ( val, e );
+		if ( e )
 		{
-			LOG ( fglog::URGENT,
+			LOG ( log_prio::URGENT,
 			  "invalid value for fgls.checkinterval: '"
-			  << Val << "'"
+			  << val << "'"
 			);
 			exit ( 1 );
 		}
@@ -650,7 +650,7 @@ FGLS::read_configs
 	// failed, try current directory
 	if ( process_config ( "fgls.conf" ) == true )
 		return true;
-	LOG ( fglog::ERROR2,
+	LOG ( log_prio::ERROR,
 	  "Could not find a config file => using defaults");
 	return true;
 } // FGLS::read_configs ()
@@ -727,7 +727,7 @@ FGLS::parse_params
 			print_help ();
 			exit ( 0);
 		case 'p':
-			m_data_port = StrToNum<uint16_t> ( optarg, e );
+			m_data_port = str_to_num<uint16_t> ( optarg, e );
 			if ( e != 0 )
 			{
 				std::cerr << "invalid value for query port "
@@ -736,7 +736,7 @@ FGLS::parse_params
 			}
 			break;
 		case 'a':
-			m_admin_port = StrToNum<uint16_t> ( optarg, e );
+			m_admin_port = str_to_num<uint16_t> ( optarg, e );
 			if ( e )
 			{
 				std::cerr << "invalid value for admin port "
@@ -745,7 +745,7 @@ FGLS::parse_params
 			}
 			break;
 		case 't':
-			m_query_port = StrToNum<uint16_t> ( optarg, e );
+			m_query_port = str_to_num<uint16_t> ( optarg, e );
 			if ( e )
 			{
 				std::cerr << "invalid value for query port "
@@ -757,7 +757,7 @@ FGLS::parse_params
 			m_logfile_name = optarg;
 			break;
 		case 'L':
-			m_debug_level = StrToNum<uint16_t> ( optarg, e );
+			m_debug_level = static_cast<log_prio> (str_to_num<uint16_t> ( optarg, e ));
 			if ( e )
 			{
 				std::cerr << "invalid value for LEVEL "

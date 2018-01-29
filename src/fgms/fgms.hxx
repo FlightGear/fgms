@@ -105,12 +105,17 @@ public:
 	void  set_data_port ( int port );
 	void  set_query_port ( int port );
 	void  set_admin_port ( int port );
-	void  set_logfile ( const std::string& logfile_name );
-	void  add_relay ( const string& server, int port );
-	void  add_crossfeed ( const string& server, int port );
-	bool  add_tracker ( const string& server, int port, bool is_tracked );
-	void  add_whitelist  ( const string& ip );
-	void  add_blacklist  ( const string& ip, const string& reason,
+	void  set_logfile ( const std::string& name );
+	void  set_exitfile ( const std::string& name );
+	void  set_resetfile ( const std::string& name );
+	void  set_statsfile ( const std::string& name );
+	void  set_msglogfile ( const std::string& name );
+	void  set_updatetracker ( time_t freq );
+	void  add_relay ( const std::string& server, int port );
+	void  add_crossfeed ( const std::string& server, int port );
+	bool  add_tracker ( const std::string& server, int port, bool is_tracked );
+	void  add_whitelist  ( const std::string& ip );
+	void  add_blacklist  ( const std::string& ip, const std::string& reason,
 			time_t timeout = 10 );
 	void  close_tracker ();
 	int   check_files();
@@ -120,14 +125,14 @@ public:
 	int   parse_params ( int argc, char* argv[] );
 	int   read_configs ( bool reinit = false );
 	bool  check_config ();
-	bool  process_config ( const string& config_name );
+	bool  process_config ( const std::string& config_name );
 
 	//////////////////////////////////////////////////
 	//
 	//  public variables
 	//
 	//////////////////////////////////////////////////
-	string m_config_file;
+	std::string m_config_file;
 
 protected:
 
@@ -139,8 +144,8 @@ protected:
 	//  private variables
 	//
 	//////////////////////////////////////////////////
-	typedef std::map<fgmp::netaddr,string>		ip2relay_t;
-	typedef ip2relay_t::iterator	ip2relay_it;
+	using ip2relay_t  = std::map<fgmp::netaddr,std::string>;
+	using ip2relay_it = ip2relay_t::iterator;
 	bool		m_initialized;
 	bool		m_reinit_data;
 	bool		m_reinit_query;
@@ -152,12 +157,17 @@ protected:
 	int		m_player_expires;
 	int		m_out_of_reach;
 	int		m_max_radar_range;
-	string		m_admin_user;
-	string		m_admin_pass;
-	string		m_admin_enable;
-	string		m_logfile_name;
-	string		m_bind_addr;
-	string		m_FQDN;
+	std::string	m_admin_user;
+	std::string	m_admin_pass;
+	std::string	m_admin_enable;
+	std::string	m_config_name;
+	std::string	m_logfile_name;
+	std::string	m_exit_filename;
+	std::string	m_reset_filename;
+	std::string	m_stats_filename;
+	std::string	m_msglog_filename;
+	std::string	m_bind_addr;
+	std::string	m_FQDN;
 	size_t		m_num_max_clients;
 	size_t		m_local_clients;
 	size_t		m_remote_clients;
@@ -165,8 +175,8 @@ protected:
 	int16_t		m_proto_major_version;
 	bool		m_is_parent;
 	bool		m_is_tracked;
-	string		m_server_name;
-	string		m_tracker_server;
+	std::string	m_server_name;
+	std::string	m_tracker_server;
 	ip2relay_t	m_relay_map;
 	fgmp::FG_List	m_cross_list;
 	fgmp::FG_List	m_white_list;
@@ -181,6 +191,7 @@ protected:
 	bool		m_have_config;
 	bool		m_add_cli;
 	bool		m_run_as_daemon;
+	std::ofstream	m_tracker_log;
 	fgmp::netsocket*	m_data_channel;
 	fgmp::netsocket*	m_query_channel;
 	fgmp::netsocket*	m_admin_channel;
@@ -242,15 +253,15 @@ protected:
 	bool  init_query_channel ();
 	bool  init_admin_channel ();
 	void  add_client ( const fgmp::netaddr& sender, char* msg );
-	void  add_bad_client ( const fgmp::netaddr& sender, string& err_msg,
+	void  add_bad_client ( const fgmp::netaddr& sender, std::string& err_msg,
 	       	bool is_local, int bytes );
 	bool  is_known_relay ( const fgmp::netaddr& sender, size_t bytes );
 	bool  packet_is_valid ( int bytes, T_MsgHdr* msg_hdr,
 	       	const fgmp::netaddr& sender );
 	void  handle_data ( char* msg, int bytes,
 	       	const fgmp::netaddr& sender );
-	int   update_tracker ( const string& callsign, const string& passwd,
-		const string& modelname, const time_t time,
+	int   update_tracker ( const std::string& callsign, const std::string& passwd,
+		const std::string& modelname, const time_t time,
 		const int type );
 	void  drop_client ( PlayerIt& player ); 
 	bool  receiver_wants_data ( const PlayerIt& sender,
@@ -265,15 +276,16 @@ protected:
 	void  want_exit ();
 	void  print_version ();
 	void  print_help ();
+	void  tracker_log ( const std::string& msg, const char* src );
 
 	int     m_argc; // number of commandline arguments
 	char**  m_argv; // pointer to commandline arguments (copy)
 }; // FGMS
 
-typedef struct st_telnet
+struct st_telnet
 {
-	FGMS* Instance;
-	int        Fd;
-} st_telnet;
+	FGMS* instance;
+	int   fd;
+};
 #endif
 

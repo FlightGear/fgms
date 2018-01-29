@@ -34,7 +34,7 @@ namespace fgms
 {
 
 /// client types
-typedef enum
+enum eCLIENTTYPES
 {
 	UNSET,       // unset
 	FGFS,           // a normal client
@@ -42,10 +42,10 @@ typedef enum
 	FGAS,           // FlightGear Authentication Service
 	FGLS,           // FlightGear List Server
 	OBSERVER        // an observer
-} eCLIENTTYPES;
+};
 
 
-typedef enum
+enum Commands
 {
 	REGISTER_SERVER,///< server requests to be part of our network
 	REGISTER_FGFS,  ///< fgfs requests to be part of our network
@@ -69,7 +69,7 @@ typedef enum
 	USE_SERVER,     ///< tell fgfs which server to use
 	REGISTER_AGAIN, ///< tell a client to register again
 	INTERNAL_COMMAND ///< mark the end of the list. Used to check if it is a command
-} Commands;
+};
 
 
 } // namespace fgms

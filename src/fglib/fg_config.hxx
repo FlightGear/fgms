@@ -46,25 +46,25 @@
 class FG_CONFIG
 {
 public:
-	int   Read ( const std::string &ConfigName );
-	void  Dump ();
-	void  SetStart ();
-	int   Next ();
-	std::string Get ( const std::string &VarName );
-	std::string GetName ();
-	std::string GetValue ();
-	std::string GetNext ();
-	int SetSection ( const std::string &SecName );
-	int SecNext ();
-	std::string GetSecNextVar ();
-	std::string GetSecNextVal ();
+	int   read ( const std::string &ConfigName );
+	void  dump ();
+	void  set_start ();
+	int   next ();
+	std::string get ( const std::string &VarName );
+	std::string get_name ();
+	std::string get_value ();
+	std::string get_next ();
+	int set_section ( const std::string &SecName );
+	int sec_next ();
+	std::string get_sec_next_var ();
+	std::string get_sec_next_val ();
 private:
-	typedef std::pair<std::string,std::string>  mT_VarValue;
-	typedef std::list<mT_VarValue>              mT_VarList;
-	int   ParseLine ( const std::string &ConfigLine );
-	mT_VarList            m_VarList;
-	mT_VarList::iterator  m_CurrentVar;
-	std::string           m_CurrentSection;
+	typedef std::pair<std::string,std::string>  var_value_t;
+	typedef std::list<var_value_t>              var_list_t;
+	int   parse_line ( const std::string & config_line );
+	var_list_t            m_var_list;
+	var_list_t::iterator  m_current_var;
+	std::string           m_current_section;
 };
 
 #endif

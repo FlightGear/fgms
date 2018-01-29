@@ -22,7 +22,7 @@
 
 #include <arpa/inet.h>
 #include "fg_version.hxx"
-// #include "fg_util.hxx"
+#include "fg_util.hxx"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -79,14 +79,9 @@ void
 FG_VERSION::mk_str_rep
 ()
 {
-	#if 0
-	m_str_rep =  NumToStr (m_version.major, 0) + ".";
-	m_str_rep += NumToStr (m_version.minor, 0) + ".";
-	m_str_rep += NumToStr (m_version.patch, 0);
-	#endif
-	m_str_rep =  std::to_string (m_version.major) + ".";
-	m_str_rep += std::to_string (m_version.minor) + ".";
-	m_str_rep += std::to_string (m_version.patch);
+	m_str_rep =  num_to_str (m_version.major) + ".";
+	m_str_rep += num_to_str (m_version.minor) + ".";
+	m_str_rep += num_to_str (m_version.patch);
 	m_str_rep += m_extra;
 } // FG_VERSION::mk_str_rep ()
 
