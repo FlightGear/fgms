@@ -66,7 +66,7 @@ filter_cmds_t filter_cmds[] =
 };
 
 void
-CLI::set_auth_callback
+cli::set_auth_callback
 (
         c_auth_func callback
 )
@@ -77,7 +77,7 @@ CLI::set_auth_callback
 }
 
 void
-CLI::set_auth_callback
+cli::set_auth_callback
 (
         cpp_auth_func callback
 )
@@ -88,7 +88,7 @@ CLI::set_auth_callback
 }
 
 void
-CLI::set_enable_callback
+cli::set_enable_callback
 (
         c_enable_func callback
 )
@@ -99,7 +99,7 @@ CLI::set_enable_callback
 }
 
 void
-CLI::set_enable_callback
+cli::set_enable_callback
 (
         cpp_enable_func callback
 )
@@ -110,7 +110,7 @@ CLI::set_enable_callback
 }
 
 void
-CLI::allow_user
+cli::allow_user
 (
         const string& username,
         const string& password
@@ -127,7 +127,7 @@ CLI::allow_user
 }
 
 void
-CLI::allow_enable
+cli::allow_enable
 (
 	const string& password
 )
@@ -137,7 +137,7 @@ CLI::allow_enable
 }
 
 void
-CLI::deny_user
+cli::deny_user
 (
         const string& username
 )
@@ -152,7 +152,7 @@ CLI::deny_user
 }
 
 void
-CLI::set_banner
+cli::set_banner
 (
         const string& banner
 )
@@ -162,7 +162,7 @@ CLI::set_banner
 }
 
 void
-CLI::set_hostname
+cli::set_hostname
 (
         const string& hostname
 )
@@ -172,7 +172,7 @@ CLI::set_hostname
 }
 
 void
-CLI::set_prompt
+cli::set_prompt
 (
         const string& prompt
 )
@@ -182,13 +182,13 @@ CLI::set_prompt
 }
 
 int
-CLI::build_shortest
+cli::build_shortest
 (
-        Command<CLI> *commands
+        Command<cli> *commands
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	Command<CLI> *c, *p;
+	Command<cli> *c, *p;
 	char* cp, *pp;
 	unsigned int len;
 	for ( c = commands; c; c = c->next )
@@ -232,7 +232,7 @@ CLI::build_shortest
 }
 
 int
-CLI::set_privilege
+cli::set_privilege
 (
         int priv
 )
@@ -249,7 +249,7 @@ CLI::set_privilege
 }
 
 void
-CLI::set_modestring
+cli::set_modestring
 (
         const string& modestring
 )
@@ -259,7 +259,7 @@ CLI::set_modestring
 }
 
 int
-CLI::set_configmode
+cli::set_configmode
 (
         int mode,
         const string& config_desc
@@ -290,10 +290,10 @@ CLI::set_configmode
 }
 
 void
-CLI::register_command
+cli::register_command
 (
-        Command<CLI>*   command,
-        Command<CLI>*   parent
+        Command<cli>*   command,
+        Command<cli>*   parent
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
@@ -310,7 +310,7 @@ CLI::register_command
 			build_shortest ( command->parent );
 			return;
 		}
-		Command<CLI>* c;
+		Command<cli>* c;
 		for ( c = parent->children; c && c->next; c = c->next )
 			/* intentionally empty */
 		{
@@ -330,7 +330,7 @@ CLI::register_command
 	}
 	else
 	{
-		Command<CLI>* c;
+		Command<cli>* c;
 		for ( c = this->commands; c && c->next; c = c->next )
 			/* intentionally empty */
 		{
@@ -349,13 +349,13 @@ CLI::register_command
 }
 
 void
-CLI::free_command
+cli::free_command
 (
-        Command<CLI> *cmd
+        Command<cli> *cmd
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	Command<CLI> *c,*p;
+	Command<cli> *c,*p;
 	for ( c = cmd->children; c; )
 	{
 		p = c->next;
@@ -371,13 +371,13 @@ CLI::free_command
 }
 
 int
-CLI::unregister_command
+cli::unregister_command
 (
         char* command
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	Command<CLI> *c, *p = NULL;
+	Command<cli> *c, *p = NULL;
 	if ( ! command )
 	{
 		return -1;
@@ -407,7 +407,7 @@ CLI::unregister_command
 }
 
 int
-CLI::internal_enable
+cli::internal_enable
 (
         UNUSED ( char* command ),
         UNUSED ( char* argv[] ),
@@ -434,7 +434,7 @@ CLI::internal_enable
 }
 
 int
-CLI::internal_disable
+cli::internal_disable
 (
         UNUSED ( char* command ),
         UNUSED ( char* argv[] ),
@@ -448,7 +448,7 @@ CLI::internal_disable
 }
 
 int
-CLI::internal_help
+cli::internal_help
 (
         UNUSED ( char* command ),
         UNUSED ( char* argv[] ),
@@ -474,7 +474,7 @@ CLI::internal_help
 }
 
 int
-CLI::internal_whoami
+cli::internal_whoami
 (
         UNUSED ( char* command ),
         UNUSED ( char* argv[] ),
@@ -487,7 +487,7 @@ CLI::internal_whoami
 }
 
 int
-CLI::internal_history
+cli::internal_history
 (
         UNUSED ( char* command ),
         UNUSED ( char* argv[] ),
@@ -508,7 +508,7 @@ CLI::internal_history
 }
 
 int
-CLI::internal_quit
+cli::internal_quit
 (
         UNUSED ( char* command ),
         UNUSED ( char* argv[] ),
@@ -522,7 +522,7 @@ CLI::internal_quit
 }
 
 int
-CLI::internal_exit
+cli::internal_exit
 (
         char* command,
         char* argv[],
@@ -546,7 +546,7 @@ CLI::internal_exit
 }
 
 int
-CLI::int_cmd_pager
+cli::int_cmd_pager
 (
 	char* command,
 	char* argv[],
@@ -569,7 +569,7 @@ CLI::int_cmd_pager
 				  << CRLF;
 				return libcli::OK;
 			}
-			lines = str_to_num<size_t> ( argv[0], invalid );
+			lines = fgmp::str_to_num<size_t> ( argv[0], invalid );
 			if (invalid)
 			{
 				client << "% invalid argument" << CRLF;
@@ -592,7 +592,7 @@ CLI::int_cmd_pager
 }
 
 int
-CLI::int_configure_terminal
+cli::int_configure_terminal
 (
         UNUSED ( char* command ),
         UNUSED ( char* argv[] ),
@@ -610,7 +610,7 @@ CLI::int_configure_terminal
 	return libcli::OK;
 }
 
-CLI::CLI
+cli::cli
 (
 	int fd
 ): client (fd)
@@ -632,74 +632,74 @@ CLI::CLI
 	{
 		this->history[i] = 0;
 	}
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 				this,
 				"help",
-				& CLI::internal_help,
+				& cli::internal_help,
 				libcli::UNPRIVILEGED,
 				libcli::MODE_ANY,
 				"Description of the interactive help system"
 	) );
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 				this,
 				"whoami",
-				& CLI::internal_whoami,
+				& cli::internal_whoami,
 				libcli::UNPRIVILEGED,
 				libcli::MODE_EXEC,
 				"Show who you are"
 	) );
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 				this,
 				"quit",
-				& CLI::internal_quit,
+				& cli::internal_quit,
 				libcli::UNPRIVILEGED,
 				libcli::MODE_EXEC,
 				"Disconnect"
 	) );
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 				this,
 				"exit",
-				& CLI::internal_exit,
+				& cli::internal_exit,
 				libcli::UNPRIVILEGED,
 				libcli::MODE_ANY,
 				"Exit from current mode"
 	) );
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 				this,
 				"history",
-				& CLI::internal_history,
+				& cli::internal_history,
 				libcli::UNPRIVILEGED,
 				libcli::MODE_EXEC,
 				"Show a list of previously run commands"
 	) );
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 				this,
 				"pager",
-				& CLI::int_cmd_pager,
+				& cli::int_cmd_pager,
 				libcli::UNPRIVILEGED,
 				libcli::MODE_EXEC,
 				"Set number of lines on a screen"
 	) );
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 				this,
 				"enable",
-				& CLI::internal_enable,
+				& cli::internal_enable,
 				libcli::UNPRIVILEGED,
 				libcli::MODE_EXEC,
 				"Turn on privileged commands"
 	) );
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 				this,
 				"disable",
-				& CLI::internal_disable,
+				& cli::internal_disable,
 				libcli::PRIVILEGED,
 				libcli::MODE_EXEC,
 				"Turn off privileged commands"
 	) );
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 				this,
 				"configure",
-				& CLI::int_configure_terminal,
+				& cli::int_configure_terminal,
 				libcli::PRIVILEGED,
 				libcli::MODE_EXEC,
 				"Enter configuration mode"
@@ -709,7 +709,7 @@ CLI::CLI
 	set_configmode ( libcli::MODE_EXEC, "" );
 }
 
-CLI::~CLI
+cli::~cli
 ()
 {
 	users.clear();
@@ -718,19 +718,19 @@ CLI::~CLI
 }
 
 void
-CLI::destroy
+cli::destroy
 ()
 {
 }
 
 void
-CLI::unregister_all
+cli::unregister_all
 (
-        Command<CLI> *command
+        Command<cli> *command
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	Command<CLI> *c, *p = NULL;
+	Command<cli> *c, *p = NULL;
 	if ( ! command )
 	{
 		command = this->commands;
@@ -761,7 +761,7 @@ CLI::unregister_all
 }
 
 int
-CLI::add_history
+cli::add_history
 (
         char* cmd
 )
@@ -799,7 +799,7 @@ CLI::add_history
 }
 
 void
-CLI::free_history
+cli::free_history
 ()
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
@@ -814,7 +814,7 @@ CLI::free_history
 }
 
 int
-CLI::parse_line
+cli::parse_line
 (
         char* line,
         char* words[],
@@ -886,9 +886,9 @@ CLI::parse_line
 }
 
 int
-CLI::find_command
+cli::find_command
 (
-        Command<CLI> *commands,
+        Command<cli> *commands,
         int num_words,
         char* words[],
         int start_word,
@@ -896,7 +896,7 @@ CLI::find_command
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	Command<CLI> *c, *again = NULL;
+	Command<cli> *c, *again = NULL;
 	int c_words = num_words;
 	if ( filters[0] )
 	{
@@ -1113,7 +1113,7 @@ CORRECT_CHECKS:
 }
 
 int
-CLI::run_command
+cli::run_command
 (
         char* command
 )
@@ -1164,7 +1164,7 @@ CLI::run_command
 }
 
 int
-CLI::get_completions
+cli::get_completions
 (
         char* command,
         char** completions,
@@ -1172,9 +1172,9 @@ CLI::get_completions
 )
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	Command<CLI> *c;
-	Command<CLI> *n;
-	Command<CLI> *p = 0;
+	Command<cli> *c;
+	Command<cli> *n;
+	Command<cli> *p = 0;
 	int num_words, i, k=0, j;
 	int num_words_line;
 	char* words[128] = {0};
@@ -1290,7 +1290,7 @@ CLI::get_completions
 }
 
 void
-CLI::clear_line
+cli::clear_line
 (
         char* cmd,
         int l,
@@ -1322,7 +1322,7 @@ CLI::clear_line
 }
 
 void
-CLI::regular
+cli::regular
 (
         int ( *callback ) ()
 )
@@ -1335,7 +1335,7 @@ const string DES_PREFIX = "{crypt}";    /* to distinguish clear text from DES cr
 const string MD5_PREFIX = "$1$";
 
 int
-CLI::pass_matches
+cli::pass_matches
 (
 	string pass,
 	string tried_pass
@@ -1357,7 +1357,7 @@ CLI::pass_matches
 }
 
 void
-CLI::show_prompt
+cli::show_prompt
 ()
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
@@ -1377,7 +1377,7 @@ CLI::show_prompt
 }
 
 unsigned char
-CLI::map_esc
+cli::map_esc
 ()
 {
 	unsigned char c;
@@ -1405,7 +1405,7 @@ CLI::map_esc
 }
 
 void
-CLI::handle_telnet_option ()
+cli::handle_telnet_option ()
 {
 	unsigned char c;
 	client.read_char (c);
@@ -1421,7 +1421,7 @@ CLI::handle_telnet_option ()
 }
 
 int
-CLI::get_input
+cli::get_input
 (
 	unsigned char& c
 )
@@ -1456,7 +1456,7 @@ CLI::get_input
 }
 
 void
-CLI::check_enable ( const char* pass )
+cli::check_enable ( const char* pass )
 {
 	int allowed = 0;
 	if ( enable_password != "" )
@@ -1498,7 +1498,7 @@ CLI::check_enable ( const char* pass )
 }
 
 void
-CLI::check_user_auth
+cli::check_user_auth
 (
 	const string& username,
 	const string& password
@@ -1544,7 +1544,7 @@ CLI::check_user_auth
 }
 
 void
-CLI::delete_backwards
+cli::delete_backwards
 (
 	const unsigned char c
 )
@@ -1608,7 +1608,7 @@ CLI::delete_backwards
 }
 
 void
-CLI::prompt_user ()
+cli::prompt_user ()
 {
 	switch ( this->state )
 	{
@@ -1639,7 +1639,7 @@ CLI::prompt_user ()
 }
 
 void
-CLI::redraw_line
+cli::redraw_line
 ()
 {
 	if ( this->state == STATE_PASSWORD || this->state == STATE_ENABLE_PASSWORD )
@@ -1656,7 +1656,7 @@ CLI::redraw_line
 }
 
 void
-CLI::clear_line
+cli::clear_line
 ()
 {
 	if ( this->state == STATE_PASSWORD || this->state == STATE_ENABLE_PASSWORD )
@@ -1671,7 +1671,7 @@ CLI::clear_line
 }
 
 void
-CLI::clear_to_eol
+cli::clear_to_eol
 ()
 {
 	if ( cursor == length )
@@ -1695,7 +1695,7 @@ CLI::clear_to_eol
 }
 
 bool
-CLI::try_logout
+cli::try_logout
 ()
 {
 	if ( length )
@@ -1709,7 +1709,7 @@ CLI::try_logout
 }
 
 void
-CLI::leave_config_mode
+cli::leave_config_mode
 ()
 {
 	if ( this->mode != MODE_EXEC )
@@ -1726,7 +1726,7 @@ CLI::leave_config_mode
 }
 
 void
-CLI::list_completions
+cli::list_completions
 ()
 {
 	char* completions[128];
@@ -1765,7 +1765,7 @@ CLI::list_completions
 }
 
 void
-CLI::do_history
+cli::do_history
 (
 	const unsigned char& c
 )
@@ -1833,7 +1833,7 @@ CLI::do_history
 }
 
 void
-CLI::cursor_left
+cli::cursor_left
 ()
 {
 	if ( cursor == 0 )
@@ -1848,7 +1848,7 @@ CLI::cursor_left
 }
 
 void
-CLI::cursor_right
+cli::cursor_right
 ()
 {
 	if ( cursor >= length )
@@ -1863,7 +1863,7 @@ CLI::cursor_right
 }
 
 void
-CLI::jump_start_of_line
+cli::jump_start_of_line
 ()
 {
 	if ( cursor )
@@ -1878,7 +1878,7 @@ CLI::jump_start_of_line
 }
 
 void
-CLI::jump_end_of_line
+cli::jump_end_of_line
 ()
 {
 	if ( cursor < length )
@@ -1892,7 +1892,7 @@ CLI::jump_end_of_line
 }
 
 bool
-CLI::append
+cli::append
 (
 	const unsigned char& c
 )
@@ -1910,7 +1910,7 @@ CLI::append
 }
 
 void
-CLI::insert
+cli::insert
 (
 	const unsigned char& c
 )
@@ -1947,7 +1947,7 @@ CLI::insert
 }
 
 int
-CLI::loop
+cli::loop
 ()
 {
 	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
@@ -2131,7 +2131,7 @@ CLI::loop
 }
 
 int
-CLI::file
+cli::file
 (
         FILE* fh,
         int privilege,
@@ -2187,7 +2187,7 @@ CLI::file
 }
 
 int
-CLI::pager
+cli::pager
 ()
 {
 	unsigned char c;
@@ -2224,7 +2224,7 @@ CLI::pager
 
 // a little helper function
 bool
-CLI::need_help
+cli::need_help
 (
 	char* argv
 )
@@ -2235,10 +2235,10 @@ CLI::need_help
 	if (argv[l-1] == '?')
 		return true;
 	return false;
-} // CLI::need_help ()
+} // cli::need_help ()
 
 bool
-CLI::check_pager
+cli::check_pager
 ()
 {
 	if (client.max_screen_lines == 0)
@@ -2256,7 +2256,7 @@ CLI::check_pager
 }
 
 int
-CLI::print
+cli::print
 (
         const char* format,
         ...

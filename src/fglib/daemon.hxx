@@ -34,9 +34,12 @@
 
 #ifndef _MSC_VER
 
+namespace fgmp
+{
+
 /** Implement everything necessary to become a daemon
  */
-class Daemon
+class daemon
 {
 protected:
 	/** @brief remember who we are */
@@ -46,7 +49,7 @@ protected:
 	static bool already_daemon;
 
 public:
-	Daemon();
+	daemon();
 	/** handle children which died unexpectedly */
 	static void sig_chld ( int SigType );
 	/** make ourself a daemon */
@@ -55,8 +58,9 @@ public:
 	static int  get_pid() { return my_pid; };
 };
 
-#endif // #ifndef _MSC_VER
+} // namespace fgmp
 
+#endif // #ifndef _MSC_VER
 
 #endif
 

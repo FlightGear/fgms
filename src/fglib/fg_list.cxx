@@ -30,15 +30,16 @@
 namespace fgmp
 {
 
-const size_t ListElement::NONE_EXISTANT = (size_t) -1;
+const size_t list_item::NONE_EXISTANT = (size_t) -1;
 
 //////////////////////////////////////////////////////////////////////
-ListElement::ListElement
+
+list_item::list_item
 (
 	const std::string& name
 ) : name(name)
 {
-	id		= NONE_EXISTANT;	// flag a non existant Element
+	id		= NONE_EXISTANT;	// flag a non existant item
 	timeout		= 0;
 	join_time	= time (0);
 	last_seen	= join_time;
@@ -47,14 +48,14 @@ ListElement::ListElement
 	pkts_rcvd	= 0;
 	bytes_rcvd	= 0;
 	bytes_sent	= 0;
-}
-//////////////////////////////////////////////////////////////////////
+} // list_item::list_item ( name )
 
 //////////////////////////////////////////////////////////////////////
-ListElement::ListElement
+
+list_item::list_item
 () : name("")
 {
-	id		= NONE_EXISTANT;	// flag a non existant Element
+	id		= NONE_EXISTANT;	// flag a non existant item
 	timeout		= 0;
 	join_time	= time (0);
 	last_seen	= join_time;
@@ -63,48 +64,50 @@ ListElement::ListElement
 	pkts_rcvd	= 0;
 	bytes_rcvd	= 0;
 	bytes_sent	= 0;
-}
-//////////////////////////////////////////////////////////////////////
+} // list_item::list_item ()
 
 //////////////////////////////////////////////////////////////////////
-ListElement::ListElement
+
+list_item::list_item
 (
-	const ListElement& P
+	const list_item& P
 )
 {
 	this->assign (P);
-}
-//////////////////////////////////////////////////////////////////////
+} // list_item::list_item ( & list_item )
 
 //////////////////////////////////////////////////////////////////////
-ListElement::~ListElement
-()
-{
-}
-//////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////
 void
-ListElement::operator =( const ListElement& P )
+list_item::operator =
+(
+	const list_item& P
+)
 {
 	this->assign (P);
-}
-//////////////////////////////////////////////////////////////////////
+} // list_item::operator = 
 
 //////////////////////////////////////////////////////////////////////
+
 bool
-ListElement::operator ==( const ListElement& P )
+list_item::operator ==
+(
+	const list_item& P
+)
 {
 	// FIXME: compare the name, too?
 	if (address == P.address)
 		return true;
 	return false;
-}
-//////////////////////////////////////////////////////////////////////
+} // list_item::operator ==
 
 //////////////////////////////////////////////////////////////////////
+
 void
-ListElement::assign( const ListElement& P )
+list_item::assign
+(
+	const list_item& P
+)
 {
 	id		= P.id;
 	timeout		= P.timeout;
@@ -117,22 +120,25 @@ ListElement::assign( const ListElement& P )
 	bytes_sent	= P.bytes_sent;
         pkts_rcvd	= P.pkts_rcvd;
 	bytes_rcvd	= P.bytes_rcvd;
-}
-//////////////////////////////////////////////////////////////////////
+} // list_item::assign ()
 
 //////////////////////////////////////////////////////////////////////
+
 void
-ListElement::update_sent( size_t bytes )
+list_item::update_sent
+(
+	size_t bytes
+)
 {
 	pkts_sent++;
 	bytes_sent += bytes;
 	last_sent = time(0);
-}
-//////////////////////////////////////////////////////////////////////
+} // list_item::update_sent ()
 
 //////////////////////////////////////////////////////////////////////
+
 void
-ListElement::update_rcvd
+list_item::update_rcvd
 (
 	size_t bytes
 )
@@ -140,7 +146,8 @@ ListElement::update_rcvd
 	pkts_rcvd++;
 	bytes_rcvd += bytes;
 	last_seen = time(0);
-}
+} // list_item::update_rcvd ()
+
 //////////////////////////////////////////////////////////////////////
 
 } // namespace fgmp

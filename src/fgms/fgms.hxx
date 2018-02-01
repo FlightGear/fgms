@@ -53,30 +53,24 @@
 	#include <fglib/daemon.hxx>
 #endif
 
-using fgmp::FG_List;
-using fgmp::PlayerList;
-using fgmp::ListElement;
-using fgmp::FG_Player;
-using fgmp::PlayerIt;
-using fgmp::ItList;
-using fgmp::StrList;
-using fgmp::StrIt;
+namespace fgmp
+{
 
 //////////////////////////////////////////////////////////////////////
 /**
- * @class FGMS
- * @brief The Main FGMS Class
+ * @class fgms
+ * @brief The Main fgms Class
  */
-class FGMS 
+class fgms 
 {
 public:
 
-	static const FG_VERSION m_version; // ( 1, 0, 0, "-dev" );
+	static const version m_version; // ( 1, 0, 0, "-dev" );
 
-	friend class FG_CLI;
+	friend class fgcli;
 
 	/** @brief Internal Constants */
-	enum FGMS_CONSTANTS
+	enum
 	{
 		// other constants
 		MAX_PACKET_SIZE         = 1200, // to agree with FG multiplayermgr.cxx (since before  2008)
@@ -89,8 +83,8 @@ public:
 	//  constructors
 	//
 	//////////////////////////////////////////////////
-	FGMS ();
-	~FGMS ();
+	fgms ();
+	~fgms ();
 
 	//////////////////////////////////////////////////
 	//
@@ -137,14 +131,14 @@ public:
 protected:
 
 #ifndef _MSC_VER
-	Daemon		m_myself;
+	daemon		m_myself;
 #endif
 	//////////////////////////////////////////////////
 	//
 	//  private variables
 	//
 	//////////////////////////////////////////////////
-	using ip2relay_t  = std::map<fgmp::netaddr,std::string>;
+	using ip2relay_t  = std::map<netaddr,std::string>;
 	using ip2relay_it = ip2relay_t::iterator;
 	bool		m_initialized;
 	bool		m_reinit_data;
@@ -178,13 +172,13 @@ protected:
 	std::string	m_server_name;
 	std::string	m_tracker_server;
 	ip2relay_t	m_relay_map;
-	fgmp::FG_List	m_cross_list;
-	fgmp::FG_List	m_white_list;
-	fgmp::FG_List	m_black_list;
-	fgmp::FG_List	m_relay_list;
+	fglist		m_cross_list;
+	fglist		m_white_list;
+	fglist		m_black_list;
+	fglist		m_relay_list;
 	int		m_ipcid;
 	int		m_childpid;
-	FG_TRACKER*	m_tracker;
+	tracker*	m_tracker;
 	bool		m_me_is_hub;
 	time_t		m_update_tracker_freq;
 	bool		m_want_exit;
@@ -192,10 +186,10 @@ protected:
 	bool		m_add_cli;
 	bool		m_run_as_daemon;
 	std::ofstream	m_tracker_log;
-	fgmp::netsocket*	m_data_channel;
-	fgmp::netsocket*	m_query_channel;
-	fgmp::netsocket*	m_admin_channel;
-	fgmp::PlayerList	m_player_list;
+	netsocket*	m_data_channel;
+	netsocket*	m_query_channel;
+	netsocket*	m_admin_channel;
+	pilot_list	m_player_list;
 
 	//////////////////////////////////////////////////
 	// 20150619:0.11.9: be able to disable these functions
@@ -239,9 +233,9 @@ protected:
 	// gets updated periodically
 	//////////////////////////////////////////////////
 	// time in seconds to regenerate the client list
-	time_t		m_client_freq;
-	time_t		m_client_last;
-	fgmp::StrList	m_clients;
+	time_t	m_client_freq;
+	time_t	m_client_last;
+	str_list	m_clients;
 	void mk_client_list ();
 
 	//////////////////////////////////////////////////
@@ -252,27 +246,27 @@ protected:
 	bool  init_data_channel ();
 	bool  init_query_channel ();
 	bool  init_admin_channel ();
-	void  add_client ( const fgmp::netaddr& sender, char* msg );
-	void  add_bad_client ( const fgmp::netaddr& sender, std::string& err_msg,
+	void  add_client ( const netaddr& sender, char* msg );
+	void  add_bad_client ( const netaddr& sender, std::string& err_msg,
 	       	bool is_local, int bytes );
-	bool  is_known_relay ( const fgmp::netaddr& sender, size_t bytes );
-	bool  packet_is_valid ( int bytes, T_MsgHdr* msg_hdr,
-	       	const fgmp::netaddr& sender );
+	bool  is_known_relay ( const netaddr& sender, size_t bytes );
+	bool  packet_is_valid ( int bytes, msg_hdr_t* msg_hdr,
+	       	const netaddr& sender );
 	void  handle_data ( char* msg, int bytes,
-	       	const fgmp::netaddr& sender );
+	       	const netaddr& sender );
 	int   update_tracker ( const std::string& callsign, const std::string& passwd,
 		const std::string& modelname, const time_t time,
 		const int type );
-	void  drop_client ( PlayerIt& player ); 
-	bool  receiver_wants_data ( const PlayerIt& sender,
-		const FG_Player& receiver );
-	bool  receiver_wants_chat ( const PlayerIt& sender,
-		const FG_Player& receiver );
-	bool  is_in_range ( const fgmp::ListElement& relay,
-		const PlayerIt& sender, uint32_t msg_id );
+	void  drop_client ( pilot_it& player ); 
+	bool  receiver_wants_data ( const pilot_it& sender,
+		const pilot& receiver );
+	bool  receiver_wants_chat ( const pilot_it& sender,
+		const pilot& receiver );
+	bool  is_in_range ( const list_item& relay,
+		const pilot_it& sender, MSG_ID msg_id );
 	void  send_to_cross ( char* msg, int bytes,
-		const fgmp::netaddr& sender );
-	void  send_to_relays ( char* msg, int bytes, PlayerIt& sender );
+		const netaddr& sender );
+	void  send_to_relays ( char* msg, int bytes, pilot_it& sender );
 	void  want_exit ();
 	void  print_version ();
 	void  print_help ();
@@ -280,12 +274,15 @@ protected:
 
 	int     m_argc; // number of commandline arguments
 	char**  m_argv; // pointer to commandline arguments (copy)
-}; // FGMS
+}; // fgms
 
 struct st_telnet
 {
-	FGMS* instance;
+	fgms* instance;
 	int   fd;
 };
+
+} // namespace fgmp
+
 #endif
 

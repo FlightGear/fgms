@@ -43,131 +43,92 @@ namespace fgmp
 {
 
 //////////////////////////////////////////////////////////////////////
+
 /** 
- * @class ListElement
+ * @class list_item
  * @brief Represent a generic list element
  * 
  */
-class ListElement
+class list_item
 {
 public:
-	/** every element has a a name */
-	ListElement ( const std::string& name );
-	ListElement ( const ListElement& P );
-	virtual ~ListElement ();
-	/** mark a nonexisting element */
-	static const size_t NONE_EXISTANT;
-	/** @brief The id of this entry */
+	list_item ( const std::string& name );
+	list_item ( const list_item& P );
+	static const size_t NONE_EXISTANT;	///< mark a nonexisting element
 	size_t		id;
-	/** @brief The timeout of this entry */
 	time_t		timeout;
-	/** @brief The callsign (or name) */
 	std::string	name;
-	/** @brief The network address of this element */
-	netaddr		address;
-	/** @brief The time this entry was added to the list */
+	netaddr		address;	
 	time_t		join_time;
-	/** @brief timestamp of last seen packet from this element */
 	time_t		last_seen;
-	/** @brief timestamp of last sent packet to this element */
 	time_t		last_sent;
-	/** @brief Count of packets recieved from client */
 	uint64_t	pkts_rcvd;
-	/** @brief Count of packets sent to client */
 	uint64_t	pkts_sent;
-	/** @brief Count of bytes recieved from client */
 	uint64_t	bytes_rcvd;
-	/** @brief Count of bytes sent to client */
 	uint64_t	bytes_sent;
-	void operator =  ( const ListElement& P );
-	virtual bool operator ==  ( const ListElement& P );
+	void operator =  ( const list_item& P );
+	virtual bool operator ==  ( const list_item& P );
 	void update_sent ( size_t bytes );
 	void update_rcvd ( size_t bytes );
 protected:
-	ListElement ();
-	void assign ( const ListElement& P );
-}; // ListElement
+	list_item ();
+	void assign ( const list_item& P );
+}; // list_item
+
+//////////////////////////////////////////////////////////////////////
 
 /** 
- * @class List
+ * @class list
  * @brief a generic list implementation for fgms
  * 
  */
 template <class T>
-class List : public Lockable
+class list : public lockable
 {
 public:
-	typedef std::vector<T> ListElements;
-	typedef typename std::vector<T>::iterator ListIterator;
-	/** constructor, must supply a name */
-	List   ( const std::string& name );
-	~List  ();
-	/** return the number of elements in this list */
-	size_t size  ();
-	/** delete all elements of this list */
-	void   clear ();
-	/** add an element to this list */
-	size_t add   ( T& Element, time_t TTL );
-	/** Check if the entry TTL expired*/
-	bool check_ttl (int position);
-	/** delete an element of this list (by position) */
-	void delete_by_pos (int position);
-	/** delete an element of this list */
-	ListIterator erase	( const ListIterator& Element );
-	/** find an element by its IP address */
-	ListIterator find	( const netaddr& address,
-		bool ComparePort = false );
-	/** find an element by its name */
-	ListIterator find_by_name	( const std::string& name = "" );
-	/** find an element by its id */
-	ListIterator find_by_id	( size_t id );
-	/** return an iterator of the first element */
-	ListIterator begin	();
-	/** return an iterator of the last element */
-	ListIterator last	();
-	/** iterator of the end of the list */
-	ListIterator end	();
-	/** update sent counter of an element and of the list */
-	void update_sent ( ListIterator& Element, size_t bytes );
-	/** update receive counter of an element and of the list */
-	void update_rcvd ( ListIterator& Element, size_t bytes );
-	/** update sent counter of the list */
+	using list_items = std::vector<T>;
+	using list_it       = typename std::vector<T>::iterator;
+	list   ( const std::string& name );
+	~list  ();
+	size_t	size  ();
+	void	clear ();
+	size_t	add   ( T& item, time_t TTL );
+	bool	check_ttl (int position);
+	void	delete_by_pos (int position);
+	list_it erase	( const list_it& item );
+	list_it find	( const netaddr& address, bool compare_port = false );
+	list_it find_by_name	( const std::string& name = "" );
+	list_it find_by_id	( size_t id );
+	list_it begin	();
+	list_it last	();
+	list_it end	();
+	void update_sent ( list_it& item, size_t bytes );
+	void update_rcvd ( list_it& item, size_t bytes );
 	void update_sent ( size_t bytes );
-	/** update receive counter of the list */
 	void update_rcvd ( size_t bytes );
-	/** return a copy of an element at position x (thread safe) */
-	T operator []( const size_t& Index );
-	/** @brief maximum entries this list ever had */
+	T operator []	( const size_t& Index );
 	size_t		max_id;
-	/** @brief Count of packets recieved from client */
 	uint64_t	pkts_rcvd;  
-	/** @brief Count of packets sent to client */
 	uint64_t	pkts_sent;
-	/** @brief Count of bytes recieved from client */
 	uint64_t	bytes_rcvd;  
-	/** @brief Count of bytes sent to client */
 	uint64_t	bytes_sent;        
-	/** the name (or description) of this element */
 	std::string	name;
 private:
-	/** @brief timestamp of last cleanup */
-	time_t	last_run;
-	/** do not allow standard constructor */
-	List ();
-	/** the actual storage of elements */
-	ListElements	Elements;
+	list ();
+	time_t		last_run;
+	list_items	items;
 };
 
-typedef List<ListElement>		FG_List;
-typedef std::vector<ListElement>::iterator	ItList;
+using fglist   = list<list_item>;
+using fglistit = std::vector<list_item>::iterator;
 
 //////////////////////////////////////////////////////////////////////
+
 /**
- *
  * construct an element and initialise counters
  */
 template <class T>
-List<T>::List
+list<T>::list
 (
 	const std::string& name
 )
@@ -177,19 +138,19 @@ List<T>::List
 	bytes_sent	= 0;
 	pkts_rcvd	= 0;
 	bytes_rcvd	= 0;
-}
-//////////////////////////////////////////////////////////////////////
+} // list<T>::list ()
 
 //////////////////////////////////////////////////////////////////////
+
 template <class T>
-List<T>::~List
+list<T>::~list
 ()
 {
 	clear ();
-}
-//////////////////////////////////////////////////////////////////////
+} // list<T>::~list ()
 
 //////////////////////////////////////////////////////////////////////
+
 /** NOT thread safe
  *
  * Return the number of elements of this list.
@@ -199,123 +160,122 @@ List<T>::~List
  */
 template <class T>
 size_t
-List<T>::size
+list<T>::size
 ()
 {
-	return Elements.size ();
-}
-//////////////////////////////////////////////////////////////////////
+	return items.size ();
+} // list<T>::size ()
 
 //////////////////////////////////////////////////////////////////////
+
 /** thread safe
  *
  * add an element to the list
- * @param Element the ListElement to add
+ * @param item the list_item to add
  * @param TTL automatic expiry of the element (time-to-live)
  * @see find()
  */
 template <class T>
 size_t
-List<T>::add
+list<T>::add
 (
-	T& Element,
+	T& item,
 	time_t TTL
 )
 {
 	this->max_id++;
-	Element.id	= this->max_id;
-	Element.timeout	= TTL;
-	Elements.push_back   ( Element );
+	item.id	= this->max_id;
+	item.timeout = TTL;
+	items.push_back ( item );
 	return this->max_id;
-}
-//////////////////////////////////////////////////////////////////////
+} // list<T>::add ()
 
+//////////////////////////////////////////////////////////////////////
 
 template <class T>
 void 
-List<T>::delete_by_pos
+list<T>::delete_by_pos
 (
 	int position
 )
 {
-	LockGuard lg ( & this->m_mutex );
-	ListIterator Element;
+	lockguard lg { this->mutex() };
+
 	this->last_run = time (0);
-	Element = Elements.begin();
-	std::advance (Element,position);
-	Elements.erase   ( Element );
-}
+	list_it item;
+	item = items.begin();
+	std::advance ( item, position );
+	items.erase  ( item );
+} // list<T>::delete_by_pos ()
+
 //////////////////////////////////////////////////////////////////////
+
 /** thread safe
  *
  * erase an entry from the list
- * @param Element iterator pointing to the element to delete
+ * @param item iterator pointing to the element to delete
  */
 template <class T>
 typename std::vector<T>::iterator
-List<T>::erase
+list<T>::erase
 (
-	const ListIterator& Element
+	const list_it& item
 )
 {
-	LockGuard lg ( & this->m_mutex );
-	ListIterator E;
-	E = Elements.erase   ( Element );
-	return (E);
-}
-//////////////////////////////////////////////////////////////////////
+	lockguard lg { this->mutex() };
+	return items.erase ( item );
+} // list<T>::erase ()
 
 //////////////////////////////////////////////////////////////////////
+
 /** NOT thread safe
  *
  * Find an element by IP-address (and optionally name). Automatically
  * removes entries which TTL is expired, with the exception of the 'users'
  * list which entries are deleted in FGMS::HandlePacket()
  * @param address IP address of the element
- * @param ComparePort If true, element matches only if the port also
+ * @param compare_port If true, element matches only if the port also
  *        matches
  * @return iterator pointing to the found element, or end() if element
  *         could not be found
  */
 template <class T>
 typename std::vector<T>::iterator
-List<T>::find
+list<T>::find
 (
 	const netaddr& address,
-	bool ComparePort
+	bool compare_port
 )
 {
-	ListIterator Element;
-	ListIterator RetElem;
+	list_it item { items.begin() };
+	list_it ret_item { items.end() };
 
 	this->last_run = time (0);
-	RetElem = Elements.end();
-	Element = Elements.begin();
-	while (Element != Elements.end())
+	while (item != items.end())
 	{
-		if (Element->address == address)
+		if (item->address == address)
 		{
-			if ( ComparePort ) 
+			if ( compare_port ) 
 			{	// additionally check port
-				if ( Element->address.port() == address.port() )
+				if ( item->address.port() == address.port() )
 				{
-					Element->last_seen = this->last_run;
-					RetElem = Element;
+					item->last_seen = this->last_run;
+					ret_item = item;
 				}
 			}
 			else
 			{
-				Element->last_seen = this->last_run;
-				RetElem = Element;
+				item->last_seen = this->last_run;
+				ret_item = item;
 			}
 		}
-		Element++;
+		item++;
 	}
-	return RetElem;
-}
-//////////////////////////////////////////////////////////////////////
+	return ret_item;
+} // list<T>::find ()
 
 //////////////////////////////////////////////////////////////////////
+
 /** NOT thread safe
  *
  * Find an element by name.
@@ -325,31 +285,29 @@ List<T>::find
  */
 template <class T>
 typename std::vector<T>::iterator
-List<T>::find_by_name
+list<T>::find_by_name
 (
 	const std::string& name
 )
 {
-	ListIterator Element;
-	ListIterator RetElem;
+	list_it item { items.begin() };
+	list_it ret_item { items.end() };
 
 	this->last_run = time (0);
-	RetElem = Elements.end();
-	Element = Elements.begin();
-	while (Element != Elements.end())
+	while (item != items.end())
 	{
-		if (Element->name == name)
+		if (item->name == name)
 		{
-			Element->last_seen = this->last_run;
-			return Element;
+			item->last_seen = this->last_run;
+			return item;
 		}
-		Element++;
+		item++;
 	}
-	return RetElem;
-}
-//////////////////////////////////////////////////////////////////////
+	return ret_item;
+} // list<T>::find_by_name ()
 
 //////////////////////////////////////////////////////////////////////
+
 /** NOT thread safe
  *
  * Find an element by id.
@@ -359,30 +317,29 @@ List<T>::find_by_name
  */
 template <class T>
 typename std::vector<T>::iterator
-List<T>::find_by_id
+list<T>::find_by_id
 (
 	size_t id
 )
 {
-	ListIterator Element;
-	ListIterator RetElem;
+	list_it item { items.begin() };
+	list_it ret_item { items.end() };
+
 	this->last_run = time (0);
-	RetElem = Elements.end();
-	Element = Elements.begin();
-	while (Element != Elements.end())
+	while (item != items.end())
 	{
-		if (Element->id == id)
+		if (item->id == id)
 		{
-			RetElem = Element;
+			ret_item = item;
 			break;
 		}
-		Element++;
+		item++;
 	}
-	return RetElem;
-}
-//////////////////////////////////////////////////////////////////////
+	return ret_item;
+} // list<T>::find_by_id ()
 
 //////////////////////////////////////////////////////////////////////
+
 /** NOT thread safe
  *
  * In general iterators are not thread safe. If you use them you have
@@ -393,14 +350,14 @@ List<T>::find_by_id
  */
 template <class T>
 typename std::vector<T>::iterator
-List<T>::begin
+list<T>::begin
 ()
 {
-	return Elements.begin ();
-}
-//////////////////////////////////////////////////////////////////////
+	return items.begin ();
+} // list<T>::begin ()
 
 //////////////////////////////////////////////////////////////////////
+
 /** NOT thread safe
  *
  * In general iterators are not thread safe. If you use them you have
@@ -411,13 +368,14 @@ List<T>::begin
  */
 template <class T>
 typename std::vector<T>::iterator
-List<T>::last
+list<T>::last
 ()
 {
-	ListIterator RetElem = Elements.end ();
-	--RetElem;
-	return RetElem;
-}
+	list_it ret_item { items.end () };
+	--ret_item;
+	return ret_item;
+} // list<T>::last ()
+
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -427,41 +385,41 @@ List<T>::last
  */
 template <class T>
 typename std::vector<T>::iterator
-List<T>::end
+list<T>::end
 ()
 {
-	return Elements.end ();
-}
-//////////////////////////////////////////////////////////////////////
+	return items.end ();
+} // list<T>::end ()
 
 //////////////////////////////////////////////////////////////////////
+
 /** thread safe
  * Check if the elements have TTL expired. 
  * True if not expired/unknown. False if expired.
  */
 template <class T>
 bool
-List<T>::check_ttl
+list<T>::check_ttl
 (
 	int position
 )
 {
-	LockGuard lg ( & this->m_mutex );
-	ListIterator Element;
-	this->last_run = time (0);
-	Element = Elements.begin();
-	std::advance (Element,position);
+	lockguard lg { this->mutex() };
+	list_it item { items.begin() };
 
-	if (Element->timeout == 0)
+	this->last_run = time (0);
+	std::advance (item,position);
+	if (item->timeout == 0)
 	{	// never timeouts
 		return true;
 	}
-	if ( (this->last_run - Element->last_seen) > Element->timeout )
+	if ( (this->last_run - item->last_seen) > item->timeout )
 	{
 		  return false;
 	}
 	return true;
-}
+} // list<T>::check_ttl ()
+
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -474,65 +432,65 @@ List<T>::check_ttl
  */
 template <class T>
 T
-List<T>::operator []
+list<T>::operator []
 (
 	const size_t& Index
 )
 {
-	T RetElem("");
-	if (Index < Elements.size ())
-		RetElem = Elements[Index];
-	return RetElem;
-}
-//////////////////////////////////////////////////////////////////////
+	T ret_item {""};
+	if (Index < items.size ())
+		ret_item = items[Index];
+	return ret_item;
+} // list<T>::operator []
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  *
  * Update sent-counters of the list and of an element. Every call of
  * this method means we sent a single packet (and the packet counter
  * is increased by 1).
- * @param Element The element to which data was sent
+ * @param item The element to which data was sent
  * @param bytes The number of bytes sent
  */
 template <class T>
 void
-List<T>::update_sent
+list<T>::update_sent
 (
-	ListIterator& Element,
+	list_it& item,
 	size_t bytes
 )
 {
 	pkts_sent++;
 	bytes_sent += bytes;
-	Element->update_sent (bytes);
-}
-//////////////////////////////////////////////////////////////////////
+	item->update_sent (bytes);
+} // list<T>::update_sent ()
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  *
  * Update receive-counters of the list and of an element. Every call of
  * this method means we received a single packet (and the packet counter
  * is increased by 1).
- * @param Element The element from which data was received
+ * @param item The element from which data was received
  * @param bytes The number of bytes received
  */
 template <class T>
 void
-List<T>::update_rcvd
+list<T>::update_rcvd
 (
-	ListIterator& Element,
+	list_it& item,
 	size_t bytes
 )
 {
 	pkts_rcvd++;
 	bytes_rcvd += bytes;
-	Element->update_rcvd (bytes);
-}
-//////////////////////////////////////////////////////////////////////
+	item->update_rcvd (bytes);
+} // list<T>::update_rcvd ()
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  *
  * Update sent-counters of the list. Every call of
@@ -542,17 +500,17 @@ List<T>::update_rcvd
  */
 template <class T>
 void
-List<T>::update_sent
+list<T>::update_sent
 (
 	size_t bytes
 )
 {
 	pkts_sent++;
 	bytes_sent += bytes;
-}
-//////////////////////////////////////////////////////////////////////
+} // list<T>::update_sent ()
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  *
  * Update received-counters of the list. Every call of
@@ -562,30 +520,31 @@ List<T>::update_sent
  */
 template <class T>
 void
-List<T>::update_rcvd
+list<T>::update_rcvd
 (
 	size_t bytes
 )
 {
 	pkts_rcvd++;
 	bytes_rcvd += bytes;
-}
-//////////////////////////////////////////////////////////////////////
+} // list<T>::update_rcvd ()
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  *
  * erase all entries of the list.
  */
 template <class T>
 void
-List<T>::clear
+list<T>::clear
 ()
 {
 	lock ();
-	Elements.clear ();
+	items.clear ();
 	unlock ();
-}
+} // list<T>::clear()
+
 //////////////////////////////////////////////////////////////////////
 
 } // namespace fgmp

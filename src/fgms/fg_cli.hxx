@@ -28,24 +28,26 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#ifndef FG_CLI_HEADER
-#define FG_CLI_HEADER
+#ifndef fgcli_HEADER
+#define fgcli_HEADER
 
 #include <fgms.hxx>
 #include <libcli.hxx>
 
 using namespace libcli;
-// using namespace std;
+
+namespace fgmp
+{
 
 /**
- * @class FG_CLI 
+ * @class fgcli 
  * @brief cisco like command line interface
  * 
  */
-class FG_CLI : public CLI
+class fgcli : public cli
 {
 public:
-	FG_CLI ( FGMS*  fgms, int fd);
+	fgcli ( fgmp::fgms* fgms, int fd );
 private:
 	void setup ();
 	//////////////////////////////////////////////////
@@ -100,9 +102,11 @@ private:
 			   UNUSED(char *argv[]), UNUSED(int argc) );
 	// TODO: change the size of the logbuffer
 private:
-	FGMS* fgms;
+	fgmp::fgms* fgms;
 	int cmd_NOT_IMPLEMENTED (  char *command, char *argv[], int argc );
 };
+
+} // namespace fgmp
 
 #endif
 

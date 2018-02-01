@@ -6,9 +6,15 @@
 #endif
 
 #include <stdio.h>
+#include <sstream>
+#include <iomanip>
 #include "fg_util.hxx"
 
+namespace fgmp
+{
+
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief convert a unix timestamp to a string
  * representation of a date
@@ -19,21 +25,21 @@ timestamp_to_datestr
 	time_t date
 )
 {
-	struct tm* tmr;
-	char buf[64];
-	tmr = localtime ( &date );
-	sprintf ( buf, "%02d.%02d.%04d %02d:%02d:%02d ",
-		  tmr->tm_mday,
-		  tmr->tm_mon+1,
-		  tmr->tm_year+1900,
-		  tmr->tm_hour,
-		  tmr->tm_min,
-		  tmr->tm_sec );
-	return ( std::string ) buf;
+	struct tm* tmr { localtime ( &date ) };
+	std::stringstream s;
+
+	s << std::setfill ('0') << std::setw(2)
+		<< tmr->tm_mday << "."
+		<< tmr->tm_mon+1 << "."
+		<< std::setw(4) << tmr->tm_year+1900 << " "
+		<< std::setw(2) << tmr->tm_hour << ":"
+		<< tmr->tm_min << ":"
+		<< tmr->tm_sec << " ";
+	return s.str();
 } // timestamp_to_datestr()
-//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief calculate the difference of a timestamp to now and convert
  * the difference to a string representation of the form "3 days 2 hours"
@@ -41,15 +47,15 @@ timestamp_to_datestr
 std::string
 timestamp_to_days
 (
-	time_t Date
+	time_t date
 )
 {
-	time_t Diff = time ( 0 ) - Date;
-	return diff_to_days ( Diff );
+	time_t diff = time ( 0 ) - date;
+	return diff_to_days ( diff );
 } // timestamp_to_days
-//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief convert a time duration expressed in seconds to a string
  * representation of the form "3 days 2 hours"
@@ -57,43 +63,44 @@ timestamp_to_days
 std::string
 diff_to_days
 (
-	time_t Date
+	time_t date
 )
 {
-	time_t Diff = Date;
-	unsigned int temp = 0;
-	std::string Result;
-	if ( Diff > 31536000 )	// years
+	time_t diff { date };
+	unsigned int temp { 0 };
+	std::string result;
+
+	if ( diff > 31536000 )	// years
 	{
-		temp = Diff / 31536000;
-		Result += num_to_str ( temp, 2 ) + " years";
-		return Result;
+		temp = diff / 31536000;
+		result += num_to_str ( temp, 2 ) + " years";
+		return result;
 	}
-	if ( Diff > 86400 )	// days
+	if ( diff > 86400 )	// days
 	{
-		temp = Diff / 86400;
-		Result += num_to_str ( temp ) + " days";
-		return Result;
+		temp = diff / 86400;
+		result += num_to_str ( temp ) + " days";
+		return result;
 	}
-	if ( Diff > 3600 )	// hours
+	if ( diff > 3600 )	// hours
 	{
-		temp = Diff / 3600;
-		Result += num_to_str ( temp ) + " hours";
-		return Result;
+		temp = diff / 3600;
+		result += num_to_str ( temp ) + " hours";
+		return result;
 	}
-	if ( Diff > 60 )		// minutes
+	if ( diff > 60 )		// minutes
 	{
-		temp = Diff / 60;
-		Result += num_to_str ( temp ) + " minutes";
-		return Result;
+		temp = diff / 60;
+		result += num_to_str ( temp ) + " minutes";
+		return result;
 	}
-	temp = Diff;
-	Result += num_to_str ( temp ) + " seconds";
-	return Result;
+	temp = diff;
+	result += num_to_str ( temp ) + " seconds";
+	return result;
 } // diff_to_days
-//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * Convert a byte counter to a string representation of the form
  * "3.7 Gib" (3.7 Gigibit).
@@ -156,3 +163,6 @@ str_ends_with
 	return std::equal ( ending.rbegin(), ending.rend(), value.rbegin() );
 } // str_ends_with ()
 //////////////////////////////////////////////////////////////////////
+
+} // namespace fgmp
+

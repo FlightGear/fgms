@@ -36,34 +36,42 @@
 namespace
 {
 /**
- *  High-precision versions of the above produced with an arbitrary
+ * High-precision versions of the above produced with an arbitrary
  * precision calculator (the compiler might lose a few bits in the FPU
  * operations).  These are specified to 81 bits of mantissa, which is
  * higher than any FPU known to me:
  */
-constexpr double SQUASH  = 0.9966471893352525192801545;
-/** @brief Nautical Miles in a Meter */
-constexpr double SG_NM_TO_METER  = 1852.0000;
-/** @brief Meters to Feet */
-constexpr double SG_METER_TO_FEET  = 3.28083989501312335958;
-constexpr double _EQURAD = 6378137.0;
-constexpr double E2 = fabs(1 - SQUASH*SQUASH);
-constexpr double ra2 = 1/(_EQURAD*_EQURAD);
-constexpr double e2 = E2;
-constexpr double e4 = E2*E2;
+constexpr double SQUASH			{ 0.9966471893352525192801545 };
+constexpr double SG_NM_TO_METER		{ 1852.0000 };
+constexpr double SG_METER_TO_FEET	{ 3.28083989501312335958 };
+constexpr double E2 			{ fabs ( 1 - SQUASH * SQUASH ) };
+constexpr double E4			{ E2 * E2 };
+constexpr double EQURAD			{ 6378137.0 };
+constexpr double RA2			{  1 / (EQURAD * EQURAD) };
+constexpr double SG_180			{ 180.0 };
+constexpr double SG_PI			{ 3.1415926535 };
+constexpr double SG_RADIANS_TO_DEGREES	{ SG_180 / SG_PI };
+
 } // namespace
 
-Point3D::Point3D
+namespace fgmp
+{
+
+//////////////////////////////////////////////////////////////////////
+
+point3d::point3d
 ()
 {
 	clear ();
 }
 
-Point3D::Point3D
+//////////////////////////////////////////////////////////////////////
+
+point3d::point3d
 (
-	const t_Point3D& x,
-	const t_Point3D& y,
-	const t_Point3D& z
+	const point3d_t& x,
+	const point3d_t& y,
+	const point3d_t& z
 )
 {
 	m_x = x;
@@ -71,11 +79,13 @@ Point3D::Point3D
 	m_z = z;
 }
 
-void Point3D::set
+//////////////////////////////////////////////////////////////////////
+
+void point3d::set
 (
-	const t_Point3D& x,
-	const t_Point3D& y,
-        const t_Point3D& z
+	const point3d_t& x,
+	const point3d_t& y,
+        const point3d_t& z
 )
 {
 	m_x = x;
@@ -83,10 +93,12 @@ void Point3D::set
 	m_z = z;
 }
 
-Point3D&
-Point3D::operator +=
+//////////////////////////////////////////////////////////////////////
+
+point3d&
+point3d::operator +=
 (
-	const Point3D& p
+	const point3d& p
 )
 {
 	m_x += p.m_x;
@@ -95,10 +107,12 @@ Point3D::operator +=
 	return *this;
 }
 
-Point3D&
-Point3D::operator -=
+//////////////////////////////////////////////////////////////////////
+
+point3d&
+point3d::operator -=
 (
-	const Point3D& p
+	const point3d& p
 )
 {
 	m_x -= p.m_x;
@@ -107,10 +121,12 @@ Point3D::operator -=
 	return *this;
 }
 
-Point3D&
-Point3D::operator *=
+//////////////////////////////////////////////////////////////////////
+
+point3d&
+point3d::operator *=
 (
-	const Point3D& p
+	const point3d& p
 )
 {
 	m_x *= p.m_x;
@@ -119,10 +135,12 @@ Point3D::operator *=
 	return *this;
 }
 
-Point3D&
-Point3D::operator /=
+//////////////////////////////////////////////////////////////////////
+
+point3d&
+point3d::operator /=
 (
-	const Point3D& p
+	const point3d& p
 )
 {
 	m_x /= p.m_x;
@@ -131,23 +149,26 @@ Point3D::operator /=
 	return *this;
 }
 
-Point3D&
-Point3D::operator ^=
+//////////////////////////////////////////////////////////////////////
+
+point3d&
+point3d::operator ^=
 (
-	const Point3D& p
+	const point3d& p
 )
 {
 	m_x = (m_y * p.m_z) - (m_z * p.m_y);
 	m_y = (m_z * p.m_x) - (m_z * p.m_z);
 	m_z = (m_x * p.m_y) - (m_z * p.m_x);
 	return *this;
-
 }
 
-Point3D&
-Point3D::operator *=
+//////////////////////////////////////////////////////////////////////
+
+point3d&
+point3d::operator *=
 (
-	t_Point3D v
+	point3d_t v
 )
 {
 	m_x *= v;
@@ -156,10 +177,12 @@ Point3D::operator *=
 	return *this;
 }
 
-Point3D&
-Point3D::operator /=
+//////////////////////////////////////////////////////////////////////
+
+point3d&
+point3d::operator /=
 (
-	t_Point3D v
+	point3d_t v
 )
 {
 	m_x /= v;
@@ -168,10 +191,12 @@ Point3D::operator /=
 	return *this;
 }
 
+//////////////////////////////////////////////////////////////////////
+
 bool
-Point3D::operator ==
+point3d::operator ==
 (
-	const Point3D& p
+	const point3d& p
 )
 {
 	if ((m_x == p.m_x) && (m_y == p.m_y) && (m_z == p.m_z))
@@ -179,10 +204,12 @@ Point3D::operator ==
 	return (false);
 }
 
+//////////////////////////////////////////////////////////////////////
+
 bool
-Point3D::operator !=
+point3d::operator !=
 (
-	const Point3D& p
+	const point3d& p
 )
 {
 	if ((m_x == p.m_x) && (m_y == p.m_y) && (m_z == p.m_z))
@@ -190,8 +217,10 @@ Point3D::operator !=
 	return (true);
 }
 
-t_Point3D
-Point3D::operator []
+//////////////////////////////////////////////////////////////////////
+
+point3d_t
+point3d::operator []
 (
 	const int index
 ) const
@@ -206,8 +235,10 @@ Point3D::operator []
 	return (0.0); // never reached
 }
 
-t_Point3D&
-Point3D::operator []
+//////////////////////////////////////////////////////////////////////
+
+point3d_t&
+point3d::operator []
 (
 	const int index
 )
@@ -222,18 +253,22 @@ Point3D::operator []
 	return (m_x);
 }
 
-t_Point3D
-Point3D::length
+//////////////////////////////////////////////////////////////////////
+
+point3d_t
+point3d::length
 () const
 {
-	return (sqrt ((m_x * m_x) + (m_y * m_y) + (m_z * m_z)));
+	return sqrt ((m_x * m_x) + (m_y * m_y) + (m_z * m_z));
 }
 
+//////////////////////////////////////////////////////////////////////
+
 void
-Point3D::normalize
+point3d::normalize
 ()
 {
-	t_Point3D len;
+	point3d_t len;
 
 	len = length();
 	m_x /= len;
@@ -241,15 +276,19 @@ Point3D::normalize
 	m_z /= len;
 }
 
-t_Point3D
-Point3D::sqr
+//////////////////////////////////////////////////////////////////////
+
+point3d_t
+point3d::sqr
 ()
 {
-	return ((m_x * m_x) + (m_y * m_y) + (m_z * m_z));
+	return (m_x * m_x) + (m_y * m_y) + (m_z * m_z);
 }
 
+//////////////////////////////////////////////////////////////////////
+
 void
-Point3D::invert
+point3d::invert
 ()
 {
 	m_x = -m_x;
@@ -257,8 +296,10 @@ Point3D::invert
 	m_z = -m_z;
 }
 
+//////////////////////////////////////////////////////////////////////
+
 void
-Point3D::clear
+point3d::clear
 ()
 {
 	m_x = 0.0;
@@ -266,23 +307,27 @@ Point3D::clear
 	m_z = 0.0;
 }
 
-Point3D
+//////////////////////////////////////////////////////////////////////
+
+point3d
 invert
 (
-	const Point3D& p
+	const point3d& p
 )
 {
-	return (Point3D (
+	return (point3d (
 	    -p.m_x,
 	    -p.m_y,
 	    -p.m_z
 	));
 }
 
-t_Point3D
+//////////////////////////////////////////////////////////////////////
+
+point3d_t
 sqr
 (
-	const Point3D& p
+	const point3d& p
 )
 {
 	return (
@@ -292,36 +337,36 @@ sqr
 	);
 }
 
-
-
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Normalize P
  */
-Point3D
+point3d
 normalize
 (
-	const Point3D& p
+	const point3d& p
 )
 {
-	t_Point3D len;
+	point3d_t len;
 
 	len = p.length();
-	return (Point3D (
+	return (point3d (
 	    (p.m_x / len),
 	    (p.m_y / len),
 	    (p.m_z / len)
 	));
-} // normalize ( const Point3D& P )
+} // normalize ( const point3d& P )
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Return the length of P
  */
-t_Point3D
+point3d_t
 length
 (
-	const Point3D& p
+	const point3d& p
 )
 {
 	return (sqrt (
@@ -329,32 +374,27 @@ length
 	    (p.m_y * p.m_y) +
 	    (p.m_z * p.m_z)
 	));
-} // length ( const Point3D& P )
+} // length ( const point3d& P )
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Calculate distance of clients
  */
 float
 distance
 (
-	const Point3D & p1,
-	const Point3D & p2
+	const point3d & p1,
+	const point3d & p2
 )
 {
-	Point3D p;
+	point3d p;
 
 	p = p1 - p2;
 	return (float)(p.length() / SG_NM_TO_METER);
-} // distance ( const Point3D & P1, const Point3D & P2 )
+} // distance ( const point3d & P1, const point3d & P2 )
 
 //////////////////////////////////////////////////////////////////////
-//
-// Convert a cartexian XYZ coordinate to a geodetic lat/lon/alt.
-// This function is a copy of what's in SimGear,
-//  simgear/math/SGGeodesy.cxx.
-//
-////////////////////////////////////////////////////////////////////////
 
 /**
  * @brief Convert a cartexian XYZ coordinate to a geodetic lat/lon/alt.
@@ -364,35 +404,39 @@ distance
 void
 cart_to_geod
 (
-	const Point3D& cart_point,
-	Point3D& geod_point
+	const point3d& cart_point,
+	point3d& geod_point
 )
 {
 	// according to
 	// H. Vermeille,
 	// Direct transformation from geocentric to geodetic cordinates,
 	// Journal of Geodesy (2002) 76:451-454
-	double x = cart_point[Point3D::X];
-	double y = cart_point[Point3D::Y];
-	double z = cart_point[Point3D::Z];
+	double x = cart_point[point3d::X];
+	double y = cart_point[point3d::Y];
+	double z = cart_point[point3d::Z];
 	double XXpYY = x * x + y * y;
 	double sqrtXXpYY = sqrt ( XXpYY );
-	double p = XXpYY * ra2;
-	double q = z * z * ( 1 - e2 ) * ra2;
-	double r = 1 / 6.0 * ( p + q - e4);
-	double s = e4 * p * q / ( 4 * r * r * r );
+	double p = XXpYY * RA2;
+	double q = z * z * ( 1 - E2 ) * RA2;
+	double r = 1 / 6.0 * ( p + q - E4);
+	double s = E4 * p * q / ( 4 * r * r * r );
 	double t = pow ( 1 + s + sqrt ( s * (2 + s ) ), 1 /3.0 );
 	double u = r * ( 1 + t + 1 / t);
-	double v = sqrt ( u * u + e4 * q );
-	double w = e2 * ( u + v - q ) / ( 2 * v );
+	double v = sqrt ( u * u + E4 * q );
+	double w = E2 * ( u + v - q ) / ( 2 * v );
 	double k = sqrt ( u + v + w * w ) - w;
-	double D = k * sqrtXXpYY / ( k + e2 );
-	geod_point[Point3D::LON] =
+	double D = k * sqrtXXpYY / ( k + E2 );
+	geod_point[point3d::LON] =
 	  ( 2 * atan2 ( y, x + sqrtXXpYY ) ) * SG_RADIANS_TO_DEGREES;
 	double sqrtDDpZZ = sqrt ( D * D + z * z );
-	geod_point[Point3D::LAT] =
+	geod_point[point3d::LAT] =
 	  ( 2 * atan2 ( z, D + sqrtDDpZZ ) ) * SG_RADIANS_TO_DEGREES;
-	geod_point[Point3D::ALT] = 
-	  ( ( k + e2 - 1 ) * sqrtDDpZZ / k ) * SG_METER_TO_FEET;
+	geod_point[point3d::ALT] = 
+	  ( ( k + E2 - 1 ) * sqrtDDpZZ / k ) * SG_METER_TO_FEET;
 } // sgCartToGeod()
+
 //////////////////////////////////////////////////////////////////////
+
+} // namespace fgmp
+

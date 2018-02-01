@@ -36,6 +36,9 @@
 #include <cstdint>
 #include "fg_thread.hxx"
 
+namespace fgmp
+{
+
 /// The available priorities
 enum class log_prio
 {
@@ -48,9 +51,6 @@ enum class log_prio
 	ERROR	= 192	///< = URGENT | CONSOLE
 };
 
-namespace fgmp
-{
-
 /**
  * @brief Provide a logging class for fgms
  *
@@ -60,7 +60,7 @@ namespace fgmp
  * Additionally all logged messages are stored in a buffer, which can be
  * accessed from the outside.
  */
-class fglog : public fgmp::Lockable
+class fglog : public fgmp::lockable
 {
 public:
 
@@ -89,7 +89,7 @@ public:
 	void flush ();
 	std::string get_name () const;
 	bool is_open () const;
-	fgmp::StrList* logbuf();
+	fgmp::str_list* logbuf();
 	void setbufsize ( size_t size );
 	fglog& log ();
 	fglog& log ( log_prio p );
@@ -109,7 +109,7 @@ private:
 	std::streambuf*	m_logstreambuf;
 	std::string	m_logname;
 	std::stringstream m_logline;
-	fgmp::StrList	m_logbuf;
+	fgmp::str_list	m_logbuf;
 	size_t		m_logbufsize;
 	bool		m_date;	// true when date is to be put on stream
 }; // class fglog

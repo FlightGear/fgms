@@ -21,10 +21,10 @@
 //
 
 /**
- * @class FG_CONFIG 
+ * @class fgconfig 
  * @brief Simple config file parser
  * 
- * * The FG_CONFIG class, loads and parses, if it can,  the \ref fgms_conf file.
+ * * The fgconfig class, loads and parses, if it can,  the \ref fgms_conf file.
  * * An instance is created the ::ProcessConfig  function if  main.cxx 
  */
 
@@ -43,29 +43,34 @@
 #include <list>
 #include <utility>
 
-class FG_CONFIG
+namespace fgmp
+{
+
+class config
 {
 public:
-	int   read ( const std::string &ConfigName );
+	int   read ( const std::string & config_name );
 	void  dump ();
 	void  set_start ();
 	int   next ();
-	std::string get ( const std::string &VarName );
+	std::string get ( const std::string & var_name );
 	std::string get_name ();
 	std::string get_value ();
 	std::string get_next ();
-	int set_section ( const std::string &SecName );
+	int set_section ( const std::string & sec_name );
 	int sec_next ();
 	std::string get_sec_next_var ();
 	std::string get_sec_next_val ();
 private:
-	typedef std::pair<std::string,std::string>  var_value_t;
-	typedef std::list<var_value_t>              var_list_t;
+	using var_value_t = std::pair<std::string,std::string>;
+	using var_list_t  = std::list<var_value_t>;
 	int   parse_line ( const std::string & config_line );
 	var_list_t            m_var_list;
 	var_list_t::iterator  m_current_var;
 	std::string           m_current_section;
 };
+
+} // namespace fgmp
 
 #endif
 

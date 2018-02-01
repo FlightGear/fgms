@@ -284,8 +284,8 @@ fglog::is_open
  *
  * Example:
  * @code
- * fgmp::StrList*  buf = logger.logbuf();
- * fgmp::StrIt     it;
+ * fgmp::str_list*  buf = logger.logbuf();
+ * fgmp::str_it     it;
  * buf->lock ();	// lock the buffer !
  * for ( it = buf->begin(); it != buf->end(); it++ )
  * {
@@ -297,7 +297,7 @@ fglog::is_open
  * @note make sure to lock the logbuf before using it, to ensure no lines
  * are deleted while accessing it.
  */
-fgmp::StrList*
+fgmp::str_list*
 fglog::logbuf
 ()
 {

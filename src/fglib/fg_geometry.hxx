@@ -26,92 +26,90 @@
 
 #include <simgear/math/SGMath.hxx>
 
-#define SG_180 180.0
-#define SG_PI 3.1415926535
-#define SG_RADIANS_TO_DEGREES (SG_180/SG_PI)
-#define SG_DEGREES_TO_RADIANS (SG_PI/SG_180)
-#define SG_FEET_TO_METER    0.3048
+namespace fgmp
+{
 
-typedef double t_Point3D;
+typedef double point3d_t;
 
-
-class Point3D
+class point3d
 {
 public:
 	enum { X, Y, Z };
 	enum { LAT, LON, ALT };
-	Point3D();
-	Point3D ( const t_Point3D& x, const t_Point3D& y, const t_Point3D& z );
-	t_Point3D get_x () { return m_x; };
-	t_Point3D get_y () { return m_y; };
-	t_Point3D get_z () { return m_z; };
-	void set_x ( const t_Point3D& v ) { m_x = v; };
-	void set_y ( const t_Point3D& v ) { m_y = v; };
-	void set_z ( const t_Point3D& v ) { m_z = v; };
-	void set ( const t_Point3D& x, const t_Point3D& y, const t_Point3D& z );
+	point3d ();
+	point3d ( const point3d_t& x, const point3d_t& y, const point3d_t& z );
+	point3d_t get_x () { return m_x; };
+	point3d_t get_y () { return m_y; };
+	point3d_t get_z () { return m_z; };
+	void set_x ( const point3d_t& v ) { m_x = v; };
+	void set_y ( const point3d_t& v ) { m_y = v; };
+	void set_z ( const point3d_t& v ) { m_z = v; };
+	void set ( const point3d_t& x, const point3d_t& y, const point3d_t& z );
 	//////////////////////////////////////////////////
 	//  operators
 	//////////////////////////////////////////////////
-	Point3D& operator += ( const Point3D& p );
-	Point3D& operator -= ( const Point3D& p );
-	Point3D& operator *= ( const Point3D& p );
-	Point3D& operator /= ( const Point3D& p );
-	Point3D& operator ^= ( const Point3D& p );
-	Point3D& operator *= ( t_Point3D v );
-	Point3D& operator /= ( t_Point3D v );
-	bool operator == ( const Point3D& p );
-	bool operator != ( const Point3D& p );
-	t_Point3D operator[] ( const int index ) const;
-	t_Point3D& operator[] ( const int index );
-	friend Point3D operator + ( Point3D p1, const Point3D& p2 )
+	point3d& operator += ( const point3d& p );
+	point3d& operator -= ( const point3d& p );
+	point3d& operator *= ( const point3d& p );
+	point3d& operator /= ( const point3d& p );
+	point3d& operator ^= ( const point3d& p );
+	point3d& operator *= ( point3d_t v );
+	point3d& operator /= ( point3d_t v );
+	bool operator == ( const point3d& p );
+	bool operator != ( const point3d& p );
+	point3d_t operator[] ( const int index ) const;
+	point3d_t& operator[] ( const int index );
+	friend point3d operator + ( point3d p1, const point3d& p2 )
 	{
 		return p1 += p2;
 	}
-	friend Point3D operator - ( Point3D p1, const Point3D& p2 )
+	friend point3d operator - ( point3d p1, const point3d& p2 )
 	{
 		return p1 -= p2;
 	}
-	friend Point3D operator * ( Point3D p1, const Point3D& p2 )
+	friend point3d operator * ( point3d p1, const point3d& p2 )
 	{
 		return p1 *= p2;
 	}
-	friend Point3D operator / ( Point3D p1, const Point3D& p2 )
+	friend point3d operator / ( point3d p1, const point3d& p2 )
 	{
 		return p1 /= p2;
 	}
-	friend Point3D operator ^ ( Point3D p1, const Point3D& p2 )
+	friend point3d operator ^ ( point3d p1, const point3d& p2 )
 	{
 		return p1 ^= p2;
 	}
-	friend Point3D operator * ( Point3D p, t_Point3D v )
+	friend point3d operator * ( point3d p, point3d_t v )
 	{
 		return p *= v;
 	}
-	friend Point3D operator / ( Point3D p, t_Point3D v )
+	friend point3d operator / ( point3d p, point3d_t v )
 	{
 		return p /= v;
 	}
 	//////////////////////////////////////////////////
 	//  others
 	//////////////////////////////////////////////////
-	t_Point3D length () const;
-	friend t_Point3D length ( const Point3D& P );
+	point3d_t length () const;
+	friend point3d_t length ( const point3d& P );
 	void normalize ();
-	friend Point3D normalize ( const Point3D& P );
-	t_Point3D sqr ();
-	friend t_Point3D sqr ( const Point3D& P );
+	friend point3d normalize ( const point3d& P );
+	point3d_t sqr ();
+	friend point3d_t sqr ( const point3d& P );
 	void invert ();
-	friend Point3D invert (const Point3D& P );
+	friend point3d invert (const point3d& P );
 	void clear ();
 
 private:
-	t_Point3D m_x;
-	t_Point3D m_y;
-	t_Point3D m_z;
-}; // class Point3D
+	point3d_t m_x;
+	point3d_t m_y;
+	point3d_t m_z;
+}; // class point3d
 
-float distance ( const Point3D & P1, const Point3D & P2 );
-void cart_to_geod ( const Point3D& CartPoint , Point3D& GeodPoint );
+float distance ( const point3d & P1, const point3d & P2 );
+void cart_to_geod ( const point3d& CartPoint , point3d& GeodPoint );
+
+} // namespace fgmp
 
 #endif
 

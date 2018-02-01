@@ -22,7 +22,7 @@
 #include <string>
 #include "debug.hxx"
 
-int DEBUG::depth = 0;
+int DEBUG::depth{ 0 };
 
 //////////////////////////////////////////////////////////////////////
 
@@ -37,8 +37,8 @@ DEBUG::DEBUG
 	this->filename = filename;
 	this->function = function;
 	this->line = line;
-	cerr	<< space() << filename << ":"
-		<< function << ":" << line << " start" << endl;
+	std::cerr << space() << filename << ":"
+		<< function << ":" << line << " start" << std::endl;
 	depth += 2;
 #endif
 } // DEBUG::DEBUG()
@@ -66,8 +66,8 @@ DEBUG::trace
 )
 {
 #ifdef DEF_ENABLE_TRACE
-	cerr	<< space() << "# TRACE: "  << filename << ":"
-		<< function << ":" << line << endl;
+	std::cerr << space() << "# TRACE: "  << filename << ":"
+		<< function << ":" << line << std::endl;
 #endif
 } // DEBUG::trace()
 
@@ -106,8 +106,8 @@ DEBUG::~DEBUG
 {
 #ifdef DEF_ENABLE_TRACE
 	depth -= 2;
-	cerr	<< space() << filename << ":"
-		<< function << ":" << line << " end" << endl;
+	std::cerr << space() << filename << ":"
+		<< function << ":" << line << " end" << std::endl;
 #endif
 } // DEBUG::~DEBUG()
 

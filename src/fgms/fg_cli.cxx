@@ -26,13 +26,16 @@
 #include <fglib/fg_util.hxx>
 #include <fg_cli.hxx>
 
+namespace fgmp
+{
+
 //////////////////////////////////////////////////
 
-FG_CLI::FG_CLI
+fgcli::fgcli
 (
-	FGMS* fgms,
+	fgmp::fgms* fgms,
 	int fd
-): CLI(fd)
+): cli(fd)
 {
 	this->fgms = fgms;
 	this->setup ();
@@ -44,14 +47,14 @@ FG_CLI::FG_CLI
  *
  */
 void
-FG_CLI::setup
+fgcli::setup
 ()
 {
-	using callback_ptr	= Command<CLI>::cpp_callback_func;
-	using auth_callback	= CLI::cpp_auth_func;
-	using enable_callback	= CLI::cpp_enable_func;
-	Command<CLI>* c;
-	// Command<CLI>* c2;
+	using callback_ptr	= Command<cli>::cpp_callback_func;
+	using auth_callback	= cli::cpp_auth_func;
+	using enable_callback	= cli::cpp_enable_func;
+	Command<cli>* c;
+	// Command<cli>* c2;
 
 	//////////////////////////////////////////////////
 	// general setup
@@ -60,7 +63,7 @@ FG_CLI::setup
 	std::stringstream banner;
 	banner	<< "\r\n"
 		<< "------------------------------------------------\r\n"
-		<< "FlightGear Multiplayer Server CLI\r\n"
+		<< "FlightGear Multiplayer Server cli\r\n"
 		<< "This is " << fgms->m_server_name << " (" << fgms->m_FQDN << ")\r\n"
 		<< "------------------------------------------------\r\n";
 	set_banner ( banner.str() );
@@ -78,7 +81,7 @@ FG_CLI::setup
 	//////////////////////////////////////////////////
 	// general commands
 	//////////////////////////////////////////////////
-	c = new Command<CLI> (
+	c = new Command<cli> (
 		this,
 		"show",
 		libcli::UNPRIVILEGED,
@@ -87,109 +90,109 @@ FG_CLI::setup
 	);
 	register_command (c);
 
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 		this,
 		"stats",
-		static_cast<callback_ptr> (&FG_CLI::cmd_show_stats),
+		static_cast<callback_ptr> (&fgcli::cmd_show_stats),
 		libcli::UNPRIVILEGED,
 		libcli::MODE_ANY,
 		"Show statistical information"
 	), c);
 
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 		this,
 		"settings",
-		static_cast<callback_ptr> (&FG_CLI::cmd_show_settings),
+		static_cast<callback_ptr> (&fgcli::cmd_show_settings),
 		libcli::UNPRIVILEGED,
 		libcli::MODE_ANY,
 		"Show general settings"
 	), c);
 
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 		this,
 		"version",
-		static_cast<callback_ptr> (&FG_CLI::cmd_show_version),
+		static_cast<callback_ptr> (&fgcli::cmd_show_version),
 		libcli::UNPRIVILEGED,
 		libcli::MODE_ANY,
 		"Show running version information"
 	), c);
 
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 		this,
 		"uptime",
-		static_cast<callback_ptr> (&FG_CLI::cmd_show_uptime),
+		static_cast<callback_ptr> (&fgcli::cmd_show_uptime),
 		libcli::UNPRIVILEGED,
 		libcli::MODE_ANY,
 		"Show uptime information"
 	), c);
 
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 		this,
 		"log",
-		static_cast<callback_ptr> (&FG_CLI::cmd_show_log),
+		static_cast<callback_ptr> (&fgcli::cmd_show_log),
 		libcli::UNPRIVILEGED,
 		libcli::MODE_ANY,
 		"Show log buffer"
 	), c);
 
-	register_command (new Command<CLI> (
+	register_command (new Command<cli> (
 		this,
 		"whitelist",
-		static_cast<callback_ptr> (&FG_CLI::cmd_whitelist_show),
+		static_cast<callback_ptr> (&fgcli::cmd_whitelist_show),
 		libcli::UNPRIVILEGED,
 		libcli::MODE_ANY,
 		"Show entries in the whitelist"
 	), c);
 
-	register_command (new Command<CLI> (
+	register_command (new Command<cli> (
 		this,
 		"blacklist",
-		static_cast<callback_ptr> (&FG_CLI::cmd_blacklist_show),
+		static_cast<callback_ptr> (&fgcli::cmd_blacklist_show),
 		libcli::UNPRIVILEGED,
 		libcli::MODE_ANY,
 		"Show entries in the blacklist"
 	), c);
 
-	register_command (new Command<CLI> (
+	register_command (new Command<cli> (
 		this,
 		"crossfeeds",
-		static_cast<callback_ptr> (&FG_CLI::cmd_crossfeed_show),
+		static_cast<callback_ptr> (&fgcli::cmd_crossfeed_show),
 		libcli::UNPRIVILEGED,
 		libcli::MODE_ANY,
 		"Show entries in the crossfeeds"
 	), c);
 
-	register_command (new Command<CLI> (
+	register_command (new Command<cli> (
 		this,
 		"relay",
-		static_cast<callback_ptr> (&FG_CLI::cmd_relay_show),
+		static_cast<callback_ptr> (&fgcli::cmd_relay_show),
 		libcli::UNPRIVILEGED,
 		libcli::MODE_ANY,
 		"Show list of relays"
 	), c);
 
-	register_command (new Command<CLI> (
+	register_command (new Command<cli> (
 		this,
 		"tracker",
-		static_cast<callback_ptr> (&FG_CLI::cmd_tracker_show),
+		static_cast<callback_ptr> (&fgcli::cmd_tracker_show),
 		libcli::UNPRIVILEGED,
 		libcli::MODE_ANY,
 		"Show status of tracker"
 	), c);
 
-	register_command (new Command<CLI> (
+	register_command (new Command<cli> (
 		this,
 		"users",
-		static_cast<callback_ptr> (&FG_CLI::cmd_user_show),
+		static_cast<callback_ptr> (&fgcli::cmd_user_show),
 		libcli::UNPRIVILEGED,
 		libcli::MODE_ANY,
 		"Show list of users"
 	), c);
 
-	register_command (new Command<CLI> (
+	register_command (new Command<cli> (
 		this,
 		"die",
-		static_cast<callback_ptr> (&FG_CLI::cmd_fgms_die),
+		static_cast<callback_ptr> (&fgcli::cmd_fgms_die),
 		libcli::PRIVILEGED,
 		libcli::MODE_EXEC,
 		"force fgms to exit"
@@ -198,7 +201,7 @@ FG_CLI::setup
 	//////////////////////////////////////////////////
 	// modify blacklist
 	//////////////////////////////////////////////////
-	c = new Command<CLI> (
+	c = new Command<cli> (
 		this,
 		"blacklist",
 		libcli::PRIVILEGED,
@@ -206,18 +209,18 @@ FG_CLI::setup
 		"show/modify blacklist"
 	);
 	register_command (c);
-	register_command (new Command<CLI> (
+	register_command (new Command<cli> (
 		this,
 		"delete",
-		static_cast<callback_ptr> (&FG_CLI::cmd_blacklist_delete),
+		static_cast<callback_ptr> (&fgcli::cmd_blacklist_delete),
 		libcli::PRIVILEGED,
 		libcli::MODE_CONFIG,
 		"delete entries in the blacklist"
 	), c);
-	register_command (new Command<CLI> (
+	register_command (new Command<cli> (
 		this,
 		"add",
-		static_cast<callback_ptr> (&FG_CLI::cmd_blacklist_add),
+		static_cast<callback_ptr> (&fgcli::cmd_blacklist_add),
 		libcli::PRIVILEGED,
 		libcli::MODE_CONFIG,
 		"Add entries to the blacklist"
@@ -226,7 +229,7 @@ FG_CLI::setup
 	//////////////////////////////////////////////////
 	// modify crossfeeds
 	//////////////////////////////////////////////////
-	c = new Command<CLI> (
+	c = new Command<cli> (
 		this,
 		"crossfeed",
 		libcli::PRIVILEGED,
@@ -234,18 +237,18 @@ FG_CLI::setup
 		"modify crossfeeds"
 	);
 	register_command (c);
-	register_command (new Command<CLI> (
+	register_command (new Command<cli> (
 		this,
 		"delete",
-		static_cast<callback_ptr> (&FG_CLI::cmd_crossfeed_delete),
+		static_cast<callback_ptr> (&fgcli::cmd_crossfeed_delete),
 		libcli::PRIVILEGED,
 		libcli::MODE_CONFIG,
 		"delete crossfeeds"
 	), c);
-	register_command (new Command<CLI> (
+	register_command (new Command<cli> (
 		this,
 		"add",
-		static_cast<callback_ptr> (&FG_CLI::cmd_crossfeed_add),
+		static_cast<callback_ptr> (&fgcli::cmd_crossfeed_add),
 		libcli::PRIVILEGED,
 		libcli::MODE_CONFIG,
 		"Add crossfeeds"
@@ -254,7 +257,7 @@ FG_CLI::setup
 	//////////////////////////////////////////////////
 	// modify relays
 	//////////////////////////////////////////////////
-	c = new Command<CLI> (
+	c = new Command<cli> (
 		this,
 		"relay",
 		libcli::PRIVILEGED,
@@ -262,18 +265,18 @@ FG_CLI::setup
 		"modify relays"
 	);
 	register_command (c);
-	register_command (new Command<CLI> (
+	register_command (new Command<cli> (
 		this,
 		"delete",
-		static_cast<callback_ptr> (&FG_CLI::cmd_relay_delete),
+		static_cast<callback_ptr> (&fgcli::cmd_relay_delete),
 		libcli::PRIVILEGED,
 		libcli::MODE_CONFIG,
 		"delete relay"
 	), c);
-	register_command (new Command<CLI> (
+	register_command (new Command<cli> (
 		this,
 		"add",
-		static_cast<callback_ptr> (&FG_CLI::cmd_relay_add),
+		static_cast<callback_ptr> (&fgcli::cmd_relay_add),
 		libcli::PRIVILEGED,
 		libcli::MODE_CONFIG,
 		"Add relay"
@@ -282,7 +285,7 @@ FG_CLI::setup
 	//////////////////////////////////////////////////
 	// modify whitelist
 	//////////////////////////////////////////////////
-	c = new Command<CLI> (
+	c = new Command<cli> (
 		this,
 		"whitelist",
 		libcli::PRIVILEGED,
@@ -290,31 +293,31 @@ FG_CLI::setup
 		"modify whitelist"
 	);
 	register_command (c);
-	register_command (new Command<CLI> (
+	register_command (new Command<cli> (
 		this,
 		"delete",
-		static_cast<callback_ptr> (&FG_CLI::cmd_whitelist_delete),
+		static_cast<callback_ptr> (&fgcli::cmd_whitelist_delete),
 		libcli::PRIVILEGED,
 		libcli::MODE_CONFIG,
 		"delete whitelist entry"
 	), c);
-	register_command (new Command<CLI> (
+	register_command (new Command<cli> (
 		this,
 		"add",
-		static_cast<callback_ptr> (&FG_CLI::cmd_whitelist_add),
+		static_cast<callback_ptr> (&fgcli::cmd_whitelist_add),
 		libcli::PRIVILEGED,
 		libcli::MODE_CONFIG,
 		"Add entries to the whitelist"
 	), c);
 
-} // FG_CLI::setup ()
+} // fgcli::setup ()
 
 //////////////////////////////////////////////////
 /**
  *  @brief Show general statistics
  */
 int
-FG_CLI::cmd_show_stats
+fgcli::cmd_show_stats
 (
 	UNUSED(char *command),
 	UNUSED(char *argv[]),
@@ -460,14 +463,14 @@ FG_CLI::cmd_show_stats
 		<< " (" << byte_counter ((double) accumulated_rcvd / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 	return (0);
-} // FG_CLI::cmd_show_stats ()
+} // fgcli::cmd_show_stats ()
 
 //////////////////////////////////////////////////
 /**
  *  @brief Show general settings
  */
 int
-FG_CLI::cmd_show_settings
+fgcli::cmd_show_settings
 (
 	UNUSED(char *command),
 	UNUSED(char *argv[]),
@@ -517,14 +520,14 @@ FG_CLI::cmd_show_settings
 		<< CRLF; if (check_pager()) return 0;
 
 	return (0);
-} // FG_CLI::cmd_show_settings ()
+} // fgcli::cmd_show_settings ()
 
 //////////////////////////////////////////////////
 /**
  *  @brief Shutdown the server
  */
 int
-FG_CLI::cmd_fgms_die
+fgcli::cmd_fgms_die
 (
 	UNUSED(char *command),
 	UNUSED(char *argv[]),
@@ -541,7 +544,7 @@ FG_CLI::cmd_fgms_die
 	}
 	fgms->m_want_exit = true;
 	return libcli::QUIT;
-} // FG_CLI::cmd_fgms_die
+} // fgcli::cmd_fgms_die
 
 //////////////////////////////////////////////////
 /**
@@ -549,7 +552,7 @@ FG_CLI::cmd_fgms_die
  *         in a human readable form.
  */
 int
-FG_CLI::cmd_show_uptime
+fgcli::cmd_show_uptime
 (
 	UNUSED(char *command),
 	UNUSED(char *argv[]),
@@ -567,14 +570,14 @@ FG_CLI::cmd_show_uptime
 	client << "UP since " << timestamp_to_datestr(fgms->m_uptime)
 		<< "(" << timestamp_to_days(fgms->m_uptime) << ")" << CRLF;
 	return (0);
-} // FG_CLI::cmd_show_uptime
+} // fgcli::cmd_show_uptime
 
 //////////////////////////////////////////////////
 /**
  *  @brief Show log buffer of the the server
  */
 int
-FG_CLI::cmd_show_log
+fgcli::cmd_show_log
 (
 	UNUSED(char *command),
 	UNUSED(char *argv[]),
@@ -589,8 +592,8 @@ FG_CLI::cmd_show_log
 		}
 		return (0);
 	}
-	fgmp::StrList*  buf = logger.logbuf();
-	fgmp::StrIt     it;
+	fgmp::str_list*  buf = logger.logbuf();
+	fgmp::str_it     it;
 	buf->lock ();
 	for ( it = buf->begin(); it != buf->end(); it++ )
 	{
@@ -599,14 +602,14 @@ FG_CLI::cmd_show_log
 	}
 	buf->unlock ();
 	return (0);
-} // FG_CLI::cmd_show_uptime
+} // fgcli::cmd_show_uptime
 
 //////////////////////////////////////////////////
 /**
  *  @brief Show the version number of the the server
  */
 int
-FG_CLI::cmd_show_version
+fgcli::cmd_show_version
 (
 	UNUSED(char *command),
 	UNUSED(char *argv[]),
@@ -638,7 +641,7 @@ FG_CLI::cmd_show_version
 		client << "This server is NOT tracked" << CRLF;
 	cmd_show_uptime (command, argv, argc);
 	return (0);
-} // FG_CLI::cmd_show_version
+} // fgcli::cmd_show_version
 
 //////////////////////////////////////////////////
 /**
@@ -651,7 +654,7 @@ FG_CLI::cmd_show_version
  *  show whitelist IP-address
  */
 int
-FG_CLI::cmd_whitelist_show
+fgcli::cmd_whitelist_show
 (
 	char *command,
 	char *argv[],
@@ -708,7 +711,7 @@ FG_CLI::cmd_whitelist_show
 		}
 	}
 	int Count = fgms->m_white_list.size ();
-	fgmp::ListElement Entry("");
+	fgmp::list_item Entry("");
 	client << CRLF;
 	time_t  difftime;
 	time_t  now;
@@ -761,7 +764,7 @@ FG_CLI::cmd_whitelist_show
 			<< CRLF; if (check_pager()) return 0;
 	}
 	return 0;
-} // FG_CLI::cmd_whitelist_show
+} // fgcli::cmd_whitelist_show
 
 //////////////////////////////////////////////////
 /**
@@ -776,7 +779,7 @@ FG_CLI::cmd_whitelist_show
  *  whitelist delete [...] <cr>
  */
 int
-FG_CLI::cmd_whitelist_delete
+fgcli::cmd_whitelist_delete
 (
 	char *command,
 	char *argv[],
@@ -786,7 +789,7 @@ FG_CLI::cmd_whitelist_delete
 	size_t		id = 0;
 	int		id_invalid = -1;
 	fgmp::netaddr		address;
-	ItList		Entry;
+	fglistit		Entry;
 	for (int i=0; i < argc; i++)
 	{
 		id  = str_to_num<size_t> ( argv[0], id_invalid );
@@ -856,7 +859,7 @@ FG_CLI::cmd_whitelist_delete
 	}
 	client << "deleted!" << CRLF;
 	return 0;
-} // FG_CLI::cmd_whitelist_delete
+} // fgcli::cmd_whitelist_delete
 
 //////////////////////////////////////////////////
 /**
@@ -870,7 +873,7 @@ FG_CLI::cmd_whitelist_delete
  *  blacklist add [...] <cr>
  */
 int
-FG_CLI::cmd_whitelist_add
+fgcli::cmd_whitelist_add
 (
 	char *command,
 	char *argv[],
@@ -881,7 +884,7 @@ FG_CLI::cmd_whitelist_add
 	int		I;
 	fgmp::netaddr		address;
 	string		Reason;
-	ItList		Entry;
+	fglistit		Entry;
 	for (int i=0; i < argc; i++)
 	{
 		switch (i)
@@ -935,10 +938,10 @@ FG_CLI::cmd_whitelist_add
 			break;
 		}
 	}
-	fgmp::ListElement E (Reason);
+	fgmp::list_item E (Reason);
 	E.address = address;
 	size_t Newid;
-	ItList CurrentEntry = fgms->m_white_list.find ( E.address );
+	fglistit CurrentEntry = fgms->m_white_list.find ( E.address );
 	if ( CurrentEntry == fgms->m_white_list.end() )
 	{       
 		Newid = fgms->m_white_list.add (E, TTL);
@@ -950,7 +953,7 @@ FG_CLI::cmd_whitelist_add
 	}
 	client << "added with id " << Newid << CRLF;
 	return (0);
-} // FG_CLI::cmd_whitelist_add
+} // fgcli::cmd_whitelist_add
 
 //////////////////////////////////////////////////
 /**
@@ -964,7 +967,7 @@ FG_CLI::cmd_whitelist_add
  *  show blacklist [...] brief
  */
 int
-FG_CLI::cmd_blacklist_show
+fgcli::cmd_blacklist_show
 (
 	char *command,
 	char *argv[],
@@ -1037,7 +1040,7 @@ FG_CLI::cmd_blacklist_show
 		}
 	}
 	int Count = fgms->m_black_list.size ();
-	fgmp::ListElement Entry("");
+	fgmp::list_item Entry("");
 	client << CRLF;
 	time_t  difftime;
 	time_t  now;
@@ -1097,7 +1100,7 @@ FG_CLI::cmd_blacklist_show
 			<< CRLF; if (check_pager()) return 0;
 	}
 	return 0;
-} // FG_CLI::cmd_blacklist_show
+} // fgcli::cmd_blacklist_show
 
 //////////////////////////////////////////////////
 /**
@@ -1112,7 +1115,7 @@ FG_CLI::cmd_blacklist_show
  *  blacklist delete [...] <cr>
  */
 int
-FG_CLI::cmd_blacklist_delete
+fgcli::cmd_blacklist_delete
 (
 	char *command,
 	char *argv[],
@@ -1122,7 +1125,7 @@ FG_CLI::cmd_blacklist_delete
 	size_t		id = 0;
 	int		id_invalid = -1;
 	fgmp::netaddr		address;
-	ItList		Entry;
+	fglistit		Entry;
 	for (int i=0; i < argc; i++)
 	{
 		id  = str_to_num<size_t> ( argv[0], id_invalid );
@@ -1192,7 +1195,7 @@ FG_CLI::cmd_blacklist_delete
 	}
 	client << "deleted!" << CRLF;
 	return 0;
-} // FG_CLI::cmd_blacklist_delete
+} // fgcli::cmd_blacklist_delete
 
 //////////////////////////////////////////////////
 /**
@@ -1206,7 +1209,7 @@ FG_CLI::cmd_blacklist_delete
  *  blacklist add [...] <cr>
  */
 int
-FG_CLI::cmd_blacklist_add
+fgcli::cmd_blacklist_add
 (
 	char *command,
 	char *argv[],
@@ -1217,7 +1220,7 @@ FG_CLI::cmd_blacklist_add
 	int		I;
 	fgmp::netaddr		address;
 	string		Reason;
-	ItList		Entry;
+	fglistit		Entry;
 	for (int i=0; i < argc; i++)
 	{
 		switch (i)
@@ -1271,10 +1274,10 @@ FG_CLI::cmd_blacklist_add
 			break;
 		}
 	}
-	fgmp::ListElement E (Reason);
+	fgmp::list_item E (Reason);
 	E.address = address;
 	size_t Newid;
-	ItList CurrentEntry = fgms->m_black_list.find ( E.address );
+	fglistit CurrentEntry = fgms->m_black_list.find ( E.address );
 	if ( CurrentEntry == fgms->m_black_list.end() )
 	{       
 		Newid = fgms->m_black_list.add (E, TTL);
@@ -1286,7 +1289,7 @@ FG_CLI::cmd_blacklist_add
 	}
 	client << "added with id " << Newid << CRLF;
 	return (0);
-} // FG_CLI::cmd_blacklist_add
+} // fgcli::cmd_blacklist_add
 
 //////////////////////////////////////////////////
 /**
@@ -1301,7 +1304,7 @@ FG_CLI::cmd_blacklist_add
  *  crossfeed delete [...] <cr>
  */
 int
-FG_CLI::cmd_crossfeed_delete
+fgcli::cmd_crossfeed_delete
 (
 	char *command,
 	char *argv[],
@@ -1311,7 +1314,7 @@ FG_CLI::cmd_crossfeed_delete
 	size_t		id = 0;
 	int		id_invalid = -1;
 	fgmp::netaddr		address;
-	ItList		Entry;
+	fglistit		Entry;
 	for (int i=0; i < argc; i++)
 	{
 		id  = str_to_num<size_t> ( argv[0], id_invalid );
@@ -1381,7 +1384,7 @@ FG_CLI::cmd_crossfeed_delete
 	}
 	client << "deleted" << CRLF;
 	return 0;
-} // FG_CLI::cmd_crossfeed_delete
+} // fgcli::cmd_crossfeed_delete
 
 //////////////////////////////////////////////////
 /**
@@ -1395,7 +1398,7 @@ FG_CLI::cmd_crossfeed_delete
  *  crossfeed add [...] <cr>
  */
 int
-FG_CLI::cmd_crossfeed_add
+fgcli::cmd_crossfeed_add
 (
 	char *command,
 	char *argv[],
@@ -1406,7 +1409,7 @@ FG_CLI::cmd_crossfeed_add
 	string		name;
 	int		Port;
 	int		I;
-	ItList		Entry;
+	fglistit		Entry;
 	for (int i=0; i < argc; i++)
 	{
 		switch (i)
@@ -1460,11 +1463,11 @@ FG_CLI::cmd_crossfeed_add
 			break;
 		}
 	}
-	fgmp::ListElement E (name);
+	fgmp::list_item E (name);
 	E.address = address;
 	E.address.port (Port);
 	size_t Newid;
-	ItList CurrentEntry = fgms->m_cross_list.find ( E.address, true );
+	fglistit CurrentEntry = fgms->m_cross_list.find ( E.address, true );
 	if ( CurrentEntry == fgms->m_cross_list.end() )
 	{       
 		Newid = fgms->m_cross_list.add (E, Port);
@@ -1476,7 +1479,7 @@ FG_CLI::cmd_crossfeed_add
 	}
 	client << "added with id " << Newid << CRLF;
 	return (0);
-} // FG_CLI::cmd_crossfeed_add
+} // fgcli::cmd_crossfeed_add
 
 //////////////////////////////////////////////////
 /**
@@ -1490,7 +1493,7 @@ FG_CLI::cmd_crossfeed_add
  *  show blacklist [...] brief
  */
 int
-FG_CLI::cmd_crossfeed_show
+fgcli::cmd_crossfeed_show
 (
 	char *command,
 	char *argv[],
@@ -1563,7 +1566,7 @@ FG_CLI::cmd_crossfeed_show
 		}
 	}
 	int Count = fgms->m_cross_list.size ();
-	fgmp::ListElement Entry("");
+	fgmp::list_item Entry("");
 	client << fgms->m_cross_list.name << ":" << CRLF;
 	client << CRLF;
 	time_t  difftime;
@@ -1618,7 +1621,7 @@ FG_CLI::cmd_crossfeed_show
 			<< CRLF;
 	}
 	return 0;
-} // FG_CLI::cmd_crossfeed_show
+} // fgcli::cmd_crossfeed_show
 
 //////////////////////////////////////////////////
 /**
@@ -1632,7 +1635,7 @@ FG_CLI::cmd_crossfeed_show
  *  show relay [...] brief
  */
 int
-FG_CLI::cmd_relay_show
+fgcli::cmd_relay_show
 (
 	char *command,
 	char *argv[],
@@ -1707,7 +1710,7 @@ FG_CLI::cmd_relay_show
 		}
 	}
 	int Count = fgms->m_relay_list.size ();
-	fgmp::ListElement Entry("");
+	fgmp::list_item Entry("");
 	client << fgms->m_relay_list.name << ":" << CRLF;
 	client << CRLF;
 	time_t  difftime;
@@ -1779,7 +1782,7 @@ FG_CLI::cmd_relay_show
 		<< " (" << byte_counter ((double) fgms->m_relay_list.bytes_rcvd / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 	return 0;
-} // FG_CLI::cmd_relay_show
+} // fgcli::cmd_relay_show
 
 //////////////////////////////////////////////////
 /**
@@ -1790,7 +1793,7 @@ FG_CLI::cmd_relay_show
  *  show tracker <cr>
  */
 int
-FG_CLI::cmd_tracker_show
+fgcli::cmd_tracker_show
 (
 	char *command,
 	char *argv[],
@@ -1868,7 +1871,7 @@ FG_CLI::cmd_tracker_show
 	client << CRLF;
 	client << "  queue size: " << fgms->m_tracker->queue_size () << " messages" << CRLF;
 	return 0;
-} // FG_CLI::cmd_tracker_show
+} // fgcli::cmd_tracker_show
 
 //////////////////////////////////////////////////
 /**
@@ -1883,7 +1886,7 @@ FG_CLI::cmd_tracker_show
  *  relay delete [...] <cr>
  */
 int
-FG_CLI::cmd_relay_delete
+fgcli::cmd_relay_delete
 (
 	char *command,
 	char *argv[],
@@ -1893,7 +1896,7 @@ FG_CLI::cmd_relay_delete
 	size_t		id = 0;
 	int		id_invalid = -1;
 	fgmp::netaddr		address;
-	ItList		Entry;
+	fglistit		Entry;
 	for (int i=0; i < argc; i++)
 	{
 		id  = str_to_num<size_t> ( argv[0], id_invalid );
@@ -1963,7 +1966,7 @@ FG_CLI::cmd_relay_delete
 	}
 	client << "deleted" << CRLF;
 	return 0;
-} // FG_CLI::cmd_relay_delete
+} // fgcli::cmd_relay_delete
 
 //////////////////////////////////////////////////
 /**
@@ -1977,7 +1980,7 @@ FG_CLI::cmd_relay_delete
  *  relay add [...] <cr>
  */
 int
-FG_CLI::cmd_relay_add
+fgcli::cmd_relay_add
 (
 	char *command,
 	char *argv[],
@@ -1988,7 +1991,7 @@ FG_CLI::cmd_relay_add
 	string		name;
 	int		Port;
 	int		I;
-	ItList		Entry;
+	fglistit		Entry;
 	for (int i=0; i < argc; i++)
 	{
 		switch (i)
@@ -2038,11 +2041,11 @@ FG_CLI::cmd_relay_add
 			break;
 		}
 	}
-	fgmp::ListElement E (name);
+	fgmp::list_item E (name);
 	E.address = address;
 	E.address.port (Port);
 	size_t Newid;
-	ItList CurrentEntry = fgms->m_relay_list.find ( E.address, true );
+	fglistit CurrentEntry = fgms->m_relay_list.find ( E.address, true );
 	if ( CurrentEntry == fgms->m_relay_list.end() )
 	{       
 		Newid = fgms->m_relay_list.add (E, 0);
@@ -2054,7 +2057,7 @@ FG_CLI::cmd_relay_add
 	}
 	client << "added with id " << Newid << CRLF;
 	return (0);
-} // FG_CLI::cmd_relay_add
+} // fgcli::cmd_relay_add
 
 //////////////////////////////////////////////////
 /**
@@ -2071,7 +2074,7 @@ FG_CLI::cmd_relay_add
  *  show user [...] brief <cr>
  */
 int
-FG_CLI::cmd_user_show
+fgcli::cmd_user_show
 (
 	char *command,
 	char *argv[],
@@ -2154,10 +2157,10 @@ FG_CLI::cmd_user_show
 		}
 	}
 	int Count = fgms->m_player_list.size ();
-	FG_Player	Player;
-	Point3D		PlayerPosGeod;
-	string		Origin;
-	string		Fullname;
+	pilot	Player;
+	point3d	PlayerPosGeod;
+	string	Origin;
+	string	Fullname;
 	client << fgms->m_player_list.name << ":" << CRLF;
 	client << CRLF;
 	if (name == "local")
@@ -2207,7 +2210,7 @@ FG_CLI::cmd_user_show
 		}
 		else
 		{
-			FGMS::ip2relay_it Relay = fgms->m_relay_map.find ( Player.address );
+			fgms::ip2relay_it Relay = fgms->m_relay_map.find ( Player.address );
 			if ( Relay != fgms->m_relay_map.end() )
 			{
 				Origin = Relay->second;
@@ -2308,10 +2311,10 @@ FG_CLI::cmd_user_show
 			<< CRLF; if (check_pager()) return 0;
 	}
 	return 0;
-} // FG_CLI::cmd_user_show
+} // fgcli::cmd_user_show
 
 int
-FG_CLI::cmd_NOT_IMPLEMENTED
+fgcli::cmd_NOT_IMPLEMENTED
 (
 	char *command,
 	char *argv[],
@@ -2327,4 +2330,6 @@ FG_CLI::cmd_NOT_IMPLEMENTED
 	}
 	return (0);
 }
+
+} // namespace fgmp
 

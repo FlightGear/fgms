@@ -12,23 +12,16 @@
 #include <ctype.h>		// toupper()
 #include <stdint.h>
 
+namespace fgmp
+{
+
 typedef long long t_longlong;
 
-#if __FreeBSD__ || defined(__CYGWIN__)
-namespace std
-{
 template < typename T >
-T abs ( T x )
+T absolute ( T x )
 {
 	return x < 0 ? -x : x;
 }
-template < typename T >
-T llabs ( T x )
-{
-	return x < 0 ? -x : x;
-}
-}
-#endif
 
 enum NUMERIC_BASE_LIMITS
 {
@@ -45,47 +38,47 @@ bool str_ends_with ( std::string const& value, std::string const& ending );
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief  Convert string into a number
- * @param str_Number	the string representation of a number
- * @param n_Error	if an error (illegal char) occured, n_Error
+ * @param number	the string representation of a number
+ * @param error	if an error (illegal char) occured, error
  * 			point to the position
- * @param n_Base	The base of the string representation
+ * @param base	The base of the string representation
  * @return
- *        - n_Error -1:     empty string
- *        - n_Error -2:     overflow
- *        - n_Error -3:     base out of range
- *        - n_Error >0:     index of non-numeric
+ *        - error -1:     empty string
+ *        - error -2:     overflow
+ *        - error -3:     base out of range
+ *        - error >0:     index of non-numeric
  */
 template < class T >
 T
 str_to_num
 (
-	std::string str_Number,
-	int& n_Error,
-	int n_Base = 10
+	std::string number,
+	int& error,
+	int  base = 10
 )
 {
-	int n_Length;
-	int n_Current;
-	int n_Index		= 0;
-	bool b_IsNegative	= false;
-	T T_Result		= 0;
-	T T_Tmp			= 0;
-	T T_Devisor		= 1;
-	T T_Exponent		= 1;
-	T T_Current;
-	if ( ( n_Base < MIN_BASE ) || ( n_Base > MAX_BASE ) )
+	int length;
+	int str_digit;
+	int index		{ 0 };
+	bool is_negative	{ false };
+	T result		{ 0 };
+	T tmp			{ 0 };
+	T devisor		{ 1 };
+	T exponent		{ 1 };
+	T digit;
+	if ( ( base < MIN_BASE ) || ( base > MAX_BASE ) )
 	{
-		n_Error = -3;
+		error = -3;
 		return ( 0 );
 	}
-	if ( str_Number.size () <= 0 )
+	if ( number.size () <= 0 )
 	{
 		//////////////////////////////////////////////////
 		//
 		//      string with zero-length -> error
 		//
 		//////////////////////////////////////////////////
-		n_Error = -1;
+		error = -1;
 		return ( 0 );
 	}
 	//////////////////////////////////////////////////
@@ -93,124 +86,124 @@ str_to_num
 	//      remember signedness
 	//
 	//////////////////////////////////////////////////
-	if ( str_Number[n_Index] == '-' )
+	if ( number[index] == '-' )
 	{
-		b_IsNegative = true;
-		n_Index++;
+		is_negative = true;
+		index++;
 	}
-	else if ( str_Number[n_Index] == '+' )
+	else if ( number[index] == '+' )
 	{
-		n_Index++;
+		index++;
 	}
 	//////////////////////////////////////////////////
 	//
 	//      walk through the string
 	//
 	//////////////////////////////////////////////////
-	n_Error = 0;
-	n_Length = str_Number.size () - 1;
-	while ( ( n_Index <= n_Length ) && ( str_Number[n_Index] != '.' )
-			&& ( str_Number[n_Index] != ',' ) )
+	error = 0;
+	length = number.size () - 1;
+	while ( ( index <= length ) && ( number[index] != '.' )
+			&& ( number[index] != ',' ) )
 	{
-		T_Tmp = T_Result;
-		n_Current = str_Number[n_Index];
-		if ( ( n_Current < '0' ) || ( n_Current > '9' ) )
+		tmp = result;
+		str_digit = number[index];
+		if ( ( str_digit < '0' ) || ( str_digit > '9' ) )
 		{
-			n_Current = toupper ( n_Current );
-			n_Current -= ( 'A' - 10 );
+			str_digit = toupper ( str_digit );
+			str_digit -= ( 'A' - 10 );
 		}
 		else
 		{
-			n_Current -= '0';
+			str_digit -= '0';
 		}
-		if ( ( n_Current < 0 ) || ( n_Current > n_Base ) )
+		if ( ( str_digit < 0 ) || ( str_digit > base ) )
 		{
 			// character is not a number
-			n_Error = n_Index + 1;
-			return ( T_Result );
+			error = index + 1;
+			return ( result );
 		}
-		T_Result *= n_Base;
-		T_Result += n_Current;
-		if ( T_Result < T_Tmp )
+		result *= base;
+		result += str_digit;
+		if ( result < tmp )
 		{
 			// overflow
-			n_Error = -2;
-			return ( T_Result );
+			error = -2;
+			return ( result );
 		}
-		n_Index++;
+		index++;
 	}
 	//////////////////////////////////////////////////
 	//
 	//	now for the floating point part
 	//
 	//////////////////////////////////////////////////
-	n_Index++;
-	T_Devisor  = 1 / ( T ) n_Base;
-	T_Exponent = 1 * T_Devisor;
-	while ( n_Index <= n_Length )
+	index++;
+	devisor  = 1 / ( T ) base;
+	exponent = 1 * devisor;
+	while ( index <= length )
 	{
-		T_Tmp = T_Result;
-		n_Current = str_Number[n_Index];
-		if ( ( n_Current < '0' ) || ( n_Current > '9' ) )
+		tmp = result;
+		str_digit = number[index];
+		if ( ( str_digit < '0' ) || ( str_digit > '9' ) )
 		{
-			n_Current = toupper ( n_Current );
-			n_Current -= ( 'A' - 10 );
+			str_digit = toupper ( str_digit );
+			str_digit -= ( 'A' - 10 );
 		}
 		else
 		{
-			n_Current -= '0';
+			str_digit -= '0';
 		}
-		if ( ( n_Current < 0 ) || ( n_Current > n_Base ) )
+		if ( ( str_digit < 0 ) || ( str_digit > base ) )
 		{
 			// character is not a number
-			n_Error = n_Index;
-			return ( T_Result );
+			error = index;
+			return ( result );
 		}
-		T_Current = n_Current * T_Exponent;
-		T_Result += T_Current;
-		T_Exponent *= T_Devisor;
-		if ( T_Result < T_Tmp )
+		digit = str_digit * exponent;
+		result += digit;
+		exponent *= devisor;
+		if ( result < tmp )
 		{
 			// overflow
-			n_Error = -2;
-			return ( T_Result );
+			error = -2;
+			return ( result );
 		}
-		n_Index++;
+		index++;
 	}
-	if ( b_IsNegative )
+	if ( is_negative )
 	{
-		T_Result = -T_Result;
+		result = -result;
 	}
-	return ( T_Result );
+	return ( result );
 } // str_to_num ()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief Convert a number to string
- * @param n_Number	the number to convert
- * @param n_Precision	number of digits after the dot
- * @param n_Base	the base of the string representation
+ * @param number	the number to convert
+ * @param precision	number of digits after the dot
+ * @param base	the base of the string representation
  */
 template < typename T >
 std::string
 num_to_str
 (
-	T n_Number,
-	int n_Precision = 0,
-	int n_Base = 10
+	T number,
+	int precision = 0,
+	int base = 10
 )
 {
-	const char	Numbers[] = "0123456789abcdef";
-	std::string	str_Return = "";
-	t_longlong	n_WorkNumber;
-	int		n_Factor;
+	const char	digits[] { "0123456789abcdef" };
+	std::string	result { "" };
+	t_longlong	tmp_number;
+	int		factor;
 	int		n;
-	if ( n_Number == 0 )
+	if ( number == 0 )
 	{
 		return "0";
 	}
-	if ( ( n_Base < 2 ) || ( n_Base > 16 ) )
+	if ( ( base < 2 ) || ( base > 16 ) )
 	{
 		return ( "0" );
 	}
@@ -219,58 +212,56 @@ num_to_str
 	//	for the floating point part
 	//
 	//////////////////////////////////////////////////
-	if ( n_Precision != 0 )
+	if ( precision != 0 )
 	{
-		n_Factor = 1;
-		for ( int i=n_Precision; i>0; i-- )
+		factor = 1;
+		for ( int i=precision; i>0; i-- )
 		{
-			n_Factor *= n_Base;
+			factor *= base;
 		}
 		T tmp;
-		tmp = n_Number - ( ( t_longlong ) n_Number );
-		n_WorkNumber = ( t_longlong ) ( tmp * n_Factor );
-		n_WorkNumber = ( t_longlong ) n_WorkNumber;
-		if ( ( n_WorkNumber == 0 ) && ( tmp != 0 ) )
+		tmp = number - ( ( t_longlong ) number );
+		tmp_number = ( t_longlong ) ( tmp * factor );
+		tmp_number = ( t_longlong ) tmp_number;
+		if ( ( tmp_number == 0 ) && ( tmp != 0 ) )
 		{
-			str_Return = "0" + str_Return;
+			result = "0" + result;
 		}
 		else
 		{
-			n = n_Factor;
-#if defined(_MSC_VER) && (!defined(NTDDI_VERSION) || !defined(NTDDI_VISTA) || (NTDDI_VERSION < NTDDI_VISTA))   // if less than VISTA, provide alternative
-			n_WorkNumber = abs ( ( int ) n_WorkNumber );
-#else
-			n_WorkNumber = std::llabs ( n_WorkNumber );
-#endif
-			while ( n_WorkNumber >= 0 && n > 1 )
+			n = factor;
+			tmp_number = absolute ( ( int ) tmp_number );
+			while ( tmp_number >= 0 && n > 1 )
 			{
-				str_Return = Numbers[n_WorkNumber % n_Base] + str_Return;
-				n_WorkNumber /= n_Base;
-				n /= n_Base;
+				result = digits[tmp_number % base] + result;
+				tmp_number /= base;
+				n /= base;
 			}
 		}
-		str_Return = "." + str_Return;
+		result = "." + result;
 	}
-	n_WorkNumber = ( t_longlong ) n_Number;
-	if ( n_WorkNumber < 0 )
+	tmp_number = ( t_longlong ) number;
+	if ( tmp_number < 0 )
 	{
-		n_WorkNumber = -n_WorkNumber;
+		tmp_number = -tmp_number;
 	}
-	if ( n_WorkNumber == 0 )
+	if ( tmp_number == 0 )
 	{
-		str_Return = "0" + str_Return;
+		result = "0" + result;
 	}
-	while ( n_WorkNumber > 0 )
+	while ( tmp_number > 0 )
 	{
-		str_Return = Numbers[n_WorkNumber % n_Base] + str_Return;
-		n_WorkNumber /= n_Base;
+		result = digits[tmp_number % base] + result;
+		tmp_number /= base;
 	}
-	if ( n_Number < 0 )
+	if ( number < 0 )
 	{
-		str_Return = "-" + str_Return;
+		result = "-" + result;
 	}
-	return ( str_Return );
+	return ( result );
 } // num_to_str ()
 //////////////////////////////////////////////////////////////////////
+
+} // namespace fgmp
 
 #endif

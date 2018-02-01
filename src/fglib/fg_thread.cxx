@@ -35,56 +35,56 @@ namespace fgmp
 
 /** Initialise the mutex
  */
-Lockable::Lockable
+lockable::lockable
 ()
 {
 	pthread_mutex_init ( & m_mutex, 0 );
-}
+} // lockable::lockable ()
 
 //////////////////////////////////////////////////////////////////////
 
 /** Lock the mutex
  */
 void
-Lockable::lock
+lockable::lock
 ()
 {
 	pthread_mutex_lock ( & m_mutex );
-}
+} // lockable::lock ()
 
 //////////////////////////////////////////////////////////////////////
 
 /** Unlock the mutex
  */
 void 
-Lockable::unlock
+lockable::unlock
 ()
 {
 	pthread_mutex_unlock ( & m_mutex );
-}
+} // lockable::unlock ()
 
 //////////////////////////////////////////////////////////////////////
 
 /** Lock the mutex
  */
-LockGuard::LockGuard
+lockguard::lockguard
 (
-	pthread_mutex_t *Mutex
+	mutex_t *mutex
 )
 {
-	m_mutex = Mutex;
+	m_mutex = mutex;
 	pthread_mutex_lock ( m_mutex );
-}
+} // lockguard::lockguard ()
 
 //////////////////////////////////////////////////////////////////////
 
 /** Unlock the mutex
  */
-LockGuard::~LockGuard
+lockguard::~lockguard
 ()
 {
 	pthread_mutex_unlock ( m_mutex );
-}
+} // lockguard::~lockguard ()
 
 //////////////////////////////////////////////////////////////////////
 

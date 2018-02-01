@@ -25,35 +25,37 @@
 #include <sstream>
 #include "fgls_cli.hxx"
 
+using namespace fgmp;
+
 //////////////////////////////////////////////////
-FGLS_CLI::FGLS_CLI
+fgls_cli::fgls_cli
 (
 	FGLS*	fgls,
 	int	fd
-) : CLI (fd)
+) : cli (fd)
 {
 	this->fgls = fgls;
 	this->setup ();
-} // FGLS_CLI::FGLS_CLI ()
+} // fgls_cli::fgls_cli ()
 
 //////////////////////////////////////////////////
 /** Setup all commands
  */
 void
-FGLS_CLI::setup
+fgls_cli::setup
 ()
 {
-	typedef Command<CLI>::cpp_callback_func callback_ptr;
-	typedef Command<CLI>::cpp_callback_func callback_ptr;
-	typedef CLI::cpp_auth_func auth_callback;          
-	typedef CLI::cpp_enable_func enable_callback;
-	Command<CLI>* c;
+	typedef Command<cli>::cpp_callback_func callback_ptr;
+	typedef Command<cli>::cpp_callback_func callback_ptr;
+	typedef cli::cpp_auth_func auth_callback;          
+	typedef cli::cpp_enable_func enable_callback;
+	Command<cli>* c;
 
 	set_hostname ( fgls->m_server_name );
 	std::stringstream banner;
 	banner << "\r\n"
 		<< "------------------------------------------------\r\n"
-		<< "FlightGear List Server CLI\r\n"
+		<< "FlightGear List Server cli\r\n"
 		<< "This is " << fgls->m_server_name << "\r\n"
 		<< "------------------------------------------------\r\n";
 	set_banner ( banner.str() );
@@ -61,7 +63,7 @@ FGLS_CLI::setup
 		allow_user ( fgls->m_admin_user, fgls->m_admin_pass );
 	if ( fgls->m_admin_enable != "" )
 		allow_enable ( fgls->m_admin_enable );
-	c = new Command<CLI> (
+	c = new Command<cli> (
 		this,
 		"show",
 		libcli::UNPRIVILEGED,
@@ -69,54 +71,54 @@ FGLS_CLI::setup
 		"show system information"
 	);
 	register_command (c);
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 		this,
 		"log",
-		static_cast<callback_ptr> (&FGLS_CLI::cmd_show_log),
+		static_cast<callback_ptr> (&fgls_cli::cmd_show_log),
 		libcli::UNPRIVILEGED,
 		libcli::MODE_ANY,
 		"Show log buffer"
 	), c );
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 		this,
 		"settings",
-		static_cast<callback_ptr> (&FGLS_CLI::cmd_show_settings),
+		static_cast<callback_ptr> (&fgls_cli::cmd_show_settings),
 		libcli::UNPRIVILEGED,
 		libcli::MODE_ANY,
 		"Show general settings"
 	), c );
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 		this,
 		"version",
-		static_cast<callback_ptr> (&FGLS_CLI::cmd_show_version),
+		static_cast<callback_ptr> (&fgls_cli::cmd_show_version),
 		libcli::UNPRIVILEGED,
 		libcli::MODE_ANY,
 		"Show running version information"
 	), c );
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 		this,
 		"uptime",
-		static_cast<callback_ptr> (&FGLS_CLI::cmd_show_uptime),
+		static_cast<callback_ptr> (&fgls_cli::cmd_show_uptime),
 		libcli::UNPRIVILEGED,
 		libcli::MODE_ANY,
 		"Show uptime information"
 	), c );
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 		this,
 		"die",
-		static_cast<callback_ptr> (&FGLS_CLI::cmd_fgls_die),
+		static_cast<callback_ptr> (&fgls_cli::cmd_fgls_die),
 		libcli::PRIVILEGED,
 		libcli::MODE_ANY,
 		"force fgls to exit"
 	));
-} // FGLS_CLI::setup()
+} // fgls_cli::setup()
 
 //////////////////////////////////////////////////
 /**
  *  @brief Show log buffer of the the server
  */
 int
-FGLS_CLI::cmd_show_log
+fgls_cli::cmd_show_log
 (
 	UNUSED(char *command),
 	UNUSED(char *argv[]),
@@ -129,8 +131,8 @@ FGLS_CLI::cmd_show_log
 			client << "<cr>" << CRLF;
 		return libcli::OK;
 	}
-	fgmp::StrList*  buf = logger.logbuf();
-	fgmp::StrIt     it;
+	fgmp::str_list*  buf = logger.logbuf();
+	fgmp::str_it     it;
 	buf->lock ();
 	for ( it = buf->begin(); it != buf->end(); it++ )
 	{
@@ -139,7 +141,7 @@ FGLS_CLI::cmd_show_log
 	}
 	buf->unlock ();
 	return libcli::OK;
-} // FGLS_CLI::cmd_show_log()
+} // fgls_cli::cmd_show_log()
 
 //////////////////////////////////////////////////
 /**
@@ -147,7 +149,7 @@ FGLS_CLI::cmd_show_log
  */
 #if 0
 int
-FGLS_CLI::cmd_show_stats
+fgls_cli::cmd_show_stats
 (
 	UNUSED(char *command),
 	UNUSED(char *argv[]),
@@ -292,7 +294,7 @@ FGLS_CLI::cmd_show_stats
 		<< " (" << byte_counter ((double) accumulated_rcvd / difftime) << "/s)"
 		<< CRLF; if (check_pager()) return 0;
 	return (0);
-} // FGLS_CLI::cmd_show_stats ()
+} // fgls_cli::cmd_show_stats ()
 #endif
 
 //////////////////////////////////////////////////
@@ -300,7 +302,7 @@ FGLS_CLI::cmd_show_stats
  *  @brief Show general settings
  */
 int
-FGLS_CLI::cmd_show_settings
+fgls_cli::cmd_show_settings
 (
 	UNUSED(char *command),
 	UNUSED(char *argv[]),
@@ -337,14 +339,14 @@ FGLS_CLI::cmd_show_settings
 		<< "bind address:" << bind_addr
 		<< CRLF; if (check_pager()) return 0;
 	return (0);
-} // FGLS_CLI::cmd_show_settings ()
+} // fgls_cli::cmd_show_settings ()
 
 //////////////////////////////////////////////////
 /**
  *  @brief Shutdown the server
  */
 int
-FGLS_CLI::cmd_fgls_die
+fgls_cli::cmd_fgls_die
 (
 	UNUSED(char *command),
 	UNUSED(char *argv[]),
@@ -361,7 +363,7 @@ FGLS_CLI::cmd_fgls_die
 	}
 	fgls->m_want_exit = true;
 	return libcli::QUIT;
-} // FGLS_CLI::cmd_fgls_die
+} // fgls_cli::cmd_fgls_die
 
 //////////////////////////////////////////////////
 /**
@@ -369,7 +371,7 @@ FGLS_CLI::cmd_fgls_die
  *         in a human readable form.
  */
 int
-FGLS_CLI::cmd_show_uptime
+fgls_cli::cmd_show_uptime
 (
 	UNUSED(char *command),
 	UNUSED(char *argv[]),
@@ -387,14 +389,14 @@ FGLS_CLI::cmd_show_uptime
 	client << "UP since " << timestamp_to_datestr(fgls->m_uptime)
 		<< "(" << timestamp_to_days(fgls->m_uptime) << ")" << CRLF;
 	return (0);
-} // FGLS_CLI::cmd_show_uptime
+} // fgls_cli::cmd_show_uptime
 
 //////////////////////////////////////////////////
 /**
  *  @brief Show the version number of the the server
  */
 int
-FGLS_CLI::cmd_show_version
+fgls_cli::cmd_show_version
 (
 	UNUSED(char *command),
 	UNUSED(char *argv[]),
@@ -416,5 +418,5 @@ FGLS_CLI::cmd_show_version
 	client << "using protocol version v ! TODO !" << CRLF;
 	cmd_show_uptime (command, argv, argc);
 	return (0);
-} // FGLS_CLI::cmd_show_version
+} // fgls_cli::cmd_show_version
 

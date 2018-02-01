@@ -42,16 +42,15 @@
 #include <fglib/netsocket.hxx>
 #include <fglib/fg_geometry.hxx>
 
-#define CONNECT    0
-#define DISCONNECT 1
-#define UPDATE     2
+namespace fgmp
+{
 
 //////////////////////////////////////////////////////////////////////
 /**
- * @class FG_TRACKER
+ * @class tracker
  * @brief The tracker class
  */
-class FG_TRACKER
+class tracker
 {
 private:
 	//////////////////////////////////////////////////
@@ -66,9 +65,9 @@ private:
 	std::string	m_fgms_name;
 	std::string	m_domain;
 	std::string	m_proto_version;
-	bool	m_identified;			// If fgtracker identified this fgms
+	bool		m_identified;			// If fgtracker identified this fgms
+	std::string	m_version;
 	fgmp::netsocket* m_tracker_socket;
-	std::string m_version;
 
 	using  vMSG = std::vector<std::string>;	// string vector
 	using  VI   = vMSG::iterator;		// string vector iterator
@@ -85,8 +84,8 @@ private:
 	vMSG    msg_sent_queue;			// the single message queue
 	vMSG    msg_recv_queue;			// the single message queue
 	bool	want_exit;			// signal to exit
+	bool	m_connected;			// If connected to fgtracker
 	pthread_cond_t  condition_var;		// message queue condition
-	static bool	m_connected;		// If connected to fgtracker
 
 	//////////////////////////////////////////////////
 	//
@@ -102,19 +101,21 @@ private:
 	int	tracker_write ( const std::string& str );
 	void 	tracker_read ( buffsock_t* bs );
 	void 	reply_from_server ();
-	static inline void set_connected ( bool b )
-	{
-		m_connected = b;
-	};
 public:
+	enum
+	{
+		CONNECT,
+		DISCONNECT,
+		UPDATE
+	};
 
 	//////////////////////////////////////////////////
 	//
 	//  constructors
 	//
 	//////////////////////////////////////////////////
-	FG_TRACKER ( int port, std::string server, std::string m_server_name, std::string m_domain, std::string m_version);
-	~FG_TRACKER ();
+	tracker ( int port, std::string server, std::string m_server_name, std::string m_domain, std::string m_version);
+	~tracker ();
 
 	//////////////////////////////////////////////////
 	//
@@ -129,7 +130,7 @@ public:
 		want_exit = true;
 	};
 
-	static inline bool is_connected ()
+	inline bool is_connected ()
 	{
 		return m_connected;
 	};
@@ -176,6 +177,9 @@ public:
 	size_t		lost_connections;
 	pthread_t 	m_thread_id;
 };
+
+} // namespace fgmp
+
 #endif
 
 // eof -fg_tracker.hxx

@@ -32,15 +32,15 @@
 namespace libcli
 {
 
-class CLI
+class cli
 {
 public:
 	typedef std::map<string,string> unp;
 	typedef std::map<string,string>::iterator unp_it;
 	typedef int (*c_auth_func) ( const string& , const string& );
-	typedef int (CLI::*cpp_auth_func) ( const string&, const string& );
+	typedef int (cli::*cpp_auth_func) ( const string&, const string& );
 	typedef int (*c_enable_func) ( const string& );
-	typedef int (CLI::*cpp_enable_func) ( const string& );
+	typedef int (cli::*cpp_enable_func) ( const string& );
 
 	int	completion_callback;
 	string	banner;
@@ -55,7 +55,7 @@ public:
 	int     state;
 	cli_client  client;
 	unp	users;
-	Command<CLI>*   commands;
+	Command<cli>*   commands;
 	// filter_t*   filters;
 
 	int		(*regular_callback)();
@@ -64,10 +64,10 @@ public:
 	c_enable_func	enable_callback;
 	cpp_enable_func	cpp_enable_callback;
 	
-	CLI ( int fd );
-	~CLI ();
+	cli ( int fd );
+	~cli ();
 	void	destroy ();
-	void    register_command ( Command<CLI>* command, Command<CLI>* parent = 0 );
+	void    register_command ( Command<cli>* command, Command<cli>* parent = 0 );
 	int     unregister_command ( char* command );
 	int     run_command ( char* command );
 	int     loop ();
@@ -90,11 +90,11 @@ public:
 	void    free_history();
 
 protected:
-	void    free_command ( Command<CLI> *cmd );
-	int     build_shortest ( Command<CLI>* commands );
+	void    free_command ( Command<cli> *cmd );
+	int     build_shortest ( Command<cli>* commands );
 	int     add_history ( char* cmd );
 	int     parse_line ( char* line, char* words[], int max_words );
-	int     find_command ( Command<CLI> *commands, int num_words, char* words[], int start_word, int filters[] );
+	int     find_command ( Command<cli> *commands, int num_words, char* words[], int start_word, int filters[] );
 	int     get_completions ( char* command, char** completions, int max_completions );
 	void    clear_line ( char* cmd, int l, int cursor );
 	int     pass_matches ( string pass, string tried_pass );
@@ -111,7 +111,7 @@ protected:
 	int     int_cmd_pager ( UNUSED ( char* command ), UNUSED ( char* argv[] ), UNUSED ( int argc ) );
 	int     int_configure_terminal ( char* command,
 		  char* argv[], int argc );
-	void    unregister_all ( Command<CLI> *command );
+	void    unregister_all ( Command<cli> *command );
 	int	pager ();
 	// line editing and handling of special chars
 	void	handle_telnet_option ();

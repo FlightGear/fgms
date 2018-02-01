@@ -29,7 +29,7 @@ struct filter_cmds_t
 	const char *help;
 };
 
-class CLI;
+class cli;
 class cli_client;
 typedef int (cli_client::*filter_callback_func) (char *cmd, void *data);
 

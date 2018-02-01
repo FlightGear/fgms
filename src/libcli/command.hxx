@@ -27,7 +27,7 @@ namespace libcli
 
 using namespace std;
 
-class CLI;
+class cli;
 
 class CommandBase
 {
@@ -37,7 +37,7 @@ template <class C>
 class Command : public CommandBase
 {
 public:
-	friend class CLI;
+	friend class cli;
 	typedef int ( *c_callback_func ) ( C& obj, char* command, char** argv, int argc );
 	typedef int ( C::*cpp_callback_func ) ( char* command, char** argv, int argc );
 	Command ();

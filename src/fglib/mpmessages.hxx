@@ -43,67 +43,62 @@
 #include <simgear/math/SGMath.hxx>
 #include "encoding.hxx"
 
-/** @brief The `Magic` value for message (currently FGFS). The magic is at
- * the start of every packet and is used for packet validation.
- */
-const uint32_t MSG_MAGIC = 0x46474653;  // "FGFS"
-
-/** @brief  The MP protocol version that is send with each packet
- * (currently 1.1).
- */
-const uint32_t PROTO_VER = 0x00010001;  // 1.1
-
 /**
  * @brief  IDs of message types seen by fgms
  */
-namespace FGFS
+namespace fgmp
 {
 
 /**
  * Message identifiers
  */
-enum MSG_ID
+enum class MSG_ID
 {
 	//@{ deprecated message ids
 	CHAT_MSG = 1,	// old CHAT_MSG_ID
-	U2,	// old pos data
-	U3,	// old pos data,
+	/// a ping packet is send verbatim back to sender
+	PING,	// request
+	PONG,	// answer
 	U4,	// old pos data,
 	U5,	// old pos data,
 	U6,	// RESET_DATA_ID
 	//@}
 	/// a "position" message, and the most trafficked
 	POS_DATA,
-	MP_2017_DATA_ID,
-	/// a ping packet is send verbatim back to sender
-	PING,	// request
-	PONG,	// answer
+	MP_2017_DATA_ID
 };
 
-} // namspace FGFS
+/** @brief The `Magic` value for message (currently FGFS). The magic is at
+ * the start of every packet and is used for packet validation.
+ */
+constexpr uint32_t MSG_MAGIC { 0x46474653 };  // "FGFS"
+/** @brief  The MP protocol version that is send with each packet
+ * (currently 1.1).
+ */
+constexpr uint32_t PROTO_VER { 0x00010001 };  // 1.1
 
 /** @brief  Maximum length of a callsign */
-#define MAX_CALLSIGN_LEN        8
+constexpr uint32_t MAX_CALLSIGN_LEN { 8 };
 
 /** @brief  Maximum length of a chat message 
  */
-#define MAX_CHAT_MSG_LEN        256
+constexpr uint32_t MAX_CHAT_MSG_LEN { 256 };
 
 /** @brief  Maximum length of a model name, eg /model/x17/aero-123.xml */
-#define MAX_MODEL_NAME_LEN      96
+constexpr uint32_t MAX_MODEL_NAME_LEN { 96 };
 
 /** @brief  Maximum length of property */
-#define MAX_PROPERTY_LEN        52
+constexpr uint32_t MAX_PROPERTY_LEN { 52 };
 
 
 /** 
- * @struct T_MsgHdr
+ * @struct msg_hdr
  * @brief The header sent as the first part of all mp message packets.
  * 
  * The header is expected to have the correct ::MSG_MAGIC and ::PROTO_VER
  * and is checked upon in FG_SERVER::PacketIsValid
  */
-struct T_MsgHdr
+struct msg_hdr_t
 {
 	/** @brief Magic Value */
 	xdr_data_t  magic;   
@@ -125,10 +120,10 @@ struct T_MsgHdr
 };
 
 /** 
- * @struct T_PositionMsg
+ * @struct pos_msg_t
  * @brief A Position Message
  */
-struct T_PositionMsg
+struct pos_msg_t
 {
 	/** @brief  Name of the aircraft model */
 	char model[MAX_MODEL_NAME_LEN]; 
@@ -162,27 +157,27 @@ struct T_PositionMsg
 };
 
 /** 
- * @struct T_PropertyMsg 
+ * @struct prop_msg_t 
  * @brief Property Message 
  */
-struct T_PropertyMsg
+struct prop_msg_t
 {
 	xdr_data_t id;
 	xdr_data_t value;
 };
 
 /**
- * @struct FGFloatPropertyData  
+ * @struct float_prop_data_t  
  * @brief Property Data 
  */
-struct FGFloatPropertyData
+struct float_prop_data_t
 {
 	unsigned id;
 	float value;
 };
 
 /** @brief Motion Message */
-struct FGExternalMotionData
+struct motion_data_t
 {
 	/** 
 	 * @brief Simulation time when this packet was generated 
@@ -217,7 +212,9 @@ struct FGExternalMotionData
 	 */
 	SGVec3f angularAccel;
 	/** @brief The set of properties recieved for this timeslot */
-	std::vector<FGFloatPropertyData> properties;
+	std::vector<float_prop_data_t> properties;
 };
+
+} // namespace fgmp
 
 #endif

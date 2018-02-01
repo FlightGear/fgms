@@ -28,6 +28,8 @@
 #include "fg_log.hxx"
 #include "netpacket.hxx"
 
+using namespace fgmp;
+
 //////////////////////////////////////////////////////////////////////
 
 NetPacket::NetPacket

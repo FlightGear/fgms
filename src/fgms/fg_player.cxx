@@ -30,7 +30,7 @@ namespace fgmp
 {
 
 //////////////////////////////////////////////////////////////////////
-FG_Player::FG_Player
+pilot::pilot
 ()
 {
 	name		= "";
@@ -50,7 +50,7 @@ FG_Player::FG_Player
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-FG_Player::FG_Player
+pilot::pilot
 (
 	const std::string& name
 )
@@ -73,9 +73,9 @@ FG_Player::FG_Player
 
 //////////////////////////////////////////////////////////////////////
 // FIXME: apply to the "rule of five" or even better "the rule of zero"
-FG_Player::FG_Player
+pilot::pilot
 (
-	const FG_Player& p
+	const pilot& p
 )
 {
 	this->assign (p);
@@ -83,17 +83,10 @@ FG_Player::FG_Player
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-FG_Player::~FG_Player
-()
-{
-}
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
 void
-FG_Player::operator =
+pilot::operator =
 (
-	const FG_Player& p
+	const pilot& p
 )
 {
 	this->assign (p);
@@ -102,9 +95,9 @@ FG_Player::operator =
 
 //////////////////////////////////////////////////////////////////////
 bool
-FG_Player::operator ==
+pilot::operator ==
 (
-	const FG_Player& p
+	const pilot& p
 )
 {
 	if ((address == p.address) && (name == p.name))
@@ -115,15 +108,15 @@ FG_Player::operator ==
 
 //////////////////////////////////////////////////////////////////////
 void
-FG_Player::assign
+pilot::assign
 (
-	const FG_Player& p
+	const pilot& p
 )
 {
 	//
 	// using str.c_str() here to prevent copy-on-write in std::string!
 	//
-	ListElement::assign (p);
+	list_item::assign (p);
 	origin		= p.origin.c_str();
 	passwd		= p.passwd.c_str();
 	model_name	= p.model_name.c_str();

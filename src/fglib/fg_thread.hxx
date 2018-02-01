@@ -36,12 +36,14 @@
 namespace fgmp
 {
 
+using mutex_t = pthread_mutex_t;
+
 /**
  * @brief Add a mutex to an abitrary class.
  *
  * Example:
  * @code
- * class my_class : public fgmp::Lockable
+ * class my_class : public fgmp::lockable
  * {
  * 	...
  * }
@@ -50,15 +52,16 @@ namespace fgmp
  * will add a mutex to \c my_class. Additionally adds two methods
  * \c lock() and \c unlock()
  */
-class Lockable
+class lockable
 {
 public:
-	Lockable ();
+	lockable ();
 	void lock ();
 	void unlock ();
-protected:
-	pthread_mutex_t m_mutex;
-}; // class Lockable
+	inline mutex_t* mutex () { return & m_mutex; };
+private:
+	mutex_t m_mutex;
+}; // class lockable
 
 /**
  * @brief Guard a mutex.
@@ -69,11 +72,11 @@ protected:
  * Example:
  * @code
  *
- * pthread_mutex_t m;
+ * mutex_t m;
  *
  * void my_func ()
  * {
- * 	LockGuard g ( &m );
+ * 	lockguard g ( &m );
  *	// do stuff
  * }
  * @endcode
@@ -82,30 +85,33 @@ protected:
  *
  * @note The mutex is expected to be already initialised.
  */
-class LockGuard
+class lockguard
 {
 public:
-	LockGuard ( pthread_mutex_t *mutex );
-	~LockGuard ();
+	lockguard ( mutex_t *mutex );
+	~lockguard ();
 protected:
-	pthread_mutex_t *m_mutex;
-}; // class LockGuard
+	mutex_t *m_mutex;
+}; // class lockguard
 
 /**
- * @brief a std::list<> protected by Lockable
+ * @brief a std::list<> protected by lockable
  */
 template<class T>
-class lock_list_t: public std::list<T>, public Lockable
+class lock_list_t: public std::list<T>, public lockable
 { }; // class lock_list_t
 
 /**
  * @brief a lock_list<string> 
  */
-typedef lock_list_t<std::string>           StrList;
+using str_list = lock_list_t<std::string>;
 /**
  * @brief an iterator for a lock_list_t<std::string>
  */
-typedef lock_list_t<std::string>::iterator StrIt;
+using str_it = lock_list_t<std::string>::iterator;
+
+inline str_list::iterator begin ( str_list * l ) { return l->begin(); }
+inline str_list::iterator end   ( str_list * l ) { return l->end(); }
 
 } // namespace fgmp
 

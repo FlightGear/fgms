@@ -29,13 +29,17 @@
 #include <cctype>
 #include "fg_config.hxx"
 
+namespace fgmp
+{
+
 //////////////////////////////////////////////////////////////////////
+
 /** @brief  Read in the config file 
  * @param config_name - the file to read
  * @retval int 1 for error, 0 for success
  */
 int
-FG_CONFIG::read
+config::read
 (
 	const std::string &config_name
 )
@@ -64,16 +68,16 @@ FG_CONFIG::read
 	config_file.close ();
 	m_current_var = m_var_list.begin ();
 	return (0);
-} // FG_CONFIG::read ()
-//////////////////////////////////////////////////////////////////////
+} // config::read ()
 
 //////////////////////////////////////////////////////////////////////
+
 /** @brief Find a variable in the internal list and return its value
  * @param VarName - the variable to find
  * @retval string - with contents of variable, or blank string if not found
 */
 std::string
-FG_CONFIG::get
+config::get
 (
 	const std::string & var_name
 )
@@ -89,27 +93,27 @@ FG_CONFIG::get
 	}
 	return ("");
 } // FGMS::get ()
-//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Set internal pointer to the first variable in list
  */
 void
-FG_CONFIG::set_start
+config::set_start
 ()
 {
 	m_current_var = m_var_list.begin();
-} // FG_CONFIG::SetStart ()
-//////////////////////////////////////////////////////////////////////
+} // config::SetStart ()
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Set internal pointer to the next var.
  * @retval int 1 for success, else 0
  */
 int
-FG_CONFIG::next
+config::next
 ()
 {
 	if (m_current_var == m_var_list.end())
@@ -122,16 +126,16 @@ FG_CONFIG::next
 		return (0);
 	}
 	return (1);
-} // FG_CONFIG::next()
-//////////////////////////////////////////////////////////////////////
+} // config::next()
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Returns the complete name of the current variable.
  * @retval string The variable name, or empty string if not found.
  */
 std::string
-FG_CONFIG::get_name
+config::get_name
 ()
 {
 	if (m_current_var != m_var_list.end())
@@ -139,16 +143,16 @@ FG_CONFIG::get_name
 		return (m_current_var->first);
 	}
 	return ("");
-} // FG_CONFIG::get_name ()
-//////////////////////////////////////////////////////////////////////
+} // config::get_name ()
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * \brief Returns the current variable's value
  * \retval string The variable name, or empty string if not found.
  */
 std::string
-FG_CONFIG::get_value
+config::get_value
 ()
 {
 	if (m_current_var != m_var_list.end())
@@ -156,10 +160,10 @@ FG_CONFIG::get_value
 		return (m_current_var->second);
 	}
 	return ("");
-} // FG_CONFIG::get_value ()
-//////////////////////////////////////////////////////////////////////
+} // config::get_value ()
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Set internal pointer to the first variable of a section 
  * @todo Sort the variable list
@@ -167,7 +171,7 @@ FG_CONFIG::get_value
  * @retval int 1 on success, else 0
  */
 int
-FG_CONFIG::set_section
+config::set_section
 (
 	const std::string &sec_name
 )
@@ -184,16 +188,16 @@ FG_CONFIG::set_section
 		m_current_var++;
 	}
 	return (0);
-} // FG_CONFIG::set_section ( const std::string &SecName )
-//////////////////////////////////////////////////////////////////////
+} // config::set_section ( const std::string &SecName )
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Set internal pointer to next variable in a section.
  * @retval int 1 on success, 0 else
  */
 int
-FG_CONFIG::sec_next
+config::sec_next
 ()
 {
 	if ( ! next() )
@@ -206,16 +210,16 @@ FG_CONFIG::sec_next
 		return (0);
 	}
 	return (1);
-} // FG_CONFIG::GetSecNextVar ()
-//////////////////////////////////////////////////////////////////////
+} // config::GetSecNextVar ()
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Get the next variable name in current section
  * @retval string The variable name, or empty string if not found
  */
 std::string
-FG_CONFIG::get_sec_next_var
+config::get_sec_next_var
 ()
 {
 	if ( ! next() )
@@ -228,16 +232,16 @@ FG_CONFIG::get_sec_next_var
 		return ("");
 	}
 	return (m_current_var->first);
-} // FG_CONFIG::get_sec_next_var ()
-//////////////////////////////////////////////////////////////////////
+} // config::get_sec_next_var ()
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Return variable value of next variable in section
  * @retval string The value or empty string if not found
  */
 std::string
-FG_CONFIG::get_sec_next_val
+config::get_sec_next_val
 ()
 {
 	if ( ! next() )
@@ -250,16 +254,16 @@ FG_CONFIG::get_sec_next_val
 		return ("");
 	}
 	return (m_current_var->second);
-} // FG_CONFIG::get_sec_next_val ()
-//////////////////////////////////////////////////////////////////////
+} // config::get_sec_next_val ()
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Get the value of the next variable in list
  * @retval string The value or empty string if not found
  */
 std::string
-FG_CONFIG::get_next
+config::get_next
 ()
 {
 	if ( ! next() )
@@ -267,15 +271,15 @@ FG_CONFIG::get_next
 		return ("");
 	}
 	return (m_current_var->second);
-} // FG_CONFIG::get_next ()
-//////////////////////////////////////////////////////////////////////
+} // config::get_next ()
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Just for debugging to cout
  */
 void
-FG_CONFIG::dump
+config::dump
 ()
 {
 	m_current_var = m_var_list.begin();
@@ -292,9 +296,9 @@ FG_CONFIG::dump
 	std::cout << "done." << std::endl;
 	std::cout << std::endl;
 } // FGMS::dump ()
-//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Parse the given line, split it into name/value pairs
  *        and put in the internal list
@@ -302,7 +306,7 @@ FG_CONFIG::dump
  * @retval int
  */
 int
-FG_CONFIG::parse_line
+config::parse_line
 (
 	const std::string & config_line
 )
@@ -343,6 +347,9 @@ FG_CONFIG::parse_line
 		(var_value_start, var_value_end - var_value_start);
 	m_var_list.push_back (new_var);
 	return (0);
-} // FGMS::ParseLine ()
+} // config::ParseLine ()
+
 //////////////////////////////////////////////////////////////////////
+
+} // namespace fgmp
 

@@ -70,11 +70,11 @@
 
 namespace
 {
-	constexpr int RECONNECT_WAIT = 30;
+	constexpr int RECONNECT_WAIT { 30 };
 	// Maximun character in msg from FGTracker: 1023990 (Slightly less than 100KB).
 	// Char in [1023991] = '\0'. Note that MAX_MSG_LINE should be 512n-8 bytes.
 	// The "reserved" 8 bytes is for 64 bit pointer.
-	constexpr int MAX_MSG_LINE = 1023991;
+	constexpr int MAX_MSG_LINE { 1023991 };
 
 	#if defined(_MSC_VER) || defined(__MINGW32__)
 	/* windows work around for gettimeofday() */
@@ -94,7 +94,8 @@ namespace
 	#endif /* #if defined(_MSC_VER) || defined(__MINGW32__) */
 } // anonymous namespace
 
-bool FG_TRACKER::m_connected = false;
+namespace fgmp
+{
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -103,7 +104,7 @@ bool FG_TRACKER::m_connected = false;
  * @param server ip or domain
  * @param fgms name
  */
-FG_TRACKER::FG_TRACKER
+tracker::tracker
 (
 	int port,
 	std::string server,
@@ -119,7 +120,7 @@ FG_TRACKER::FG_TRACKER
 	m_domain	= domain;
 	m_proto_version = "20151207";
 	m_tracker_socket = 0;
-	LOG ( log_prio::DEBUG, "# FG_TRACKER::FG_TRACKER:"
+	LOG ( log_prio::DEBUG, "# tracker::tracker:"
 	  << m_tracker_server << ", Port: " << m_tracker_port
 	);
 	last_seen	= 0;
@@ -134,13 +135,13 @@ FG_TRACKER::FG_TRACKER
 	m_identified	= false;
 	m_ping_interval	= 55;
 	m_timeout_stage	= 0;
-	set_connected ( false );
-} // FG_TRACKER()
+	m_connected = false;
+} // tracker()
 
 //////////////////////////////////////////////////////////////////////
-//Destructor - call FG_TRACKER::write_queue () and terminate TCP stream
+//Destructor - call tracker::write_queue () and terminate TCP stream
 //////////////////////////////////////////////////////////////////////
-FG_TRACKER::~FG_TRACKER
+tracker::~tracker
 ()
 {
 	pthread_mutex_unlock ( &msg_mutex ); // give up the lock
@@ -155,12 +156,12 @@ FG_TRACKER::~FG_TRACKER
 		delete m_tracker_socket;
 		m_tracker_socket = 0;
 	}
-} // ~FG_TRACKER()
+} // ~tracker()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 pthread_t
-FG_TRACKER::get_thread_id
+tracker::get_thread_id
 ()
 {
 	return m_thread_id;
@@ -168,10 +169,10 @@ FG_TRACKER::get_thread_id
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-//FG_TRACKER::read_queue - Read message in file to cache
+//tracker::read_queue - Read message in file to cache
 /////////////////////////////////////////////////////////////////////
 void
-FG_TRACKER::read_queue
+tracker::read_queue
 ()
 {
 	/*Any message in msg_sent_queue must be pushed back to msg_queue before calling this function*/
@@ -209,11 +210,11 @@ FG_TRACKER::read_queue
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-//FG_TRACKER::write_queue () - Write cached message to a file (only be
+//tracker::write_queue () - Write cached message to a file (only be
 //used when destructor of this object be called)
 //////////////////////////////////////////////////////////////////////
 void
-FG_TRACKER::write_queue
+tracker::write_queue
 ()
 {
 	VI CurrentMessage;
@@ -227,7 +228,7 @@ FG_TRACKER::write_queue
 	queue_file.open ( "queue_file", std::ios::out|std::ios::app );
 	if ( ! queue_file )
 	{
-		LOG ( log_prio::HIGH, "# FG_TRACKER::write_queue: "
+		LOG ( log_prio::HIGH, "# tracker::write_queue: "
 		  << "could not open queuefile!" );
 		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
 		return;
@@ -244,11 +245,11 @@ FG_TRACKER::write_queue
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-//FG_TRACKER::requeue_msg () - Requeue the message in msg_sent_queue
+//tracker::requeue_msg () - Requeue the message in msg_sent_queue
 //to msg_queue
 //////////////////////////////////////////////////////////////////////
 void
-FG_TRACKER::requeue_msg
+tracker::requeue_msg
 ()
 {
 	pthread_mutex_lock ( &msg_mutex );
@@ -264,11 +265,11 @@ FG_TRACKER::requeue_msg
 }
 
 //////////////////////////////////////////////////////////////////////
-//FG_TRACKER::add_message - add feedin message to last position of
+//tracker::add_message - add feedin message to last position of
 //cache. fgms.cxx use this to insert messages
 /////////////////////////////////////////////////////////////////////
 void
-FG_TRACKER::add_message
+tracker::add_message
 (
 	const std::string& message
 )
@@ -277,15 +278,15 @@ FG_TRACKER::add_message
 	msg_queue.push_back ( message ); // queue the message at the end of queue
 	pthread_cond_signal ( &condition_var );  // wake up the worker
 	pthread_mutex_unlock ( &msg_mutex );	 // give up the lock
-} // FG_TRACKER::add_message()
+} // tracker::add_message()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-//FG_TRACKER::buffsock_free - Reset the non-data part of
+//tracker::buffsock_free - Reset the non-data part of
 //socket read buffer
 /////////////////////////////////////////////////////////////////////
 void
-FG_TRACKER::buffsock_free
+tracker::buffsock_free
 (
 	buffsock_t* bs
 )
@@ -294,11 +295,11 @@ FG_TRACKER::buffsock_free
 }
 
 //////////////////////////////////////////////////////////////////////
-//FG_TRACKER::check_timeout - Check connection timeout between FGMS and
+//tracker::check_timeout - Check connection timeout between FGMS and
 //FGTracker by sending PING to FGTracker
 /////////////////////////////////////////////////////////////////////
 void
-FG_TRACKER::check_timeout()
+tracker::check_timeout()
 {
 	time_t curtime = time ( 0 );
 	double seconds;
@@ -308,10 +309,10 @@ FG_TRACKER::check_timeout()
 		m_timeout_stage++;
 		if ( m_timeout_stage>3 )
 		{
-			set_connected ( false );
+			m_connected = false;
 			lost_connections++;
 			LOG ( log_prio::URGENT,
-			  "# FG_TRACKER::check_timeout: "
+			  "# tracker::check_timeout: "
 			  << "No data received from FGTracker for "
 			  << seconds
 			  << " seconds. Lost connection to FGTracker"
@@ -321,7 +322,7 @@ FG_TRACKER::check_timeout()
 		std::string reply = "PING";
 		if ( tracker_write ( reply ) < 0 )
 		{
-			LOG ( log_prio::HIGH, "# FG_TRACKER::check_timeout: "
+			LOG ( log_prio::HIGH, "# tracker::check_timeout: "
 			  << "Tried to PING FGTracker "
 			  << "(No data from FGTracker for "
 			  << seconds
@@ -331,7 +332,7 @@ FG_TRACKER::check_timeout()
 		}
 		else
 		{
-			LOG ( log_prio::DEBUG, "# FG_TRACKER::check_timeout: "
+			LOG ( log_prio::DEBUG, "# tracker::check_timeout: "
 			  << "PING FGTracker (No data from FGTracker for "
 			  << seconds << " seconds)"
 			);
@@ -340,11 +341,11 @@ FG_TRACKER::check_timeout()
 }
 
 //////////////////////////////////////////////////////////////////////
-//FG_TRACKER::tracker_read - Read TCP stream (non blocking) and call
-//FG_TRACKER::reply_from_server
+//tracker::tracker_read - Read TCP stream (non blocking) and call
+//tracker::reply_from_server
 //////////////////////////////////////////////////////////////////////
 void
-FG_TRACKER::tracker_read
+tracker::tracker_read
 (
 	buffsock_t* bs
 )
@@ -363,9 +364,9 @@ FG_TRACKER::tracker_read
 		EINTR (sth hard to explain - Linux only)*/
 		if ( ( errno != EAGAIN ) && ( errno != EWOULDBLOCK ) && ( errno != EINTR ) )
 		{
-			set_connected ( false );
+			m_connected = false;
 			lost_connections++;
-			LOG ( log_prio::HIGH, "# FG_TRACKER::tracker_read: "
+			LOG ( log_prio::HIGH, "# tracker::tracker_read: "
 			  << "lost connection to FGTracker"
 			);
 		}
@@ -401,7 +402,7 @@ FG_TRACKER::tracker_read
 			pkts_rcvd++;
 		}
 		bytes_rcvd += bytes;
-		LOG ( log_prio::DEBUG, "# FG_TRACKER::tracker_read: "
+		LOG ( log_prio::DEBUG, "# tracker::tracker_read: "
 		  << "received message from FGTracker - " << res );
 		reply_from_server ();
 	}
@@ -409,10 +410,10 @@ FG_TRACKER::tracker_read
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-//FG_TRACKER::tracker_write - Write a feedin string to TCP stream
+//tracker::tracker_write - Write a feedin string to TCP stream
 /////////////////////////////////////////////////////////////////////
 int
-FG_TRACKER::tracker_write
+tracker::tracker_write
 (
 	const std::string& str
 )
@@ -425,9 +426,9 @@ FG_TRACKER::tracker_write
 	s = m_tracker_socket->send ( str.c_str(), l ,0 );
 	if ( s != l )
 	{
-		set_connected ( false );
+		m_connected = false;
 		lost_connections++;
-		LOG ( log_prio::HIGH, "# FG_TRACKER::tracker_write: "
+		LOG ( log_prio::HIGH, "# tracker::tracker_write: "
 		  << "lost connection to server. Netsocket returned size ="
 		  << s << ", actual size should be =" <<l
 		);
@@ -463,10 +464,10 @@ FG_TRACKER::tracker_write
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-//FG_TRACKER::reply_from_server - Process the reply from server
+//tracker::reply_from_server - Process the reply from server
 /////////////////////////////////////////////////////////////////////
 void
-FG_TRACKER::reply_from_server
+tracker::reply_from_server
 ()
 {
 	std::string reply;
@@ -495,7 +496,7 @@ FG_TRACKER::reply_from_server
 			if ( tracker_write ( reply ) < 0 )
 			{
 				LOG ( log_prio::HIGH,
-				  "# FG_TRACKER::reply_from_server: "
+				  "# tracker::reply_from_server: "
 				  << "PING from FGTracker received "
 				  << "but failed to sent PONG to FGTracker"
 				);
@@ -503,20 +504,20 @@ FG_TRACKER::reply_from_server
 			else
 			{
 				LOG ( log_prio::DEBUG,
-				  "# FG_TRACKER::reply_from_server: "
+				  "# tracker::reply_from_server: "
 				  << "PING from FGTracker received"
 				);
 			}
 		}
 		else if ( str == "PONG" )
 		{
-			LOG ( log_prio::DEBUG, "# FG_TRACKER::reply_from_server: "
+			LOG ( log_prio::DEBUG, "# tracker::reply_from_server: "
 			  << "PONG from FGTracker received"
 			);
 		}
 		else if ( pos_err == 0 )
 		{
-			LOG ( log_prio::HIGH, "# FG_TRACKER::reply_from_server: "
+			LOG ( log_prio::HIGH, "# tracker::reply_from_server: "
 			  << "Received error message from FGTracker. Msg: '"
 			  << str <<"'"
 			);
@@ -527,7 +528,7 @@ FG_TRACKER::reply_from_server
 			if ( tracker_write ( reply ) < 0 )
 			{
 				LOG ( log_prio::HIGH,
-				  "# FG_TRACKER::reply_from_server: "
+				  "# tracker::reply_from_server: "
 				  << "Responce not recognized and failed "
 				  << "to notify FGTracker. Msg: '"
 				  << str <<"'"
@@ -536,7 +537,7 @@ FG_TRACKER::reply_from_server
 			else
 			{
 				LOG ( log_prio::HIGH,
-				  "# FG_TRACKER::reply_from_server: "
+				  "# tracker::reply_from_server: "
 				  << "Responce from FGTracker not "
 				  << "recognized. Msg: '" << str << "'"
 				);
@@ -548,10 +549,10 @@ FG_TRACKER::reply_from_server
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-//FG_TRACKER::loop () - The infinite loop running the service
+//tracker::loop () - The infinite loop running the service
 //////////////////////////////////////////////////////////////////////
 int
-FG_TRACKER::loop
+tracker::loop
 ()
 {
 	std::string	Msg;
@@ -566,11 +567,11 @@ FG_TRACKER::loop
 	bs.maxlen = MAX_MSG_LINE;
 	bs.curlen = 0;
 #ifdef WIN32
-	LOG ( log_prio::HIGH, "# FG_TRACKER::loop: "
+	LOG ( log_prio::HIGH, "# tracker::loop: "
 	  << "started, thread ID " << m_thread_id.p
 	);
 #else
-	LOG ( log_prio::HIGH, "# FG_TRACKER::loop: "
+	LOG ( log_prio::HIGH, "# tracker::loop: "
 	  << "started, thread ID " << m_thread_id
 	);
 #endif
@@ -585,13 +586,13 @@ FG_TRACKER::loop
 			bs.curlen=0;
 			buffsock_free ( &bs );
 			m_identified=false;
-			LOG ( log_prio::HIGH, "# FG_TRACKER::loop: "
+			LOG ( log_prio::HIGH, "# tracker::loop: "
 			  << "trying to connect to FGTracker"
 			);
-			set_connected ( connect() );
+			m_connected = false;
 			if ( ! is_connected() )
 			{
-				LOG ( log_prio::HIGH, "# FG_TRACKER::loop: "
+				LOG ( log_prio::HIGH, "# tracker::loop: "
 				  << "not connected, will sleep for "
 				  << RECONNECT_WAIT << " seconds"
 				);
@@ -641,7 +642,7 @@ FG_TRACKER::loop
 			  ( char* ) "OUT: "
 			);
 #endif // #ifdef ADD_TRACKER_LOG
-			LOG ( log_prio::DEBUG, "# FG_TRACKER::loop: "
+			LOG ( log_prio::DEBUG, "# tracker::loop: "
 			  << "sending msg " << Msg.size() << "  bytes: " << Msg
 			);
 			if ( tracker_write ( Msg ) < 0 )
@@ -670,7 +671,7 @@ FG_TRACKER::loop
 //
 //////////////////////////////////////////////////////////////////////
 bool
-FG_TRACKER::connect
+tracker::connect
 ()
 {
 	if ( m_tracker_socket )
@@ -680,12 +681,12 @@ FG_TRACKER::connect
 		m_tracker_socket = 0;
 	}
 	m_tracker_socket = new fgmp::netsocket();
-	LOG ( log_prio::DEBUG, "# FG_TRACKER::connect: "
+	LOG ( log_prio::DEBUG, "# tracker::connect: "
 	  << "Server: " << m_tracker_server << ", Port: " << m_tracker_port
 	);
 	if ( ! m_tracker_socket->connect ( m_tracker_server, m_tracker_port, fgmp::netsocket::TCP ) )
 	{
-		LOG ( log_prio::HIGH, "# FG_TRACKER::connect: "
+		LOG ( log_prio::HIGH, "# tracker::connect: "
 		  << "connect to " << m_tracker_server
 		  << ":" << m_tracker_port << " failed!"
 		);
@@ -694,7 +695,7 @@ FG_TRACKER::connect
 		return false;
 	}
 	m_tracker_socket->set_blocking ( false );
-	LOG ( log_prio::HIGH, "# FG_TRACKER::connect: success" );
+	LOG ( log_prio::HIGH, "# tracker::connect: success" );
 	last_connected	= time ( 0 );
 	std::stringstream ss;
 	ss.str("Please initialize");
@@ -706,12 +707,14 @@ FG_TRACKER::connect
 	ss << "V" << m_proto_version << " " << m_version
 	   << " "<< m_domain << " " << m_fgms_name;
 	tracker_write ( ss.str() );
-	LOG ( log_prio::DEBUG, "# FG_TRACKER::connect: "
+	LOG ( log_prio::DEBUG, "# tracker::connect: "
 	  << "Written Version header"
 	);
 	sleep ( 1 );
 	return true;
 } // connect ()
+
+} // namespace fgmp
 
 // eof - fg_tracker.cxx
 //////////////////////////////////////////////////////////////////////

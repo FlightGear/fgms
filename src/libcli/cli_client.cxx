@@ -80,7 +80,7 @@ cli_client::cli_client
 			freopen ( "conin$", "r", stdin );
 			// only required IFF console output redirected
 			freopen ( "conout$", "w", stdout );
-			// this break the redirection, so CLI can be
+			// this break the redirection, so cli can be
 			// always seen
 			freopen ( "conout$", "w", stderr );
  		#endif
@@ -417,7 +417,7 @@ cli_client::count_filter
 	if ( !cmd ) // clean up
 	{
 		// print count
-		*this << UNFILTERED << num_to_str ( *count ) << CRLF;
+		*this << UNFILTERED << fgmp::num_to_str ( *count ) << CRLF;
 		free ( count ); 
 	return libcli::OK; 
 	}

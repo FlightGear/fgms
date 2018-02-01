@@ -32,7 +32,7 @@
 namespace libcli
 {
 
-class CLI;
+class cli;
 
 class match_filter_state
 {       
@@ -52,7 +52,7 @@ public:
 class cli_client
 {
 public:
-	friend class CLI;
+	friend class cli;
 	cli_client ( int fd );
 	~cli_client ();
 	int wait_for_input ( int seconds );	// select()

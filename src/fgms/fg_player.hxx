@@ -27,37 +27,37 @@
  * Implementation of a thread-safe list.
  */
 
-#ifndef FG_PLAYER_HXX
-#define FG_PLAYER_HXX
+#ifndef PILOT_HXX
+#define PILOT_HXX
 
 #include <fglib/fg_list.hxx>
 
 namespace fgmp
 {
 
-	enum class ATC_TYPE
-	{
-		NONE,	// not an ATC
-		ATC,		// undefined ATC
-		ATC_DL,		// Clearance Delivery
-		ATC_GN,		// Ground
-		ATC_TW,		// Tower
-		ATC_AP,		// Approach
-		ATC_DE,		// Departure
-		ATC_CT		// Center
-	};
+enum class ATC_TYPE
+{
+	NONE,		// not an ATC
+	ATC,		// undefined ATC
+	ATC_DL,		// Clearance Delivery
+	ATC_GN,		// Ground
+	ATC_TW,		// Tower
+	ATC_AP,		// Approach
+	ATC_DE,		// Departure
+	ATC_CT		// Center
+};
 
 //////////////////////////////////////////////////////////////////////
 /** 
- * @class FG_Player
- * @brief Represent a Player
+ * @class pilot
+ * @brief Represent a pilot
  * 
- * Player objects are stored in the FGMS::m_PlayerList
+ * pilot objects are stored in the fgms::m_pilot_list
  * They are created and added in FGMS::AddClient
  * They are dropped with FGMS::DropClient after expiry time
  * Clients are added even if they have bad data, see FGMS::AddBadClient
  */
-class FG_Player : public ListElement
+class pilot : public list_item
 {
 public:
 
@@ -69,11 +69,11 @@ public:
 	/** @brief The model name */
 	std::string	model_name;
 	/** @brief The last recorded position */
-	Point3D	last_pos;
+	point3d	last_pos;
 	/** @brief The last recorded position in geodectic coordinates (lat/lon/alt) */
-	Point3D	geod_pos;
+	point3d	geod_pos;
 	/** @brief The last recorded orientation */
-	Point3D	last_orientation;
+	point3d	last_orientation;
 	/** @brief \b true if this client is directly connected to this \ref fgms instance */
 	bool	is_local;
 	/** @brief \b true if this client is an ATC */
@@ -96,18 +96,17 @@ public:
 	time_t	last_relayed_to_inactive;
 	/** \b true if we need to send updates to inactive relays */
 	bool	do_update;
-	FG_Player ();
-	FG_Player ( const std::string& name );
-	FG_Player ( const FG_Player& p);
-	virtual ~FG_Player ();
-	void operator =  ( const FG_Player& p );
-	virtual bool operator ==  ( const FG_Player& p );
+	pilot ();
+	pilot ( const std::string& name );
+	pilot ( const pilot& p);
+	void operator =  ( const pilot& p );
+	virtual bool operator ==  ( const pilot& p );
 private:
-	void assign ( const FG_Player& p );
-}; // FG_Player
+	void assign ( const pilot& p );
+}; // pilot
 
-using PlayerList = List<FG_Player>;
-using PlayerIt   = std::vector<FG_Player>::iterator;
+using pilot_list = list<pilot>;
+using pilot_it   = std::vector<pilot>::iterator;
 
 } // namepsace fgmp
 

@@ -30,6 +30,9 @@
 
 #include <stdint.h>
 
+namespace fgmp
+{
+
 #define XDR_BYTES_PER_UNIT  4
 
 /*
@@ -181,6 +184,8 @@ float     NET_decode_float  ( const uint32_t& Val );
 uint64_t  NET_encode_double ( const double& Val );
 /// NET decode a double value
 double    NET_decode_double ( const uint64_t& Val );
+
+} // namespace fgmp
 
 #endif
 

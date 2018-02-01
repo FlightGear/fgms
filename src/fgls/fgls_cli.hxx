@@ -23,22 +23,22 @@
  */
 
 /**
- * @class FGLS_CLI
+ * @class fgls_cli
  * @brief cisco like command line interface
  */
 
-#ifndef FGLS_CLI_HEADER
-#define FGLS_CLI_HEADER
+#ifndef fgls_cli_HEADER
+#define fgls_cli_HEADER
 
 #include <libcli.hxx>
 #include "fgls.hxx"
 
 using namespace libcli;
 
-class FGLS_CLI : public CLI
+class fgls_cli : public cli
 {
 public:
-	FGLS_CLI ( FGLS* fgls, int fd );
+	fgls_cli ( FGLS* fgls, int fd );
 private:
 	void setup ();
 	//////////////////////////////////////////////////
@@ -56,7 +56,7 @@ private:
 		   UNUSED(char *argv[]), UNUSED(int argc) );
 
 	FGLS*	fgls;
-}; // class FGLS_CLI
+}; // class fgls_cli
 
 #endif
 

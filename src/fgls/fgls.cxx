@@ -39,17 +39,18 @@
 #include "fgls_cli.hxx"
 #include "fgls.hxx"
 
-const FG_VERSION FGLS::m_version ( 0, 0, 1, "-dev" );
 
 #ifdef _MSC_VER
 	#define M_IS_DIR _S_IFDIR
 #else // !_MSC_VER
 	#define M_IS_DIR S_IFDIR
-	/** @brief An instance of ::Daemon */
-	extern  Daemon Myself;
+	/** @brief An instance of daemon */
+	fgmp::daemon Myself;
 #endif
 
 using namespace fgmp;
+
+const version FGLS::m_version ( 0, 0, 1, "-dev" );
 
 //////////////////////////////////////////////////////////////////////
 
@@ -192,7 +193,7 @@ FGLS::loop
 	}
 	if ( ! m_run_as_daemon && m_add_cli )
 	{
-		// Run admin CLI in foreground reading from stdin
+		// Run admin cli in foreground reading from stdin
 		st_telnet* t = new st_telnet;
 		t->instance = this;
 		t->fd       = 0;
@@ -427,7 +428,7 @@ FGLS::process_config
 	const std::string & config_name
 )
 {
-	FG_CONFIG	config;
+	config	config;
 	std::string	val;
 	int		e;
 
@@ -586,10 +587,10 @@ FGLS::handle_admin
 	int fd
 )
 {
-	FGLS_CLI* cli;
+	fgls_cli* cli;
 
 	errno = 0;
-	cli = new FGLS_CLI ( this, fd );
+	cli = new fgls_cli ( this, fd );
 	cli->loop ();
 	if ( fd == 0 )
 	{	// reading from stdin
@@ -688,7 +689,7 @@ FGLS::print_help
 		"options are:\n"
 		"-h          print this help screen\n"
 		"-p PORT     listen port for data\n"
-		"-a PORT     listen port for admin CLI\n"
+		"-a PORT     listen port for admin cli\n"
 		"-t PORT     listen port for telnet queries\n"
 		"-l LOGFILE  log to LOGFILE\n"
 		"-L LEVEL    verbosity of log in range 0 (few) to 3 (much)\n"

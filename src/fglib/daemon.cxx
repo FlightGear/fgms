@@ -25,7 +25,7 @@
 
 //////////////////////////////////////////////////////////////////////
 //
-// implement the class "Daemon", which does everything necessary
+// implement the class "daemon", which does everything necessary
 // to become a daemon
 //
 //////////////////////////////////////////////////////////////////////
@@ -42,21 +42,25 @@
 #include <fglib/fg_log.hxx>
 #include "daemon.hxx"
 
-int  Daemon::my_pid; // remember who we are
-bool Daemon::already_daemon = false;
+namespace fgmp
+{
+
+int  daemon::my_pid; // remember who we are
+bool daemon::already_daemon{ false };
 
 //////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Signal Handler connected in constructor
  * @param SigType The type of signal
  */
 void
-Daemon::sig_chld
+daemon::sig_chld
 (
-	int SigType
+	int sig_type
 )
 {
-	if (SigType == SIGCHLD)
+	if (sig_type == SIGCHLD)
 	{
 		int stat;
 		pid_t childpid;
@@ -68,12 +72,13 @@ Daemon::sig_chld
 }
 
 //////////////////////////////////////////////////////////////////////
+
 /** Installs the signal-handler and makes ourself a daemon
  *
  * @retval int -1 or error, 0 for success
  */
 int
-Daemon::daemonize
+daemon::daemonize
 ()
 {
 	if ( already_daemon )
@@ -105,7 +110,7 @@ Daemon::daemonize
 
 /** Connect some signals at startup. These are connected to sig_chld
  */
-Daemon::Daemon
+daemon::daemon
 ()
 {
 	//
@@ -116,4 +121,6 @@ Daemon::Daemon
 }
 
 //////////////////////////////////////////////////////////////////////
+
+} // namespace fgmp
 

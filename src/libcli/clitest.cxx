@@ -19,7 +19,7 @@
 
 using namespace libcli;
 
-class my_cli : public CLI
+class my_cli : public cli
 {
 public:
 	void setup();
@@ -46,15 +46,15 @@ int my_cli::check_enable(const std::string& password)
 
 void my_cli::setup()
 {
-	typedef Command<CLI>::cpp_callback_func callback_ptr;
-	typedef CLI::cpp_auth_func auth_callback;
-	typedef CLI::cpp_enable_func enable_callback;
-	Command<CLI>* c;
-	Command<CLI>* c2;
+	typedef Command<cli>::cpp_callback_func callback_ptr;
+	typedef cli::cpp_auth_func auth_callback;
+	typedef cli::cpp_enable_func enable_callback;
+	Command<cli>* c;
+	Command<cli>* c2;
 
 	set_auth_callback( static_cast<auth_callback> (& my_cli::check_auth) );
 	set_enable_callback( static_cast<enable_callback> (& my_cli::check_enable) );
-	c = new Command<CLI> (
+	c = new Command<cli> (
 		this,
 		"show",
 		libcli::UNPRIVILEGED,
@@ -63,7 +63,7 @@ void my_cli::setup()
 	);
 	register_command (c);
 
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 		this,
 		"version",
 		static_cast<callback_ptr> (&my_cli::test),
@@ -72,7 +72,7 @@ void my_cli::setup()
 		"Show version information"
 	), c);
 
-	c2 = new Command<CLI> (
+	c2 = new Command<cli> (
 		this,
 		"blacklist",
 		static_cast<callback_ptr> (&my_cli::test),
@@ -82,7 +82,7 @@ void my_cli::setup()
 	);
 	register_command (c2, c);
 
-	register_command ( new Command<CLI> (
+	register_command ( new Command<cli> (
 		this,
 		"brief",
 		static_cast<callback_ptr> (&my_cli::test),

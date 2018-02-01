@@ -54,7 +54,7 @@ public:
 	std::string		name;		///< eg. mpserver01
 	std::string		location;	///< "city/province/country"
 	std::string		admin;		///< email address of admin
-	FG_VERSION		version;	///< version of server
+	fgmp::version		version;	///< version of server
 	time_t			last_seen;
 	time_t			registered_at;
 
@@ -77,14 +77,14 @@ typedef fgmp::lock_list_t<server>::iterator	ServerIt;
 class FGLS
 {
 public:
-	static const FG_VERSION m_version;
+	static const fgmp::version	 m_version;
 	FGLS ();
 	bool	init ();
 	void	loop ();
 	int	parse_params ( int argc, char* argv[] );
 	bool	read_configs ( bool reinit = false );
 	void	shutdown ();
-	friend class FGLS_CLI;
+	friend class fgls_cli;
 protected:
 	/// Maximum number of concurrent telnets.
 	/// List of known servers.
@@ -101,7 +101,7 @@ protected:
 	/// Run in the background?
 	/// Can be set in config file.
 	bool		m_run_as_daemon;
-	/// Add an administrative CLI?
+	/// Add an administrative cli?
 	/// Can be set in config file.
 	bool		m_add_cli;
 	/// Name of this server.
@@ -131,7 +131,7 @@ protected:
 	fgmp::netsocket*	m_query_channel;
 	//////////////////////////////////////////////////
 	// The admin channel.
-	// Provides an administrative CLI to the server
+	// Provides an administrative cli to the server
 	/// Port to listen for admin connections.
 	/// Can be set in config file.
 	uint16_t	m_admin_port;
@@ -141,13 +141,13 @@ protected:
 	std::string	m_admin_user;
 	std::string	m_admin_pass;
 	std::string	m_admin_enable;
-	/// If true, open a CLI on the terminal.
+	/// If true, open a cli on the terminal.
 	/// If running in backgound, this switch is ignored
 	bool		m_admin_cli;
 	/// log into this file
 	std::string	m_logfile_name;
 	/// we want to see only logs of this log priority
-	log_prio	m_debug_level;
+	fgmp::log_prio	m_debug_level;
 	/// true if logfile needs to be reopened.
 	bool		m_reinit_log;
 	/// true if have read a config file

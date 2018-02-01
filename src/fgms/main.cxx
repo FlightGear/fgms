@@ -33,8 +33,8 @@
 #include <signal.h>
 #include "fgms.hxx"
 
-/** @brief The running  ::FGMS server process */
-FGMS       fgms;
+/** @brief The running fgms server process */
+fgmp::fgms fgms;
 
 #ifdef _MSC_VER
 // kludge for getopt() for WIN32
@@ -100,7 +100,7 @@ SigHUPHandler
 	{
 		if ( ! fgms.read_configs ( true ) )
 		{
-			LOG ( log_prio::HIGH,
+			LOG ( fgmp::log_prio::HIGH,
 			  "received HUP signal, but read config file failed!" );
 			exit ( 1 );
 		}
@@ -109,14 +109,14 @@ SigHUPHandler
 	{
 		if ( fgms.process_config ( fgms.m_config_file ) == false )
 		{
-			LOG ( log_prio::HIGH,
+			LOG ( fgmp::log_prio::HIGH,
 			  "received HUP signal, but read config file failed!" );
 			exit ( 1 );
 		}
 	}
 	if ( fgms.init () != 0 )
 	{
-		LOG ( log_prio::HIGH,
+		LOG ( fgmp::log_prio::HIGH,
 		  "received HUP signal, but reinit failed!" );
 		exit ( 1 );
 	}

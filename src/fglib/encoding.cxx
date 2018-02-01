@@ -10,6 +10,9 @@
 #include <fglib/fg_log.hxx>
 #include "encoding.hxx"
 
+namespace
+{
+
 //////////////////////////////////////////////////
 //
 //  define __BYTE_ORDER
@@ -40,6 +43,7 @@
 #   endif
 
 #endif
+
 #if ((__BYTE_ORDER != __LITTLE_ENDIAN) && (__BYTE_ORDER != __BIG_ENDIAN))
 #   error "Architecture not supported."
 #   error "please define __BYTE_ORDER for this system"
@@ -53,6 +57,13 @@
 #   define SWAP64(arg) arg
 #   define LOW  0
 #   define HIGH 1
+#endif
+
+#if 0
+for windows:
+_byteswap_ushort	<stdlib.h>
+_byteswap_ulong	<stdlib.h>
+_byteswap_uint64	<stdlib.h>
 #endif
 
 // Use native swap functions if available, they are much
@@ -87,6 +98,11 @@
 #   define SWAP32(arg) sg_bswap_32(arg)
 #   define SWAP64(arg) sg_bswap_64(arg)
 #endif
+
+} // namespace
+
+namespace fgmp
+{
 
 //////////////////////////////////////////////////////////////////////
 xdr_data_t
@@ -688,4 +704,5 @@ NET_decode_double ( const uint64_t& Val )
 } // NET_decode_double ()
 /////////////////////////////////////////////////////////////////////
 
+} // namespace fgmp
 

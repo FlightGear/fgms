@@ -20,21 +20,24 @@
 // Copyright (C) 2017  Oliver Schroeder
 //
 
-#ifndef FG_VERSION_HEADER
-#define FG_VERSION_HEADER
+#ifndef version_HEADER
+#define version_HEADER
 
 #include <string>
 #include <ostream>
 #include <stdint.h>
 
+namespace fgmp
+{
+
 /**
  * A class to manage the version of a program/library
  */
-class FG_VERSION
+class version
 {
 public:
-	FG_VERSION ( char major, char minor, char patch, const char* extra );
-	FG_VERSION ();
+	version ( char major, char minor, char patch, const char* extra );
+	version ();
 	inline std::string str () const { return m_str_rep; };
 	uint32_t   num () const;
 	/** return a 'major' as an int */
@@ -44,16 +47,16 @@ public:
 	/** return a 'patch' as an int */
 	inline int patch () const { return m_version.patch; };
 	void set_num ( uint32_t v );
-	bool operator ==  ( const FG_VERSION& v ) const;
-	bool operator !=  ( const FG_VERSION& v ) const;
-	bool operator <   ( const FG_VERSION& v ) const;
-	bool operator >   ( const FG_VERSION& v ) const;
-	bool operator <=  ( const FG_VERSION& v ) const;
-	bool operator >=  ( const FG_VERSION& v ) const;
-	bool is_compatible ( const FG_VERSION& v ) const;
-	friend std::ostream& operator << ( std::ostream& o, const FG_VERSION& v );
+	bool operator ==  ( const version& v ) const;
+	bool operator !=  ( const version& v ) const;
+	bool operator <   ( const version& v ) const;
+	bool operator >   ( const version& v ) const;
+	bool operator <=  ( const version& v ) const;
+	bool operator >=  ( const version& v ) const;
+	bool is_compatible ( const version& v ) const;
+	friend std::ostream& operator << ( std::ostream& o, const version& v );
 private:
-	FG_VERSION ( const FG_VERSION& );	// disable
+	version ( const version& );	// disable
 	struct
 	{
 		char	major;
@@ -64,7 +67,9 @@ private:
 	std::string	m_extra;
 	std::string	m_str_rep;
 	void mk_str_rep ();
-}; // class FG_VERSION
+}; // class version
+
+} // namespace fgmp
 
 #endif
 

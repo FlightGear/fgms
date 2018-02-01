@@ -24,6 +24,9 @@
 #include "fg_version.hxx"
 #include "fg_util.hxx"
 
+namespace fgmp
+{
+
 //////////////////////////////////////////////////////////////////////
 
 /** Initialisation via constructor only
@@ -43,7 +46,7 @@
  * source, eg. '-dev' or '-rc1'
  *
  */
-FG_VERSION::FG_VERSION
+version::version
 (
 	char major,
 	char minor,
@@ -56,34 +59,34 @@ FG_VERSION::FG_VERSION
 	m_version.patch = patch;
 	m_version.dummy = 0;
 	mk_str_rep ();
-} // FG_VERSION::FG_VERSION ()
+} // version::version ()
 
 //////////////////////////////////////////////////////////////////////
 
 /** initialise all to 0
  */
-FG_VERSION::FG_VERSION
+version::version
 () : m_extra ( "" ), m_str_rep ( "" )
 {
 	m_version.major = 0;
 	m_version.minor = 0;
 	m_version.patch = 0;
 	m_version.dummy = 0;
-} // FG_VERSION::FG_VERSION ()
+} // version::version ()
 
 //////////////////////////////////////////////////////////////////////
 
 /** return a string representation of the version
  */
 void
-FG_VERSION::mk_str_rep
+version::mk_str_rep
 ()
 {
 	m_str_rep =  num_to_str (m_version.major) + ".";
 	m_str_rep += num_to_str (m_version.minor) + ".";
 	m_str_rep += num_to_str (m_version.patch);
 	m_str_rep += m_extra;
-} // FG_VERSION::mk_str_rep ()
+} // version::mk_str_rep ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -93,18 +96,18 @@ FG_VERSION::mk_str_rep
  *  we need to switch to 64 bit.
  */
 uint32_t
-FG_VERSION::num
+version::num
 () const
 {
 	return ntohl ( * ((uint32_t*) & m_version) );
-} // FG_VERSION::num ()
+} // version::num ()
 
 //////////////////////////////////////////////////////////////////////
 
 /** set an uint32_t as version
  */
 void
-FG_VERSION::set_num
+version::set_num
 (
 	uint32_t v
 )
@@ -112,7 +115,7 @@ FG_VERSION::set_num
 	uint32_t* i = (uint32_t*) & m_version;
 	*i = htonl ( v );
 	mk_str_rep ();
-} // FG_VERSION::set_num ()
+} // version::set_num ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -121,9 +124,9 @@ FG_VERSION::set_num
  * return true if they are equal.
  */
 bool
-FG_VERSION::operator ==
+version::operator ==
 (
-	const FG_VERSION& v
+	const version& v
 ) const
 {
 	if ( (m_version.major == v.m_version.major)
@@ -132,7 +135,7 @@ FG_VERSION::operator ==
 	&&   (m_version.dummy == v.m_version.dummy) )
 		return true;
 	return false;
-} // FG_VERSION::operator == 
+} // version::operator == 
 
 //////////////////////////////////////////////////////////////////////
 
@@ -141,9 +144,9 @@ FG_VERSION::operator ==
  * return true if they are unequal.
  */
 bool
-FG_VERSION::operator !=
+version::operator !=
 (
-	const FG_VERSION& v
+	const version& v
 ) const
 {
 	if ( (m_version.major != v.m_version.major)
@@ -152,7 +155,7 @@ FG_VERSION::operator !=
 	||   (m_version.dummy != v.m_version.dummy) )
 		return true;
 	return false;
-} // FG_VERSION::operator != 
+} // version::operator != 
 
 //////////////////////////////////////////////////////////////////////
 
@@ -161,15 +164,15 @@ FG_VERSION::operator !=
  * return true if left is less than right
  */
 bool
-FG_VERSION::operator <
+version::operator <
 (
-	const FG_VERSION& v
+	const version& v
 ) const
 {
 	if ( num() < v.num() )
 		return true;
 	return false;
-} // FG_VERSION::operator <
+} // version::operator <
 
 //////////////////////////////////////////////////////////////////////
 
@@ -178,15 +181,15 @@ FG_VERSION::operator <
  * return true if left is greater than right
  */
 bool
-FG_VERSION::operator >
+version::operator >
 (
-	const FG_VERSION& v
+	const version& v
 ) const
 {
 	if ( num() > v.num() )
 		return true;
 	return false;
-} // FG_VERSION::operator >
+} // version::operator >
 
 //////////////////////////////////////////////////////////////////////
 
@@ -195,15 +198,15 @@ FG_VERSION::operator >
  * return true if left is less or equal to right
  */
 bool
-FG_VERSION::operator <=
+version::operator <=
 (
-	const FG_VERSION& v
+	const version& v
 ) const
 {
 	if ( num() <= v.num() )
 		return true;
 	return false;
-} // FG_VERSION::operator >=
+} // version::operator >=
 
 //////////////////////////////////////////////////////////////////////
 
@@ -212,15 +215,15 @@ FG_VERSION::operator <=
  * return true if left is greater or equal to right
  */
 bool
-FG_VERSION::operator >=
+version::operator >=
 (
-	const FG_VERSION& v
+	const version& v
 ) const
 {
 	if ( num() >= v.num() )
 		return true;
 	return false;
-} // FG_VERSION::operator >=
+} // version::operator >=
 
 //////////////////////////////////////////////////////////////////////
 
@@ -230,16 +233,16 @@ FG_VERSION::operator >=
  *   minor >= v.minor
  */
 bool
-FG_VERSION::is_compatible
+version::is_compatible
 (
-	const FG_VERSION& v
+	const version& v
 ) const
 {
 	if ( ( m_version.major == v.m_version.major )
 	&&   ( m_version.minor >= v.m_version.minor ) )
 		return true;
 	return false;
-} // FG_VERSION::is_compatible ()
+} // version::is_compatible ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -251,12 +254,14 @@ std::ostream&
 operator <<
 (
 	std::ostream& o,
-	const FG_VERSION& v
+	const version& v
 )
 {
 	o << v.str();
 	return o;
-} // ostream << FG_VERSION
+} // ostream << version
 
 //////////////////////////////////////////////////////////////////////
+
+} // namespace fgmp
 
