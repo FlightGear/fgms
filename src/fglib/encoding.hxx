@@ -33,16 +33,14 @@
 namespace fgmp
 {
 
-#define XDR_BYTES_PER_UNIT  4
+// #define XDR_BYTES_PER_UNIT  4
 
 /*
  * Data types used in XDR de-/encoding
  */
 /** @{ */
-/** 4 bytes */
-typedef uint32_t    xdr_data_t;
-/** 8 bytes */
-typedef uint64_t    xdr_data2_t;
+using xdr_data_t  = uint32_t;	///< 4 bytes
+using xdr_data2_t = uint64_t;	///< 8 bytes
 /** @} */
 
 /*
