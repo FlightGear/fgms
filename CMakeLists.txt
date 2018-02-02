@@ -270,13 +270,13 @@ if ( MSVC )
 endif ( MSVC )
 
 # Project [sgutils] [Static Library] [noinst_LIBRARIES]
-add_library (
-	sgutils ${LIB_TYPE}
-	src/simgear/math/SGEuler.hxx 
-	src/simgear/math/SGEuler.cxx 
-)
+#add_library (
+#	sgutils ${LIB_TYPE}
+#	src/simgear/math/SGEuler.hxx 
+#	src/simgear/math/SGEuler.cxx 
+#)
 # NO INSTALL [noinst_LIBRARIES]
-list ( APPEND add_LIBS sgutils )
+#list ( APPEND add_LIBS sgutils )
 
 ##################################################
 #

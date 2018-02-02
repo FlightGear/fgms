@@ -9,9 +9,9 @@
  *   and optionally a block of data. 
  * - The combined header and data is sent as one IP packet, \ref xdr encoded.
  *  @note 
- * 		XDR demands 4 byte alignment, but some compilers use 8 byte
- * 		alignment, so it's safe to let the overall size of a network
- * 		message be a multiple of 8! 
+ *              XDR demands 4 byte alignment, but some compilers use 8 byte
+ *              alignment, so it's safe to let the overall size of a network
+ *              message be a multiple of 8! 
  */
 
 //
@@ -39,7 +39,6 @@
 #define MPMESSAGES_H
 
 #include <vector>
-#include <simgear/math/SGMath.hxx>
 #include "encoding.hxx"
 
 /**
@@ -53,18 +52,18 @@ namespace fgmp
  */
 enum class MSG_ID
 {
-	//@{ deprecated message ids
-	CHAT_MSG = 1,	// old CHAT_MSG_ID
-	/// a ping packet is send verbatim back to sender
-	PING,	// request
-	PONG,	// answer
-	U4,	// old pos data,
-	U5,	// old pos data,
-	U6,	// RESET_DATA_ID
-	//@}
-	/// a "position" message, and the most trafficked
-	POS_DATA,
-	MP_2017_DATA_ID
+        //@{ deprecated message ids
+        CHAT_MSG = 1,   // old CHAT_MSG_ID
+        /// a ping packet is send verbatim back to sender
+        PING,   // request
+        PONG,   // answer
+        U4,     // old pos data,
+        U5,     // old pos data,
+        U6,     // RESET_DATA_ID
+        //@}
+        /// a "position" message, and the most trafficked
+        POS_DATA,
+        MP_2017_DATA_ID
 };
 
 /** @brief The `Magic` value for message (currently FGFS). The magic is at
@@ -99,23 +98,23 @@ constexpr uint32_t MAX_PROPERTY_LEN { 52 };
  */
 struct msg_hdr_t
 {
-	/** @brief Magic Value */
-	xdr_data_t  magic;   
-	/** @brief Protocol version */
-	xdr_data_t  version;           
-	/** @brief Message identifier  */
-	xdr_data_t  msg_id;     
-	/** @brief Absolute length of message */
-	xdr_data_t  msg_len;    
-	/** @brief Player's radar range */
-	xdr_data_t  radar_range;   
-	/** @brief Player's receiver port
-	 * @deprecated Not used in current implementation
-	 * set to zero
-	 */
-	xdr_data_t  reply_port;   
-	/** @brief Callsign used by the player */
-	char name[MAX_CALLSIGN_LEN]; 
+        /** @brief Magic Value */
+        xdr_data_t  magic;   
+        /** @brief Protocol version */
+        xdr_data_t  version;           
+        /** @brief Message identifier  */
+        xdr_data_t  msg_id;     
+        /** @brief Absolute length of message */
+        xdr_data_t  msg_len;    
+        /** @brief Player's radar range */
+        xdr_data_t  radar_range;   
+        /** @brief Player's receiver port
+         * @deprecated Not used in current implementation
+         * set to zero
+         */
+        xdr_data_t  reply_port;   
+        /** @brief Callsign used by the player */
+        char name[MAX_CALLSIGN_LEN]; 
 };
 
 /** 
@@ -124,35 +123,35 @@ struct msg_hdr_t
  */
 struct pos_msg_t
 {
-	/** @brief  Name of the aircraft model */
-	char model[MAX_MODEL_NAME_LEN]; 
-	/** @brief Time when this packet was generated */
-	xdr_data2_t time;
-	/** @brief Time when this packet was generated */
-	xdr_data2_t lag;
-	/** @brief Position wrt the earth centered frame */
-	xdr_data2_t position[3];
-	/** @brief Orientation wrt the earth centered frame, stored in
-	 * the angle axis representation where the angle is coded into
-	 * the axis length
-	 */
-	xdr_data_t orientation[3];
-	/** @brief Linear velocity wrt the earth centered frame measured in
-	 *         the earth centered frame
-	 */
-	xdr_data_t linear_vel[3];
-	/** @brief Angular velocity wrt the earth centered frame measured in
-	 *          the earth centered frame
-	 */
-	xdr_data_t angular_vel[3];
-	/** @brief Linear acceleration wrt the earth centered frame measured
-	 *         in the earth centered frame
-	 */
-	xdr_data_t linear_accel[3];
-	/** @brief Angular acceleration wrt the earth centered frame measured
-	 *         in the earth centered frame
-	 */
-	xdr_data_t angular_accel[3];
+        /** @brief  Name of the aircraft model */
+        char model[MAX_MODEL_NAME_LEN]; 
+        /** @brief Time when this packet was generated */
+        xdr_data2_t time;
+        /** @brief Time when this packet was generated */
+        xdr_data2_t lag;
+        /** @brief Position wrt the earth centered frame */
+        xdr_data2_t position[3];
+        /** @brief Orientation wrt the earth centered frame, stored in
+         * the angle axis representation where the angle is coded into
+         * the axis length
+         */
+        xdr_data_t orientation[3];
+        /** @brief Linear velocity wrt the earth centered frame measured in
+         *         the earth centered frame
+         */
+        xdr_data_t linear_vel[3];
+        /** @brief Angular velocity wrt the earth centered frame measured in
+         *          the earth centered frame
+         */
+        xdr_data_t angular_vel[3];
+        /** @brief Linear acceleration wrt the earth centered frame measured
+         *         in the earth centered frame
+         */
+        xdr_data_t linear_accel[3];
+        /** @brief Angular acceleration wrt the earth centered frame measured
+         *         in the earth centered frame
+         */
+        xdr_data_t angular_accel[3];
 };
 
 /** 
@@ -161,8 +160,8 @@ struct pos_msg_t
  */
 struct prop_msg_t
 {
-	xdr_data_t id;
-	xdr_data_t value;
+        xdr_data_t id;
+        xdr_data_t value;
 };
 
 /**
@@ -171,47 +170,51 @@ struct prop_msg_t
  */
 struct float_prop_data_t
 {
-	unsigned id;
-	float value;
+        unsigned id;
+        float value;
 };
+
+using vec3f = float[3];
+using vec3d = double[3];
+using vec4f = float[4];
 
 /** @brief Motion Message */
 struct motion_data_t
 {
-	/** 
-	 * @brief Simulation time when this packet was generated 
-	 */
-	double time;
-	// the artificial lag the client should stay behind the average
-	// simulation time to arrival time difference
-	// FIXME: should be some 'per model' instead of 'per packet' property
-	double lag;
-	/** 
-	*  Position wrt the earth centered frame  
-	*/
-	SGVec3d position;
-	/** @brief Orientation wrt the earth centered frame */
-	SGQuatf orientation;
-	/**
-	* @brief Linear velocity wrt the earth centered frame measured in
-	*        the earth centered frame
-	*/
-	SGVec3f linearVel;
-	/** 
-	* @brief Angular velocity wrt the earth centered frame measured
-	*        in the earth centered frame
-	*/
-	SGVec3f angularVel;
-	/** @brief Linear acceleration wrt the earth centered frame
-	 *         measured in the earth centered frame
-	 */
-	SGVec3f linearAccel;
-	/** @brief Angular acceleration wrt the earth centered frame
-	 *         measured in the earth centered frame
-	 */
-	SGVec3f angularAccel;
-	/** @brief The set of properties recieved for this timeslot */
-	std::vector<float_prop_data_t> properties;
+        /** 
+         * @brief Simulation time when this packet was generated 
+         */
+        double time;
+        // the artificial lag the client should stay behind the average
+        // simulation time to arrival time difference
+        // FIXME: should be some 'per model' instead of 'per packet' property
+        double lag;
+        /** 
+        *  Position wrt the earth centered frame  
+        */
+        vec3d position;
+        /** @brief Orientation wrt the earth centered frame */
+        vec4f orientation;
+        /**
+        * @brief Linear velocity wrt the earth centered frame measured in
+        *        the earth centered frame
+        */
+        vec3f linearVel;
+        /** 
+        * @brief Angular velocity wrt the earth centered frame measured
+        *        in the earth centered frame
+        */
+        vec3f angularVel;
+        /** @brief Linear acceleration wrt the earth centered frame
+         *         measured in the earth centered frame
+         */
+        vec3f linearAccel;
+        /** @brief Angular acceleration wrt the earth centered frame
+         *         measured in the earth centered frame
+         */
+        vec3f angularAccel;
+        /** @brief The set of properties recieved for this timeslot */
+        std::vector<float_prop_data_t> properties;
 };
 
 } // namespace fgmp
