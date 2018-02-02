@@ -39,7 +39,6 @@
 #define MPMESSAGES_H
 
 #include <vector>
-#include <simgear/compiler.h>
 #include <simgear/math/SGMath.hxx>
 #include "encoding.hxx"
 

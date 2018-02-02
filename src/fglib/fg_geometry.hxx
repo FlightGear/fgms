@@ -29,7 +29,7 @@
 namespace fgmp
 {
 
-typedef double point3d_t;
+using point3d_t = double;
 
 class point3d
 {

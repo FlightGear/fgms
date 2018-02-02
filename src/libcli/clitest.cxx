@@ -46,9 +46,9 @@ int my_cli::check_enable(const std::string& password)
 
 void my_cli::setup()
 {
-	typedef Command<cli>::cpp_callback_func callback_ptr;
-	typedef cli::cpp_auth_func auth_callback;
-	typedef cli::cpp_enable_func enable_callback;
+	using callback_ptr    = Command<cli>::cpp_callback_func;
+	using auth_callback   = cli::cpp_auth_func;
+	using enable_callback = cli::cpp_enable_func;
 	Command<cli>* c;
 	Command<cli>* c2;
 

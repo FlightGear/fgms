@@ -1,4 +1,4 @@
-// netpacket.cxx -  NetPacket is a buffer for network packets
+// netpacket.cxx -  netpacket is a buffer for network packets
 //
 // This file is part of fgms
 //
@@ -32,7 +32,7 @@ using namespace fgmp;
 
 //////////////////////////////////////////////////////////////////////
 
-NetPacket::NetPacket
+netpacket::netpacket
 (
 	const uint32_t Size
 )
@@ -46,25 +46,25 @@ NetPacket::NetPacket
 	m_CurrentIndex  = 0;
 	m_BytesInUse    = 0;
 	m_SelfAllocated = true;
-	m_EncodingType  = NetPacket::XDR;
+	m_EncodingType  = netpacket::XDR;
 	Clear();  // FIXME: probably not needed
-} // NetPacket::NetPacket ( uint32_t Size )
+} // netpacket::netpacket ( uint32_t Size )
 
 //////////////////////////////////////////////////////////////////////
 
-NetPacket::~NetPacket
+netpacket::~netpacket
 ()
 {
 	if ( ( m_Buffer ) && ( m_SelfAllocated ) )
 	{
 		delete[] m_Buffer;
 	}
-} // NetPacket::~NetPacket()
+} // netpacket::~netpacket()
 
 //////////////////////////////////////////////////////////////////////
 
 void
-NetPacket::Clear
+netpacket::Clear
 ()
 {
 	if ( m_Buffer )
@@ -73,33 +73,33 @@ NetPacket::Clear
 	}
 	m_CurrentIndex = 0;
 	m_BytesInUse   = 0;
-} // NetPacket::Clear()
+} // netpacket::Clear()
 
 //////////////////////////////////////////////////////////////////////
 
 void
-NetPacket::Start
+netpacket::Start
 ()
 {
 	m_CurrentIndex = 0;
-} // NetPacket::Start ()
+} // netpacket::Start ()
 
 //////////////////////////////////////////////////////////////////////
 
 void
-NetPacket::Reset
+netpacket::Reset
 ()
 {
 	m_CurrentIndex = 0;
 	m_BytesInUse   = 0;
-} // NetPacket::Reset ()
+} // netpacket::Reset ()
 
 //////////////////////////////////////////////////////////////////////
 
 void
-NetPacket::Copy
+netpacket::Copy
 (
-	const NetPacket& Packet
+	const netpacket& Packet
 )
 {
 	if ( m_Capacity != Packet.m_Capacity )
@@ -112,12 +112,12 @@ NetPacket::Copy
 	m_Capacity      = Packet.m_Capacity;
 	m_BytesInUse    = Packet.m_BytesInUse;
 	m_CurrentIndex  = Packet.m_CurrentIndex;
-} // NetPacket::Copy ()
+} // netpacket::Copy ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::SetIndex
+netpacket::SetIndex
 (
 	const uint32_t Index
 )
@@ -128,32 +128,32 @@ NetPacket::SetIndex
 	}
 	m_CurrentIndex = Index;
 	return ( true );
-} // NetPacket::SetIndex ()
+} // netpacket::SetIndex ()
 
 //////////////////////////////////////////////////////////////////////
 
 void
-NetPacket::SetEncoding
+netpacket::SetEncoding
 (
 	const BUFFER_ENCODING_TYPE encoding
 )
 {
 	m_EncodingType = encoding;
-} // NetPacket::SetEncoding()
+} // netpacket::SetEncoding()
 
 //////////////////////////////////////////////////////////////////////
 
-NetPacket::BUFFER_ENCODING_TYPE
-NetPacket::GetEncoding
+netpacket::BUFFER_ENCODING_TYPE
+netpacket::GetEncoding
 () const
 {
 	return ( m_EncodingType );
-} // NetPacket::GetEncoding()
+} // netpacket::GetEncoding()
 
 //////////////////////////////////////////////////////////////////////
 
 uint32_t
-NetPacket::Skip
+netpacket::Skip
 (
 	const uint32_t NumberofBytes
 )
@@ -169,39 +169,39 @@ NetPacket::Skip
 		m_BytesInUse = m_CurrentIndex;
 	}
 	return ( m_CurrentIndex );
-} // NetPacket::Skip ()
+} // netpacket::Skip ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint32_t
-NetPacket::Available
+netpacket::Available
 () const
 {
 	return ( m_Capacity - m_CurrentIndex );
-} // NetPacket::Available ()
+} // netpacket::Available ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint32_t
-NetPacket::Capacity
+netpacket::Capacity
 () const
 {
 	return ( m_Capacity );
-} // NetPacket::Capacity ()
+} // netpacket::Capacity ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint32_t
-NetPacket::BytesUsed
+netpacket::BytesUsed
 () const
 {
 	return ( m_BytesInUse );
-} // NetPacket::BytesUsed ()
+} // netpacket::BytesUsed ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::isAvailable
+netpacket::isAvailable
 (
 	const uint32_t Size
 ) const
@@ -211,12 +211,12 @@ NetPacket::isAvailable
 		return ( false );
 	}
 	return ( true );
-} // NetPacket::isAvailable  ( const uint32_t Size )
+} // netpacket::isAvailable  ( const uint32_t Size )
 
 //////////////////////////////////////////////////////////////////////
 
 void
-NetPacket::SetBuffer
+netpacket::SetBuffer
 (
 	const char* Buffer, const uint32_t Size
 )
@@ -234,27 +234,27 @@ NetPacket::SetBuffer
 	m_Capacity	= Size;
 	m_CurrentIndex	= 0;
 	m_BytesInUse	= Size;
-} // NetPacket::SetBuffer ()
+} // netpacket::SetBuffer ()
 
 //////////////////////////////////////////////////////////////////////
 
 void
-NetPacket::SetUsed
+netpacket::SetUsed
 (
 	const uint32_t UsedBytes
 )
 {
 	m_BytesInUse = UsedBytes;
-} // NetPacket::SetUsed ()
+} // netpacket::SetUsed ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint32_t
-NetPacket::RemainingData
+netpacket::RemainingData
 () const
 {
 	return ( m_BytesInUse - m_CurrentIndex );
-} // NetPacket::RemainingData ()
+} // netpacket::RemainingData ()
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -263,7 +263,7 @@ NetPacket::RemainingData
 // Laboratory of Cambridge University
 
 void
-NetPacket::xtea_encipher
+netpacket::xtea_encipher
 (
 	unsigned int num_cycles,
 	uint32_t v[2],
@@ -281,12 +281,12 @@ NetPacket::xtea_encipher
 	}
 	v[0] = v0;
 	v[1] = v1;
-} // NetPacket::xtea_encipher ()
+} // netpacket::xtea_encipher ()
 
 //////////////////////////////////////////////////////////////////////
 
 void
-NetPacket::xtea_decipher
+netpacket::xtea_decipher
 (
 	unsigned int num_cycles,
 	uint32_t v[2],
@@ -304,12 +304,12 @@ NetPacket::xtea_decipher
 	}
 	v[0] = v0;
 	v[1] = v1;
-} // NetPacket::xtea_decipher ()
+} // netpacket::xtea_decipher ()
 
 //////////////////////////////////////////////////////////////////////
 
 void
-NetPacket::Encrypt
+netpacket::Encrypt
 (
 	const uint32_t Key[4],
 	const uint32_t Offset
@@ -319,13 +319,13 @@ NetPacket::Encrypt
 	uint32_t Mod = Len % XTEA_BLOCK_SIZE;
 	if ( ( ! m_Buffer ) || ( m_BytesInUse == 0 ) )
 	{
-		LOG(log_prio::DEBUG, "NetPacket::Encrypt() - nothing to encrypt!" );
+		LOG(log_prio::DEBUG, "netpacket::Encrypt() - nothing to encrypt!" );
 		return;
 	}
 	if ( m_BytesInUse <= Offset )
 	{
 		LOG ( log_prio::DEBUG,
-		  "NetPacket::Enrypt() - Offset>Used Bytes!" );
+		  "netpacket::Enrypt() - Offset>Used Bytes!" );
 		return;
 	}
 	for ( uint32_t i=Offset; i<=Len-XTEA_BLOCK_SIZE; i+=XTEA_BLOCK_SIZE )
@@ -337,12 +337,12 @@ NetPacket::Encrypt
 		uint32_t Off = Len - XTEA_BLOCK_SIZE;
 		xtea_encipher ( 32, ( uint32_t* ) &m_Buffer[Off], Key );
 	}
-} // NetPacket::Encrypt
+} // netpacket::Encrypt
 
 //////////////////////////////////////////////////////////////////////
 
 void
-NetPacket::Decrypt
+netpacket::Decrypt
 (
 	const uint32_t Key[4],
 	const uint32_t Offset
@@ -353,13 +353,13 @@ NetPacket::Decrypt
 	if ( ( ! m_Buffer ) || ( m_BytesInUse == 0 ) )
 	{
 		LOG ( log_prio::DEBUG,
-		  "NetPacket::Decrypt() - nothing to encrypt!" );
+		  "netpacket::Decrypt() - nothing to encrypt!" );
 		return;
 	}
 	if ( m_BytesInUse <= Offset )
 	{
 		LOG ( log_prio::DEBUG,
-		  "NetPacket::Decrypt() - Offset>Used Bytes!" );
+		  "netpacket::Decrypt() - Offset>Used Bytes!" );
 		return;
 	}
 	if ( Mod )
@@ -371,12 +371,12 @@ NetPacket::Decrypt
 	{
 		xtea_decipher ( 32, ( uint32_t* ) &m_Buffer[i], Key );
 	}
-} // NetPacket::Decrypt
+} // netpacket::Decrypt
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::WriteOpaque
+netpacket::WriteOpaque
 (
 	const void* Data,
 	const uint32_t Size
@@ -386,7 +386,7 @@ NetPacket::WriteOpaque
 	{
 		// no buffer, so nothing to do but something is wrong
 		throw ( std::runtime_error (
-		  "NetPacket::WriteOpaque (): no buffer" )
+		  "netpacket::WriteOpaque (): no buffer" )
 		);
 	}
 	if ( ( ! Data ) || ( Size == 0 ) )
@@ -396,7 +396,7 @@ NetPacket::WriteOpaque
 	}
 	// round data size to a multiple of XDR datasize
 	int rndup = 0;
-	if ( m_EncodingType == NetPacket::XDR )
+	if ( m_EncodingType == netpacket::XDR )
 	{
 		int AlignBytes = sizeof ( xdr_data_t );
 		rndup = Size % AlignBytes;
@@ -428,12 +428,12 @@ NetPacket::WriteOpaque
 		}
 	}
 	return ( true );
-} // NetPacket::WriteOpaque ()
+} // netpacket::WriteOpaque ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::WriteString
+netpacket::WriteString
 (
 	const std::string& Str
 )
@@ -444,7 +444,7 @@ NetPacket::WriteString
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::WriteCStr
+netpacket::WriteCStr
 (
 	const char* Str,
 	uint32_t Size
@@ -454,7 +454,7 @@ NetPacket::WriteCStr
 	{
 		// no buffer, so nothing to do but something is wrong
 		throw std::runtime_error (
-			"NetPacket::WriteCStr (): no buffer" );
+			"netpacket::WriteCStr (): no buffer" );
 	}
 	if ( ( ! Str ) || ( Size == 0 ) )
 	{
@@ -486,12 +486,12 @@ NetPacket::WriteCStr
 		m_BytesInUse += len;
 	}
 	return ( true );
-} // NetPacket::WriteCStr ()
+} // netpacket::WriteCStr ()
 
 //////////////////////////////////////////////////////////////////////
 
 void
-NetPacket::ReadOpaque
+netpacket::ReadOpaque
 (
 	void* Buffer,
 	uint32_t& Size
@@ -501,63 +501,63 @@ NetPacket::ReadOpaque
 	if ( ( ! m_Buffer ) || ( data_available == 0 ) )
 	{
 		throw std::runtime_error (
-			"NetPacket::ReadOpaque (): no more data to read" );
+			"netpacket::ReadOpaque (): no more data to read" );
 	}
 	Size = Read_uint32 ();
 	if ( data_available < Size )
 	{
 		throw std::runtime_error (
-			"NetPacket::ReadOpaque (): invalid length" );
+			"netpacket::ReadOpaque (): invalid length" );
 	}
 	char* ret = ( char* )  &m_Buffer[m_CurrentIndex];
 	memcpy ( Buffer, ret, Size );
 	m_CurrentIndex += Size;
-} // NetPacket::ReadOpaque ()
+} // netpacket::ReadOpaque ()
 
 //////////////////////////////////////////////////////////////////////
 
 std::string
-NetPacket::ReadString
+netpacket::ReadString
 ()
 {
 	uint32_t data_available = RemainingData();
 	if ( ( ! m_Buffer ) || ( data_available == 0 ) )
 	{
 		throw std::runtime_error (
-			"NetPacket::ReadString (): no more data to read" );
+			"netpacket::ReadString (): no more data to read" );
 	}
 	uint32_t Size = Read_uint32 ();
 	if ( data_available < Size )
 	{
 		throw std::runtime_error (
-			"NetPacket::ReadString (): invalid length" );
+			"netpacket::ReadString (): invalid length" );
 	}
 	std::string ret = ( char* )  &m_Buffer[m_CurrentIndex];
 	m_CurrentIndex += Size;
 	return ( ret );
-} // NetPacket::ReadString ()
+} // netpacket::ReadString ()
 
 //////////////////////////////////////////////////////////////////////
 
 std::string
-NetPacket::ReadCStr
+netpacket::ReadCStr
 ()
 {
 	if ( ( ! m_Buffer ) || ( RemainingData() == 0 ) )
 	{
 		throw std::runtime_error (
-			"NetPacket::ReadCStr (): no more data to read" );
+			"netpacket::ReadCStr (): no more data to read" );
 	}
 	std::string ret = ( char* )  &m_Buffer[m_CurrentIndex];
 	int len = ret.size () + 1;
 	m_CurrentIndex += len;
 	return ( ret );
-} // NetPacket::ReadCStr ()
+} // netpacket::ReadCStr ()
 
 //////////////////////////////////////////////////////////////////////
 
 int8_t
-NetPacket::Read_XDR_int8
+netpacket::Read_XDR_int8
 ()
 {
 	uint32_t Data;
@@ -570,12 +570,12 @@ NetPacket::Read_XDR_int8
 		throw ( ex );
 	}
 	return ( XDR_decode_int8 ( Data ) );
-} // NetPacket::Read_XDR_int8 ()
+} // netpacket::Read_XDR_int8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint8_t
-NetPacket::Read_XDR_uint8
+netpacket::Read_XDR_uint8
 ()
 {
 	uint32_t Data;
@@ -588,12 +588,12 @@ NetPacket::Read_XDR_uint8
 		throw ( ex );
 	}
 	return ( XDR_decode_uint8 ( Data ) );
-} // NetPacket::Read_XDR_uint8 ()
+} // netpacket::Read_XDR_uint8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 int16_t
-NetPacket::Read_XDR_int16
+netpacket::Read_XDR_int16
 ()
 {
 	uint32_t Data;
@@ -606,12 +606,12 @@ NetPacket::Read_XDR_int16
 		throw ( ex );
 	}
 	return ( XDR_decode_int16 ( Data ) );
-} // NetPacket::Read_XDR_int16 ()
+} // netpacket::Read_XDR_int16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint16_t
-NetPacket::Read_XDR_uint16
+netpacket::Read_XDR_uint16
 ()
 {
 	uint32_t Data;
@@ -624,12 +624,12 @@ NetPacket::Read_XDR_uint16
 		throw ( ex );
 	}
 	return ( XDR_decode_uint16 ( Data ) );
-} // NetPacket::Read_XDR_uint16 ()
+} // netpacket::Read_XDR_uint16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 int32_t
-NetPacket::Read_XDR_int32
+netpacket::Read_XDR_int32
 ()
 {
 	uint32_t Data;
@@ -642,12 +642,12 @@ NetPacket::Read_XDR_int32
 		throw ( ex );
 	}
 	return ( XDR_decode_int32 ( Data ) );
-} // NetPacket::Read_XDR_int32 ()
+} // netpacket::Read_XDR_int32 ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint32_t
-NetPacket::Read_XDR_uint32
+netpacket::Read_XDR_uint32
 ()
 {
 	uint32_t Data;
@@ -660,12 +660,12 @@ NetPacket::Read_XDR_uint32
 		throw ( ex );
 	}
 	return ( XDR_decode_uint32 ( Data ) );
-} // NetPacket::Read_XDR_uint32 ()
+} // netpacket::Read_XDR_uint32 ()
 
 //////////////////////////////////////////////////////////////////////
 
 int64_t
-NetPacket::Read_XDR_int64
+netpacket::Read_XDR_int64
 ()
 {
 	uint64_t Data;
@@ -678,12 +678,12 @@ NetPacket::Read_XDR_int64
 		throw ( ex );
 	}
 	return ( XDR_decode_int64 ( Data ) );
-} // NetPacket::Read_XDR_int64 ()
+} // netpacket::Read_XDR_int64 ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint64_t
-NetPacket::Read_XDR_uint64
+netpacket::Read_XDR_uint64
 ()
 {
 	uint64_t Data;
@@ -696,12 +696,12 @@ NetPacket::Read_XDR_uint64
 		throw ( ex );
 	}
 	return ( XDR_decode_uint64 ( Data ) );
-} // NetPacket::Read_XDR_uint64 ()
+} // netpacket::Read_XDR_uint64 ()
 
 //////////////////////////////////////////////////////////////////////
 
 float
-NetPacket::Read_XDR_float
+netpacket::Read_XDR_float
 ()
 {
 	uint32_t Data;
@@ -714,12 +714,12 @@ NetPacket::Read_XDR_float
 		throw ( ex );
 	}
 	return ( XDR_decode_float ( Data ) );
-} // NetPacket::Read_XDR_float ()
+} // netpacket::Read_XDR_float ()
 
 //////////////////////////////////////////////////////////////////////
 
 double
-NetPacket::Read_XDR_double
+netpacket::Read_XDR_double
 ()
 {
 	uint64_t Data;
@@ -732,12 +732,12 @@ NetPacket::Read_XDR_double
 		throw ( ex );
 	}
 	return ( XDR_decode_double ( Data ) );
-} // NetPacket::Read_XDR_double ()
+} // netpacket::Read_XDR_double ()
 
 //////////////////////////////////////////////////////////////////////
 
 int8_t
-NetPacket::Read_NET_int8
+netpacket::Read_NET_int8
 ()
 {
 	int8_t Data;
@@ -750,12 +750,12 @@ NetPacket::Read_NET_int8
 		throw ( ex );
 	}
 	return ( NET_decode_uint8 ( Data ) );
-} // NetPacket::Read_NET_int8 ()
+} // netpacket::Read_NET_int8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint8_t
-NetPacket::Read_NET_uint8
+netpacket::Read_NET_uint8
 ()
 {
 	uint8_t Data;
@@ -768,12 +768,12 @@ NetPacket::Read_NET_uint8
 		throw ( ex );
 	}
 	return ( NET_decode_uint8 ( Data ) );
-} // NetPacket::Read_NET_uint8 ()
+} // netpacket::Read_NET_uint8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 int16_t
-NetPacket::Read_NET_int16
+netpacket::Read_NET_int16
 ()
 {
 	int16_t Data;
@@ -786,12 +786,12 @@ NetPacket::Read_NET_int16
 		throw ( ex );
 	}
 	return ( NET_decode_int16 ( Data ) );
-} // NetPacket::Read_NET_int16 ()
+} // netpacket::Read_NET_int16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint16_t
-NetPacket::Read_NET_uint16
+netpacket::Read_NET_uint16
 ()
 {
 	uint16_t Data;
@@ -804,12 +804,12 @@ NetPacket::Read_NET_uint16
 		throw ( ex );
 	}
 	return ( NET_decode_uint16 ( Data ) );
-} // NetPacket::Read_NET_uint16 ()
+} // netpacket::Read_NET_uint16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 int32_t
-NetPacket::Read_NET_int32
+netpacket::Read_NET_int32
 ()
 {
 	int32_t Data;
@@ -822,12 +822,12 @@ NetPacket::Read_NET_int32
 		throw ( ex );
 	}
 	return ( NET_decode_int32 ( Data ) );
-} // NetPacket::Read_NET_int32 ()
+} // netpacket::Read_NET_int32 ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint32_t
-NetPacket::Read_NET_uint32
+netpacket::Read_NET_uint32
 ()
 {
 	uint32_t Data;
@@ -840,12 +840,12 @@ NetPacket::Read_NET_uint32
 		throw ( ex );
 	}
 	return ( NET_decode_uint32 ( Data ) );
-} // NetPacket::Read_NET_uint32 ()
+} // netpacket::Read_NET_uint32 ()
 
 //////////////////////////////////////////////////////////////////////
 
 int64_t
-NetPacket::Read_NET_int64
+netpacket::Read_NET_int64
 ()
 {
 	int64_t Data;
@@ -858,12 +858,12 @@ NetPacket::Read_NET_int64
 		throw ( ex );
 	}
 	return ( NET_decode_int64 ( Data ) );
-} // NetPacket::Read_NET_int64 ()
+} // netpacket::Read_NET_int64 ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint64_t
-NetPacket::Read_NET_uint64
+netpacket::Read_NET_uint64
 ()
 {
 	uint64_t Data;
@@ -876,12 +876,12 @@ NetPacket::Read_NET_uint64
 		throw ( ex );
 	}
 	return ( NET_decode_uint64 ( Data ) );
-} // NetPacket::Read_NET_int64 ()
+} // netpacket::Read_NET_int64 ()
 
 //////////////////////////////////////////////////////////////////////
 
 float
-NetPacket::Read_NET_float
+netpacket::Read_NET_float
 ()
 {
 	uint32_t Data;
@@ -894,12 +894,12 @@ NetPacket::Read_NET_float
 		throw ( ex );
 	}
 	return ( NET_decode_float ( Data ) );
-} // NetPacket::Read_NET_float ()
+} // netpacket::Read_NET_float ()
 
 //////////////////////////////////////////////////////////////////////
 
 double
-NetPacket::Read_NET_double
+netpacket::Read_NET_double
 ()
 {
 	uint64_t Data;
@@ -912,12 +912,12 @@ NetPacket::Read_NET_double
 		throw ( ex );
 	}
 	return ( NET_decode_double ( Data ) );
-} // NetPacket::Read_NET_double ()
+} // netpacket::Read_NET_double ()
 
 //////////////////////////////////////////////////////////////////////
 
 int8_t
-NetPacket::Read_NONE_int8
+netpacket::Read_NONE_int8
 ()
 {
 	unsigned int size;
@@ -925,17 +925,17 @@ NetPacket::Read_NONE_int8
 	if ( size > RemainingData () )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_NONE_int8 (): no more data to read" );
+			"netpacket::Read_NONE_int8 (): no more data to read" );
 	}
 	int8_t* Data = ( int8_t* ) &m_Buffer[m_CurrentIndex];
 	m_CurrentIndex += size;
 	return ( * Data );
-} // NetPacket::Read_NONE_int8 ()
+} // netpacket::Read_NONE_int8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint8_t
-NetPacket::Read_NONE_uint8
+netpacket::Read_NONE_uint8
 ()
 {
 	unsigned int size;
@@ -943,17 +943,17 @@ NetPacket::Read_NONE_uint8
 	if ( size > RemainingData () )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_NONE_uint8 (): no more data to read" );
+			"netpacket::Read_NONE_uint8 (): no more data to read" );
 	}
 	uint8_t* Data = ( uint8_t* ) &m_Buffer[m_CurrentIndex];
 	m_CurrentIndex += size;
 	return ( *Data );
-} // NetPacket::Read_NONE_uint8 ()
+} // netpacket::Read_NONE_uint8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 int16_t
-NetPacket::Read_NONE_int16
+netpacket::Read_NONE_int16
 ()
 {
 	unsigned int size;
@@ -961,17 +961,17 @@ NetPacket::Read_NONE_int16
 	if ( size > RemainingData () )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_NONE_int16 (): no more data to read" );
+			"netpacket::Read_NONE_int16 (): no more data to read" );
 	}
 	int16_t* Data = ( int16_t* ) &m_Buffer[m_CurrentIndex];
 	m_CurrentIndex += size;
 	return ( *Data );
-} // NetPacket::Read_NONE_int16 ()
+} // netpacket::Read_NONE_int16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint16_t
-NetPacket::Read_NONE_uint16
+netpacket::Read_NONE_uint16
 ()
 {
 	unsigned int size;
@@ -979,17 +979,17 @@ NetPacket::Read_NONE_uint16
 	if ( size > RemainingData () )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_NONE_uint16 (): no more data to read" );
+			"netpacket::Read_NONE_uint16 (): no more data to read" );
 	}
 	uint16_t* Data = ( uint16_t* ) &m_Buffer[m_CurrentIndex];
 	m_CurrentIndex += size;
 	return ( *Data );
-} // NetPacket::Read_NONE_uint16 ()
+} // netpacket::Read_NONE_uint16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 int32_t
-NetPacket::Read_NONE_int32
+netpacket::Read_NONE_int32
 ()
 {
 	unsigned int size;
@@ -997,17 +997,17 @@ NetPacket::Read_NONE_int32
 	if ( size > RemainingData () )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_NONE_int32 (): no more data to read" );
+			"netpacket::Read_NONE_int32 (): no more data to read" );
 	}
 	int32_t* Data = ( int32_t* ) &m_Buffer[m_CurrentIndex];
 	m_CurrentIndex += size;
 	return ( *Data );
-} // NetPacket::Read_NONE_int32  ()
+} // netpacket::Read_NONE_int32  ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint32_t
-NetPacket::Read_NONE_uint32
+netpacket::Read_NONE_uint32
 ()
 {
 	unsigned int size;
@@ -1015,17 +1015,17 @@ NetPacket::Read_NONE_uint32
 	if ( size > RemainingData () )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_NONE_uint32 (): no more data to read" );
+			"netpacket::Read_NONE_uint32 (): no more data to read" );
 	}
 	uint32_t* Data = ( uint32_t* ) &m_Buffer[m_CurrentIndex];
 	m_CurrentIndex += size;
 	return ( *Data );
-} // NetPacket::Read_NONE_uint32  ()
+} // netpacket::Read_NONE_uint32  ()
 
 //////////////////////////////////////////////////////////////////////
 
 int64_t
-NetPacket::Read_NONE_int64
+netpacket::Read_NONE_int64
 ()
 {
 	unsigned int size;
@@ -1033,17 +1033,17 @@ NetPacket::Read_NONE_int64
 	if ( size > RemainingData () )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_NONE_int64 (): no more data to read" );
+			"netpacket::Read_NONE_int64 (): no more data to read" );
 	}
 	int64_t* Data = ( int64_t* ) &m_Buffer[m_CurrentIndex];
 	m_CurrentIndex += size;
 	return ( *Data );
-} // NetPacket::Read_NONE_int64  ()
+} // netpacket::Read_NONE_int64  ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint64_t
-NetPacket::Read_NONE_uint64
+netpacket::Read_NONE_uint64
 ()
 {
 	unsigned int size;
@@ -1051,17 +1051,17 @@ NetPacket::Read_NONE_uint64
 	if ( size > RemainingData () )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_NONE_uint64 (): no more data to read" );
+			"netpacket::Read_NONE_uint64 (): no more data to read" );
 	}
 	uint64_t* Data = ( uint64_t* ) &m_Buffer[m_CurrentIndex];
 	m_CurrentIndex += size;
 	return ( *Data );
-} // NetPacket::Read_NONE_uint64  ()
+} // netpacket::Read_NONE_uint64  ()
 
 //////////////////////////////////////////////////////////////////////
 
 float
-NetPacket::Read_NONE_float
+netpacket::Read_NONE_float
 ()
 {
 	unsigned int size;
@@ -1069,22 +1069,22 @@ NetPacket::Read_NONE_float
 	if ( size > sizeof ( xdr_data_t ) )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_NONE_float (): wrong size of float" );
+			"netpacket::Read_NONE_float (): wrong size of float" );
 	}
 	if ( size > RemainingData () )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_NONE_float (): no more data to read" );
+			"netpacket::Read_NONE_float (): no more data to read" );
 	}
 	float* Data = ( float* ) &m_Buffer[m_CurrentIndex];
 	m_CurrentIndex += size;
 	return ( *Data );
-} // NetPacket::Read_NONE_float  ()
+} // netpacket::Read_NONE_float  ()
 
 //////////////////////////////////////////////////////////////////////
 
 double
-NetPacket::Read_NONE_double
+netpacket::Read_NONE_double
 ()
 {
 	unsigned int size;
@@ -1092,42 +1092,42 @@ NetPacket::Read_NONE_double
 	if ( size != sizeof ( xdr_data2_t ) )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_NONE_double (): wrong size of double" );
+			"netpacket::Read_NONE_double (): wrong size of double" );
 	}
 	if ( size > RemainingData () )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_NONE_double (): no more data to read" );
+			"netpacket::Read_NONE_double (): no more data to read" );
 	}
 	double* Data = ( double* ) &m_Buffer[m_CurrentIndex];
 	m_CurrentIndex += size;
 	return ( *Data );
-} // NetPacket::Read_NONE_double  ()
+} // netpacket::Read_NONE_double  ()
 
 //////////////////////////////////////////////////////////////////////
 
 int8_t
-NetPacket::Read_int8
+netpacket::Read_int8
 ()
 {
 	if ( ! m_Buffer )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_int8 (): no buffer" );
+			"netpacket::Read_int8 (): no buffer" );
 	}
 	try
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Read_XDR_int8 () );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Read_NET_int8 () );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Read_NONE_int8 () );
 		default:
 			throw std::runtime_error (
-				"NetPacket::Read_int8 (): unknown encoding type" );
+				"netpacket::Read_int8 (): unknown encoding type" );
 		}
 	}
 	catch ( std::runtime_error& ex )
@@ -1140,27 +1140,27 @@ NetPacket::Read_int8
 //////////////////////////////////////////////////////////////////////
 
 uint8_t
-NetPacket::Read_uint8
+netpacket::Read_uint8
 ()
 {
 	if ( ! m_Buffer )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_uint8 (): no buffer" );
+			"netpacket::Read_uint8 (): no buffer" );
 	}
 	try
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Read_XDR_uint8 () );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Read_NET_uint8 () );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Read_NONE_uint8 () );
 		default:
 			throw std::runtime_error (
-				"NetPacket::Read_uint8 (): unknown encoding type" );
+				"netpacket::Read_uint8 (): unknown encoding type" );
 		}
 	}
 	catch ( std::runtime_error& ex )
@@ -1173,27 +1173,27 @@ NetPacket::Read_uint8
 //////////////////////////////////////////////////////////////////////
 
 int16_t
-NetPacket::Read_int16
+netpacket::Read_int16
 ()
 {
 	if ( ! m_Buffer )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_int16 (): no buffer" );
+			"netpacket::Read_int16 (): no buffer" );
 	}
 	try
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Read_XDR_int16 () );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Read_NET_int16 () );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Read_NONE_int16 () );
 		default:
 			throw std::runtime_error (
-				"NetPacket::Read_int16 (): unknown encoding type" );
+				"netpacket::Read_int16 (): unknown encoding type" );
 		}
 	}
 	catch ( std::runtime_error& ex )
@@ -1206,27 +1206,27 @@ NetPacket::Read_int16
 //////////////////////////////////////////////////////////////////////
 
 uint16_t
-NetPacket::Read_uint16
+netpacket::Read_uint16
 ()
 {
 	if ( ! m_Buffer )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_uint16 (): no buffer" );
+			"netpacket::Read_uint16 (): no buffer" );
 	}
 	try
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Read_XDR_uint16 () );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Read_NET_uint16 () );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Read_NONE_uint16 () );
 		default:
 			throw std::runtime_error (
-				"NetPacket::Read_uint16 (): unknown encoding type" );
+				"netpacket::Read_uint16 (): unknown encoding type" );
 		}
 	}
 	catch ( std::runtime_error& ex )
@@ -1239,27 +1239,27 @@ NetPacket::Read_uint16
 //////////////////////////////////////////////////////////////////////
 
 int32_t
-NetPacket::Read_int32
+netpacket::Read_int32
 ()
 {
 	if ( ! m_Buffer )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_int32 (): no buffer" );
+			"netpacket::Read_int32 (): no buffer" );
 	}
 	try
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Read_XDR_int32 () );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Read_NET_int32 () );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Read_NONE_int32 () );
 		default:
 			throw std::runtime_error (
-				"NetPacket::Read_int32 (): unknown encoding type" );
+				"netpacket::Read_int32 (): unknown encoding type" );
 		}
 	}
 	catch ( std::runtime_error& ex )
@@ -1272,27 +1272,27 @@ NetPacket::Read_int32
 //////////////////////////////////////////////////////////////////////
 
 uint32_t
-NetPacket::Read_uint32
+netpacket::Read_uint32
 ()
 {
 	if ( ! m_Buffer )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_uint32 (): no buffer" );
+			"netpacket::Read_uint32 (): no buffer" );
 	}
 	try
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Read_XDR_uint32 () );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Read_NET_uint32 () );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Read_NONE_uint32 () );
 		default:
 			throw std::runtime_error (
-				"NetPacket::Read_uint32 (): unknown encoding type" );
+				"netpacket::Read_uint32 (): unknown encoding type" );
 		}
 	}
 	catch ( std::runtime_error& ex )
@@ -1305,27 +1305,27 @@ NetPacket::Read_uint32
 //////////////////////////////////////////////////////////////////////
 
 int64_t
-NetPacket::Read_int64
+netpacket::Read_int64
 ()
 {
 	if ( ! m_Buffer )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_int64 (): no buffer" );
+			"netpacket::Read_int64 (): no buffer" );
 	}
 	try
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Read_XDR_int64 () );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Read_NET_int64 () );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Read_NONE_int64 () );
 		default:
 			throw std::runtime_error (
-				"NetPacket::Read_int64 (): unknown encoding type" );
+				"netpacket::Read_int64 (): unknown encoding type" );
 		}
 	}
 	catch ( std::runtime_error& ex )
@@ -1338,27 +1338,27 @@ NetPacket::Read_int64
 //////////////////////////////////////////////////////////////////////
 
 uint64_t
-NetPacket::Read_uint64
+netpacket::Read_uint64
 ()
 {
 	if ( ! m_Buffer )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_uint64 (): no buffer" );
+			"netpacket::Read_uint64 (): no buffer" );
 	}
 	try
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Read_XDR_uint64 () );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Read_NET_uint64 () );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Read_NONE_uint64 () );
 		default:
 			throw std::runtime_error (
-				"NetPacket::Read_uint64 (): unknown encoding type" );
+				"netpacket::Read_uint64 (): unknown encoding type" );
 		}
 	}
 	catch ( std::runtime_error& ex )
@@ -1371,27 +1371,27 @@ NetPacket::Read_uint64
 //////////////////////////////////////////////////////////////////////
 
 float
-NetPacket::Read_float
+netpacket::Read_float
 ()
 {
 	if ( ! m_Buffer )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_float (): no buffer" );
+			"netpacket::Read_float (): no buffer" );
 	}
 	try
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Read_XDR_float () );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Read_NET_float () );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Read_NONE_float () );
 		default:
 			throw std::runtime_error (
-				"NetPacket::Read_float (): unknown encoding type" );
+				"netpacket::Read_float (): unknown encoding type" );
 		}
 	}
 	catch ( std::runtime_error& ex )
@@ -1404,27 +1404,27 @@ NetPacket::Read_float
 //////////////////////////////////////////////////////////////////////
 
 double
-NetPacket::Read_double
+netpacket::Read_double
 ()
 {
 	if ( ! m_Buffer )
 	{
 		throw std::runtime_error (
-			"NetPacket::Read_double (): no buffer" );
+			"netpacket::Read_double (): no buffer" );
 	}
 	try
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Read_XDR_double () );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Read_NET_double () );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Read_NONE_double () );
 		default:
 			throw std::runtime_error (
-				"NetPacket::Read_double (): unknown encoding type" );
+				"netpacket::Read_double (): unknown encoding type" );
 		}
 	}
 	catch ( std::runtime_error& ex )
@@ -1437,7 +1437,7 @@ NetPacket::Read_double
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_XDR_int8
+netpacket::Write_XDR_int8
 (
 	const int8_t& Data
 )
@@ -1451,12 +1451,12 @@ NetPacket::Write_XDR_int8
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_XDR_int8 ()
+} // netpacket::Write_XDR_int8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_XDR_uint8
+netpacket::Write_XDR_uint8
 (
 	const uint8_t& Data
 )
@@ -1470,12 +1470,12 @@ NetPacket::Write_XDR_uint8
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_XDR_uint8 ()
+} // netpacket::Write_XDR_uint8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_XDR_int16
+netpacket::Write_XDR_int16
 (
 	const int16_t& Data
 )
@@ -1489,12 +1489,12 @@ NetPacket::Write_XDR_int16
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_XDR_int16 ()
+} // netpacket::Write_XDR_int16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_XDR_uint16
+netpacket::Write_XDR_uint16
 (
 	const uint16_t& Data
 )
@@ -1508,12 +1508,12 @@ NetPacket::Write_XDR_uint16
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_XDR_uint16 ()
+} // netpacket::Write_XDR_uint16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_XDR_int32
+netpacket::Write_XDR_int32
 (
 	const int32_t& Data
 )
@@ -1527,12 +1527,12 @@ NetPacket::Write_XDR_int32
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_XDR_int32 ()
+} // netpacket::Write_XDR_int32 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_XDR_uint32
+netpacket::Write_XDR_uint32
 (
 	const uint32_t& Data
 )
@@ -1546,12 +1546,12 @@ NetPacket::Write_XDR_uint32
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_XDR_uint32 ()
+} // netpacket::Write_XDR_uint32 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_XDR_int64
+netpacket::Write_XDR_int64
 (
 	const int64_t& Data
 )
@@ -1565,12 +1565,12 @@ NetPacket::Write_XDR_int64
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_XDR_int64 ()
+} // netpacket::Write_XDR_int64 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_XDR_uint64
+netpacket::Write_XDR_uint64
 (
 	const uint64_t& Data
 )
@@ -1584,12 +1584,12 @@ NetPacket::Write_XDR_uint64
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_XDR_uint64 ()
+} // netpacket::Write_XDR_uint64 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_XDR_float
+netpacket::Write_XDR_float
 (
 	const float& Data
 )
@@ -1599,7 +1599,7 @@ NetPacket::Write_XDR_float
 	if ( size != sizeof ( float ) )
 	{
 		throw std::runtime_error (
-			"NetPacket::Write_XDR_float (): wrong size of float" );
+			"netpacket::Write_XDR_float (): wrong size of float" );
 	}
 	try
 	{
@@ -1610,12 +1610,12 @@ NetPacket::Write_XDR_float
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_XDR_float ()
+} // netpacket::Write_XDR_float ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_XDR_double
+netpacket::Write_XDR_double
 (
 	const double& Data
 )
@@ -1625,7 +1625,7 @@ NetPacket::Write_XDR_double
 	if ( size != sizeof ( double ) )
 	{
 		throw std::runtime_error (
-			"NetPacket::Write_XDR_double (): wrong size of double" );
+			"netpacket::Write_XDR_double (): wrong size of double" );
 	}
 	try
 	{
@@ -1636,12 +1636,12 @@ NetPacket::Write_XDR_double
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_XDR_double ()
+} // netpacket::Write_XDR_double ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NET_int8
+netpacket::Write_NET_int8
 (
 	const int8_t& Data
 )
@@ -1655,12 +1655,12 @@ NetPacket::Write_NET_int8
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_NET_int8 ()
+} // netpacket::Write_NET_int8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NET_uint8
+netpacket::Write_NET_uint8
 (
 	const uint8_t& Data
 )
@@ -1674,12 +1674,12 @@ NetPacket::Write_NET_uint8
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_NET_uint8 ()
+} // netpacket::Write_NET_uint8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NET_int16
+netpacket::Write_NET_int16
 (
 	const int16_t& Data
 )
@@ -1693,12 +1693,12 @@ NetPacket::Write_NET_int16
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_NET_int16 ()
+} // netpacket::Write_NET_int16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NET_uint16
+netpacket::Write_NET_uint16
 (
 	const uint16_t& Data
 )
@@ -1712,12 +1712,12 @@ NetPacket::Write_NET_uint16
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_NET_uint16 ()
+} // netpacket::Write_NET_uint16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NET_int32
+netpacket::Write_NET_int32
 (
 	const int32_t& Data
 )
@@ -1731,12 +1731,12 @@ NetPacket::Write_NET_int32
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_NET_int32 ()
+} // netpacket::Write_NET_int32 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NET_uint32
+netpacket::Write_NET_uint32
 (
 	const uint32_t& Data
 )
@@ -1750,12 +1750,12 @@ NetPacket::Write_NET_uint32
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_NET_uint32 ()
+} // netpacket::Write_NET_uint32 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NET_int64
+netpacket::Write_NET_int64
 (
 	const int64_t& Data
 )
@@ -1769,12 +1769,12 @@ NetPacket::Write_NET_int64
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_NET_int64 ()
+} // netpacket::Write_NET_int64 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NET_uint64
+netpacket::Write_NET_uint64
 (
 	const uint64_t& Data
 )
@@ -1788,12 +1788,12 @@ NetPacket::Write_NET_uint64
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_NET_uint64 ()
+} // netpacket::Write_NET_uint64 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NET_float
+netpacket::Write_NET_float
 (
 	const float& Data
 )
@@ -1807,12 +1807,12 @@ NetPacket::Write_NET_float
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_NET_float ()
+} // netpacket::Write_NET_float ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NET_double
+netpacket::Write_NET_double
 (
 	const double& Data
 )
@@ -1826,12 +1826,12 @@ NetPacket::Write_NET_double
 		throw ( ex );
 	}
 	return ( true );
-} // NetPacket::Write_NET_double ()
+} // netpacket::Write_NET_double ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NONE_int8
+netpacket::Write_NONE_int8
 (
 	const int8_t& Data
 )
@@ -1850,12 +1850,12 @@ NetPacket::Write_NONE_int8
 		m_BytesInUse += size;
 	}
 	return true;
-} // NetPacket::Write_NONE_int8 ()
+} // netpacket::Write_NONE_int8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NONE_uint8
+netpacket::Write_NONE_uint8
 (
 	const uint8_t& Data
 )
@@ -1874,12 +1874,12 @@ NetPacket::Write_NONE_uint8
 		m_BytesInUse += size;
 	}
 	return true;
-} // NetPacket::Write_NONE_uint8 ()
+} // netpacket::Write_NONE_uint8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NONE_int16
+netpacket::Write_NONE_int16
 (
 	const int16_t& Data
 )
@@ -1898,12 +1898,12 @@ NetPacket::Write_NONE_int16
 		m_BytesInUse += size;
 	}
 	return true;
-} // NetPacket::Write_NONE_int16 ()
+} // netpacket::Write_NONE_int16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NONE_uint16
+netpacket::Write_NONE_uint16
 (
 	const uint16_t& Data
 )
@@ -1922,12 +1922,12 @@ NetPacket::Write_NONE_uint16
 		m_BytesInUse += size;
 	}
 	return true;
-} // NetPacket::Write_NONE_uint16 ()
+} // netpacket::Write_NONE_uint16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NONE_int32
+netpacket::Write_NONE_int32
 (
 	const int32_t& Data
 )
@@ -1946,12 +1946,12 @@ NetPacket::Write_NONE_int32
 		m_BytesInUse += size;
 	}
 	return true;
-} // NetPacket::Write_NONE_int32 ()
+} // netpacket::Write_NONE_int32 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NONE_uint32
+netpacket::Write_NONE_uint32
 (
 	const uint32_t& Data
 )
@@ -1970,12 +1970,12 @@ NetPacket::Write_NONE_uint32
 		m_BytesInUse += size;
 	}
 	return true;
-} // NetPacket::Write_NONE_uint32 ()
+} // netpacket::Write_NONE_uint32 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NONE_int64
+netpacket::Write_NONE_int64
 (
 	const int64_t& Data
 )
@@ -1994,12 +1994,12 @@ NetPacket::Write_NONE_int64
 		m_BytesInUse += size;
 	}
 	return true;
-} // NetPacket::Write_NONE_int64 ()
+} // netpacket::Write_NONE_int64 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NONE_uint64
+netpacket::Write_NONE_uint64
 (
 	const uint64_t& Data
 )
@@ -2018,12 +2018,12 @@ NetPacket::Write_NONE_uint64
 		m_BytesInUse += size;
 	}
 	return true;
-} // NetPacket::Write_NONE_uint64 ()
+} // netpacket::Write_NONE_uint64 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NONE_float
+netpacket::Write_NONE_float
 (
 	const float& Data
 )
@@ -2042,12 +2042,12 @@ NetPacket::Write_NONE_float
 		m_BytesInUse += size;
 	}
 	return true;
-} // NetPacket::Write_NONE_float ()
+} // netpacket::Write_NONE_float ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_NONE_double
+netpacket::Write_NONE_double
 (
 	const double& Data
 )
@@ -2066,12 +2066,12 @@ NetPacket::Write_NONE_double
 		m_BytesInUse += size;
 	}
 	return true;
-} // NetPacket::Write_NONE_double ()
+} // netpacket::Write_NONE_double ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_int8
+netpacket::Write_int8
 (
 	const int8_t& Data
 )
@@ -2084,11 +2084,11 @@ NetPacket::Write_int8
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Write_XDR_int8 ( Data ) );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Write_NET_int8 ( Data ) );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Write_NONE_int8 ( Data ) );
 		default:
 			return ( false );
@@ -2099,12 +2099,12 @@ NetPacket::Write_int8
 		return ( false );
 	}
 	return ( false ); // never reached
-} // NetPacket::Write_int8 ()
+} // netpacket::Write_int8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_uint8
+netpacket::Write_uint8
 (
 	const uint8_t& Data
 )
@@ -2117,11 +2117,11 @@ NetPacket::Write_uint8
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Write_XDR_uint8 ( Data ) );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Write_NET_uint8 ( Data ) );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Write_NONE_uint8 ( Data ) );
 		default:
 			return ( false );
@@ -2132,12 +2132,12 @@ NetPacket::Write_uint8
 		return ( false );
 	}
 	return ( false ); // never reached
-} // NetPacket::Write_uint8 ()
+} // netpacket::Write_uint8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_int16
+netpacket::Write_int16
 (
 	const int16_t& Data
 )
@@ -2150,11 +2150,11 @@ NetPacket::Write_int16
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Write_XDR_int16 ( Data ) );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Write_NET_int16 ( Data ) );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Write_NONE_int16 ( Data ) );
 		default:
 			return ( false );
@@ -2165,12 +2165,12 @@ NetPacket::Write_int16
 		return ( false );
 	}
 	return ( false ); //  never reached
-} // NetPacket::Write_int16 ()
+} // netpacket::Write_int16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_uint16
+netpacket::Write_uint16
 (
 	const uint16_t& Data
 )
@@ -2183,11 +2183,11 @@ NetPacket::Write_uint16
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Write_XDR_uint16 ( Data ) );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Write_NET_uint16 ( Data ) );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Write_NONE_uint16 ( Data ) );
 		default:
 			return ( false );
@@ -2198,12 +2198,12 @@ NetPacket::Write_uint16
 		return ( false );
 	}
 	return ( false ); // never reached
-} // NetPacket::Write_uint16 ()
+} // netpacket::Write_uint16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_int32
+netpacket::Write_int32
 (
 	const int32_t& Data
 )
@@ -2216,11 +2216,11 @@ NetPacket::Write_int32
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Write_XDR_int32 ( Data ) );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Write_NET_int32 ( Data ) );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Write_NONE_int32 ( Data ) );
 		default:
 			return ( false );
@@ -2231,12 +2231,12 @@ NetPacket::Write_int32
 		return ( false );
 	}
 	return ( false ); // never reached
-} // NetPacket::Write_int32 ()
+} // netpacket::Write_int32 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_uint32
+netpacket::Write_uint32
 (
 	const uint32_t& Data
 )
@@ -2249,11 +2249,11 @@ NetPacket::Write_uint32
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Write_XDR_uint32 ( Data ) );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Write_NET_uint32 ( Data ) );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Write_NONE_uint32 ( Data ) );
 		default:
 			return ( false );
@@ -2264,12 +2264,12 @@ NetPacket::Write_uint32
 		return ( false );
 	}
 	return ( false ); // never reached
-} // NetPacket::Write_uint32 ()
+} // netpacket::Write_uint32 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_int64
+netpacket::Write_int64
 (
 	const int64_t& Data
 )
@@ -2282,11 +2282,11 @@ NetPacket::Write_int64
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Write_XDR_int64 ( Data ) );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Write_NET_int64 ( Data ) );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Write_NONE_int64 ( Data ) );
 		default:
 			return ( false );
@@ -2297,12 +2297,12 @@ NetPacket::Write_int64
 		return ( false );
 	}
 	return ( false ); // never reached
-} // NetPacket::Write_int64 ()
+} // netpacket::Write_int64 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_uint64
+netpacket::Write_uint64
 (
 	const uint64_t& Data
 )
@@ -2315,11 +2315,11 @@ NetPacket::Write_uint64
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Write_XDR_uint64 ( Data ) );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Write_NET_uint64 ( Data ) );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Write_NONE_uint64 ( Data ) );
 		default:
 			return ( false );
@@ -2330,12 +2330,12 @@ NetPacket::Write_uint64
 		return ( false );
 	}
 	return ( false ); // never reached
-} // NetPacket::Write_uint64 ()
+} // netpacket::Write_uint64 ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_float
+netpacket::Write_float
 (
 	const float& Data
 )
@@ -2348,11 +2348,11 @@ NetPacket::Write_float
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Write_XDR_float ( Data ) );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Write_NET_float ( Data ) );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Write_NONE_float ( Data ) );
 		default:
 			return ( false );
@@ -2363,12 +2363,12 @@ NetPacket::Write_float
 		return ( false );
 	}
 	return ( false ); // never reached
-} // NetPacket::Write_float ()
+} // netpacket::Write_float ()
 
 //////////////////////////////////////////////////////////////////////
 
 bool
-NetPacket::Write_double
+netpacket::Write_double
 (
 	const double& Data
 )
@@ -2381,11 +2381,11 @@ NetPacket::Write_double
 	{
 		switch ( m_EncodingType )
 		{
-		case NetPacket::XDR:
+		case netpacket::XDR:
 			return ( Write_XDR_double ( Data ) );
-		case NetPacket::NET:
+		case netpacket::NET:
 			return ( Write_NET_double ( Data ) );
-		case NetPacket::NONE:
+		case netpacket::NONE:
 			return ( Write_NONE_double ( Data ) );
 		default:
 			return ( false );
@@ -2396,7 +2396,7 @@ NetPacket::Write_double
 		return ( false );
 	}
 	return ( false ); // never reached
-} // NetPacket::Write_double ()
+} // netpacket::Write_double ()
 
 //////////////////////////////////////////////////////////////////////
 

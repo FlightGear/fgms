@@ -15,7 +15,7 @@
 namespace fgmp
 {
 
-typedef long long t_longlong;
+using t_longlong = long long;
 
 template < typename T >
 T absolute ( T x )

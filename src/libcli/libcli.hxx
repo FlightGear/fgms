@@ -35,12 +35,12 @@ namespace libcli
 class cli
 {
 public:
-	typedef std::map<string,string> unp;
-	typedef std::map<string,string>::iterator unp_it;
-	typedef int (*c_auth_func) ( const string& , const string& );
-	typedef int (cli::*cpp_auth_func) ( const string&, const string& );
-	typedef int (*c_enable_func) ( const string& );
-	typedef int (cli::*cpp_enable_func) ( const string& );
+	using unp = std::map<string,string>;
+	using unp_it = std::map<string,string>::iterator;
+	using c_auth_func     = int (*) ( const string&, const string& );
+	using cpp_auth_func   = int (cli::*) ( const string&, const string& );
+	using c_enable_func   = int (*) ( const string& );
+	using cpp_enable_func = int (cli::*) ( const string& );
 
 	int	completion_callback;
 	string	banner;

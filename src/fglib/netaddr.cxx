@@ -43,7 +43,7 @@ namespace fgmp
  * [4]		sin_addr
  * size 16 bytes
  */
-typedef struct ::sockaddr_in	sys_sock4;
+using sys_sock4 = ::sockaddr_in;
 
 /*
  * int		sin6_family
@@ -53,7 +53,7 @@ typedef struct ::sockaddr_in	sys_sock4;
  * int32	sin6_scope_id
  * size 28 bytes
  */
-typedef struct ::sockaddr_in6	sys_sock6;
+using sys_sock6 = ::sockaddr_in6;
 
 #ifndef _MSC_VER
 /*
@@ -61,7 +61,7 @@ typedef struct ::sockaddr_in6	sys_sock6;
  * [108]	sun_path
  * size 128 bytes
  */
-typedef struct ::sockaddr_un	sys_unix;
+using sys_unix = ::sockaddr_un;
 #endif
 
 //////////////////////////////////////////////////////////////////////

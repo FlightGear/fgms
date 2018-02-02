@@ -1,3 +1,4 @@
+#    error Time to upgrade. GNU compilers < 2.7 not supported
 /**************************************************************************
  * compiler.h -- C++ Compiler Portability Macros
  *

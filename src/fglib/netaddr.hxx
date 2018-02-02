@@ -28,11 +28,10 @@
 #ifdef _MSC_VER
 	#include <WinSock2.h>
 	#include <Ws2ipdef.h>
-	typedef int socklen_t;
+	using socklen_t = int;
 #else
 	#include <netinet/in.h>
 #endif
-
 
 namespace fgmp
 {
@@ -41,7 +40,7 @@ namespace fgmp
  * int		sa_family
  * []		sa_data
  */
-typedef struct ::sockaddr	sys_sock;
+using sys_sock = ::sockaddr;
 
 const int MAXSOCKADDR = 128; // unix domain socket
 

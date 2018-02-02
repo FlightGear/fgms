@@ -62,8 +62,8 @@ public:
 	friend std::ostream& operator << ( std::ostream& o, const server& s );
 }; // class server
 
-typedef fgmp::lock_list_t<server>		ServerList;
-typedef fgmp::lock_list_t<server>::iterator	ServerIt;
+using ServerList = fgmp::lock_list_t<server>;
+using ServerIt   = fgmp::lock_list_t<server>::iterator;
 
 //////////////////////////////////////////////////////////////////////
 #ifdef _MSC_VER
@@ -169,10 +169,10 @@ protected:
 	char**	m_argv; // pointer to commandline arguments (copy)
 }; // class FGLS
 
-typedef struct st_telnet
+struct st_telnet
 {
 	FGLS* instance;
 	int   fd;
-} st_telnet;
+};
 
 #endif

@@ -1,4 +1,4 @@
-// netpacket.hxx -  NetPacket is a buffer for network packets
+// netpacket.hxx -  netpacket is a buffer for network packets
 //
 // This file is part of fgms
 //
@@ -33,7 +33,7 @@
  * It automatically manages the buffer, all you need to do is
  * read/write the data.
  */
-class NetPacket
+class netpacket
 {
 	/// the internal buffer
 	char* m_Buffer;
@@ -61,11 +61,11 @@ public:
 	 * @param Size
 	 *   number of bytes reserved by this buffer
 	 */
-	NetPacket ( const uint32_t Size );
+	netpacket ( const uint32_t Size );
 	/**
 	 * destroy the allocated buffer
 	 */
-	~NetPacket();
+	~netpacket();
 	/**
 	 * explicitly clear the buffer, all bytes are set to zero
 	 */
@@ -83,7 +83,7 @@ public:
 	/**
 	 * make *this a copy of @Packet
 	 */
-	void Copy ( const NetPacket& Packet );
+	void Copy ( const netpacket& Packet );
 	/**
 	 * Set the (internal) index to the specified index. Use this method
 	 * to start reading from the buffer at the specified index.
@@ -170,7 +170,7 @@ public:
 	 */
 	void SetBuffer ( const char* Buffer, const uint32_t Size );
 	/** API method:
-	 * Set number of used bytes of this NetPacket. Needed if
+	 * Set number of used bytes of this netpacket. Needed if
 	 * the content is set from outside
 	 * @param UsedBytes
 	 *   the number of bytes already used by this buffer
@@ -285,9 +285,9 @@ public:
 private:
 	BUFFER_ENCODING_TYPE m_EncodingType;
 	///  disallow standard constructor
-	NetPacket();
+	netpacket();
 	///  disallow copy constructor
-	NetPacket ( const NetPacket& Buffer );
+	netpacket ( const netpacket& Buffer );
 	/* read xdr encoded data */
 	///
 	int8_t   Read_XDR_int8   ();
@@ -432,7 +432,7 @@ private:
 	void xtea_decipher ( unsigned int num_cycles, uint32_t v[2],
 			     uint32_t const k[4]
 			   );
-}; // NetPacket
+}; // netpacket
 
 #endif
 

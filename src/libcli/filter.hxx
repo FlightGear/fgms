@@ -31,7 +31,7 @@ struct filter_cmds_t
 
 class cli;
 class cli_client;
-typedef int (cli_client::*filter_callback_func) (char *cmd, void *data);
+using filter_callback_func = int (cli_client::*) (char*, void* );
 
 class filter_t
 {

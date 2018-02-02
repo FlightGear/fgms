@@ -834,7 +834,7 @@ netsocket::recv
 int
 netsocket::recv
 (
-	NetPacket& buffer,
+	netpacket& buffer,
 	const int  flags
 )
 {
@@ -888,7 +888,7 @@ netsocket::recv_from
 int
 netsocket::recv_from
 (
-	NetPacket& buffer,
+	netpacket& buffer,
 	netaddr&   from,
 	const int  flags
 )

@@ -103,10 +103,10 @@ public:
 	int  recv_char ( unsigned char& c );
 	int  recv ( void* buffer, const int size,
 			const int flags = MSG_NOSIGNAL );
-	int  recv ( NetPacket& buffer, int flags = MSG_NOSIGNAL );
+	int  recv ( netpacket& buffer, int flags = MSG_NOSIGNAL );
 	int  recv_from ( void* buffer, const int size, netaddr& from,
 			const int flags = MSG_NOSIGNAL );
-	int  recv_from ( NetPacket& buffer, netaddr& from,
+	int  recv_from ( netpacket& buffer, netaddr& from,
 			const int flags = MSG_NOSIGNAL );
 	void set_blocking ( const bool is_blocking );
 	inline bool has_socket()

@@ -38,8 +38,8 @@ class Command : public CommandBase
 {
 public:
 	friend class cli;
-	typedef int ( *c_callback_func ) ( C& obj, char* command, char** argv, int argc );
-	typedef int ( C::*cpp_callback_func ) ( char* command, char** argv, int argc );
+	using c_callback_func   = int (*) ( C& , char*, char**, int );
+	using cpp_callback_func = int ( C::* ) ( char*, char**, int );
 	Command ();
 	Command (
 	        C*              obj,

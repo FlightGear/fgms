@@ -27,19 +27,17 @@
 
 #include <string>
 #include <cstring>
+#include <stdint.h>
 #ifdef _MSC_VER
 	#include <WinSock2.h>
 	#include <Ws2ipdef.h>
-	typedef int socklen_t;
+	using socklen_t = int;
 #else
 	#include <netinet/in.h>
 #endif
 
 namespace fgmp
 {
-
-typedef unsigned char uint8_t;
-typedef unsigned int  uint32_t;
 
 /****
 * A class for inet addresses.
