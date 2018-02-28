@@ -23,20 +23,18 @@
  */
 
 #include <sstream>
-#include "fgls_cli.hxx"
 #include <fglib/fg_util.hxx>
-
-using namespace fgmp;
+#include "fgls_cli.hxx"
 
 //////////////////////////////////////////////////
 fgls_cli::fgls_cli
 (
-        FGLS*   fgls,
+        fgls*   fgls,
         int     fd
 ) : cli (fd)
 {
-        this->fgls = fgls;
-        this->setup ();
+        m_fgls = fgls;
+        setup ();
 } // fgls_cli::fgls_cli ()
 
 //////////////////////////////////////////////////
@@ -46,20 +44,21 @@ void
 fgls_cli::setup
 ()
 {
+        using namespace libcli;
         command* c;
 
-        set_hostname ( fgls->m_server_name );
+        set_hostname ( m_fgls->m_server_name );
         std::stringstream banner;
         banner << "\r\n"
                 << "------------------------------------------------\r\n"
                 << "FlightGear List Server cli\r\n"
-                << "This is " << fgls->m_server_name << "\r\n"
+                << "This is " << m_fgls->m_server_name << "\r\n"
                 << "------------------------------------------------\r\n";
         set_banner ( banner.str() );
-        if ( fgls->m_admin_user != "" )
-                allow_user ( fgls->m_admin_user, fgls->m_admin_pass );
-        if ( fgls->m_admin_enable != "" )
-                set_enable_password ( fgls->m_admin_enable );
+        if ( m_fgls->m_admin_user != "" )
+                allow_user ( m_fgls->m_admin_user, m_fgls->m_admin_pass );
+        if ( m_fgls->m_admin_enable != "" )
+                set_enable_password ( m_fgls->m_admin_enable );
         c = new command (
                 "show",
                 libcli::PRIVLEVEL::UNPRIVILEGED,
@@ -113,7 +112,7 @@ fgls_cli::setup
 /**
  *  @brief Show log buffer of the the server
  */
-RESULT
+libcli::RESULT
 fgls_cli::cmd_show_log
 (
         const std::string& command,
@@ -121,6 +120,7 @@ fgls_cli::cmd_show_log
         size_t first_arg
 )
 {
+        using namespace libcli;
         if ( first_arg > 0 )
         {
                 if ( args[first_arg] == "?" )
@@ -143,7 +143,7 @@ fgls_cli::cmd_show_log
  *  @brief Show general statistics
  */
 #if 0
-RESULT
+libcli::RESULT
 fgls_cli::cmd_show_stats
 (
         const std::string& command,
@@ -163,116 +163,116 @@ fgls_cli::cmd_show_stats
                 return (0);
         }
         now = time(0);
-        difftime = now - fgls->m_Uptime;
+        difftime = now - m_fgls->m_Uptime;
         cmd_show_version (command, args, first_arg);
         m_client << endl;
-        m_client  << "I have " << fgls->m_BlackList.Size ()
+        m_client  << "I have " << m_fgls->m_BlackList.Size ()
                 << " entries in my blacklist"
                 << endl;
-        m_client << "I have " << fgls->m_CrossfeedList.Size () << " crossfeeds"
+        m_client << "I have " << m_fgls->m_CrossfeedList.Size () << " crossfeeds"
                 << endl;
-        m_client << "I have " << fgls->m_RelayList.Size () << " relays"
+        m_client << "I have " << m_fgls->m_RelayList.Size () << " relays"
                 << endl; if (check_pager()) return RESULT::OK;
-        m_client << "I have " << fgls->m_PlayerList.Size () << " users ("
-                << fgls->m_LocalClients << " local, "
-                << fgls->m_RemoteClients << " remote, "
-                << fgls->m_NumMaxClients << " max)"
+        m_client << "I have " << m_fgls->m_PlayerList.Size () << " users ("
+                << m_fgls->m_LocalClients << " local, "
+                << m_fgls->m_RemoteClients << " remote, "
+                << m_fgls->m_NumMaxClients << " max)"
                 << endl; if (check_pager()) return RESULT::OK;
 
         m_client << "Sent counters:" << endl; if (check_pager()) return RESULT::OK;
         m_client << "  " << left << setfill(' ') << setw(22)
                 << "to crossfeeds:"
-                << fgls->m_CrossfeedList.PktsSent << " packets"
-                << " (" << fgls->m_CrossfeedList.PktsSent / difftime << "/s)"
-                << " / " << byte_counter (fgls->m_CrossfeedList.BytesSent)
-                << " (" << byte_counter ((double) fgls->m_CrossfeedList.BytesSent / difftime) << "/s)"
+                << m_fgls->m_CrossfeedList.PktsSent << " packets"
+                << " (" << m_fgls->m_CrossfeedList.PktsSent / difftime << "/s)"
+                << " / " << byte_counter (m_fgls->m_CrossfeedList.BytesSent)
+                << " (" << byte_counter ((double) m_fgls->m_CrossfeedList.BytesSent / difftime) << "/s)"
                 << endl; if (check_pager()) return RESULT::OK;
         m_client << "  " << left << setfill(' ') << setw(22)
                 << "to relays:"
-                << fgls->m_RelayList.PktsSent << " packets"
-                << " (" << fgls->m_RelayList.PktsSent / difftime << "/s)"
-                << " / " << byte_counter (fgls->m_RelayList.BytesSent)
-                << " (" << byte_counter ((double) fgls->m_RelayList.BytesSent / difftime) << "/s)"
+                << m_fgls->m_RelayList.PktsSent << " packets"
+                << " (" << m_fgls->m_RelayList.PktsSent / difftime << "/s)"
+                << " / " << byte_counter (m_fgls->m_RelayList.BytesSent)
+                << " (" << byte_counter ((double) m_fgls->m_RelayList.BytesSent / difftime) << "/s)"
                 << endl; if (check_pager()) return RESULT::OK; 
         m_client << "  " << left << setfill(' ') << setw(22)
                 << "to users:"
-                << fgls->m_PlayerList.PktsSent << " packets"
-                << " (" << fgls->m_PlayerList.PktsSent / difftime << "/s)"
-                << " / " << byte_counter (fgls->m_PlayerList.BytesSent)
-                << " (" << byte_counter ((double) fgls->m_PlayerList.BytesSent / difftime) << "/s)"
+                << m_fgls->m_PlayerList.PktsSent << " packets"
+                << " (" << m_fgls->m_PlayerList.PktsSent / difftime << "/s)"
+                << " / " << byte_counter (m_fgls->m_PlayerList.BytesSent)
+                << " (" << byte_counter ((double) m_fgls->m_PlayerList.BytesSent / difftime) << "/s)"
                 << endl; if (check_pager()) return RESULT::OK;
 
         m_client << "Receive counters:" << endl; if (check_pager()) return RESULT::OK;
         m_client << "  " << left << setfill(' ') << setw(22)
-                << "total:" <<  fgls->m_PacketsReceived
+                << "total:" <<  m_fgls->m_PacketsReceived
                 << endl; if (check_pager()) return RESULT::OK;
         m_client << "  " << left << setfill(' ') << setw(22)
-                << "pings:" <<  fgls->m_PingReceived
-                << " (" << fgls->m_PongReceived << " pongs)"
+                << "pings:" <<  m_fgls->m_PingReceived
+                << " (" << m_fgls->m_PongReceived << " pongs)"
                 << endl; if (check_pager()) return RESULT::OK;
         m_client << "  " << left << setfill(' ') << setw(22)
                 << "errors:"
-                << "invalid packets:" << fgls->m_PacketsInvalid
-                << " rejected:" << fgls->m_BlackRejected
-                << " unknown relay:" << fgls->m_UnknownRelay
+                << "invalid packets:" << m_fgls->m_PacketsInvalid
+                << " rejected:" << m_fgls->m_BlackRejected
+                << " unknown relay:" << m_fgls->m_UnknownRelay
                 << endl; if (check_pager()) return RESULT::OK;
         m_client << "  " << left << setfill(' ') << setw(22)
                 << "valid data:"
-                << "pos data:" << fgls->m_PositionData
-                << " other:" << fgls->m_UnkownMsgID
+                << "pos data:" << m_fgls->m_PositionData
+                << " other:" << m_fgls->m_UnkownMsgID
                 << endl; if (check_pager()) return RESULT::OK;
         m_client << "  " << left << setfill(' ') << setw(22)
                 << "tracker:"
-                << "connects:" << fgls->m_TrackerConnect
-                << " disconnects:" << fgls->m_TrackerDisconnect
-                << " positions:" << fgls->m_TrackerPosition
+                << "connects:" << m_fgls->m_TrackerConnect
+                << " disconnects:" << m_fgls->m_TrackerDisconnect
+                << " positions:" << m_fgls->m_TrackerPosition
                 << endl; if (check_pager()) return RESULT::OK;
         m_client << "  " << left << setfill(' ') << setw(22)
-                << "admin connections:" << fgls->m_AdminReceived
+                << "admin connections:" << m_fgls->m_AdminReceived
                 << endl; if (check_pager()) return RESULT::OK;
         float telnet_per_second;
-        if (fgls->m_TelnetReceived)
-                telnet_per_second = (float) fgls->m_TelnetReceived / (time(0) - fgls->m_Uptime);
+        if (m_fgls->m_TelnetReceived)
+                telnet_per_second = (float) m_fgls->m_TelnetReceived / (time(0) - m_fgls->m_Uptime);
         else
                 telnet_per_second = 0;
         m_client << "  " << left << setfill(' ') << setw(22)
                 << "telnet connections: "
-                << fgls->m_TelnetReceived
+                << m_fgls->m_TelnetReceived
                 << " (" << setprecision(2) << telnet_per_second << " t/s)"
                 << endl; if (check_pager()) return RESULT::OK;
         m_client << "  " << left << setfill(' ') << setw(22)
                 << "blacklist:"
-                << fgls->m_BlackList.PktsRcvd << " packets"
-                << " (" << fgls->m_BlackList.PktsRcvd / difftime << "/s)"
-                << " / " << byte_counter (fgls->m_BlackList.BytesRcvd)
-                << " (" << byte_counter ((double) fgls->m_BlackList.BytesRcvd / difftime) << "/s)"
+                << m_fgls->m_BlackList.PktsRcvd << " packets"
+                << " (" << m_fgls->m_BlackList.PktsRcvd / difftime << "/s)"
+                << " / " << byte_counter (m_fgls->m_BlackList.BytesRcvd)
+                << " (" << byte_counter ((double) m_fgls->m_BlackList.BytesRcvd / difftime) << "/s)"
                 << endl; if (check_pager()) return RESULT::OK;
         m_client << "  " << left << setfill(' ') << setw(22)
                 << "relays:"
-                << fgls->m_RelayList.PktsRcvd << " packets"
-                << " (" << fgls->m_RelayList.PktsRcvd / difftime << "/s)"
-                << " / " << byte_counter (fgls->m_RelayList.BytesRcvd)
-                << " (" << byte_counter ((double) fgls->m_RelayList.BytesRcvd / difftime) << "/s)"
+                << m_fgls->m_RelayList.PktsRcvd << " packets"
+                << " (" << m_fgls->m_RelayList.PktsRcvd / difftime << "/s)"
+                << " / " << byte_counter (m_fgls->m_RelayList.BytesRcvd)
+                << " (" << byte_counter ((double) m_fgls->m_RelayList.BytesRcvd / difftime) << "/s)"
                 << endl; if (check_pager()) return RESULT::OK;
         m_client << "  " << left << setfill(' ') << setw(22)
                 << "users:"
-                << fgls->m_PlayerList.PktsRcvd << " packets"
-                << " (" << fgls->m_PlayerList.PktsRcvd / difftime << "/s)"
-                << " / " << byte_counter (fgls->m_PlayerList.BytesRcvd)
-                << " (" << byte_counter ((double) fgls->m_PlayerList.BytesRcvd / difftime) << "/s)"
+                << m_fgls->m_PlayerList.PktsRcvd << " packets"
+                << " (" << m_fgls->m_PlayerList.PktsRcvd / difftime << "/s)"
+                << " / " << byte_counter (m_fgls->m_PlayerList.BytesRcvd)
+                << " (" << byte_counter ((double) m_fgls->m_PlayerList.BytesRcvd / difftime) << "/s)"
                 << endl; if (check_pager()) return RESULT::OK;
-        accumulated_sent        += fgls->m_CrossfeedList.BytesSent;
-        accumulated_sent_pkts   += fgls->m_CrossfeedList.PktsSent;
-        accumulated_sent        += fgls->m_RelayList.BytesSent;
-        accumulated_sent_pkts   += fgls->m_RelayList.PktsSent;
-        accumulated_sent        += fgls->m_PlayerList.BytesSent;
-        accumulated_sent_pkts   += fgls->m_PlayerList.PktsSent;
-        accumulated_rcvd        += fgls->m_BlackList.BytesRcvd;
-        accumulated_rcvd_pkts   += fgls->m_BlackList.PktsRcvd;
-        accumulated_rcvd        += fgls->m_RelayList.BytesRcvd;
-        accumulated_rcvd_pkts   += fgls->m_RelayList.PktsRcvd;
-        accumulated_rcvd        += fgls->m_PlayerList.BytesRcvd;
-        accumulated_rcvd_pkts   += fgls->m_PlayerList.PktsRcvd;
+        accumulated_sent        += m_fgls->m_CrossfeedList.BytesSent;
+        accumulated_sent_pkts   += m_fgls->m_CrossfeedList.PktsSent;
+        accumulated_sent        += m_fgls->m_RelayList.BytesSent;
+        accumulated_sent_pkts   += m_fgls->m_RelayList.PktsSent;
+        accumulated_sent        += m_fgls->m_PlayerList.BytesSent;
+        accumulated_sent_pkts   += m_fgls->m_PlayerList.PktsSent;
+        accumulated_rcvd        += m_fgls->m_BlackList.BytesRcvd;
+        accumulated_rcvd_pkts   += m_fgls->m_BlackList.PktsRcvd;
+        accumulated_rcvd        += m_fgls->m_RelayList.BytesRcvd;
+        accumulated_rcvd_pkts   += m_fgls->m_RelayList.PktsRcvd;
+        accumulated_rcvd        += m_fgls->m_PlayerList.BytesRcvd;
+        accumulated_rcvd_pkts   += m_fgls->m_PlayerList.PktsRcvd;
         m_client << "Totals:" << endl; if (check_pager()) return RESULT::OK;
         m_client << "  " << left << setfill(' ') << setw(22)
                 << "sent:"
@@ -296,7 +296,7 @@ fgls_cli::cmd_show_stats
 /**
  *  @brief Show general settings
  */
-RESULT
+libcli::RESULT
 fgls_cli::cmd_show_settings
 (
         const std::string& command,
@@ -304,6 +304,7 @@ fgls_cli::cmd_show_settings
         size_t first_arg
 )
 {
+        using namespace libcli;
         if ( first_arg < args.size() )
         {
                 m_client << "<cr>" << cli_client::endl;
@@ -311,10 +312,10 @@ fgls_cli::cmd_show_settings
         }
         std::string bind_addr;
 
-        if ( fgls->m_bind_addr == "" )
+        if ( m_fgls->m_bind_addr == "" )
                 bind_addr = "*";
         else
-                bind_addr = fgls->m_bind_addr;
+                bind_addr = m_fgls->m_bind_addr;
         cmd_show_version (command, args, first_arg);
         using std::left;
         using std::setw;
@@ -322,16 +323,16 @@ fgls_cli::cmd_show_settings
         m_client << cli_client::endl;
         m_client << "current settings:" << cli_client::endl;
         m_client << "  " << left << setfill(' ') << setw(22)
-                << "data port:" << fgls->m_data_port
+                << "data port:" << m_fgls->m_data_port
                 << cli_client::endl;
         m_client << "  " << left << setfill(' ') << setw(22)
-                << "query port:" << fgls->m_query_port
+                << "query port:" << m_fgls->m_query_port
                 << cli_client::endl;
         m_client << "  " << left << setfill(' ') << setw(22)
-                << "admin port:" << fgls->m_admin_port
+                << "admin port:" << m_fgls->m_admin_port
                 << cli_client::endl;
         m_client << "  " << left << setfill(' ') << setw(22)
-                << "logfile:" << fgls->m_logfile_name
+                << "logfile:" << m_fgls->m_logfile_name
                 << cli_client::endl;
         m_client << "  " << left << setfill(' ') << setw(22)
                 << "bind address:" << bind_addr
@@ -343,7 +344,7 @@ fgls_cli::cmd_show_settings
 /**
  *  @brief Shutdown the server
  */
-RESULT
+libcli::RESULT
 fgls_cli::cmd_die
 (
         const std::string& command,
@@ -351,6 +352,7 @@ fgls_cli::cmd_die
         size_t first_arg
 )
 {
+        using namespace libcli;
         if (first_arg > 0)
         {
                 if (args[first_arg] == "?")
@@ -359,7 +361,7 @@ fgls_cli::cmd_die
                 }
                 return RESULT::OK;
         }
-        fgls->m_want_exit = true;
+        m_fgls->m_want_exit = true;
         return RESULT::OK;
 } // fgls_cli::cmd_die
 
@@ -368,7 +370,7 @@ fgls_cli::cmd_die
  *  @brief Show the uptime of the the server
  *         in a human readable form.
  */
-RESULT
+libcli::RESULT
 fgls_cli::cmd_show_uptime
 (
         const std::string& command,
@@ -376,6 +378,7 @@ fgls_cli::cmd_show_uptime
         size_t first_arg
 )
 {
+        using namespace libcli;
         if (first_arg > 0)
         {
                 if (args[first_arg] == "?")
@@ -384,8 +387,9 @@ fgls_cli::cmd_show_uptime
                 }
                 return RESULT::OK;
         }
-        m_client << "UP since " << timestamp_to_datestr(fgls->m_uptime)
-                << "(" << timestamp_to_days(fgls->m_uptime) << ")" << cli_client::endl;
+        m_client << "UP since " << fgmp::timestamp_to_datestr(m_fgls->m_uptime)
+                << "(" << fgmp::timestamp_to_days(m_fgls->m_uptime) << ")"
+                << cli_client::endl;
         return RESULT::OK;
 } // fgls_cli::cmd_show_uptime
 
@@ -393,7 +397,7 @@ fgls_cli::cmd_show_uptime
 /**
  *  @brief Show the version number of the the server
  */
-RESULT
+libcli::RESULT
 fgls_cli::cmd_show_version
 (
         const std::string& command,
@@ -401,6 +405,7 @@ fgls_cli::cmd_show_version
         size_t first_arg
 )
 {
+        using namespace libcli;
         if (first_arg > 0)
         {
                 if (args[first_arg] == "?")
@@ -409,12 +414,13 @@ fgls_cli::cmd_show_version
                 }
                 return RESULT::OK;
         }
-        m_client << "This is " << fgls->m_server_name << cli_client::endl;
+        m_client << "This is " << m_fgls->m_server_name << cli_client::endl;
         m_client << "FlightGear List Server version "
-               << fgls->m_version.str() << cli_client::endl; 
+               << m_fgls->m_version.str() << cli_client::endl; 
         m_client << "compiled on " << __DATE__ << " at " << __TIME__  << cli_client::endl;
         m_client << "using protocol version v ! TODO !" << cli_client::endl;
         cmd_show_uptime (command, args, first_arg);
         return RESULT::OK;
 } // fgls_cli::cmd_show_version
+
 

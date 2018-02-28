@@ -50,7 +50,7 @@
 #include "fg_tracker.hxx"
 
 #ifndef _MSC_VER
-	#include <fglib/daemon.hxx>
+        #include <fglib/daemon.hxx>
 #endif
 
 namespace fgmp

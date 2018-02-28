@@ -26,8 +26,8 @@
 #ifndef _MSC_VER
         #include <termios.h>
 #endif
-#include <common.hxx>
-#include <filter.hxx>
+#include "common.hxx"
+#include "filter.hxx"
 
 namespace libcli
 {

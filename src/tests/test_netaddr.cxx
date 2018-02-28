@@ -1,5 +1,5 @@
 #include <iostream>
-#include <netaddr.hxx>
+#include <fglib/netaddr.hxx>
 
 int
 main

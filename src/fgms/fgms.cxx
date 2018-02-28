@@ -43,6 +43,9 @@
         #include <netinet/in.h>
         #include <signal.h>
         #include <fglib/daemon.hxx>
+#else
+        #include <libmsc/msc_getopt.hxx>
+        #include <conio.h> // for _kbhit(), _getch
 #endif
 
 #include <sys/types.h>
@@ -53,7 +56,6 @@
 #include <cstdlib>
 #include <string>
 #include <iomanip>
-//#include <simgear/math/SGEuler.hxx>
 #include <fglib/fg_util.hxx>
 #include <fglib/fg_log.hxx>
 #include <fglib/fg_util.hxx>
@@ -61,12 +63,7 @@
 #include <fglib/fg_version.hxx>
 #include <fglib/fg_log.hxx>
 #include "fg_cli.hxx"
-#include "fgms.hxx"    // includes pthread.h
-
-
-#ifdef _MSC_VER
-        #include <conio.h> // for _kbhit(), _getch
-#endif
+#include "fgms.hxx"
 
 extern void SigHUPHandler ( int SigType ); // main.cxx
 

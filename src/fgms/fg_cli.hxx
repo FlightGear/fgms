@@ -31,8 +31,8 @@
 #ifndef fgcli_HEADER
 #define fgcli_HEADER
 
-#include <fgms.hxx>
-#include <libcli.hxx>
+#include <libcli/libcli.hxx>
+#include "fgms.hxx"
 
 using namespace libcli;
 

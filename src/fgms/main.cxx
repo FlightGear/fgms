@@ -24,12 +24,11 @@
 //
 
 #ifdef HAVE_CONFIG_H
-	#include "config.h"
+        #include "config.h"
 #endif
 #include <cstdlib>
 #ifndef _MSC_VER
-	#include <sys/wait.h>
-	#include <libmsc/msc_getopt.hxx>
+        #include <sys/wait.h>
 #endif
 #include <signal.h>
 #include "fgms.hxx"
@@ -46,38 +45,38 @@ fgmp::fgms fgms;
 void
 SigHUPHandler
 (
-	int SigType
+        int SigType
 )
 {
         using fglog = fgmp::fglog;
 
-	fgms.prepare_init ();
-	if (fgms.m_config_file == "")
-	{
-		if ( ! fgms.read_configs ( true ) )
-		{
-			LOG ( fglog::prio::HIGH,
-			  "received HUP signal, but read config file failed!" );
-			exit ( 1 );
-		}
-	}
-	else
-	{
-		if ( fgms.process_config ( fgms.m_config_file ) == false )
-		{
-			LOG ( fglog::prio::HIGH,
-			  "received HUP signal, but read config file failed!" );
-			exit ( 1 );
-		}
-	}
-	if ( fgms.init () != 0 )
-	{
-		LOG ( fgmp::fglog::prio::HIGH,
-		  "received HUP signal, but reinit failed!" );
-		exit ( 1 );
-	}
+        fgms.prepare_init ();
+        if (fgms.m_config_file == "")
+        {
+                if ( ! fgms.read_configs ( true ) )
+                {
+                        LOG ( fglog::prio::HIGH,
+                          "received HUP signal, but read config file failed!" );
+                        exit ( 1 );
+                }
+        }
+        else
+        {
+                if ( fgms.process_config ( fgms.m_config_file ) == false )
+                {
+                        LOG ( fglog::prio::HIGH,
+                          "received HUP signal, but read config file failed!" );
+                        exit ( 1 );
+                }
+        }
+        if ( fgms.init () != 0 )
+        {
+                LOG ( fgmp::fglog::prio::HIGH,
+                  "received HUP signal, but reinit failed!" );
+                exit ( 1 );
+        }
 #ifndef _MSC_VER
-	signal ( SigType, SigHUPHandler );
+        signal ( SigType, SigHUPHandler );
 #endif
 } // SigHUPHandler ()
 //////////////////////////////////////////////////////////////////////
@@ -91,26 +90,26 @@ SigHUPHandler
 int
 main
 (
-	int argc,
-	char* argv[]
+        int argc,
+        char* argv[]
 )
 {
-	fgms.parse_params ( argc, argv );
-	fgms.read_configs ();
-	if ( ! fgms.check_config() )
-	{
-		exit ( 1 );
-	}
+        fgms.parse_params ( argc, argv );
+        fgms.read_configs ();
+        if ( ! fgms.check_config() )
+        {
+                exit ( 1 );
+        }
 #ifndef _MSC_VER
-	signal ( SIGHUP, SigHUPHandler );
+        signal ( SIGHUP, SigHUPHandler );
 #endif
-	if ( ! fgms.init () )
-	{
-		return 1;
-	}
-	fgms.loop();
-	fgms.done();
-	return ( 0 );
+        if ( ! fgms.init () )
+        {
+                return 1;
+        }
+        fgms.loop();
+        fgms.done();
+        return ( 0 );
 } // main()
 //////////////////////////////////////////////////////////////////////
 

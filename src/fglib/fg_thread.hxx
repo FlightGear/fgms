@@ -31,12 +31,13 @@
 
 #include <list>
 #include <string>
-#include <pthread.h>
+#include <mutex>
 
 namespace fgmp
 {
 
-using mutex_t = pthread_mutex_t;
+//using mutex_t = pthread_mutex_t;
+using mutex_t = std::mutex;
 
 /**
  * @brief Add a mutex to an abitrary class.
@@ -45,7 +46,7 @@ using mutex_t = pthread_mutex_t;
  * @code
  * class my_class : public fgmp::lockable
  * {
- * 	...
+ *      ...
  * }
  * @endcode
  *
@@ -55,12 +56,12 @@ using mutex_t = pthread_mutex_t;
 class lockable
 {
 public:
-	lockable ();
-	void lock ();
-	void unlock ();
-	inline mutex_t* mutex () { return & m_mutex; };
+        lockable ();
+        void lock ();
+        void unlock ();
+        inline mutex_t& mutex () { return m_mutex; };
 private:
-	mutex_t m_mutex;
+        mutable mutex_t m_mutex;
 }; // class lockable
 
 /**
@@ -76,23 +77,15 @@ private:
  *
  * void my_func ()
  * {
- * 	lockguard g ( &m );
- *	// do stuff
+ *      lockguard g ( m );
+ *      // do stuff
  * }
  * @endcode
  *
  * The mutex gets automatically unlocked when the my_func() ends.
  *
- * @note The mutex is expected to be already initialised.
  */
-class lockguard
-{
-public:
-	lockguard ( mutex_t *mutex );
-	~lockguard ();
-protected:
-	mutex_t *m_mutex;
-}; // class lockguard
+using lockguard = std::lock_guard<mutex_t>;
 
 /**
  * @brief a std::list<> protected by lockable

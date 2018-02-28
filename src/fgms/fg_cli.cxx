@@ -24,7 +24,7 @@
 
 #include <sstream>
 #include <fglib/fg_util.hxx>
-#include <fg_cli.hxx>
+#include "fg_cli.hxx"
 
 namespace fgmp
 {

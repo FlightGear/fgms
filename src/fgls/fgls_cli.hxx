@@ -27,20 +27,20 @@
  * @brief cisco like command line interface
  */
 
-#ifndef fgls_cli_HEADER
-#define fgls_cli_HEADER
+#ifndef _fgls_cli_header
+#define _fgls_cli_header
 
-#include <libcli.hxx>
+#include <libcli/libcli.hxx>
 #include "fgls.hxx"
 
-using namespace libcli;
-
-class fgls_cli : public cli
+class fgls_cli : public libcli::cli
 {
 public:
-        fgls_cli ( FGLS* fgls, int fd );
+        fgls_cli ( fgls* fgls, int fd );
 private:
         void setup ();
+        using strvec = libcli::strvec;
+        using RESULT = libcli::RESULT;
         //////////////////////////////////////////////////
         // general commands
         //////////////////////////////////////////////////
@@ -54,8 +54,7 @@ private:
                    const strvec& args, size_t first_arg );
         RESULT cmd_die ( const std::string& command,
                    const strvec& args, size_t first_arg );
-
-        FGLS*   fgls;
+        fgls* m_fgls;
 }; // class fgls_cli
 
 #endif

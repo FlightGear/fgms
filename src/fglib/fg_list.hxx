@@ -33,7 +33,6 @@
 #include <string>
 #include <vector>
 #include <list>
-#include <pthread.h>
 #include "fg_log.hxx"
 #include "netaddr.hxx"
 #include "fg_geometry.hxx"
@@ -52,27 +51,27 @@ namespace fgmp
 class list_item
 {
 public:
-	list_item ( const std::string& name );
-	list_item ( const list_item& P );
-	static const size_t NONE_EXISTANT;	///< mark a nonexisting element
-	size_t		id;
-	time_t		timeout;
-	std::string	name;
-	netaddr		address;	
-	time_t		join_time;
-	time_t		last_seen;
-	time_t		last_sent;
-	uint64_t	pkts_rcvd;
-	uint64_t	pkts_sent;
-	uint64_t	bytes_rcvd;
-	uint64_t	bytes_sent;
-	void operator =  ( const list_item& P );
-	virtual bool operator ==  ( const list_item& P );
-	void update_sent ( size_t bytes );
-	void update_rcvd ( size_t bytes );
+        list_item ( const std::string& name );
+        list_item ( const list_item& P );
+        static const size_t NONE_EXISTANT;      ///< mark a nonexisting element
+        size_t          id;
+        time_t          timeout;
+        std::string     name;
+        netaddr         address;
+        time_t          join_time;
+        time_t          last_seen;
+        time_t          last_sent;
+        uint64_t        pkts_rcvd;
+        uint64_t        pkts_sent;
+        uint64_t        bytes_rcvd;
+        uint64_t        bytes_sent;
+        void operator =  ( const list_item& P );
+        virtual bool operator ==  ( const list_item& P );
+        void update_sent ( size_t bytes );
+        void update_rcvd ( size_t bytes );
 protected:
-	list_item ();
-	void assign ( const list_item& P );
+        list_item ();
+        void assign ( const list_item& P );
 }; // list_item
 
 //////////////////////////////////////////////////////////////////////
@@ -86,37 +85,37 @@ template <class T>
 class list : public lockable
 {
 public:
-	using list_items = std::vector<T>;
-	using list_it       = typename std::vector<T>::iterator;
-	list   ( const std::string& name );
-	~list  ();
-	size_t	size  ();
-	void	clear ();
-	size_t	add   ( T& item, time_t TTL );
-	bool	check_ttl (int position);
-	void	delete_by_pos (int position);
-	list_it erase	( const list_it& item );
-	list_it find	( const netaddr& address, bool compare_port = false );
-	list_it find_by_name	( const std::string& name = "" );
-	list_it find_by_id	( size_t id );
-	list_it begin	();
-	list_it last	();
-	list_it end	();
-	void update_sent ( list_it& item, size_t bytes );
-	void update_rcvd ( list_it& item, size_t bytes );
-	void update_sent ( size_t bytes );
-	void update_rcvd ( size_t bytes );
-	T operator []	( const size_t& Index );
-	size_t		max_id;
-	uint64_t	pkts_rcvd;  
-	uint64_t	pkts_sent;
-	uint64_t	bytes_rcvd;  
-	uint64_t	bytes_sent;        
-	std::string	name;
+        using list_items = std::vector<T>;
+        using list_it       = typename std::vector<T>::iterator;
+        list   ( const std::string& name );
+        ~list  ();
+        size_t  size  ();
+        void    clear ();
+        size_t  add   ( T& item, time_t TTL );
+        bool    check_ttl (int position);
+        void    delete_by_pos (int position);
+        list_it erase   ( const list_it& item );
+        list_it find    ( const netaddr& address, bool compare_port = false );
+        list_it find_by_name    ( const std::string& name = "" );
+        list_it find_by_id      ( size_t id );
+        list_it begin   ();
+        list_it last    ();
+        list_it end     ();
+        void update_sent ( list_it& item, size_t bytes );
+        void update_rcvd ( list_it& item, size_t bytes );
+        void update_sent ( size_t bytes );
+        void update_rcvd ( size_t bytes );
+        T operator []   ( const size_t& Index );
+        size_t          max_id;
+        uint64_t        pkts_rcvd;
+        uint64_t        pkts_sent;
+        uint64_t        bytes_rcvd;
+        uint64_t        bytes_sent;
+        std::string     name;
 private:
-	list ();
-	time_t		last_run;
-	list_items	items;
+        list ();
+        time_t          last_run;
+        list_items      items;
 };
 
 using fglist   = list<list_item>;
@@ -130,14 +129,14 @@ using fglistit = std::vector<list_item>::iterator;
 template <class T>
 list<T>::list
 (
-	const std::string& name
+        const std::string& name
 )
 {
-	this->name	= name;
-	pkts_sent	= 0;
-	bytes_sent	= 0;
-	pkts_rcvd	= 0;
-	bytes_rcvd	= 0;
+        this->name      = name;
+        pkts_sent       = 0;
+        bytes_sent      = 0;
+        pkts_rcvd       = 0;
+        bytes_rcvd      = 0;
 } // list<T>::list ()
 
 //////////////////////////////////////////////////////////////////////
@@ -146,7 +145,7 @@ template <class T>
 list<T>::~list
 ()
 {
-	clear ();
+        clear ();
 } // list<T>::~list ()
 
 //////////////////////////////////////////////////////////////////////
@@ -163,7 +162,7 @@ size_t
 list<T>::size
 ()
 {
-	return items.size ();
+        return items.size ();
 } // list<T>::size ()
 
 //////////////////////////////////////////////////////////////////////
@@ -179,15 +178,15 @@ template <class T>
 size_t
 list<T>::add
 (
-	T& item,
-	time_t TTL
+        T& item,
+        time_t TTL
 )
 {
-	this->max_id++;
-	item.id	= this->max_id;
-	item.timeout = TTL;
-	items.push_back ( item );
-	return this->max_id;
+        this->max_id++;
+        item.id = this->max_id;
+        item.timeout = TTL;
+        items.push_back ( item );
+        return this->max_id;
 } // list<T>::add ()
 
 //////////////////////////////////////////////////////////////////////
@@ -196,16 +195,16 @@ template <class T>
 void 
 list<T>::delete_by_pos
 (
-	int position
+        int position
 )
 {
-	lockguard lg { this->mutex() };
+        lockguard lg { this->mutex() };
 
-	this->last_run = time (0);
-	list_it item;
-	item = items.begin();
-	std::advance ( item, position );
-	items.erase  ( item );
+        this->last_run = time (0);
+        list_it item;
+        item = items.begin();
+        std::advance ( item, position );
+        items.erase  ( item );
 } // list<T>::delete_by_pos ()
 
 //////////////////////////////////////////////////////////////////////
@@ -219,11 +218,11 @@ template <class T>
 typename std::vector<T>::iterator
 list<T>::erase
 (
-	const list_it& item
+        const list_it& item
 )
 {
-	lockguard lg { this->mutex() };
-	return items.erase ( item );
+        lockguard lg { this->mutex() };
+        return items.erase ( item );
 } // list<T>::erase ()
 
 //////////////////////////////////////////////////////////////////////
@@ -243,35 +242,35 @@ template <class T>
 typename std::vector<T>::iterator
 list<T>::find
 (
-	const netaddr& address,
-	bool compare_port
+        const netaddr& address,
+        bool compare_port
 )
 {
-	list_it item { items.begin() };
-	list_it ret_item { items.end() };
+        list_it item { items.begin() };
+        list_it ret_item { items.end() };
 
-	this->last_run = time (0);
-	while (item != items.end())
-	{
-		if (item->address == address)
-		{
-			if ( compare_port ) 
-			{	// additionally check port
-				if ( item->address.port() == address.port() )
-				{
-					item->last_seen = this->last_run;
-					ret_item = item;
-				}
-			}
-			else
-			{
-				item->last_seen = this->last_run;
-				ret_item = item;
-			}
-		}
-		item++;
-	}
-	return ret_item;
+        this->last_run = time (0);
+        while (item != items.end())
+        {
+                if (item->address == address)
+                {
+                        if ( compare_port ) 
+                        {       // additionally check port
+                                if ( item->address.port() == address.port() )
+                                {
+                                        item->last_seen = this->last_run;
+                                        ret_item = item;
+                                }
+                        }
+                        else
+                        {
+                                item->last_seen = this->last_run;
+                                ret_item = item;
+                        }
+                }
+                item++;
+        }
+        return ret_item;
 } // list<T>::find ()
 
 //////////////////////////////////////////////////////////////////////
@@ -287,23 +286,23 @@ template <class T>
 typename std::vector<T>::iterator
 list<T>::find_by_name
 (
-	const std::string& name
+        const std::string& name
 )
 {
-	list_it item { items.begin() };
-	list_it ret_item { items.end() };
+        list_it item { items.begin() };
+        list_it ret_item { items.end() };
 
-	this->last_run = time (0);
-	while (item != items.end())
-	{
-		if (item->name == name)
-		{
-			item->last_seen = this->last_run;
-			return item;
-		}
-		item++;
-	}
-	return ret_item;
+        this->last_run = time (0);
+        while (item != items.end())
+        {
+                if (item->name == name)
+                {
+                        item->last_seen = this->last_run;
+                        return item;
+                }
+                item++;
+        }
+        return ret_item;
 } // list<T>::find_by_name ()
 
 //////////////////////////////////////////////////////////////////////
@@ -319,23 +318,23 @@ template <class T>
 typename std::vector<T>::iterator
 list<T>::find_by_id
 (
-	size_t id
+        size_t id
 )
 {
-	list_it item { items.begin() };
-	list_it ret_item { items.end() };
+        list_it item { items.begin() };
+        list_it ret_item { items.end() };
 
-	this->last_run = time (0);
-	while (item != items.end())
-	{
-		if (item->id == id)
-		{
-			ret_item = item;
-			break;
-		}
-		item++;
-	}
-	return ret_item;
+        this->last_run = time (0);
+        while (item != items.end())
+        {
+                if (item->id == id)
+                {
+                        ret_item = item;
+                        break;
+                }
+                item++;
+        }
+        return ret_item;
 } // list<T>::find_by_id ()
 
 //////////////////////////////////////////////////////////////////////
@@ -353,7 +352,7 @@ typename std::vector<T>::iterator
 list<T>::begin
 ()
 {
-	return items.begin ();
+        return items.begin ();
 } // list<T>::begin ()
 
 //////////////////////////////////////////////////////////////////////
@@ -371,9 +370,9 @@ typename std::vector<T>::iterator
 list<T>::last
 ()
 {
-	list_it ret_item { items.end () };
-	--ret_item;
-	return ret_item;
+        list_it ret_item { items.end () };
+        --ret_item;
+        return ret_item;
 } // list<T>::last ()
 
 //////////////////////////////////////////////////////////////////////
@@ -388,7 +387,7 @@ typename std::vector<T>::iterator
 list<T>::end
 ()
 {
-	return items.end ();
+        return items.end ();
 } // list<T>::end ()
 
 //////////////////////////////////////////////////////////////////////
@@ -401,23 +400,23 @@ template <class T>
 bool
 list<T>::check_ttl
 (
-	int position
+        int position
 )
 {
-	lockguard lg { this->mutex() };
-	list_it item { items.begin() };
+        lockguard lg { this->mutex() };
+        list_it item { items.begin() };
 
-	this->last_run = time (0);
-	std::advance (item,position);
-	if (item->timeout == 0)
-	{	// never timeouts
-		return true;
-	}
-	if ( (this->last_run - item->last_seen) > item->timeout )
-	{
-		  return false;
-	}
-	return true;
+        this->last_run = time (0);
+        std::advance (item,position);
+        if (item->timeout == 0)
+        {       // never timeouts
+                return true;
+        }
+        if ( (this->last_run - item->last_seen) > item->timeout )
+        {
+                  return false;
+        }
+        return true;
 } // list<T>::check_ttl ()
 
 //////////////////////////////////////////////////////////////////////
@@ -434,13 +433,13 @@ template <class T>
 T
 list<T>::operator []
 (
-	const size_t& Index
+        const size_t& Index
 )
 {
-	T ret_item {""};
-	if (Index < items.size ())
-		ret_item = items[Index];
-	return ret_item;
+        T ret_item {""};
+        if (Index < items.size ())
+                ret_item = items[Index];
+        return ret_item;
 } // list<T>::operator []
 
 //////////////////////////////////////////////////////////////////////
@@ -457,13 +456,13 @@ template <class T>
 void
 list<T>::update_sent
 (
-	list_it& item,
-	size_t bytes
+        list_it& item,
+        size_t bytes
 )
 {
-	pkts_sent++;
-	bytes_sent += bytes;
-	item->update_sent (bytes);
+        pkts_sent++;
+        bytes_sent += bytes;
+        item->update_sent (bytes);
 } // list<T>::update_sent ()
 
 //////////////////////////////////////////////////////////////////////
@@ -480,13 +479,13 @@ template <class T>
 void
 list<T>::update_rcvd
 (
-	list_it& item,
-	size_t bytes
+        list_it& item,
+        size_t bytes
 )
 {
-	pkts_rcvd++;
-	bytes_rcvd += bytes;
-	item->update_rcvd (bytes);
+        pkts_rcvd++;
+        bytes_rcvd += bytes;
+        item->update_rcvd (bytes);
 } // list<T>::update_rcvd ()
 
 //////////////////////////////////////////////////////////////////////
@@ -502,11 +501,11 @@ template <class T>
 void
 list<T>::update_sent
 (
-	size_t bytes
+        size_t bytes
 )
 {
-	pkts_sent++;
-	bytes_sent += bytes;
+        pkts_sent++;
+        bytes_sent += bytes;
 } // list<T>::update_sent ()
 
 //////////////////////////////////////////////////////////////////////
@@ -522,11 +521,11 @@ template <class T>
 void
 list<T>::update_rcvd
 (
-	size_t bytes
+        size_t bytes
 )
 {
-	pkts_rcvd++;
-	bytes_rcvd += bytes;
+        pkts_rcvd++;
+        bytes_rcvd += bytes;
 } // list<T>::update_rcvd ()
 
 //////////////////////////////////////////////////////////////////////
@@ -540,9 +539,9 @@ void
 list<T>::clear
 ()
 {
-	lock ();
-	items.clear ();
-	unlock ();
+        lock ();
+        items.clear ();
+        unlock ();
 } // list<T>::clear()
 
 //////////////////////////////////////////////////////////////////////

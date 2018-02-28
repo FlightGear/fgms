@@ -1,5 +1,5 @@
 #include <iostream>
-#include <ipaddr.hxx>
+#include <fglib/ipaddr.hxx>
 
 int
 main

@@ -23,7 +23,7 @@
 #include <string>
 #include <functional>
 #include <memory>
-#include <common.hxx>
+#include "common.hxx"
 
 namespace libcli
 {

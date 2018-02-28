@@ -27,7 +27,7 @@
 
 #include <string>
 #include <list>
-#include <cli_client.hxx>
+#include "cli_client.hxx"
 
 namespace libcli
 {

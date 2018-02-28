@@ -32,7 +32,7 @@
 #include <unistd.h>
 #include <fglib/fg_log.hxx>
 #include <fglib/fg_util.hxx>
-#include <libcli.hxx>
+#include "libcli.hxx"
 
 #if defined(_MSC_VER) || defined(__CYGWIN__)
         // some windows quick fixes

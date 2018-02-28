@@ -26,7 +26,6 @@
 #include <vector>
 #include <string>
 #include <list>
-#include <fglib/debug.hxx>
 
 namespace libcli
 {

@@ -27,10 +27,10 @@
 #ifndef _MSC_VER
         #include <termios.h>
 #endif
-#include <common.hxx>
-#include <command.hxx>
-#include <cli_client.hxx>
-#include <cli_line.hxx>
+#include "common.hxx"
+#include "command.hxx"
+#include "cli_client.hxx"
+#include "cli_line.hxx"
 
 namespace libcli
 {

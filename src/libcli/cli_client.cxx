@@ -21,14 +21,11 @@
 
 #include <iostream>
 #include <string.h>
-#include <fglib/fg_log.hxx>
-#include <cli_client.hxx>
 
 #ifdef __CYGWIN__
 #include <sys/select.h>
 #include <_timeval.h>
 #endif
-
 
 #ifdef _MSC_VER
         #include <conio.h> // for _kbhit(), _getch
@@ -42,6 +39,9 @@
                 ) == WAIT_OBJECT_0;
         }
 #endif
+
+#include <fglib/fg_log.hxx>
+#include "cli_client.hxx"
 
 namespace libcli
 {

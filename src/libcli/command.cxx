@@ -17,7 +17,7 @@
 // Copyright (C) 2011  Oliver Schroeder
 //
 
-#include <command.hxx>
+#include "command.hxx"
 
 namespace libcli
 {

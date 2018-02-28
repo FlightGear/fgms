@@ -193,9 +193,9 @@ endif ( Threads_FOUND )
 ##################################################
 include_directories ( SYSTEM "${PROJECT_BINARY_DIR}"
         src
-        src/fgms
-        src/fglib
-        src/libcli
+#        src/fgms
+#        src/fglib
+#        src/libcli
 )
 
 #### add_subdirectory( src/libcli )
