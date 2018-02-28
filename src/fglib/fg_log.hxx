@@ -125,7 +125,9 @@ fglog::operator << ( any_type v )
 {
         int p_copy = int(m_outprio);
 
-        if ( p_copy & int(prio::CONSOLE) )      // print on screen
+
+        if ( ( m_logfile != nullptr )           // don't have a logfile
+        &&   ( p_copy & int(prio::CONSOLE) ) )  // print on screen
         {
                 p_copy &= ~int (prio::CONSOLE);
                 if ( ! m_date )
