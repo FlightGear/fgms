@@ -17,9 +17,9 @@
 //
 
 /**
- * @file	fg_cli.hxx
- * @author	Oliver Schroeder <fgms@o-schroeder.de>
- * @date	2013
+ * @file        fg_cli.hxx
+ * @author      Oliver Schroeder <fgms@o-schroeder.de>
+ * @date        2013
  */
 
 //////////////////////////////////////////////////////////////////////
@@ -47,63 +47,73 @@ namespace fgmp
 class fgcli : public cli
 {
 public:
-	fgcli ( fgmp::fgms* fgms, int fd );
+        fgcli ( fgmp::fgms* fgms, int fd );
 private:
-	void setup ();
-	//////////////////////////////////////////////////
-	// general  commands
-	//////////////////////////////////////////////////
-	int cmd_show_stats	( UNUSED(char *command),
-				  UNUSED(char *argv[]), UNUSED(int argc) );
-	int cmd_show_settings	( UNUSED(char *command),
-				  UNUSED(char *argv[]), UNUSED(int argc) );
-	int cmd_show_version	( UNUSED(char *command),
-				  UNUSED(char *argv[]), UNUSED(int argc) );
-	int cmd_show_uptime	( UNUSED(char *command),
-				  UNUSED(char *argv[]), UNUSED(int argc) );
-	int cmd_fgms_die	( UNUSED(char *command),
-				  UNUSED(char *argv[]), UNUSED(int argc) );
-	//////////////////////////////////////////////////
-	// show/modify whitelist
-	//////////////////////////////////////////////////
-	int cmd_whitelist_show   (  char *command, char *argv[], int argc );
-	int cmd_whitelist_add    (  char *command, char *argv[], int argc );
-	int cmd_whitelist_delete (  char *command, char *argv[], int argc );
-	//////////////////////////////////////////////////
-	// show/modify blacklist
-	//////////////////////////////////////////////////
-	int cmd_blacklist_show   (  char *command, char *argv[], int argc );
-	int cmd_blacklist_add    (  char *command, char *argv[], int argc );
-	int cmd_blacklist_delete (  char *command, char *argv[], int argc );
-	//////////////////////////////////////////////////
-	// show/modify list of crossfeeds
-	//////////////////////////////////////////////////
-	int cmd_crossfeed_show   (  char *command, char *argv[], int argc );
-	int cmd_crossfeed_add    (  char *command, char *argv[], int argc );
-	int cmd_crossfeed_delete (  char *command, char *argv[], int argc );
-	//////////////////////////////////////////////////
-	// show/modify list of relays
-	//////////////////////////////////////////////////
-	int cmd_relay_show   (  char *command, char *argv[], int argc );
-	int cmd_relay_add    (  char *command, char *argv[], int argc );
-	int cmd_relay_delete (  char *command, char *argv[], int argc );
-	//////////////////////////////////////////////////
-	// show list of players
-	//////////////////////////////////////////////////
-	int cmd_user_show   (  char *command, char *argv[], int argc );
-	//////////////////////////////////////////////////
-	// show status of tracker
-	//////////////////////////////////////////////////
-	int cmd_tracker_show   (  char *command, char *argv[], int argc );
-	//////////////////////////////////////////////////
-	// show/modify log
-	//////////////////////////////////////////////////
-	int cmd_show_log ( UNUSED(char *command),
-			   UNUSED(char *argv[]), UNUSED(int argc) );
-	// TODO: change the size of the logbuffer
+        void setup ();
+        //////////////////////////////////////////////////
+        // general  commands
+        //////////////////////////////////////////////////
+        RESULT cmd_show_stats    ( const std::string& command,
+                                   const strvec& args, size_t first_arg );
+        RESULT cmd_show_settings ( const std::string& command,
+                                   const strvec& args, size_t first_arg );
+        RESULT cmd_show_version  ( const std::string& command,
+                                   const strvec& args, size_t first_arg );
+        RESULT cmd_show_uptime   ( const std::string& command,
+                                   const strvec& args, size_t first_arg );
+        RESULT cmd_show_user     ( const std::string& command,
+                                   const strvec& args, size_t first_arg );
+        RESULT cmd_die           ( const std::string& command,
+                                   const strvec& args, size_t first_arg );
+        //////////////////////////////////////////////////
+        // show/modify whitelist
+        //////////////////////////////////////////////////
+        RESULT cmd_whitelist_show   ( const std::string& command,
+                                      const strvec& args, size_t first_arg );
+        RESULT cmd_whitelist_add    ( const std::string& command,
+                                      const strvec& args, size_t first_arg );
+        RESULT cmd_whitelist_delete ( const std::string& command,
+                                      const strvec& args, size_t first_arg );
+        //////////////////////////////////////////////////
+        // show/modify blacklist
+        //////////////////////////////////////////////////
+        RESULT cmd_blacklist_show   ( const std::string& command,
+                                      const strvec& args, size_t first_arg );
+        RESULT cmd_blacklist_add    ( const std::string& command,
+                                      const strvec& args, size_t first_arg );
+        RESULT cmd_blacklist_delete ( const std::string& command,
+                                      const strvec& args, size_t first_arg );
+        //////////////////////////////////////////////////
+        // show/modify list of crossfeeds
+        //////////////////////////////////////////////////
+        RESULT cmd_crossfeed_show   ( const std::string& command,
+                                      const strvec& args, size_t first_arg );
+        RESULT cmd_crossfeed_add    ( const std::string& command,
+                                      const strvec& args, size_t first_arg );
+        RESULT cmd_crossfeed_delete ( const std::string& command,
+                                      const strvec& args, size_t first_arg );
+        //////////////////////////////////////////////////
+        // show/modify list of relays
+        //////////////////////////////////////////////////
+        RESULT cmd_relay_show   ( const std::string& command,
+                                  const strvec& args, size_t first_arg );
+        RESULT cmd_relay_add    ( const std::string& command,
+                                  const strvec& args, size_t first_arg );
+        RESULT cmd_relay_delete ( const std::string& command,
+                                  const strvec& args, size_t first_arg );
+        //////////////////////////////////////////////////
+        // show status of tracker
+        //////////////////////////////////////////////////
+        RESULT cmd_tracker_show ( const std::string& command,
+                                  const strvec& args, size_t first_arg );
+        //////////////////////////////////////////////////
+        // show/modify log
+        //////////////////////////////////////////////////
+        RESULT cmd_show_log ( const std::string& command,
+                              const strvec& args, size_t first_arg );
+        // TODO: change the size of the logbuffer
 private:
-	fgmp::fgms* fgms;
-	int cmd_NOT_IMPLEMENTED (  char *command, char *argv[], int argc );
+        fgmp::fgms* fgms;
 };
 
 } // namespace fgmp

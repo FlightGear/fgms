@@ -32,17 +32,17 @@ set ( EXE_NAME fgms )
 #
 ##################################################
 if ( NOT DEFINED CMAKE_INSTALL_PREFIX )
-	set ( CMAKE_INSTALL_PREFIX "/usr" )
+        set ( CMAKE_INSTALL_PREFIX "/usr" )
 endif ( NOT DEFINED CMAKE_INSTALL_PREFIX )
 if ( NOT DEFINED SBINDIR )
-	if ( MSVC )
-		set( SBINDIR bin ) 
-	else ()
-		set( SBINDIR "${CMAKE_INSTALL_PREFIX}/sbin" )
-	endif()
+        if ( MSVC )
+                set( SBINDIR bin ) 
+        else ()
+                set( SBINDIR "${CMAKE_INSTALL_PREFIX}/sbin" )
+        endif()
 endif()
 if ( NOT DEFINED SYSCONFDIR )
-	set ( SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/etc" )
+        set ( SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/etc" )
 endif ( NOT DEFINED SYSCONFDIR )
 add_definitions( -DSYSCONFDIR="${SYSCONFDIR}" )
 
@@ -58,12 +58,12 @@ option ( BUILD_TESTS "Build test applications" ON ) # FIXME: set to OFF
 
 set ( LIB_TYPE STATIC )  # set default static
 if ( BUILD_SHARED_LIB )
-	set ( LIB_TYPE SHARED )
+        set ( LIB_TYPE SHARED )
 endif ( BUILD_SHARED_LIB )
 
 # set build type so it's not empty
 if ( NOT DEFINED CMAKE_BUILD_TYPE )
-	set ( CMAKE_BUILD_TYPE Release )
+        set ( CMAKE_BUILD_TYPE Release )
 endif()
 
 ##################################################
@@ -72,54 +72,54 @@ endif()
 #
 ##################################################
 if ( UNIX )
-	option ( ENABLE_DEBUG_OUTPUT "Add additional debug output." OFF )
-	option ( ENABLE_DEBUG_TRACE "Add trace info." OFF )
+        option ( ENABLE_DEBUG_OUTPUT "Add additional debug output." OFF )
+        option ( ENABLE_DEBUG_TRACE "Add trace info." OFF )
 endif ( UNIX )
 
 if ( CMAKE_COMPILER_IS_GNUCXX )
-	set ( WARNING_FLAGS "-Wall --pedantic" )
+        set ( WARNING_FLAGS "-Wall --pedantic" )
 endif ( CMAKE_COMPILER_IS_GNUCXX )
 
 if ( CMAKE_CXX_COMPILER_ID STREQUAL "Clang" )
-	set ( WARNING_FLAGS "-Wall -Wno-overloaded-virtual" )
+        set ( WARNING_FLAGS "-Wall -Wno-overloaded-virtual" )
 endif() 
 
 if ( WIN32 )
-	if ( MSVC )
-		# turn off various warnings
-		set ( WARNING_FLAGS "${WARNING_FLAGS} /wd4996" )
-		# C4146: unary minus operator applied to unsigned type,
-		#        result still unsigned
-		# C4267: '=' : conversion from 'size_t' to 'int',
-		#        possible loss of data
-		# foreach(warning 4244 4251 4267 4275 4290 4786 4305)
-		foreach ( warning 4146 4267 )
-			set ( WARNING_FLAGS "${WARNING_FLAGS} /wd${warning}" )
-		endforeach ()
+        if ( MSVC )
+                # turn off various warnings
+                set ( WARNING_FLAGS "${WARNING_FLAGS} /wd4996" )
+                # C4146: unary minus operator applied to unsigned type,
+                #        result still unsigned
+                # C4267: '=' : conversion from 'size_t' to 'int',
+                #        possible loss of data
+                # foreach(warning 4244 4251 4267 4275 4290 4786 4305)
+                foreach ( warning 4146 4267 )
+                        set ( WARNING_FLAGS "${WARNING_FLAGS} /wd${warning}" )
+                endforeach ()
 
-		set( EXTRA_FLAGS "-DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS" )
-		# if (${MSVC_VERSION} EQUAL 1600)
-		#    list(APPEND EXTRA_LD_FLAGS "/FORCE:MULTIPLE" )
-		# endif (${MSVC_VERSION} EQUAL 1600)
+                set( EXTRA_FLAGS "-DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS" )
+                # if (${MSVC_VERSION} EQUAL 1600)
+                #    list(APPEND EXTRA_LD_FLAGS "/FORCE:MULTIPLE" )
+                # endif (${MSVC_VERSION} EQUAL 1600)
         set ( CMAKE_DEBUG_POSTFIX "d" )
-	endif ( MSVC )
-	set ( NOMINMAX 1 )
-	add_definitions (
-	  -DUL_MSVC -DOPENALSDK -DHAVE_CONFIG_H -DFREEGLUT_LIB_PRAGMAS
-	  -DUL_WIN32 -D_CRT_SECURE_NO_DEPRECATE -DFREEGLUT_STATIC
-	)
-	configure_file (
-	  "${CMAKE_SOURCE_DIR}/config.h.msvc"
-	  "${CMAKE_BINARY_DIR}/config.h" COPYONLY
-	)
-	file ( WRITE
-	  "${CMAKE_BINARY_DIR}/unistd.h"
-	  "/* dummy unistd.h for windows */"
-	) 
+        endif ( MSVC )
+        set ( NOMINMAX 1 )
+        add_definitions (
+          -DUL_MSVC -DOPENALSDK -DHAVE_CONFIG_H -DFREEGLUT_LIB_PRAGMAS
+          -DUL_WIN32 -D_CRT_SECURE_NO_DEPRECATE -DFREEGLUT_STATIC
+        )
+        configure_file (
+          "${CMAKE_SOURCE_DIR}/config.h.msvc"
+          "${CMAKE_BINARY_DIR}/config.h" COPYONLY
+        )
+        file ( WRITE
+          "${CMAKE_BINARY_DIR}/unistd.h"
+          "/* dummy unistd.h for windows */"
+        ) 
 else ( WIN32 )
-	set ( EXTRA_FLAGS "-std=c++11" )
-	list ( APPEND EXTRA_LD_FLAGS -L. )
-	set ( WARNING_FLAGS "${WARNING_FLAGS} -Wno-unused-local-typedefs -Wno-unused-but-set-variable" )
+        set ( EXTRA_FLAGS "-std=c++11" )
+        list ( APPEND EXTRA_LD_FLAGS -L. )
+        set ( WARNING_FLAGS "${WARNING_FLAGS} -Wno-unused-local-typedefs -Wno-unused-but-set-variable" )
 endif ( WIN32 )
 
 # do we use CMAKE_C_FLAGS ???
@@ -132,11 +132,11 @@ set ( CMAKE_CXX_FLAGS
 set ( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EXTRA_LD_FLAGS}" )
 
 if ( ENABLE_DEBUG_OUTPUT )
-	add_definitions( -DDEF_ENABLE_DEBUG )
+        add_definitions( -DDEF_ENABLE_DEBUG )
 endif ( ENABLE_DEBUG_OUTPUT )
 
 if ( ENABLE_DEBUG_TRACE )
-	add_definitions( -DDEF_ENABLE_TRACE )
+        add_definitions( -DDEF_ENABLE_TRACE )
 endif ( ENABLE_DEBUG_TRACE )
 
 ##################################################
@@ -146,44 +146,44 @@ endif ( ENABLE_DEBUG_TRACE )
 ##################################################
 find_package ( Threads REQUIRED )
 if ( Threads_FOUND )
-	if ( WIN32 )
-		list ( APPEND add_LIBS winmm.lib ws2_32.lib )
-		###message( STATUS "*** ENV INCLUDE $ENV{INCLUDE}")
-		message ( STATUS
-		  "*** Finding pthread.h HINTS [${CMAKE_PREFIX_PATH}] PATHS [${CMAKE_INCLUDE_PATH}] PATH_SUFFIXES include"
-		)
-		###find_file( thread_INC pthread.h
-		find_path ( thread_INC pthread.h
-			HINTS ${CMAKE_PREFIX_PATH} $ENV{INCLUDE}
-			PATHS ${CMAKE_INCLUDE_PATH} $ENV{INCLUDE}
-			PATH_SUFFIXES include
-		)
-		if ( thread_INC )
-			include_directories ( SYSTEM ${thread_INC} )
-			message (STATUS "*** thread_INC: ${thread_INC}" )
-		else ( thread_INC )
-			message ( FATAL_ERROR
-			  "*** thread_INC: ${thread_INC} pthread.h NOT FOUND!"
-			)
-		endif ( thread_INC )
-		find_library ( thread_LIB pthreadVC2.lib
-			HINTS ${CMAKE_PREFIX_PATH} $ENV{LIB}
-			PATHS ${CMAKE_INCLUDE_PATH} $ENV{LIB}
-			PATH_SUFFIXES lib
-		)
-		if ( thread_LIB )
-			list ( APPEND add_LIBS ${thread_LIB} )
-			message ( STATUS "*** Found ${thread_LIB})" )
-		else ( thread_LIB )
-			message ( FATAL_ERROR
-			  "*** NOT FOUND target_link_libraries(pthread1 ${thread_LIB})"
-			)
-		endif ( thread_LIB )
-	else ( WIN32 )
-		list ( APPEND add_LIBS ${CMAKE_THREAD_LIBS_INIT} )
-	endif ( WIN32 )
+        if ( WIN32 )
+                list ( APPEND add_LIBS winmm.lib ws2_32.lib )
+                ###message( STATUS "*** ENV INCLUDE $ENV{INCLUDE}")
+                message ( STATUS
+                  "*** Finding pthread.h HINTS [${CMAKE_PREFIX_PATH}] PATHS [${CMAKE_INCLUDE_PATH}] PATH_SUFFIXES include"
+                )
+                ###find_file( thread_INC pthread.h
+                find_path ( thread_INC pthread.h
+                        HINTS ${CMAKE_PREFIX_PATH} $ENV{INCLUDE}
+                        PATHS ${CMAKE_INCLUDE_PATH} $ENV{INCLUDE}
+                        PATH_SUFFIXES include
+                )
+                if ( thread_INC )
+                        include_directories ( SYSTEM ${thread_INC} )
+                        message (STATUS "*** thread_INC: ${thread_INC}" )
+                else ( thread_INC )
+                        message ( FATAL_ERROR
+                          "*** thread_INC: ${thread_INC} pthread.h NOT FOUND!"
+                        )
+                endif ( thread_INC )
+                find_library ( thread_LIB pthreadVC2.lib
+                        HINTS ${CMAKE_PREFIX_PATH} $ENV{LIB}
+                        PATHS ${CMAKE_INCLUDE_PATH} $ENV{LIB}
+                        PATH_SUFFIXES lib
+                )
+                if ( thread_LIB )
+                        list ( APPEND add_LIBS ${thread_LIB} )
+                        message ( STATUS "*** Found ${thread_LIB})" )
+                else ( thread_LIB )
+                        message ( FATAL_ERROR
+                          "*** NOT FOUND target_link_libraries(pthread1 ${thread_LIB})"
+                        )
+                endif ( thread_LIB )
+        else ( WIN32 )
+                list ( APPEND add_LIBS ${CMAKE_THREAD_LIBS_INIT} )
+        endif ( WIN32 )
 else ( Threads_FOUND )
-	message ( FATAL_ERROR "*** THREADS NOT FOUND!" )
+        message ( FATAL_ERROR "*** THREADS NOT FOUND!" )
 endif ( Threads_FOUND )
 
 ##################################################
@@ -192,67 +192,70 @@ endif ( Threads_FOUND )
 #
 ##################################################
 include_directories ( SYSTEM "${PROJECT_BINARY_DIR}"
-	src
-	src/fgms
-	src/fglib
-	src/libcli
+        src
+        src/fgms
+        src/fglib
+        src/libcli
 )
 
 #### add_subdirectory( src/libcli )
 # Project [libcli] [Static Library] [noinst_LIBRARIES]
 set ( libcli_SRCS
-	src/libcli/common.hxx
-	src/libcli/command.hxx
-	src/libcli/cli_client.hxx
-	src/libcli/cli_client.cxx
-	src/libcli/libcli.hxx
-	src/libcli/libcli.cxx
-	src/libcli/filter.hxx
-	src/libcli/filter.cxx
+        src/libcli/common.hxx
+        src/libcli/command.hxx
+        src/libcli/command.cxx
+        src/libcli/cli_line.hxx
+        src/libcli/cli_line.cxx
+        src/libcli/filter.hxx
+        src/libcli/filter.cxx
+        src/libcli/libcli.hxx
+        src/libcli/libcli.cxx
+        src/libcli/cli_client.hxx
+        src/libcli/cli_client.cxx
 )
 if ( WIN32 )
-	list ( APPEND libcli_SRCS src/libcli/crypt-win.c )
+        list ( APPEND libcli_SRCS src/libcli/crypt-win.c )
 else ( WIN32 )
-	list ( APPEND add_LIBS crypt )
+        list ( APPEND add_LIBS crypt )
 endif ( WIN32 )
 add_library ( LibCLI ${LIB_TYPE} ${libcli_SRCS} )
 list ( APPEND add_LIBS LibCLI )
 
 #### add_subdirectory( src/libfgmp )
 set ( Libfgmp_SRCS
-	src/fglib/mpmessages.hxx
-	src/fglib/debug.hxx
-	src/fglib/debug.cxx
-	src/fglib/fg_util.cxx 
-	src/fglib/fg_util.hxx 
-	src/fglib/encoding.hxx
-	src/fglib/encoding.cxx
-	src/fglib/netaddr.hxx
-	src/fglib/netaddr.cxx
-	src/fglib/ipaddr.hxx
-	src/fglib/ipaddr.cxx
-	src/fglib/netpacket.hxx
-	src/fglib/netpacket.cxx
-	src/fglib/netsocket.hxx
-	src/fglib/netsocket.cxx
-	src/fglib/fg_config.hxx 
-	src/fglib/fg_config.cxx 
-	src/fglib/fg_geometry.hxx
-	src/fglib/fg_geometry.cxx
-	src/fglib/fg_version.hxx
-	src/fglib/fg_version.cxx
-	src/fglib/fg_thread.hxx 
-	src/fglib/fg_thread.cxx 
-	src/fglib/fg_list.hxx 
-	src/fglib/fg_list.cxx 
-	src/fglib/fg_log.hxx 
-	src/fglib/fg_log.cxx 
+        src/fglib/mpmessages.hxx
+        src/fglib/debug.hxx
+        src/fglib/debug.cxx
+        src/fglib/fg_util.cxx 
+        src/fglib/fg_util.hxx 
+        src/fglib/encoding.hxx
+        src/fglib/encoding.cxx
+        src/fglib/netaddr.hxx
+        src/fglib/netaddr.cxx
+        src/fglib/ipaddr.hxx
+        src/fglib/ipaddr.cxx
+        src/fglib/netpacket.hxx
+        src/fglib/netpacket.cxx
+        src/fglib/netsocket.hxx
+        src/fglib/netsocket.cxx
+        src/fglib/fg_config.hxx 
+        src/fglib/fg_config.cxx 
+        src/fglib/fg_geometry.hxx
+        src/fglib/fg_geometry.cxx
+        src/fglib/fg_version.hxx
+        src/fglib/fg_version.cxx
+        src/fglib/fg_thread.hxx 
+        src/fglib/fg_thread.cxx 
+        src/fglib/fg_list.hxx 
+        src/fglib/fg_list.cxx 
+        src/fglib/fg_log.hxx 
+        src/fglib/fg_log.cxx 
     )
 if (NOT MSVC)
     list(APPEND Libfgmp_SRCS
-		src/fglib/daemon.hxx 
-		src/fglib/daemon.cxx 
-	)
+                src/fglib/daemon.hxx 
+                src/fglib/daemon.cxx 
+        )
 endif (NOT MSVC)        
 add_library ( Libfgmp ${LIB_TYPE} ${Libfgmp_SRCS} )
 # NO INSTALL [noinst_LIBRARIES]
@@ -261,19 +264,21 @@ list ( APPEND add_LIBS Libfgmp )
 #### add_subdirectory( src/libmsc ) Windows Only
 # Project [libmsc] [Static Library] [noinst_LIBRARIES]
 if ( MSVC )
-	add_library (
-		libmsc ${LIB_TYPE}
-		src/libmsc/msc_unistd.cxx
-		src/libmsc/msc_unistd.hxx
-	)
-	list ( APPEND add_LIBS libmsc )
+        add_library (
+                libmsc ${LIB_TYPE}
+                src/libmsc/msc_unistd.cxx
+                src/libmsc/msc_unistd.hxx
+                src/libmsc/msc_getopt.cxx
+                src/libmsc/msc_getopt.hxx
+        )
+        list ( APPEND add_LIBS libmsc )
 endif ( MSVC )
 
 # Project [sgutils] [Static Library] [noinst_LIBRARIES]
 #add_library (
-#	sgutils ${LIB_TYPE}
-#	src/simgear/math/SGEuler.hxx 
-#	src/simgear/math/SGEuler.cxx 
+#       sgutils ${LIB_TYPE}
+#       src/simgear/math/SGEuler.hxx 
+#       src/simgear/math/SGEuler.cxx 
 #)
 # NO INSTALL [noinst_LIBRARIES]
 #list ( APPEND add_LIBS sgutils )
@@ -284,13 +289,13 @@ endif ( MSVC )
 #
 ##################################################
 if ( BUILD_FGLS )
-	add_executable ( fgls
-		src/fgls/fgls.hxx
-		src/fgls/fgls.cxx
-		src/fgls/fgls_cli.hxx
-		src/fgls/fgls_cli.cxx
-	)
-	target_link_libraries ( fgls ${add_LIBS} )
+        add_executable ( fgls
+                src/fgls/fgls.hxx
+                src/fgls/fgls.cxx
+                src/fgls/fgls_cli.hxx
+                src/fgls/fgls_cli.cxx
+        )
+        target_link_libraries ( fgls ${add_LIBS} )
 endif ( BUILD_FGLS )
 
 ##################################################
@@ -299,15 +304,18 @@ endif ( BUILD_FGLS )
 #
 ##################################################
 if ( BUILD_TESTS )
-	# test_log
-	add_executable ( test_log src/tests/test_log.cxx )
-	target_link_libraries ( test_log  ${add_LIBS} )
-	# test_ipaddr
-	add_executable ( test_ipaddr src/tests/test_ipaddr.cxx )
-	target_link_libraries ( test_ipaddr  ${add_LIBS} )
-	# test_netaddr
-	add_executable ( test_netaddr src/tests/test_netaddr.cxx )
-	target_link_libraries ( test_netaddr  ${add_LIBS} )
+        # test_log
+        add_executable ( test_log src/tests/test_log.cxx )
+        target_link_libraries ( test_log  ${add_LIBS} )
+        # test_ipaddr
+        add_executable ( test_ipaddr src/tests/test_ipaddr.cxx )
+        target_link_libraries ( test_ipaddr  ${add_LIBS} )
+        # test_netaddr
+        add_executable ( test_netaddr src/tests/test_netaddr.cxx )
+        target_link_libraries ( test_netaddr  ${add_LIBS} )
+        # test cli
+        add_executable ( test_cli src/tests/test_cli.cxx )
+        target_link_libraries ( test_cli  ${add_LIBS} )
 endif ( BUILD_TESTS )
 
 ##################################################
@@ -316,27 +324,27 @@ endif ( BUILD_TESTS )
 #
 ##################################################
 if ( BUILD_SERVER2 )
-	set ( EXE_NAME mp_server2 )
-	add_definitions (
-	  -DDEF_SERVER_LOG="fgms2.log" -DDEF_EXIT_FILE="fgms_exit2"
-	  -DDEF_RESET_FILE="fgms_reset2" -DDEF_STAT_FILE="fgms_stat2"
-	  -DDEF_CONF_FILE="fgms2.conf" -DIPCKEY=0xf9f6 )
+        set ( EXE_NAME mp_server2 )
+        add_definitions (
+          -DDEF_SERVER_LOG="fgms2.log" -DDEF_EXIT_FILE="fgms_exit2"
+          -DDEF_RESET_FILE="fgms_reset2" -DDEF_STAT_FILE="fgms_stat2"
+          -DDEF_CONF_FILE="fgms2.conf" -DIPCKEY=0xf9f6 )
 endif ( BUILD_SERVER2 )
 # Project [fgms] [Console Application] [sbin_PROGRAMS]
 add_executable ( ${EXE_NAME}
-	src/fgms/fgms.hxx 
-	src/fgms/fgms.cxx 
-	src/fgms/fg_tracker.hxx 
-	src/fgms/fg_tracker.cxx 
-	src/fgms/fg_player.hxx 
-	src/fgms/fg_player.cxx 
-	src/fgms/fg_cli.hxx
-	src/fgms/fg_cli.cxx 
-	src/fgms/main.cxx 
+        src/fgms/fgms.hxx 
+        src/fgms/fgms.cxx 
+        src/fgms/fg_tracker.hxx 
+        src/fgms/fg_tracker.cxx 
+        src/fgms/fg_player.hxx 
+        src/fgms/fg_player.cxx 
+        src/fgms/fg_cli.hxx
+        src/fgms/fg_cli.cxx 
+        src/fgms/main.cxx 
 )
 target_link_libraries ( ${EXE_NAME} ${add_LIBS} )
 if ( MSVC )
-	set_target_properties ( ${EXE_NAME} PROPERTIES DEBUG_POSTFIX "d" )
+        set_target_properties ( ${EXE_NAME} PROPERTIES DEBUG_POSTFIX "d" )
 endif ( MSVC )
 install ( TARGETS ${EXE_NAME} DESTINATION ${SBINDIR} )
 
@@ -352,14 +360,14 @@ message ( STATUS "    Will install binary to ${SBINDIR}" )
 message ( STATUS "    Will read config from ${SYSCONFDIR}" )
 message ( STATUS "    Build type is: ${CMAKE_BUILD_TYPE}" )
 if ( CMAKE_BUILD_TYPE STREQUAL Debug )
-	message ( STATUS "    use -DCMAKE_BUILD_TYPE=Release to change" )
+        message ( STATUS "    use -DCMAKE_BUILD_TYPE=Release to change" )
 else()
-	message ( STATUS "    use -DCMAKE_BUILD_TYPE=Debug to change" )
+        message ( STATUS "    use -DCMAKE_BUILD_TYPE=Debug to change" )
 endif()
 if ( BUILD_SHARED_LIB )
-	message( STATUS "    Building DLL library ${LIB_TYPE}" )
+        message( STATUS "    Building DLL library ${LIB_TYPE}" )
 else (BUILD_SHARED_LIB )
-	message(STATUS "    Building static library ${LIB_TYPE}")
+        message(STATUS "    Building static library ${LIB_TYPE}")
 endif ( BUILD_SHARED_LIB )
 message ( STATUS "    set CXX FLAGS [${CMAKE_CXX_FLAGS}]" )
 message ( STATUS "    set C FLAGS [${CMAKE_C_FLAGS}]" )
@@ -367,44 +375,44 @@ message ( STATUS "    target_link_libraries( ${EXE_NAME} ${add_LIBS} )" )
 
 
 if ( ENABLE_DEBUG_OUTPUT )
-	message ( STATUS "    building with additinal debug output" )
+        message ( STATUS "    building with additinal debug output" )
 else ( ENABLE_DEBUG_OUTPUT )
-	message ( STATUS
-	  "    building without additional debug info.. Use -DENABLE_DEBUG_OUTPUT:BOOL=TRUE to enable it."
-	)
+        message ( STATUS
+          "    building without additional debug info.. Use -DENABLE_DEBUG_OUTPUT:BOOL=TRUE to enable it."
+        )
 endif ( ENABLE_DEBUG_OUTPUT )
 
 if ( ENABLE_DEBUG_TRACE )
-	message ( STATUS "    building with trace info" )
+        message ( STATUS "    building with trace info" )
 else ( ENABLE_DEBUG_TRACE )
-	message ( STATUS
-	  "    building without trace info.. Use -DENABLE_DEBUG_TRACE:BOOL=TRUE to enable it."
-	)
+        message ( STATUS
+          "    building without trace info.. Use -DENABLE_DEBUG_TRACE:BOOL=TRUE to enable it."
+        )
 endif ( ENABLE_DEBUG_TRACE )
 
 if ( BUILD_TESTS )
-	message ( STATUS "    building test applications" )
+        message ( STATUS "    building test applications" )
 else ( BUILD_TESTS )
-	message ( STATUS
-	  "    test apps NOT being built. Use -DBUILD_TESTS:BOOL=TRUE to enable it."
-	)
+        message ( STATUS
+          "    test apps NOT being built. Use -DBUILD_TESTS:BOOL=TRUE to enable it."
+        )
 endif ( BUILD_TESTS )
 
 if ( BUILD_FGLS )
-	message ( STATUS "    building fgls" )
+        message ( STATUS "    building fgls" )
 else ( BUILD_FGLS )
-	message ( STATUS
-	  "    fgls NOT being built. Use -DBUILD_FGLS:BOOL=TRUE to enable it."
-	)
+        message ( STATUS
+          "    fgls NOT being built. Use -DBUILD_FGLS:BOOL=TRUE to enable it."
+        )
 endif ( BUILD_FGLS )
 
 if ( BUILD_SERVER2 )
-	message ( STATUS "    Building server 2. File fgms2.log fgms_exit2 fgms_reset2 fgms_stat2 fgms2.conf")
+        message ( STATUS "    Building server 2. File fgms2.log fgms_exit2 fgms_reset2 fgms_stat2 fgms2.conf")
 else ( BUILD_SERVER2 )
-	message ( STATUS
-	  "    server2 NOT being built. Use -DBUILD_SERVER2:BOOL=TRUE to enable it."
-	)
-	message ( STATUS "    Building FGMS")
+        message ( STATUS
+          "    server2 NOT being built. Use -DBUILD_SERVER2:BOOL=TRUE to enable it."
+        )
+        message ( STATUS "    Building FGMS")
 endif ( BUILD_SERVER2 )
 
 message ( STATUS )

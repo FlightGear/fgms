@@ -1,4 +1,4 @@
-//                                                                                                                           
+//
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -20,36 +20,122 @@
 #include "config.h"
 #endif
 
+#include "cli_client.hxx"
 #include "common.hxx"
 #include "filter.hxx"
 
 namespace libcli
 {
 
-using namespace std;
+//////////////////////////////////////////////////////////////////////
 
-int
-filter_t::exec
+match_filter::match_filter
 (
-	cli_client& Instance,
-	char *cmd
+        const std::string & match,
+        bool invert
+) : m_match_this ( match ), m_invert ( invert )
+{} // match_filter::match_filter
+
+//////////////////////////////////////////////////////////////////////
+
+bool
+match_filter::operator ()
+(
+        const std::string & line
 )
 {
-	DEBUG d (__FUNCTION__,__FILE__,__LINE__);
-	return (CALL_MEMBER_FN (Instance, this->filter)(cmd, this->data));
-}
+        bool r = ( line.find ( m_match_this ) != std::string::npos );
+        if ( m_invert )
+                r = ( r == false );
+        return r;
+} // match_filter::operator () ()
 
-int
-filter_t::exec
+//////////////////////////////////////////////////////////////////////
+
+begin_filter::begin_filter
 (
-	cli_client& Instance,
-	char *cmd,
-	void *data
+        const std::string & match
+) : m_match_this ( match )
+{} // begin_filter::begin_filter
+
+//////////////////////////////////////////////////////////////////////
+
+bool
+begin_filter::operator ()
+(
+        const std::string & line
 )
 {
-	DEBUG d (__FUNCTION__,__FILE__,__LINE__);
-	return (CALL_MEMBER_FN (Instance, this->filter)(cmd, data));
-}
+        if ( m_have_match )
+                return true;
+        if ( line.find ( m_match_this ) != std::string::npos )
+                m_have_match = true;
+        return m_have_match;
+} // begin_filter::operator () ()
+
+//////////////////////////////////////////////////////////////////////
+
+between_filter::between_filter
+(
+        const std::string & start_match,
+        const std::string & end_match
+) : m_start_match ( start_match ), m_end_match ( end_match )
+{} // between_filter::between_filter
+
+//////////////////////////////////////////////////////////////////////
+
+bool
+between_filter::operator ()
+(
+        const std::string & line
+)
+{
+        if ( ! m_have_match )
+        {
+                if ( line.find ( m_start_match ) != std::string::npos )
+                        m_have_match = true;
+                return m_have_match;
+        }
+        if ( line.find ( m_end_match ) != std::string::npos )
+                m_have_match = false;
+        return m_have_match;
+} // between_filter::operator () ()
+
+//////////////////////////////////////////////////////////////////////
+
+count_filter::count_filter
+(
+        cli_client* client
+) : m_client ( client )
+{} // count_filter::count_filter ()
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * print out counter when destroyed
+ */
+count_filter::~count_filter
+()
+{
+        // *m_client << UNFILTERED << m_counter << endl;        !! segfaults
+        m_client->operator << (m_counter);
+        m_client->operator << ("\r\n");
+} // count_filter::count_filter
+
+//////////////////////////////////////////////////////////////////////
+
+bool
+count_filter::operator ()
+(
+        const std::string & line
+)
+{
+        if ( line.find_first_not_of ( " " ) != std::string::npos )
+                m_counter++;
+        return false; // no output
+} // count_filter::operator () ()
+
+//////////////////////////////////////////////////////////////////////
 
 } // namespace libcli
 

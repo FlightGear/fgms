@@ -919,7 +919,8 @@ netsocket::close
 				 strerror ( errno ), m_handle );
 		}
 #else
-		::closesocket ( m_handle );
+                if ( m_handle > 0 )
+                        ::closesocket ( m_handle );
 #endif
 		m_handle = -1;
 	}

@@ -36,37 +36,37 @@ namespace fgmp
 class version
 {
 public:
-	version ( char major, char minor, char patch, const char* extra );
-	version ();
-	inline std::string str () const { return m_str_rep; };
-	uint32_t   num () const;
-	/** return a 'major' as an int */
-	inline int major () const { return m_version.major; };
-	/** return a 'minor' as an int */
-	inline int minor () const { return m_version.minor; };
-	/** return a 'patch' as an int */
-	inline int patch () const { return m_version.patch; };
-	void set_num ( uint32_t v );
-	bool operator ==  ( const version& v ) const;
-	bool operator !=  ( const version& v ) const;
-	bool operator <   ( const version& v ) const;
-	bool operator >   ( const version& v ) const;
-	bool operator <=  ( const version& v ) const;
-	bool operator >=  ( const version& v ) const;
-	bool is_compatible ( const version& v ) const;
-	friend std::ostream& operator << ( std::ostream& o, const version& v );
+        version ( char major, char minor, char patch, const char* extra );
+        version ();
+        inline std::string str () const { return m_str_rep; };
+        uint32_t   num () const;
+        /** return a 'major' as an int */
+        inline int major () const { return m_version.major; };
+        /** return a 'minor' as an int */
+        inline int minor () const { return m_version.minor; };
+        /** return a 'patch' as an int */
+        inline int patch () const { return m_version.patch; };
+        void set_num ( uint32_t v );
+        bool operator ==  ( const version& v ) const;
+        bool operator !=  ( const version& v ) const;
+        bool operator <   ( const version& v ) const;
+        bool operator >   ( const version& v ) const;
+        bool operator <=  ( const version& v ) const;
+        bool operator >=  ( const version& v ) const;
+        bool is_compatible ( const version& v ) const;
+        friend std::ostream& operator << ( std::ostream& o, const version& v );
 private:
-	version ( const version& );	// disable
-	struct
-	{
-		char	major;
-		char	minor;
-		char	patch;
-		char	dummy; // align to 32 bit
-	} m_version;
-	std::string	m_extra;
-	std::string	m_str_rep;
-	void mk_str_rep ();
+        version ( const version& );     // disable
+        struct
+        {
+                char    major;
+                char    minor;
+                char    patch;
+                char    dummy; // align to 32 bit
+        } m_version;
+        std::string     m_extra;
+        std::string     m_str_rep;
+        void mk_str_rep ();
 }; // class version
 
 } // namespace fgmp

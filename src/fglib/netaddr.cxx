@@ -271,7 +271,9 @@ netaddr::assign
 	}
 	if (s != 0)
 	{
-		throw std::runtime_error ( gai_strerror(s) );
+		//throw std::runtime_error ( gai_strerror(s) );
+                m_addr = 0;
+                return;
 	}
 	if ( rp->ai_family == AF_INET )
 	{
@@ -288,9 +290,11 @@ netaddr::assign
 	else
 	{
 		std::cout << "family: " << rp->ai_family << std::endl;
-		throw std::runtime_error (
-		  "netaddr::assign(): unsupported addr family"
-		);
+		//throw std::runtime_error (
+		//  "netaddr::assign(): unsupported addr family"
+		//);
+                m_addr = 0;
+                return;
 	}
 	freeaddrinfo ( rp );
 } // netaddr::assign(host,port)
@@ -352,9 +356,10 @@ netaddr::assign
 	else
 	{
 		std::cout << "family: " << addr.sa_family << std::endl;
-		throw std::runtime_error (
-		  "netaddr::assign(): unsupported addr family"
-		);
+		//throw std::runtime_error (
+		//  "netaddr::assign(): unsupported addr family"
+		//);
+                m_addr = 0;
 	}
 } // netaddr::assign(sock_addr)
 

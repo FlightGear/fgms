@@ -18,87 +18,78 @@
 //
 
 
-#ifndef CLI_COMMON_H
-#define CLI_COMMON_H
-
-#ifdef __GNUC__
-#       define UNUSED(d) d __attribute__ ((unused))
-#else
-#       define UNUSED(d) d
-#endif
+#ifndef _cli_common_header
+#define _cli_common_header
 
 #include <exception>
 #include <iostream>
+#include <vector>
+#include <string>
+#include <list>
 #include <fglib/debug.hxx>
-
-#define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember)) 
-#define free_z(p) do { if (p) { free (p); (p) = 0; } } while (0)
 
 namespace libcli
 {
 
-enum RETURN_CODES
+using strvec  = std::vector<std::string>;
+using strlist = std::list<std::string>;
+
+enum class RESULT
 {
-	OK              = 0,
-	ERROR_ANY       = -1,
-	QUIT            = -2,
-	ERROR_ARG       = -3
+        OK,
+        ERROR_ANY,
+        INVALID_ARG,
+        TOO_MANY_ARGS,
+        MISSING_ARG,
+        SHOW_HELP
 };
 
-enum PRIVLEVEL
+/**
+ * libcli supports privilege levels. Every command is associated with
+ * a privilege level and is only available if the user has at least
+ * this level.
+ * With this scheme, there could be several users with different
+ * access levels. Currently only UNPRIVILEGED and PRIVILEGED are defined.
+ * For possible enhancements this type is defined as an integer (not an enum
+ * class) so the levels can be extended from outside of libcli.
+ */
+namespace PRIVLEVEL
 {
-	UNPRIVILEGED    = 0,
-	PRIVILEGED      = 15
-};
+        enum
+        {
+                UNPRIVILEGED    = 0,
+                PRIVILEGED      = 15
+        };
+}
 
-enum MODE
+/**
+ * libcli supports different modes of operation. Currently two modes are
+ * defined: EXEC and CONFIG. When a user connects to the cli, he generally
+ * starts off in EXEC mode. The 'configure' command switches into CONFIG
+ * mode.
+ * ANY means the command is available in any (i.e. all) modes.
+ * For possible enhancements this type is defined as an integer (not an enum
+ * class) so the levels can be extended from outside of libcli.
+ */
+namespace CLI_MODE
 {
-	MODE_ANY        = -1,
-	MODE_EXEC       = 0,
-	MODE_CONFIG     = 1
-};
-
-enum PRINT_MODE
-{
-	PRINT_PLAIN     = 0x00,
-	PRINT_FILTERED  = 0x01
-};
-
-enum MATCH_MODE
-{
-	MATCH_NORM	= 0,
-	MATCH_INVERT    = 2
-};
-
-enum CLI_STATES
-{
-	STATE_LOGIN,
-	STATE_PASSWORD,
-	STATE_NORMAL,
-	STATE_ENABLE_PASSWORD,
-	STATE_ENABLE
-};
-
-const int MAX_HISTORY   = 256;
+        enum
+        {
+                ANY,
+                EXEC,
+                CONFIG
+        };
+}
 
 class arg_error : public std::exception
 {
 public:
-	arg_error ( const char* r ) { reason = r; };
-	virtual const char* what() const throw()
-	{
-		return reason;
-	}
-	const char* reason;
-};
-
-class mem_error : public std::exception
-{
-public:
-	virtual const char* what() const throw()
-	{
-		return "could not allocate memory";
-	}
+        arg_error ( const std::string& r ):reason{r} {};
+        virtual const char* what() const throw()
+        {
+                return reason.c_str();
+        }
+        const std::string reason;
 };
 
 } // namespace libcli

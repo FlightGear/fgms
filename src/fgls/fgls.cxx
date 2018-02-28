@@ -108,7 +108,7 @@ FGLS::FGLS
 	// logging
 	m_logfile_name	= "";
 	m_reinit_log	= true;
-	m_debug_level	= log_prio::MEDIUM;
+	m_debug_level	= fglog::prio::MEDIUM;
 	// general
 	m_is_parent	= false;
 	m_check_interval = 5;
@@ -136,8 +136,8 @@ FGLS::init
 	{
 		open_logfile ();
 	}
-	logger.priority ( log_prio::MEDIUM );
-	logger.flags ( fglog::WITH_DATE );
+	logger.priority ( fglog::prio::MEDIUM );
+	logger.set_flags ( fglog::flags::WITH_DATE );
 #ifndef _MSC_VER
 	if ( m_run_as_daemon )
 	{
@@ -174,7 +174,7 @@ FGLS::loop
 
 	if ( m_data_channel == 0 )
 	{
-		LOG ( log_prio::ERROR, "FGLS::loop() - "
+		LOG ( fglog::prio::EMIT, "FGLS::loop() - "
 		  << "not listening on any socket!" );
 		return;
 	}
@@ -185,7 +185,7 @@ FGLS::loop
 			m_admin_channel->close ();
 			delete m_admin_channel;
 			m_admin_channel = 0;
-			LOG ( log_prio::ERROR,
+			LOG ( fglog::prio::EMIT,
 			  "# Admin port disabled, "
 			  "please set user and password"
 			);
@@ -200,13 +200,13 @@ FGLS::loop
 		pthread_t th;
 		pthread_create ( &th, NULL, &detach_admin_cli, t );
 	}
-	LOG ( log_prio::ERROR, "# Main server started!" );
+	LOG ( fglog::prio::EMIT, "# Main server started!" );
 	m_is_parent = true;
 	while ( m_want_exit == false )
 	{
 		if ( m_data_channel == 0 )
 		{
-			LOG ( log_prio::ERROR, "lost data channel!" );
+			LOG ( fglog::prio::EMIT, "lost data channel!" );
 			return;
 		}
 		current_time = time ( 0 );
@@ -236,12 +236,12 @@ FGLS::loop
 			{
 				if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 				{
-					LOG ( log_prio::URGENT, "FGLS::Loop() - "
+					LOG ( fglog::prio::URGENT, "FGLS::Loop() - "
 					  << strerror ( errno ) );
 				}
 				continue;
 			}
-			LOG ( log_prio::URGENT,
+			LOG ( fglog::prio::URGENT,
 			  "FGLS::Loop() - new Admin connection from "
 			  << admin_addr.to_string () );
 			st_telnet* t = new st_telnet;
@@ -279,10 +279,10 @@ FGLS::init_data_channel
 	}
 	catch ( std::runtime_error& e )
 	{
-		LOG ( log_prio::URGENT, "FGLS::Init() - "
+		LOG ( fglog::prio::URGENT, "FGLS::Init() - "
 		  << "failed to bind on " << m_bind_addr
 		  << ":" << m_data_port );
-		LOG ( log_prio::URGENT, "already in use?" );
+		LOG ( fglog::prio::URGENT, "already in use?" );
 		return false;
 	}
 	m_reinit_data = false;
@@ -318,7 +318,7 @@ FGLS::init_query_channel
 	}
 	catch ( std::runtime_error& e )
 	{
-		LOG ( log_prio::URGENT, "FGLS::Init() - "
+		LOG ( fglog::prio::URGENT, "FGLS::Init() - "
 		  << "failed to listen to query port" );
 		return false;
 	}
@@ -354,7 +354,7 @@ FGLS::init_admin_channel
 	}
 	catch ( std::runtime_error& e )
 	{
-		LOG ( log_prio::URGENT, "FGLS::Init() - "
+		LOG ( fglog::prio::URGENT, "FGLS::Init() - "
 		  << "failed to listen to query port" );
 		return false;
 	}
@@ -373,10 +373,10 @@ FGLS::open_logfile
 	{
 		return;
 	}
-	LOG ( log_prio::CONSOLE, "# using logfile " << m_logfile_name );
+	LOG ( fglog::prio::CONSOLE, "# using logfile " << m_logfile_name );
 	if ( ! logger.open ( m_logfile_name ) )
 	{
-		LOG ( log_prio::URGENT,
+		LOG ( fglog::prio::URGENT,
 		  "FGLS::open_logfile(): "
 		  << "Failed to open log file " << m_logfile_name );
 	}
@@ -391,7 +391,7 @@ FGLS::shutdown
 {
 	if ( ! m_is_parent )
 		return;
-	LOG ( log_prio::URGENT, "FGLS::Shutdown() - exiting" );
+	LOG ( fglog::prio::URGENT, "FGLS::Shutdown() - exiting" );
 	logger.close ();
 	if ( m_data_channel )
 	{
@@ -438,10 +438,10 @@ FGLS::process_config
 	}
 	if ( config.read ( config_name ) )
 	{
-	LOG ( log_prio::ERROR, "failed to read " << config_name );
+	LOG ( fglog::prio::EMIT, "failed to read " << config_name );
 		return false;
 	}
-	LOG ( log_prio::ERROR, "processing " << config_name );
+	LOG ( fglog::prio::EMIT, "processing " << config_name );
 	val = config.get ( "fgls.name" );
 	if ( val != "" )
 	{
@@ -458,7 +458,7 @@ FGLS::process_config
 		m_data_port = str_to_num<uint16_t> ( val, e );
 		if ( e )
 		{
-			LOG ( log_prio::URGENT,
+			LOG ( fglog::prio::URGENT,
 			  "invalid value for fgls.port: '" << val << "'"
 			);
 			exit ( 1 );
@@ -470,7 +470,7 @@ FGLS::process_config
 		m_query_port = str_to_num<uint16_t> ( val, e );
 		if ( e )
 		{
-			LOG ( log_prio::URGENT,
+			LOG ( fglog::prio::URGENT,
 			  "invalid value for fgls.telnet: '" << val << "'"
 			);
 			exit ( 1 );
@@ -489,7 +489,7 @@ FGLS::process_config
 		}
 		else
 		{
-			LOG ( log_prio::URGENT,
+			LOG ( fglog::prio::URGENT,
 			  "unknown value for fgls.admin_cli '"
 			  << val << "'"
 			);
@@ -501,7 +501,7 @@ FGLS::process_config
 		m_admin_port = str_to_num<uint16_t> ( val, e );
 		if ( e )
 		{
-			LOG ( log_prio::URGENT,
+			LOG ( fglog::prio::URGENT,
 			  "invalid value for fgls.admin_port: '" << val << "'"
 			);
 			exit ( 1 );
@@ -535,7 +535,7 @@ FGLS::process_config
 		}
 		else
 		{
-			LOG ( log_prio::URGENT,
+			LOG ( fglog::prio::URGENT,
 			  "unknown value for fgls.daemon '"
 			  << val << "'"
 			);
@@ -552,7 +552,7 @@ FGLS::process_config
 		m_check_interval = str_to_num<uint16_t> ( val, e );
 		if ( e )
 		{
-			LOG ( log_prio::URGENT,
+			LOG ( fglog::prio::URGENT,
 			  "invalid value for fgls.checkinterval: '"
 			  << val << "'"
 			);
@@ -651,7 +651,7 @@ FGLS::read_configs
 	// failed, try current directory
 	if ( process_config ( "fgls.conf" ) == true )
 		return true;
-	LOG ( log_prio::ERROR,
+	LOG ( fglog::prio::EMIT,
 	  "Could not find a config file => using defaults");
 	return true;
 } // FGLS::read_configs ()
@@ -758,7 +758,7 @@ FGLS::parse_params
 			m_logfile_name = optarg;
 			break;
 		case 'L':
-			m_debug_level = static_cast<log_prio> (str_to_num<uint16_t> ( optarg, e ));
+			m_debug_level = static_cast<fglog::prio> (str_to_num<uint16_t> ( optarg, e ));
 			if ( e )
 			{
 				std::cerr << "invalid value for LEVEL "

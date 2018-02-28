@@ -33,7 +33,7 @@ class point3d
 {
 public:
         enum { X, Y, Z };
-        enum { LAT, LON, ALT };
+//        enum { LAT, LON, ALT };
         point3d ();
         point3d ( const point3d_t& x, const point3d_t& y, const point3d_t& z );
         void set ( const point3d_t& x, const point3d_t& y, const point3d_t& z );

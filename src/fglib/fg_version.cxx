@@ -20,7 +20,11 @@
 // Copyright (C) 2017  Oliver Schroeder
 //
 
-#include <arpa/inet.h>
+#ifdef WIN32
+        #include <WinSock2.h>
+#else
+        #include <arpa/inet.h>
+#endif
 #include "fg_version.hxx"
 #include "fg_util.hxx"
 
@@ -48,17 +52,17 @@ namespace fgmp
  */
 version::version
 (
-	char major,
-	char minor,
-	char patch,
-	const char* extra
+        char major,
+        char minor,
+        char patch,
+        const char* extra
 ) : m_extra ( extra )
 {
-	m_version.major = major;
-	m_version.minor = minor;
-	m_version.patch = patch;
-	m_version.dummy = 0;
-	mk_str_rep ();
+        m_version.major = major;
+        m_version.minor = minor;
+        m_version.patch = patch;
+        m_version.dummy = 0;
+        mk_str_rep ();
 } // version::version ()
 
 //////////////////////////////////////////////////////////////////////
@@ -68,10 +72,10 @@ version::version
 version::version
 () : m_extra ( "" ), m_str_rep ( "" )
 {
-	m_version.major = 0;
-	m_version.minor = 0;
-	m_version.patch = 0;
-	m_version.dummy = 0;
+        m_version.major = 0;
+        m_version.minor = 0;
+        m_version.patch = 0;
+        m_version.dummy = 0;
 } // version::version ()
 
 //////////////////////////////////////////////////////////////////////
@@ -82,10 +86,10 @@ void
 version::mk_str_rep
 ()
 {
-	m_str_rep =  num_to_str (m_version.major) + ".";
-	m_str_rep += num_to_str (m_version.minor) + ".";
-	m_str_rep += num_to_str (m_version.patch);
-	m_str_rep += m_extra;
+        m_str_rep =  num_to_str (m_version.major) + ".";
+        m_str_rep += num_to_str (m_version.minor) + ".";
+        m_str_rep += num_to_str (m_version.patch);
+        m_str_rep += m_extra;
 } // version::mk_str_rep ()
 
 //////////////////////////////////////////////////////////////////////
@@ -99,7 +103,7 @@ uint32_t
 version::num
 () const
 {
-	return ntohl ( * ((uint32_t*) & m_version) );
+        return ntohl ( * ((uint32_t*) & m_version) );
 } // version::num ()
 
 //////////////////////////////////////////////////////////////////////
@@ -109,12 +113,12 @@ version::num
 void
 version::set_num
 (
-	uint32_t v
+        uint32_t v
 )
 {
-	uint32_t* i = (uint32_t*) & m_version;
-	*i = htonl ( v );
-	mk_str_rep ();
+        uint32_t* i = (uint32_t*) & m_version;
+        *i = htonl ( v );
+        mk_str_rep ();
 } // version::set_num ()
 
 //////////////////////////////////////////////////////////////////////
@@ -126,15 +130,15 @@ version::set_num
 bool
 version::operator ==
 (
-	const version& v
+        const version& v
 ) const
 {
-	if ( (m_version.major == v.m_version.major)
-	&&   (m_version.minor == v.m_version.minor)
-	&&   (m_version.patch == v.m_version.patch)
-	&&   (m_version.dummy == v.m_version.dummy) )
-		return true;
-	return false;
+        if ( (m_version.major == v.m_version.major)
+        &&   (m_version.minor == v.m_version.minor)
+        &&   (m_version.patch == v.m_version.patch)
+        &&   (m_version.dummy == v.m_version.dummy) )
+                return true;
+        return false;
 } // version::operator == 
 
 //////////////////////////////////////////////////////////////////////
@@ -146,15 +150,15 @@ version::operator ==
 bool
 version::operator !=
 (
-	const version& v
+        const version& v
 ) const
 {
-	if ( (m_version.major != v.m_version.major)
-	||   (m_version.minor != v.m_version.minor)
-	||   (m_version.patch != v.m_version.patch)
-	||   (m_version.dummy != v.m_version.dummy) )
-		return true;
-	return false;
+        if ( (m_version.major != v.m_version.major)
+        ||   (m_version.minor != v.m_version.minor)
+        ||   (m_version.patch != v.m_version.patch)
+        ||   (m_version.dummy != v.m_version.dummy) )
+                return true;
+        return false;
 } // version::operator != 
 
 //////////////////////////////////////////////////////////////////////
@@ -166,12 +170,12 @@ version::operator !=
 bool
 version::operator <
 (
-	const version& v
+        const version& v
 ) const
 {
-	if ( num() < v.num() )
-		return true;
-	return false;
+        if ( num() < v.num() )
+                return true;
+        return false;
 } // version::operator <
 
 //////////////////////////////////////////////////////////////////////
@@ -183,12 +187,12 @@ version::operator <
 bool
 version::operator >
 (
-	const version& v
+        const version& v
 ) const
 {
-	if ( num() > v.num() )
-		return true;
-	return false;
+        if ( num() > v.num() )
+                return true;
+        return false;
 } // version::operator >
 
 //////////////////////////////////////////////////////////////////////
@@ -200,12 +204,12 @@ version::operator >
 bool
 version::operator <=
 (
-	const version& v
+        const version& v
 ) const
 {
-	if ( num() <= v.num() )
-		return true;
-	return false;
+        if ( num() <= v.num() )
+                return true;
+        return false;
 } // version::operator >=
 
 //////////////////////////////////////////////////////////////////////
@@ -217,12 +221,12 @@ version::operator <=
 bool
 version::operator >=
 (
-	const version& v
+        const version& v
 ) const
 {
-	if ( num() >= v.num() )
-		return true;
-	return false;
+        if ( num() >= v.num() )
+                return true;
+        return false;
 } // version::operator >=
 
 //////////////////////////////////////////////////////////////////////
@@ -235,13 +239,13 @@ version::operator >=
 bool
 version::is_compatible
 (
-	const version& v
+        const version& v
 ) const
 {
-	if ( ( m_version.major == v.m_version.major )
-	&&   ( m_version.minor >= v.m_version.minor ) )
-		return true;
-	return false;
+        if ( ( m_version.major == v.m_version.major )
+        &&   ( m_version.minor >= v.m_version.minor ) )
+                return true;
+        return false;
 } // version::is_compatible ()
 
 //////////////////////////////////////////////////////////////////////
@@ -253,12 +257,12 @@ version::is_compatible
 std::ostream&
 operator <<
 (
-	std::ostream& o,
-	const version& v
+        std::ostream& o,
+        const version& v
 )
 {
-	o << v.str();
-	return o;
+        o << v.str();
+        return o;
 } // ostream << version
 
 //////////////////////////////////////////////////////////////////////

@@ -410,7 +410,7 @@ XDR_encode_float
 	} tmp;
 	if ( sizeof ( float ) != sizeof ( xdr_data_t ) )
 	{
-		LOG ( log_prio::DEBUG,  "XDR_encode_float: "
+		LOG ( fglog::prio::DEBUG,  "XDR_encode_float: "
 		  << "sizeof (float) != sizeof (xdr_data_t) !!!" );
 	}
 	tmp.raw = val;
@@ -433,7 +433,7 @@ XDR_decode_float
 	} tmp;
 	if ( sizeof ( float ) != sizeof ( xdr_data_t ) )
 	{
-		LOG ( log_prio::DEBUG, "XDR_decode_float: "
+		LOG ( fglog::prio::DEBUG, "XDR_decode_float: "
 		  << "sizeof (float) != sizeof (xdr_data_t) !!!" );
 	}
 	tmp.encoded = SWAP32 ( val );
@@ -455,7 +455,7 @@ XDR_encode_double
 	} tmp;
 	if ( sizeof ( double ) != sizeof ( xdr_data2_t ) )
 	{
-		LOG ( log_prio::DEBUG, "XDR_encode_double: "
+		LOG ( fglog::prio::DEBUG, "XDR_encode_double: "
 		  << "sizeof (double) != sizeof (xdr_data2_t) !!!" );
 	}
 	tmp.raw = val;
@@ -479,7 +479,7 @@ XDR_decode_double
 	} tmp;
 	if ( sizeof ( double ) != sizeof ( xdr_data2_t ) )
 	{
-		LOG ( log_prio::DEBUG, "XDR_decode_double: "
+		LOG ( fglog::prio::DEBUG, "XDR_decode_double: "
 		  << "sizeof (double) != sizeof (xdr_data2_t) !!!" );
 	}
 	tmp.encoded = SWAP64 ( val );
@@ -763,7 +763,7 @@ NET_encode_float
 	} tmp;
 	if ( sizeof ( float ) != sizeof ( uint32_t ) )
 	{
-		LOG ( log_prio::DEBUG, "NET_encode_float: "
+		LOG ( fglog::prio::DEBUG, "NET_encode_float: "
 		  << "sizeof (float) != 4 !!!" );
 	}
 	tmp.raw = val;
@@ -786,7 +786,7 @@ NET_decode_float
 	} tmp;
 	if ( sizeof ( float ) != sizeof ( uint32_t ) )
 	{
-		LOG ( log_prio::DEBUG, "NET_decode_float: "
+		LOG ( fglog::prio::DEBUG, "NET_decode_float: "
 		  << "sizeof (float) != 4 !!!" );
 	}
 	tmp.net = SWAP32 ( val );
@@ -808,7 +808,7 @@ NET_encode_double
 	} tmp;
 	if ( sizeof ( double ) != sizeof ( uint64_t ) )
 	{
-		LOG ( log_prio::DEBUG, "NET_encode_double: "
+		LOG ( fglog::prio::DEBUG, "NET_encode_double: "
 		  << "sizeof (double) != sizeof (uint64_t) !!!" );
 	}
 	tmp.raw = val;
@@ -831,7 +831,7 @@ NET_decode_double
 	} tmp;
 	if ( sizeof ( double ) != sizeof ( uint64_t ) )
 	{
-		LOG ( log_prio::DEBUG, "NET_decode_double: "
+		LOG ( fglog::prio::DEBUG, "NET_decode_double: "
 		  << "sizeof (double) != sizeof (uint64_t) !!!" );
 	}
 	tmp.net = SWAP64 ( val );

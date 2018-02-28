@@ -21,8 +21,8 @@
 /// @file fg_log.cxx
 /// flightgear list server
 ///
-/// @author	Oliver Schroeder <fgms@o-schroeder.de>
-/// @date	2008-2015
+/// @author     Oliver Schroeder <fgms@o-schroeder.de>
+/// @date       2008-2015
 ///
 
 #include "fg_log.hxx"
@@ -34,7 +34,7 @@ namespace fgmp
 
 //////////////////////////////////////////////////////////////////////
 
-/** Create a standard fglog
+/** Create a standard log
  *
  * Default priority is \c MEDIUM
  * @see fglog::priority
@@ -43,12 +43,12 @@ namespace fgmp
 fglog::fglog
 () : m_logstream(0), m_logfile(0)
 {
-	init ();
+        init ();
 } // fglog::fglog ()
 
 //////////////////////////////////////////////////////////////////////
 
-/** Create a fglog and set the output priority
+/** Create a log and set the output priority
  *
  * @param p log only messages with priority \c p
  * @see fglog::priority
@@ -56,32 +56,32 @@ fglog::fglog
  */
 fglog::fglog
 (
-	log_prio p
+        prio p
 ) : m_logstream(0), m_logfile(0)
 {
-	init ();
-	m_priority = p;
-} // fglog::fglog (log_prio)
+        init ();
+        m_priority = p;
+} // fglog::fglog (prio)
 
 //////////////////////////////////////////////////////////////////////
 
-/** Create a fglog and log all messages into a file
+/** Create a log and log all messages into a file
  *
  * @param name The logfile to use
  * @see fglog::init
  */
 fglog::fglog
 (
-	std::string name
+        std::string name
 ) : m_logstream(0), m_logfile(0)
 {
-	init ();
-	open ( name );
+        init ();
+        open ( name );
 } // fglog::fglog ( name )
 
 //////////////////////////////////////////////////////////////////////
 
-/** Create a fglog and log all messages into a file
+/** Create a log and log all messages into a file
  * and use priotity \c p
  *
  * @param name The logfile to use
@@ -91,13 +91,13 @@ fglog::fglog
  */
 fglog::fglog
 (
-	std::string name,
-	log_prio p
+        std::string name,
+        prio p
 ) : m_logstream(0), m_logfile(0)
 {
-	init ();
-	m_priority = p;
-	open ( name );
+        init ();
+        m_priority = p;
+        open ( name );
 } // fglog::fglog ( name, priority )
 
 //////////////////////////////////////////////////////////////////////
@@ -107,8 +107,8 @@ fglog::fglog
 fglog::~fglog
 ()
 {
-	close ();
-} // fglog::~fglog ()
+        close ();
+} // fglog::~log ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -123,13 +123,13 @@ void
 fglog::init
 ()
 {
-	m_flags		= WITH_DATE;
-	m_priority	= log_prio::MEDIUM;
-	m_outprio	= log_prio::MEDIUM;
-	m_logstream	= new std::ostream ( std::cout.rdbuf () );
-	m_logstreambuf	= m_logstream->rdbuf ();
-	m_logbufsize	= 200;
-	m_date		= false;
+        m_flags         = fglog::flags::WITH_DATE;
+        m_priority      = prio::MEDIUM;
+        m_outprio       = prio::MEDIUM;
+        m_logstream     = new std::ostream ( std::cout.rdbuf () );
+        m_logstreambuf  = m_logstream->rdbuf ();
+        m_logbufsize    = 200;
+        m_date          = false;
 } // fglog::init()
 
 //////////////////////////////////////////////////////////////////////
@@ -141,29 +141,29 @@ fglog::init
 bool
 fglog::open
 (
-	std::string name
+        std::string name
 )
 {
-	m_logname = name;
-	if ( m_logfile && (*m_logfile) )
-	{
-		m_logstream->rdbuf ( m_logstreambuf );
-		m_logfile->close ();
-	}
-	m_logstreambuf = m_logstream->rdbuf ();
-	if ( ! m_logfile )
-	{
-		m_logfile = new std::ofstream ( name.c_str(),
-		  std::ios::out|std::ios::app );
-	}
-	else
-	{
-		m_logfile->open ( name.c_str(), std::ios::out|std::ios::app );
-	}
-	if ( ! m_logfile->is_open() )
-		return false;
-	m_logstream->rdbuf ( m_logfile->rdbuf () );
-	return true;
+        m_logname = name;
+        if ( m_logfile && (*m_logfile) )
+        {
+                m_logstream->rdbuf ( m_logstreambuf );
+                m_logfile->close ();
+        }
+        m_logstreambuf = m_logstream->rdbuf ();
+        if ( ! m_logfile )
+        {
+                m_logfile = new std::ofstream ( name.c_str(),
+                  std::ios::out|std::ios::app );
+        }
+        else
+        {
+                m_logfile->open ( name.c_str(), std::ios::out|std::ios::app );
+        }
+        if ( ! m_logfile->is_open() )
+                return false;
+        m_logstream->rdbuf ( m_logfile->rdbuf () );
+        return true;
 } // fglog::open ()
 
 //////////////////////////////////////////////////////////////////////
@@ -174,30 +174,30 @@ void
 fglog::close
 ()
 {
-	if ( m_logfile && (*m_logfile) )
-	{
-		m_logfile->close ();
-	}
-	m_logname = "";
-	if ( m_logstream )
-	{
-		m_logstream->rdbuf ( std::cout.rdbuf () );
-	}
-	if ( m_logstreambuf && m_logstream )
-	{
-		m_logstreambuf = m_logstream->rdbuf ();
-	}
-	if ( m_logstream )
-	{
-		delete m_logstream;
-		m_logstream = 0;
-	}
-	if ( m_logfile )
-	{
-		delete m_logfile;
-		m_logfile = 0;
-	}
-	m_outprio	= log_prio::NONE;
+        if ( m_logfile && (*m_logfile) )
+        {
+                m_logfile->close ();
+        }
+        m_logname = "";
+        if ( m_logstream )
+        {
+                m_logstream->rdbuf ( std::cout.rdbuf () );
+        }
+        if ( m_logstreambuf && m_logstream )
+        {
+                m_logstreambuf = m_logstream->rdbuf ();
+        }
+        if ( m_logstream )
+        {
+                delete m_logstream;
+                m_logstream = 0;
+        }
+        if ( m_logfile )
+        {
+                delete m_logfile;
+                m_logfile = 0;
+        }
+        m_outprio       = prio::NONE;
 } // fglog::close ()
 
 //////////////////////////////////////////////////////////////////////
@@ -210,10 +210,10 @@ fglog::close
 void
 fglog::priority
 (
-	log_prio p
+        prio p
 )
 {
-	m_priority = p;
+        m_priority = p;
 } // fglog::priority (p)
 
 //////////////////////////////////////////////////////////////////////
@@ -224,21 +224,21 @@ int
 fglog::priority
 () const
 {
-	return static_cast<int> (m_priority);
+        return static_cast<int> (m_priority);
 } // fglog::priority (p)
 
 //////////////////////////////////////////////////////////////////////
 
 /** set flags for following log requests.
- * @see fglog::logflags
+ * @see fglog::flags
  */
 void
-fglog::flags
+fglog::set_flags
 (
-	logflags f
+        fglog::flags f
 )
 {
-	m_flags = f;
+        m_flags = f;
 } // fglog::flags(f)
 
 //////////////////////////////////////////////////////////////////////
@@ -249,7 +249,7 @@ void
 fglog::flush
 ()
 {
-	m_logstream->flush ();
+        m_logstream->flush ();
 } // fglog::flush()
 
 //////////////////////////////////////////////////////////////////////
@@ -260,7 +260,7 @@ std::string
 fglog::get_name
 () const
 {
-	return m_logname;
+        return m_logname;
 } // fglog::get_name()
 
 //////////////////////////////////////////////////////////////////////
@@ -271,7 +271,7 @@ bool
 fglog::is_open
 () const
 {
-	return m_logfile ? m_logfile->is_open() : false;
+        return m_logfile ? m_logfile->is_open() : false;
 } // fglog::is_open()
 
 //////////////////////////////////////////////////////////////////////
@@ -286,10 +286,10 @@ fglog::is_open
  * @code
  * fgmp::str_list*  buf = logger.logbuf();
  * fgmp::str_it     it;
- * buf->lock ();	// lock the buffer !
+ * buf->lock ();        // lock the buffer !
  * for ( it = buf->begin(); it != buf->end(); it++ )
  * {
- * 	...
+ *      ...
  * }
  * buf->unlock ();
  * @endcode
@@ -301,22 +301,22 @@ fgmp::str_list*
 fglog::logbuf
 ()
 {
-	return &m_logbuf;
+        return &m_logbuf;
 } // fglog::logbuf()
 
 //////////////////////////////////////////////////////////////////////
 
 /** Set the size of our internal buffer.
  *
- * @param size	lines to keep in the internal buffer.
+ * @param size  lines to keep in the internal buffer.
  */
 void
 fglog::setbufsize
 (
-	size_t size
+        size_t size
 )
 {
-	m_logbufsize = size;
+        m_logbufsize = size;
 } // fglog::setbufsize(s)
 
 //////////////////////////////////////////////////////////////////////
@@ -330,22 +330,22 @@ fglog::setbufsize
  * @code
  * fgmp::fglog log;
  *
- * log.log ( fglog::HIGH ) << "Output with priority HIGH" << fgmp::endl;
- * log.log () << "Output with priority HIGH, too" << fgmp::endl;
+ * log.log ( fglog::HIGH ) << "Output with priority HIGH" << fglog::endl;
+ * log.log () << "Output with priority HIGH, too" << fglog::endl;
  * @endcode
  */
 fglog&
 fglog::log
 ()
 {
-	m_outprio = m_priority;
-	if ( m_flags & WITH_DATE )
-	{
-		m_date = true;
-		(*this) << datestr ();
-		m_date = false;
-	}
-	return *this;
+        m_outprio = m_priority;
+        if ( m_flags == fglog::flags::WITH_DATE )
+        {
+                m_date = true;
+                (*this) << datestr ();
+                m_date = false;
+        }
+        return *this;
 } // fglog::log ()
 
 //////////////////////////////////////////////////////////////////////
@@ -361,23 +361,23 @@ fglog::log
  * @code
  * fgmp::fglog log;
  *
- * log.log ( fglog::HIGH ) << "Output with priority HIGH" << fgmp::endl;
+ * log.log ( fglog::HIGH ) << "Output with priority HIGH" << fglog::endl;
  * @endcode
  */
 fglog&
 fglog::log
 (
-	log_prio p
+        prio p
 )
 {
-	m_outprio = p;
-	if ( m_flags & WITH_DATE )
-	{
-		m_date = true;
-		(*this) << datestr ();
-		m_date = false;
-	}
-	return *this;
+        m_outprio = p;
+        if ( m_flags == fglog::flags::WITH_DATE )
+        {
+                m_date = true;
+                (*this) << datestr ();
+                m_date = false;
+        }
+        return *this;
 } // fglog::log ( priority )
 
 //////////////////////////////////////////////////////////////////////
@@ -401,19 +401,19 @@ fglog::log
 void
 fglog::log
 (
-	log_prio p,
-	const char* format,
-	...
+        prio p,
+        const char* format,
+        ...
 )
 {
-	if ( ! format )
-	{
-		return;
-	}
-	va_list vl;
-	va_start ( vl,format );
-	log(p) << logfmt ( p, format,vl ) << fgmp::endl;
-	va_end(vl);
+        if ( ! format )
+        {
+                return;
+        }
+        va_list vl;
+        va_start ( vl,format );
+        log(p) << logfmt ( p, format,vl ) << fglog::endl;
+        va_end(vl);
 } // fglog::log ( priority, fmt )
 
 //////////////////////////////////////////////////////////////////////
@@ -423,15 +423,15 @@ fglog::log
 std::string
 fglog::logfmt
 (
-	log_prio p,
-	const char* format,
-	va_list vl
+        prio p,
+        const char* format,
+        va_list vl
 )
 {
-	char buf[5000];
-	m_outprio = p;
-	vsprintf ( buf, format, vl );
-	return static_cast<std::string> (buf);
+        char buf[5000];
+        m_outprio = p;
+        vsprintf ( buf, format, vl );
+        return static_cast<std::string> (buf);
 } // fglog::logfmt ()
 
 //////////////////////////////////////////////////////////////////////
@@ -442,40 +442,20 @@ std::string
 fglog::datestr
 ()
 {
-	time_t		t;
-	struct tm*	tmr;
-	char		buf[41];
+        time_t          t;
+        struct tm*      tmr;
+        char            buf[41];
 
-	t = time ( 0 );
-	tmr = localtime ( &t );
-	sprintf (buf, "%02d.%02d.%04d %02d:%02d:%02d ",
-		tmr->tm_mday,
-		tmr->tm_mon+1,
-		tmr->tm_year+1900,
-		tmr->tm_hour,
-		tmr->tm_min,
-		tmr->tm_sec);
-	return static_cast<std::string> (buf);
-}
-
-//////////////////////////////////////////////////////////////////////
-
-/** internal, put the logged message into our internal buffer of
- * log messages.
- */
-void
-fglog::commit
-()
-{
-	while ( m_logbuf.size() > m_logbufsize )
-	{
-		m_logbuf.pop_front ();
-	}
-	std::string s = m_logline.str ();
-	m_logbuf.push_back ( s );
-	m_logline.str( "" );
-	if ( m_logstream )
-		m_logstream->flush();
+        t = time ( 0 );
+        tmr = localtime ( &t );
+        sprintf (buf, "%02d.%02d.%04d %02d:%02d:%02d ",
+                tmr->tm_mday,
+                tmr->tm_mon+1,
+                tmr->tm_year+1900,
+                tmr->tm_hour,
+                tmr->tm_min,
+                tmr->tm_sec);
+        return static_cast<std::string> (buf);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -484,14 +464,24 @@ fglog::commit
  * the internal buffer of log messages.
  */
 fglog&
-endl
+fglog::endl
 (
-	fglog& l
+        fglog& l
 )
 {
-	l << "\r\n";
-	l.commit ();
-	return l;
+        while ( l.m_logbuf.size() > l.m_logbufsize )
+        {
+                l.m_logbuf.pop_front ();
+        }
+        std::string s = l.m_logline.str ();
+        l << "\r\n";
+        l.m_logbuf.push_back ( s );
+        l.m_logline.str( "" );
+        if ( l.m_logstream != 0 )
+        {
+                l.m_logstream->flush();
+        }
+        return l;
 } // endl ()
 
 //////////////////////////////////////////////////////////////////////

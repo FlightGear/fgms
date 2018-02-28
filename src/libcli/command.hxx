@@ -17,268 +17,159 @@
 // Copyright (C) 2011  Oliver Schroeder
 //
 
-#ifndef CLI_COMMAND_H
-#define CLI_COMMAND_H
+#ifndef _cli_command_header
+#define _cli_command_header
 
+#include <functional>
+#include <memory>
+#include <vector>
 #include "common.hxx"
 
 namespace libcli
 {
 
-using namespace std;
-
 class cli;
+class command;
 
-class CommandBase
-{
-};
-
-template <class C>
-class Command : public CommandBase
+/**
+ * Define a cli command.
+ */
+class command
 {
 public:
-	friend class cli;
-	using c_callback_func   = int (*) ( C& , char*, char**, int );
-	using cpp_callback_func = int ( C::* ) ( char*, char**, int );
-	Command ();
-	Command (
-	        C*              obj,
-	        const char*     command,
-	        PRIVLEVEL       level,
-	        MODE            mode,
-	        const char*     help
-	);
-	Command (
-	        C*              obj,
-	        const char*     command,
-	        c_callback_func callback,
-	        PRIVLEVEL       level,
-	        MODE            mode,
-	        const char*     help
-	);
-	Command (
-	        C*              obj,
-	        const char*     command,
-	        cpp_callback_func callback,
-	        PRIVLEVEL       level,
-	        MODE            mode,
-	        const char*     help
-	);
-	~Command ();
-	int  exec ( char* command, char** argv, int argc );
-	int  exec ( C& Instance, char* command, char** argv, int argc );
+        using cli_callback_func = std::function <
+          RESULT ( const std::string& name, const strvec& args,
+          size_t first_arg ) >;
+        using command_p = std::shared_ptr<command>;
+        using cmdlist   = std::vector<command_p>;
+        friend class cli;
+
+        command () = delete;
+        command ( const command& ) = delete;
+        command (
+                const std::string & name,
+                int level,
+                int mode,
+                const std::string & help
+        );
+        command (
+                const std::string & name,
+                cli_callback_func callback,
+                int level,
+                int mode,
+                const std::string & help
+        );
+        ~command ();
+        RESULT  exec ( const std::string& name, const strvec& args,
+          size_t first_arg );
+        inline bool has_callback () const;
+        inline bool has_children () const;
+        inline const std::string& name () const;
+        inline const std::string& help () const;
+        inline int privilege () const;
+        inline int mode () const;
+        inline size_t unique_len () const;
+        inline void unique_len (size_t len );
 private:
-	char*           command;
-	char*           help;
-	PRIVLEVEL       privilege;
-	MODE            mode;
-	unsigned int    unique_len;
-	Command*        next;
-	Command*        children;
-	Command*        parent;
-	C*              _obj;
-	bool            have_callback;
-	c_callback_func     c_callback;
-	cpp_callback_func   cpp_callback;
-	Command ( const C& obj );
-}; // class Command
+        /// the command name
+        std::string m_name;
+        /// a brief desciption what the command does
+        std::string m_help;
+        /// which privilege is needed to execute the command
+        /// @see PRIVLEVEL
+        int m_privilege;
+        /// in which mode the command is available
+        /// @see CLI_MODE
+        int m_mode;
+        size_t m_unique_len = 1;
+        /// every command can have an abitrary number of subcommands
+        cmdlist m_children;
+        /// every command can have a callback funtion.
+        cli_callback_func m_cli_callback = nullptr;
+}; // class command
 
-template <class C>
-Command<C>::Command
-()
+//////////////////////////////////////////////////////////////////////
+
+const std::string&
+command::name
+() const
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	this->parent    = 0;
-	this->command   = 0;
-	this->help      = 0;
-	this->next      = 0;
-	this->children  = 0;
-	this->privilege = UNPRIVILEGED;
-	this->mode      = MODE_ANY;
-	this->_obj      = 0;
-	this->c_callback    = 0;
-	this->cpp_callback  = 0;
-	this->have_callback = false;
-}
+        return m_name;
+} // command::name ()
 
-template <class C>
-Command<C>::Command
-(
-        C*              obj,
-        const char*     command,
-        PRIVLEVEL       level,
-        MODE            mode,
-        const char*     help
-)
+//////////////////////////////////////////////////////////////////////
+
+const std::string&
+command::help
+() const
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if ( ( command == 0 ) || ( strlen ( command ) == 0 ) )
-	{
-		throw arg_error ( "C1: bad argument" );
-	}
-	if ( command )
-	{
-		this->command   = strdup ( command );
-	}
-	if ( help )
-	{
-		this->help      = strdup ( help );
-	}
-	this->parent    = 0;
-	this->privilege = level;
-	this->mode      = mode;
-	this->next      = 0;
-	this->children  = 0;
-	this->_obj      = obj;
-	this->c_callback    = 0;
-	this->cpp_callback  = 0;
-	this->have_callback = false;
-}
+        return m_help;
+} // command::help ()
 
-template <class C>
-Command<C>::Command
-(
-        C*              obj,
-        const char*     command,
-        c_callback_func callback,
-        PRIVLEVEL       level,
-        MODE            mode,
-        const char*     help
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if ( ( command == 0 ) || ( strlen ( command ) == 0 ) )
-	{
-		throw arg_error ( "C2: bad argument" );
-	}
-	if ( command )
-	{
-		this->command   = strdup ( command );
-	}
-	if ( help )
-	{
-		this->help      = strdup ( help );
-	}
-	this->parent    = 0;
-	this->privilege = level;
-	this->mode      = mode;
-	this->next      = 0;
-	this->children  = 0;
-	this->_obj      = obj;
-	this->c_callback    = callback;
-	this->cpp_callback  = 0;
-	if ( this->c_callback )
-	{
-		this->have_callback = true;
-	}
-	else
-	{
-		this->have_callback = false;
-	}
-}
+//////////////////////////////////////////////////////////////////////
 
-template <class C>
-Command<C>::Command
-(
-        C*              obj,
-        const char*     command,
-        cpp_callback_func callback,
-        PRIVLEVEL       level,
-        MODE            mode,
-        const char*     help
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if ( ( command == 0 ) || ( strlen ( command ) == 0 ) )
-	{
-		throw arg_error ( "C2: bad argument" );
-	}
-	if ( command )
-	{
-		this->command   = strdup ( command );
-	}
-	if ( help )
-	{
-		this->help      = strdup ( help );
-	}
-	this->parent    = 0;
-	this->privilege = level;
-	this->mode      = mode;
-	this->next      = 0;
-	this->children  = 0;
-	this->_obj      = obj;
-	this->c_callback    = 0;
-	this->cpp_callback= callback;
-	if ( this->cpp_callback )
-	{
-		this->have_callback = true;
-	}
-	else
-	{
-		this->have_callback = false;
-	}
-}
-
-template <class C>
-Command<C>::~Command
-()
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	parent = 0;
-	if ( command )
-	{
-		free_z ( command );
-	}
-	if ( help )
-	{
-		free_z ( help );
-	}
-	c_callback =  0;
-	cpp_callback =  0;
-}
-
-template <class C>
 int
-Command<C>::exec
-(
-        char*   command,
-        char**  argv,
-        int     argc
-)
+command::privilege
+() const
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if ( ! have_callback )
-	{
-		throw arg_error ( "Command::exec: no callback!" );
-	}
-	if ( c_callback )
-	{
-		return ( this->c_callback ( *_obj, command, argv, argc ) );
-	}
-	else if ( cpp_callback )
-	{
-		return this->exec ( *_obj, command, argv, argc );
-	}
-	throw arg_error ( "BAD: Command::exec: no callback!" );
-}
+        return m_privilege;
+} // command::privilege ()
 
-template <class C>
+//////////////////////////////////////////////////////////////////////
+
 int
-Command<C>::exec
+command::mode
+() const
+{
+        return m_mode;
+} // command::mode ()
+
+//////////////////////////////////////////////////////////////////////
+
+size_t
+command::unique_len
+() const
+{
+        return m_unique_len;
+} // command::unique_len()
+
+//////////////////////////////////////////////////////////////////////
+
+void
+command::unique_len
 (
-        C& Instance,
-        char*   command,
-        char**  argv,
-        int     argc
+        const size_t len
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if ( ! this->cpp_callback )
-	{
-		throw arg_error ( "Command::exec: no cpp_callback" );
-	}
-	return ( CALL_MEMBER_FN ( Instance, this->cpp_callback ) ( command, argv, argc ) );
-}
+         m_unique_len = len;
+} // command::unique_len(len)
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * @return true if this command has a callback function.
+ */
+bool
+command::has_callback
+() const
+{
+        return m_cli_callback != nullptr;
+} // command::has_callback ()
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * @return true if this command has subcommands.
+ */
+bool
+command::has_children
+() const
+{
+        return m_children.size() > 0;
+} // command::has_children ()
+
+//////////////////////////////////////////////////////////////////////
+
 
 } // namespace libcli
 

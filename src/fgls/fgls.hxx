@@ -147,7 +147,7 @@ protected:
 	/// log into this file
 	std::string	m_logfile_name;
 	/// we want to see only logs of this log priority
-	fgmp::log_prio	m_debug_level;
+	fgmp::fglog::prio	m_debug_level;
 	/// true if logfile needs to be reopened.
 	bool		m_reinit_log;
 	/// true if have read a config file

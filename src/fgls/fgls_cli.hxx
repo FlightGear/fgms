@@ -17,9 +17,9 @@
 //
 
 /**
- * @file	fgls_cli.hxx
- * @author	Oliver Schroeder <fgms@o-schroeder.de>
- * @date	07/2017
+ * @file        fgls_cli.hxx
+ * @author      Oliver Schroeder <fgms@o-schroeder.de>
+ * @date        07/2017
  */
 
 /**
@@ -38,24 +38,24 @@ using namespace libcli;
 class fgls_cli : public cli
 {
 public:
-	fgls_cli ( FGLS* fgls, int fd );
+        fgls_cli ( FGLS* fgls, int fd );
 private:
-	void setup ();
-	//////////////////////////////////////////////////
-	// general commands
-	//////////////////////////////////////////////////
-	int cmd_show_settings ( UNUSED(char *command),
-		   UNUSED(char *argv[]), UNUSED(int argc) );
-	int cmd_show_version ( UNUSED(char *command),
-		   UNUSED(char *argv[]), UNUSED(int argc) );
-	int cmd_show_uptime ( UNUSED(char *command),
-		   UNUSED(char *argv[]), UNUSED(int argc) );
-	int cmd_show_log ( UNUSED(char *command),
-		   UNUSED(char *argv[]), UNUSED(int argc) );
-	int cmd_fgls_die ( UNUSED(char *command),
-		   UNUSED(char *argv[]), UNUSED(int argc) );
+        void setup ();
+        //////////////////////////////////////////////////
+        // general commands
+        //////////////////////////////////////////////////
+        RESULT cmd_show_settings ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cmd_show_version ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cmd_show_uptime ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cmd_show_log ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cmd_die ( const std::string& command,
+                   const strvec& args, size_t first_arg );
 
-	FGLS*	fgls;
+        FGLS*   fgls;
 }; // class fgls_cli
 
 #endif

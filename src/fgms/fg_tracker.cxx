@@ -120,7 +120,7 @@ tracker::tracker
 	m_domain	= domain;
 	m_proto_version = "20151207";
 	m_tracker_socket = 0;
-	LOG ( log_prio::DEBUG, "# tracker::tracker:"
+	LOG ( fglog::prio::DEBUG, "# tracker::tracker:"
 	  << m_tracker_server << ", Port: " << m_tracker_port
 	);
 	last_seen	= 0;
@@ -228,7 +228,7 @@ tracker::write_queue
 	queue_file.open ( "queue_file", std::ios::out|std::ios::app );
 	if ( ! queue_file )
 	{
-		LOG ( log_prio::HIGH, "# tracker::write_queue: "
+		LOG ( fglog::prio::HIGH, "# tracker::write_queue: "
 		  << "could not open queuefile!" );
 		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
 		return;
@@ -311,7 +311,7 @@ tracker::check_timeout()
 		{
 			m_connected = false;
 			lost_connections++;
-			LOG ( log_prio::URGENT,
+			LOG ( fglog::prio::URGENT,
 			  "# tracker::check_timeout: "
 			  << "No data received from FGTracker for "
 			  << seconds
@@ -322,7 +322,7 @@ tracker::check_timeout()
 		std::string reply = "PING";
 		if ( tracker_write ( reply ) < 0 )
 		{
-			LOG ( log_prio::HIGH, "# tracker::check_timeout: "
+			LOG ( fglog::prio::HIGH, "# tracker::check_timeout: "
 			  << "Tried to PING FGTracker "
 			  << "(No data from FGTracker for "
 			  << seconds
@@ -332,7 +332,7 @@ tracker::check_timeout()
 		}
 		else
 		{
-			LOG ( log_prio::DEBUG, "# tracker::check_timeout: "
+			LOG ( fglog::prio::DEBUG, "# tracker::check_timeout: "
 			  << "PING FGTracker (No data from FGTracker for "
 			  << seconds << " seconds)"
 			);
@@ -366,7 +366,7 @@ tracker::tracker_read
 		{
 			m_connected = false;
 			lost_connections++;
-			LOG ( log_prio::HIGH, "# tracker::tracker_read: "
+			LOG ( fglog::prio::HIGH, "# tracker::tracker_read: "
 			  << "lost connection to FGTracker"
 			);
 		}
@@ -402,7 +402,7 @@ tracker::tracker_read
 			pkts_rcvd++;
 		}
 		bytes_rcvd += bytes;
-		LOG ( log_prio::DEBUG, "# tracker::tracker_read: "
+		LOG ( fglog::prio::DEBUG, "# tracker::tracker_read: "
 		  << "received message from FGTracker - " << res );
 		reply_from_server ();
 	}
@@ -428,7 +428,7 @@ tracker::tracker_write
 	{
 		m_connected = false;
 		lost_connections++;
-		LOG ( log_prio::HIGH, "# tracker::tracker_write: "
+		LOG ( fglog::prio::HIGH, "# tracker::tracker_write: "
 		  << "lost connection to server. Netsocket returned size ="
 		  << s << ", actual size should be =" <<l
 		);
@@ -495,7 +495,7 @@ tracker::reply_from_server
 			reply = "PONG";
 			if ( tracker_write ( reply ) < 0 )
 			{
-				LOG ( log_prio::HIGH,
+				LOG ( fglog::prio::HIGH,
 				  "# tracker::reply_from_server: "
 				  << "PING from FGTracker received "
 				  << "but failed to sent PONG to FGTracker"
@@ -503,7 +503,7 @@ tracker::reply_from_server
 			}
 			else
 			{
-				LOG ( log_prio::DEBUG,
+				LOG ( fglog::prio::DEBUG,
 				  "# tracker::reply_from_server: "
 				  << "PING from FGTracker received"
 				);
@@ -511,13 +511,13 @@ tracker::reply_from_server
 		}
 		else if ( str == "PONG" )
 		{
-			LOG ( log_prio::DEBUG, "# tracker::reply_from_server: "
+			LOG ( fglog::prio::DEBUG, "# tracker::reply_from_server: "
 			  << "PONG from FGTracker received"
 			);
 		}
 		else if ( pos_err == 0 )
 		{
-			LOG ( log_prio::HIGH, "# tracker::reply_from_server: "
+			LOG ( fglog::prio::HIGH, "# tracker::reply_from_server: "
 			  << "Received error message from FGTracker. Msg: '"
 			  << str <<"'"
 			);
@@ -527,7 +527,7 @@ tracker::reply_from_server
 			reply = "ERROR Unrecognized message \"" + str + "\"";
 			if ( tracker_write ( reply ) < 0 )
 			{
-				LOG ( log_prio::HIGH,
+				LOG ( fglog::prio::HIGH,
 				  "# tracker::reply_from_server: "
 				  << "Responce not recognized and failed "
 				  << "to notify FGTracker. Msg: '"
@@ -536,7 +536,7 @@ tracker::reply_from_server
 			}
 			else
 			{
-				LOG ( log_prio::HIGH,
+				LOG ( fglog::prio::HIGH,
 				  "# tracker::reply_from_server: "
 				  << "Responce from FGTracker not "
 				  << "recognized. Msg: '" << str << "'"
@@ -567,11 +567,11 @@ tracker::loop
 	bs.maxlen = MAX_MSG_LINE;
 	bs.curlen = 0;
 #ifdef WIN32
-	LOG ( log_prio::HIGH, "# tracker::loop: "
+	LOG ( fglog::prio::HIGH, "# tracker::loop: "
 	  << "started, thread ID " << m_thread_id.p
 	);
 #else
-	LOG ( log_prio::HIGH, "# tracker::loop: "
+	LOG ( fglog::prio::HIGH, "# tracker::loop: "
 	  << "started, thread ID " << m_thread_id
 	);
 #endif
@@ -586,13 +586,13 @@ tracker::loop
 			bs.curlen=0;
 			buffsock_free ( &bs );
 			m_identified=false;
-			LOG ( log_prio::HIGH, "# tracker::loop: "
+			LOG ( fglog::prio::HIGH, "# tracker::loop: "
 			  << "trying to connect to FGTracker"
 			);
 			m_connected = false;
 			if ( ! is_connected() )
 			{
-				LOG ( log_prio::HIGH, "# tracker::loop: "
+				LOG ( fglog::prio::HIGH, "# tracker::loop: "
 				  << "not connected, will sleep for "
 				  << RECONNECT_WAIT << " seconds"
 				);
@@ -642,7 +642,7 @@ tracker::loop
 			  ( char* ) "OUT: "
 			);
 #endif // #ifdef ADD_TRACKER_LOG
-			LOG ( log_prio::DEBUG, "# tracker::loop: "
+			LOG ( fglog::prio::DEBUG, "# tracker::loop: "
 			  << "sending msg " << Msg.size() << "  bytes: " << Msg
 			);
 			if ( tracker_write ( Msg ) < 0 )
@@ -681,12 +681,12 @@ tracker::connect
 		m_tracker_socket = 0;
 	}
 	m_tracker_socket = new fgmp::netsocket();
-	LOG ( log_prio::DEBUG, "# tracker::connect: "
+	LOG ( fglog::prio::DEBUG, "# tracker::connect: "
 	  << "Server: " << m_tracker_server << ", Port: " << m_tracker_port
 	);
 	if ( ! m_tracker_socket->connect ( m_tracker_server, m_tracker_port, fgmp::netsocket::TCP ) )
 	{
-		LOG ( log_prio::HIGH, "# tracker::connect: "
+		LOG ( fglog::prio::HIGH, "# tracker::connect: "
 		  << "connect to " << m_tracker_server
 		  << ":" << m_tracker_port << " failed!"
 		);
@@ -695,7 +695,7 @@ tracker::connect
 		return false;
 	}
 	m_tracker_socket->set_blocking ( false );
-	LOG ( log_prio::HIGH, "# tracker::connect: success" );
+	LOG ( fglog::prio::HIGH, "# tracker::connect: success" );
 	last_connected	= time ( 0 );
 	std::stringstream ss;
 	ss.str("Please initialize");
@@ -707,7 +707,7 @@ tracker::connect
 	ss << "V" << m_proto_version << " " << m_version
 	   << " "<< m_domain << " " << m_fgms_name;
 	tracker_write ( ss.str() );
-	LOG ( log_prio::DEBUG, "# tracker::connect: "
+	LOG ( fglog::prio::DEBUG, "# tracker::connect: "
 	  << "Written Version header"
 	);
 	sleep ( 1 );

@@ -319,12 +319,12 @@ netpacket::Encrypt
 	uint32_t Mod = Len % XTEA_BLOCK_SIZE;
 	if ( ( ! m_Buffer ) || ( m_BytesInUse == 0 ) )
 	{
-		LOG(log_prio::DEBUG, "netpacket::Encrypt() - nothing to encrypt!" );
+		LOG(fglog::prio::DEBUG, "netpacket::Encrypt() - nothing to encrypt!" );
 		return;
 	}
 	if ( m_BytesInUse <= Offset )
 	{
-		LOG ( log_prio::DEBUG,
+		LOG ( fglog::prio::DEBUG,
 		  "netpacket::Enrypt() - Offset>Used Bytes!" );
 		return;
 	}
@@ -352,13 +352,13 @@ netpacket::Decrypt
 	uint32_t Mod = Len % XTEA_BLOCK_SIZE;
 	if ( ( ! m_Buffer ) || ( m_BytesInUse == 0 ) )
 	{
-		LOG ( log_prio::DEBUG,
+		LOG ( fglog::prio::DEBUG,
 		  "netpacket::Decrypt() - nothing to encrypt!" );
 		return;
 	}
 	if ( m_BytesInUse <= Offset )
 	{
-		LOG ( log_prio::DEBUG,
+		LOG ( fglog::prio::DEBUG,
 		  "netpacket::Decrypt() - Offset>Used Bytes!" );
 		return;
 	}

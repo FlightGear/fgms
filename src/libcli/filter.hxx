@@ -17,31 +17,127 @@
 //
 
 
-#ifndef CLI_FILTER_H
-#define CLI_FILTER_H
+#ifndef _cli_filter_header
+#define _cli_filter_header
+
+#include <string>
+#include <functional>
+#include <memory>
+#include <common.hxx>
 
 namespace libcli
 {
 
-struct filter_cmds_t
-{
-	const char *cmd;
-	const char *help;
-};
+class cli_client;       // for count_filter
+class filter;
 
-class cli;
-class cli_client;
-using filter_callback_func = int (cli_client::*) (char*, void* );
+using filter_p   = std::shared_ptr < filter >;
+using filterlist = std::vector < filter_p >;
 
-class filter_t
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * Pure virtual base class for output filters, from which all real
+ * filter must be derived.
+ * Filters are special internal commands. All output to clients is
+ * filtered on request.
+ */
+class filter
 {
 public:
-	filter_callback_func filter;
-	void *data;
-	filter_t *next;
-	int exec (cli_client& Instance, char *cmd);
-	int exec (cli_client& Instance, char *cmd, void *data);
+        virtual bool operator () ( const std::string & line ) = 0;
+        virtual ~filter () {};
+protected:
+        filter () {}; // disable direct instantiation
 };
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * 'include' / 'exclude' filters
+ *
+ * invoke with 'cmd | include WORD'. All lines containing 'WORD'
+ * are written to the client. If 'exclude' is used, all lines
+ * not containing 'WORD' are written to the client.
+ *
+ */
+class match_filter : public filter
+{
+public:
+        match_filter ( const std::string & match, bool invert );
+        bool operator () ( const std::string & line ) override;
+private:
+        std::string m_match_this;
+        bool  m_invert;
+}; // class match_filter
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * 'begin' filter
+ *
+ * invoke with 'cmd | begin WORD'. Output starts when a line contains
+ * 'WORD'.
+ */
+class begin_filter : public filter
+{
+public:
+        begin_filter ( const std::string & match );
+        bool operator () ( const std::string & line ) override;
+private:
+        std::string m_match_this;
+        bool  m_have_match = false;
+}; // class begin_filter
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * 'between' filter
+ *
+ * Invoke with 'cmd | between START END'
+ * Output starts with the line containg 'START' and ends with the line
+ * containing 'END'.
+ *
+ */
+class between_filter : public filter
+{
+public:
+        between_filter ( const std::string & start_match, const std::string & end_match );
+        bool operator () ( const std::string & line ) override;
+private:
+        std::string m_start_match;
+        std::string m_end_match;
+        bool  m_have_match = false;
+}; // class between_filter
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * 'count' filter
+ *
+ * Invoke with 
+ * @code
+ * cmd | count
+ * @endcode
+ * No output is written to the client except the number of lines which
+ * would have been written without this filter.<br>
+ * Filters can be chained, which is especially useful with this filter:
+ * @code
+ * cmd | begin START | count
+ * @endcode
+ */
+class count_filter : public filter
+{
+public:
+        count_filter ( cli_client* client );
+        virtual ~count_filter ();
+        bool operator () ( const std::string & line ) override;
+private:
+        size_t  m_counter = 0;
+        cli_client* m_client;
+}; // class count_filter
+
+//////////////////////////////////////////////////////////////////////
 
 } // namespace libcli
 

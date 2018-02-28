@@ -363,15 +363,22 @@ namespace
 constexpr double SG_NM_TO_METER         { 1852.0000 };
 constexpr double SG_METER_TO_FEET       { 3.28083989501312335958 };
 constexpr double SQUASH                 { 0.9966471893352525192801545 };
+
+#ifdef _MSC_VER
+        #define E2 fabs ( 1.0 - SQUASH * SQUASH )
+        #define E4 ( E2 * E2 )
+#else
 constexpr double E2                     { fabs ( 1 - SQUASH * SQUASH ) };
 constexpr double E4                     { E2 * E2 };
+#endif
 constexpr double EQURAD                 { 6378137.0 };
 constexpr double RA2                    { 1 / (EQURAD * EQURAD) };
 constexpr double SG_180                 { 180.0 };
 constexpr double SG_PI                  { 3.1415926535 };
 constexpr double SG_RADIANS_TO_DEGREES  { SG_180 / SG_PI };
 constexpr double SG_DEGREES_TO_RADIANS  { SG_PI / SG_180 };
-constexpr float  SGMISC_PI      { 3.1415926535897932384626433832795029L };
+constexpr float  SGMISC_PI              { 3.1415926535 };
+ //{ 3.1415926535897932384626433832795029L };
 } // namespace
 
 /**

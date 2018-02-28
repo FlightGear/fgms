@@ -21,8 +21,8 @@
 /// @file fg_log.hxx
 /// fgms logging utility
 ///
-/// @author	Oliver Schroeder <fgms@o-schroeder.de>
-/// @date	2003
+/// @author     Oliver Schroeder <fgms@o-schroeder.de>
+/// @date       2003
 ///
 
 #ifndef FG_LOGOBJECT
@@ -39,18 +39,6 @@
 namespace fgmp
 {
 
-/// The available priorities
-enum class log_prio
-{
-	NONE,		///< do not log at all
-	HIGH,		///< error messages
-	MEDIUM,		///< standard messages
-	DEBUG,		///< debug messages
-	URGENT	= 64,	///< log always, regardless of logging level
-	CONSOLE	= 128,	///< log to terminal (too)
-	ERROR	= 192	///< = URGENT | CONSOLE
-};
-
 /**
  * @brief Provide a logging class for fgms
  *
@@ -63,59 +51,69 @@ enum class log_prio
 class fglog : public fgmp::lockable
 {
 public:
+        /// The available priorities
+        enum class prio
+        {
+                NONE,           ///< do not log at all
+                HIGH,           ///< error messages
+                MEDIUM,         ///< standard messages
+                DEBUG,          ///< debug messages
+                URGENT  = 64,   ///< log always, regardless of logging level
+                CONSOLE = 128,  ///< log to terminal (too)
+                EMIT    = 192   ///< = URGENT | CONSOLE
+        };
+        /// Define whether logged lines should be prefixed with a date or not.
+        /// Default is with date.
+        enum class flags
+        {
+                NO_DATE,
+                WITH_DATE
+        };
 
-	/// Define whether logged lines should be prefixed with a date or not.
-	/// Default is with date.
-	enum logflags
-	{
-		NO_DATE,
-		WITH_DATE
-	};
-	fglog ();
-	fglog ( log_prio p );
-	fglog ( std::string name );
-	fglog ( std::string name, log_prio p );
-	~fglog ();
-	template <class any_type> fglog &operator << (any_type var);
-	// black c++ magic
-	fglog& operator << (fglog& (*pf) (fglog&))
-	  { return ((*pf)(*this)); };
-	operator void* () const { return (m_logfile? (void*) 1: (void*) 0); };
-	bool open ( std::string name );
-	void close ();
-	void priority ( log_prio p );
-	int  priority () const;
-	void flags ( logflags f );
-	void flush ();
-	std::string get_name () const;
-	bool is_open () const;
-	fgmp::str_list* logbuf();
-	void setbufsize ( size_t size );
-	fglog& log ();
-	fglog& log ( log_prio p );
-	void log ( log_prio p, const char *format, ... );
-	void commit ();
-	friend fglog& endl ( fglog& l );
+        fglog ();
+        fglog ( const fglog& ) = delete; // disable copy constructor
+        fglog ( prio p );
+        fglog ( std::string name );
+        fglog ( std::string name, prio p );
+        ~fglog ();
+        template <class any_type> fglog &operator << (any_type var);
+        // black c++ magic
+        fglog& operator << ( fglog& (*pf) ( fglog& ))
+          { return ((*pf)(*this)); };
+        operator void* () const { return (m_logfile? (void*) 1: (void*) 0); };
+        bool open ( std::string name );
+        void close ();
+        void priority ( prio p );
+        int  priority () const;
+        void set_flags ( flags f );
+        void flush ();
+        std::string get_name () const;
+        bool is_open () const;
+        fgmp::str_list* logbuf();
+        void setbufsize ( size_t size );
+        fglog& log ();
+        fglog& log ( prio p );
+        void log ( prio p, const char *format, ... );
+        static fglog& endl ( fglog& l );
 private:
-	fglog ( const fglog& X ); // disable copy constructor
-	void init ();
-	std::string logfmt ( log_prio p,const char *format, va_list ap );
-	std::string datestr ( void );
-	log_prio	m_priority;	// we want to see this prio in our logs
-	log_prio	m_outprio;	// current output uses this prio
-	logflags	m_flags;
-	std::ostream*	m_logstream;
-	std::ofstream*	m_logfile;
-	std::streambuf*	m_logstreambuf;
-	std::string	m_logname;
-	std::stringstream m_logline;
-	fgmp::str_list	m_logbuf;
-	size_t		m_logbufsize;
-	bool		m_date;	// true when date is to be put on stream
+        void init ();
+        std::string logfmt ( prio p,const char *format, va_list ap );
+        std::string datestr ( void );
+        prio    m_priority;     // we want to see this prio in our logs
+        prio    m_outprio;      // current output uses this prio
+        fglog::flags    m_flags;
+        std::ostream*   m_logstream;
+        std::ofstream*  m_logfile;
+        std::streambuf* m_logstreambuf;
+        std::string     m_logname;
+        std::stringstream m_logline;
+        fgmp::str_list  m_logbuf;
+        size_t          m_logbufsize;
+        bool            m_date; // true when date is to be put on stream
 }; // class fglog
 
 /**
- * @brief Output operator for fglog
+ * @brief Output operator for log
  *
  * This method evaluates if the output is really put on the stream,
  * depending on the current output priority and the output priority
@@ -125,45 +123,43 @@ template <class any_type>
 fglog&
 fglog::operator << ( any_type v )
 {
-	int p_copy = int(m_outprio);
+        int p_copy = int(m_outprio);
 
-	if ( p_copy & int(log_prio::CONSOLE) )	// print on screen
-	{
-		p_copy &= ~int (log_prio::CONSOLE);
-		if ( ! m_date )
-			std::cout << v;
-		if ( p_copy == 0 )
-		{
-			return *this;
-		}
-	}
-	if ( p_copy & int(log_prio::URGENT) )	// print on screen
-	{
-		p_copy = int(m_priority);
-	}
-	if ( p_copy > int(m_priority) )
-	{
-		return *this;	// do not log anything
-	}
-	if ( m_logstream && (*m_logstream) )
-	{
-		(*m_logstream) << v;
-		m_logline << v;
-	}
-	return *this;
+        if ( p_copy & int(prio::CONSOLE) )      // print on screen
+        {
+                p_copy &= ~int (prio::CONSOLE);
+                if ( ! m_date )
+                        std::cout << v;
+                if ( p_copy == 0 )
+                {
+                        return *this;
+                }
+        }
+        if ( p_copy & int(prio::URGENT) )       // print on screen
+        {
+                p_copy = int(m_priority);
+        }
+        if ( p_copy > int(m_priority) )
+        {
+                return *this;   // do not log anything
+        }
+        if ( m_logstream && (*m_logstream) )
+        {
+                (*m_logstream) << v;
+                m_logline << v;
+        }
+        return *this;
 }
-
-fglog& endl ( fglog& l );
 
 } // namespace fgmp
 
 /**
- * @brief define a global fglog
+ * @brief define a global log
  *
  * This object is globally accessible by all. If you need a second
- * logfile, use a second fgmp::fglog
+ * logfile, use a second fglog::fglog
  */
-extern fgmp::fglog logger; // fglog.cxx
+extern fgmp::fglog logger; // log.cxx
 
 /**
  * @brief Define a logging macro for convinience
@@ -174,9 +170,9 @@ extern fgmp::fglog logger; // fglog.cxx
  * @endcode
  */
 #define LOG(P,M) { \
-	logger.lock (); \
-	logger.log (P) << M << fgmp::endl; \
-	logger.unlock (); \
+        logger.lock (); \
+        logger.log (P) << M << fgmp::fglog::endl; \
+        logger.unlock (); \
 }
 
 #endif

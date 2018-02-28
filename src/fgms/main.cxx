@@ -29,59 +29,13 @@
 #include <cstdlib>
 #ifndef _MSC_VER
 	#include <sys/wait.h>
+	#include <libmsc/msc_getopt.hxx>
 #endif
 #include <signal.h>
 #include "fgms.hxx"
 
 /** @brief The running fgms server process */
 fgmp::fgms fgms;
-
-#ifdef _MSC_VER
-// kludge for getopt() for WIN32
-// FIXME: put in libmsc
-static char* optarg;
-static int curr_arg = 0;
-int getopt ( int argc, char* argv[], char* args )
-{
-	size_t len = strlen ( args );
-	size_t i;
-	int c = 0;
-	if ( curr_arg == 0 )
-	{
-		curr_arg = 1;
-	}
-	if ( curr_arg < argc )
-	{
-		char* arg = argv[curr_arg];
-		if ( *arg == '-' )
-		{
-			arg++;
-			c = *arg; // get first char
-			for ( i = 0; i < len; i++ )
-			{
-				if ( c == args[i] )
-				{
-					// found
-					if ( args[i+1] == ':' )
-					{
-						// fill in following
-						curr_arg++;
-						optarg = argv[curr_arg];
-					}
-					break;
-				}
-			}
-			curr_arg++;
-			return c;
-		}
-		else
-		{
-			return '-';
-		}
-	}
-	return -1;
-}
-#endif // _MSC_VER
 
 //////////////////////////////////////////////////////////////////////
 
@@ -95,12 +49,14 @@ SigHUPHandler
 	int SigType
 )
 {
+        using fglog = fgmp::fglog;
+
 	fgms.prepare_init ();
 	if (fgms.m_config_file == "")
 	{
 		if ( ! fgms.read_configs ( true ) )
 		{
-			LOG ( fgmp::log_prio::HIGH,
+			LOG ( fglog::prio::HIGH,
 			  "received HUP signal, but read config file failed!" );
 			exit ( 1 );
 		}
@@ -109,14 +65,14 @@ SigHUPHandler
 	{
 		if ( fgms.process_config ( fgms.m_config_file ) == false )
 		{
-			LOG ( fgmp::log_prio::HIGH,
+			LOG ( fglog::prio::HIGH,
 			  "received HUP signal, but read config file failed!" );
 			exit ( 1 );
 		}
 	}
 	if ( fgms.init () != 0 )
 	{
-		LOG ( fgmp::log_prio::HIGH,
+		LOG ( fgmp::fglog::prio::HIGH,
 		  "received HUP signal, but reinit failed!" );
 		exit ( 1 );
 	}
