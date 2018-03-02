@@ -1,4 +1,7 @@
 //
+// This file is part of fgms, the flightgear multiplayer server
+// https://sourceforge.net/projects/fgms/
+//
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -10,12 +13,15 @@
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
+// along with this program; if not see <http://www.gnu.org/licenses/>
 //
-// derived from libcli by David Parrish (david@dparrish.com)
-// Copyright (C) 2011  Oliver Schroeder
-//
+
+/**
+ * @file        command.hxx
+ * @author      Oliver Schroeder <fgms@o-schroeder.de>
+ * @date        2011/2018
+ */
+
 
 #ifndef _cli_command_header
 #define _cli_command_header
@@ -39,7 +45,7 @@ class command
 public:
         using cli_callback_func = std::function <
           RESULT ( const std::string& name, const strvec& args,
-          size_t first_arg ) >;
+          size_t& first_arg ) >;
         using command_p = std::shared_ptr<command>;
         using cmdlist   = std::vector<command_p>;
         friend class cli;
@@ -59,9 +65,9 @@ public:
                 int mode,
                 const std::string & help
         );
-        ~command ();
-        RESULT  exec ( const std::string& name, const strvec& args,
-          size_t first_arg );
+        virtual ~command ();
+        virtual RESULT exec ( const std::string& name, const strvec& args,
+                size_t& first_arg );
         inline bool has_callback () const;
         inline bool has_children () const;
         inline const std::string& name () const;
@@ -70,6 +76,10 @@ public:
         inline int mode () const;
         inline size_t unique_len () const;
         inline void unique_len (size_t len );
+        virtual bool compare ( const std::string& word,
+                bool compare_case = false, const size_t len = 0 );
+        virtual int  compare_len ( const std::string& word,
+                bool compare_case = false );
 private:
         /// the command name
         std::string m_name;

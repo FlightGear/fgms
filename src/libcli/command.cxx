@@ -1,4 +1,7 @@
 //
+// This file is part of fgms, the flightgear multiplayer server
+// https://sourceforge.net/projects/fgms/
+//
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -10,13 +13,16 @@
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
-//
-// derived from libcli by David Parrish (david@dparrish.com)
-// Copyright (C) 2011  Oliver Schroeder
+// along with this program; if not see <http://www.gnu.org/licenses/>
 //
 
+/**
+ * @file        command.cxx
+ * @author      Oliver Schroeder <fgms@o-schroeder.de>
+ * @date        2011/2018
+ */
+
+#include <string.h>
 #include "command.hxx"
 
 namespace libcli
@@ -41,6 +47,8 @@ command::command
         m_privilege     = level;
         m_mode          = mode;
 }
+
+//////////////////////////////////////////////////////////////////////
 
 /**
  * Define a command with a callback function.
@@ -79,17 +87,21 @@ command::command
         cli_callback_func callback,
         int level,
         int mode,
-        const std::string &     help
+        const std::string & help
 ) : m_name {name}, m_help{help}, m_cli_callback{callback}
 {
         m_privilege     = level;
         m_mode          = mode;
 }
 
+//////////////////////////////////////////////////////////////////////
+
 command::~command
 ()
 {
 }
+
+//////////////////////////////////////////////////////////////////////
 
 /**
  * Execute the callback function when this command is invoked
@@ -99,7 +111,7 @@ command::exec
 (
         const std::string & name,
         const strvec & args,
-        size_t first_arg
+        size_t& first_arg
 )
 {
         if ( m_cli_callback == nullptr )
@@ -107,7 +119,71 @@ command::exec
                 throw arg_error ( "command::exec: no cli_callback" );
         }
         return m_cli_callback ( name, args, first_arg );
-}
+} // command::exec ()
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * Compare command name with 'word'
+ *
+ * If compare_case is true, the comparision is case sensitive.
+ * Compare only word.size() characters.
+ *
+ * @return true if m_name and word are equal
+ * @return false if they are not euqal.
+ */
+bool
+command::compare
+(
+        const std::string& word,
+        bool compare_case,
+        const size_t len
+)
+{
+        size_t l { len };
+        if ( l == 0 )
+                l = word.size ();
+        if ( compare_case )
+                return ( 0 == strncmp ( m_name.c_str(), word.c_str(), l ) );
+        return ( 0 == strncasecmp ( m_name.c_str(), word.c_str(), l ) );
+} // command::compare ()
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * Compare command name with 'word'.
+ *
+ * If compare_case is true, the comparision is case sensitive.
+ * @return index of first distinguishing character
+ */
+int
+command::compare_len
+(
+        const std::string& word,
+        bool compare_case
+)
+{
+        size_t max { std::min ( m_name.size(), word.size() ) };
+        size_t n { 0 };
+
+        while ( n < max )
+        {
+                if ( compare_case )
+                {
+                        if ( m_name[n] != word[n] )
+                                return ++n;
+                }
+                else
+                {
+                        if ( toupper ( m_name[n] ) != toupper ( word[n] ) )
+                                return ++n;
+                }
+                ++n;
+        }
+        return max;
+} // command::compare_len ()
+
+//////////////////////////////////////////////////////////////////////
 
 } // namespace libcli
 
