@@ -1015,7 +1015,7 @@ fgms::add_whitelist
 )
 {
         list_item B ( dotted_ip );
-        B.address.assign ( dotted_ip.c_str(), 0 );
+        B.address.assign ( dotted_ip.c_str() );
         m_white_list.lock ();
         fglistit current_entry = m_white_list.find ( B.address );
         m_white_list.unlock ();
@@ -1040,7 +1040,7 @@ fgms::add_blacklist
 )
 {
         list_item B ( reason );
-        B.address.assign ( dotted_ip.c_str(), 0 );
+        B.address.assign ( dotted_ip.c_str() );
         m_black_list.lock ();
         fglistit current_entry = m_black_list.find ( B.address );
         m_black_list.unlock ();
@@ -3215,7 +3215,6 @@ fgms::check_config
         {
                 LOG ( fglog::prio::EMIT, "If you want to provide a public "
                   << "server, please provide a unique server name!"
-                        
                 );
                 return false;
         }
