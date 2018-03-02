@@ -486,5 +486,14 @@ fglog::endl
 
 //////////////////////////////////////////////////////////////////////
 
+fglog::prio
+make_prio
+(
+        int i
+)
+{
+        return static_cast <fglog::prio> ( i );
+}
+
 } // namespace fgmp
 

@@ -112,6 +112,8 @@ private:
         bool            m_date; // true when date is to be put on stream
 }; // class fglog
 
+fglog::prio make_prio ( int i );
+
 /**
  * @brief Output operator for log
  *
