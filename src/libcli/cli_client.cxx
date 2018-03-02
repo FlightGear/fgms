@@ -1,3 +1,7 @@
+//
+// This file is part of fgms, the flightgear multiplayer server
+// https://sourceforge.net/projects/fgms/
+//
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -9,11 +13,14 @@
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
+// along with this program; if not see <http://www.gnu.org/licenses/>
 //
-// Copyright (C) 2011  Oliver Schroeder
-//
+
+/**
+ * @file        cli_client.cxx
+ * @author      Oliver Schroeder <fgms@o-schroeder.de>
+ * @date        2011/2018
+ */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -274,6 +281,64 @@ cli_client::endl
                 flush ( out );
         return out;
 } // endl()
+
+//////////////////////////////////////////////////////////////////////
+
+align_left::align_left
+(
+        const char width
+)
+: spacer {' '}, width {width}
+{}
+
+//////////////////////////////////////////////////////////////////////
+
+align_left::align_left
+(
+        const char spacer,
+        const char width
+)
+: spacer {spacer}, width {width}
+{}
+
+//////////////////////////////////////////////////////////////////////
+
+cli_client&
+align_left::operator ()
+(
+        cli_client & out
+) const
+{
+        out << std::left
+                << std::setfill ( spacer )
+                << std::setw ( width );
+        return out;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+cli_client&
+operator <<
+(
+        cli_client& out,
+        align_left align
+)
+{
+        return align ( out );
+} // cli_client& align_left()
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * Write a bool into the buffer.
+ */
+template <>
+cli_client&
+cli_client::operator << ( bool b )
+{
+        m_output << ( b ? "true" : "false" );
+        return *this;
+} // cli_client& operator << ( bool );
 
 //////////////////////////////////////////////////////////////////////
 

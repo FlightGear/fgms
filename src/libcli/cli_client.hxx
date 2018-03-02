@@ -1,3 +1,7 @@
+//
+// This file is part of fgms, the flightgear multiplayer server
+// https://sourceforge.net/projects/fgms/
+//
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -9,11 +13,15 @@
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
+// along with this program; if not see <http://www.gnu.org/licenses/>
 //
-// Copyright (C) 2011  Oliver Schroeder
-//
+
+/**
+ * @file        cli_client.hxx
+ * @author      Oliver Schroeder <fgms@o-schroeder.de>
+ * @date        2011/2018
+ */
+
 
 #ifndef _cli_client_header
 #define _cli_client_header
@@ -104,6 +112,22 @@ private:
         static bool check_pager ( cli_client& );
         static cli_client& apply_filters ( cli_client& );
 };
+
+//////////////////////////////////////////////////////////////////////
+
+class align_left
+{
+public:
+        align_left () = delete;
+        align_left ( const char width );
+        align_left ( const char spacer, const char width );
+        cli_client &operator () (cli_client & out) const;
+private:
+        char spacer;
+        char width;
+}; // class align_left
+
+cli_client& operator << ( cli_client& out, align_left align );
 
 //////////////////////////////////////////////////////////////////////
 
