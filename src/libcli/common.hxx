@@ -1,4 +1,7 @@
-//                                                                                                                           
+//
+// This file is part of fgms, the flightgear multiplayer server
+// https://sourceforge.net/projects/fgms/
+//
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -10,13 +13,14 @@
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
-//
-// derived from libcli by David Parrish (david@dparrish.com)
-// Copyright (C) 2011  Oliver Schroeder
+// along with this program; if not see <http://www.gnu.org/licenses/>
 //
 
+/**
+ * @file        common.hxx
+ * @author      Oliver Schroeder <fgms@o-schroeder.de>
+ * @date        2011/2018
+ */
 
 #ifndef _cli_common_header
 #define _cli_common_header
@@ -40,6 +44,7 @@ enum class RESULT
         INVALID_ARG,
         TOO_MANY_ARGS,
         MISSING_ARG,
+        INVALID_COMMAND,
         SHOW_HELP
 };
 
