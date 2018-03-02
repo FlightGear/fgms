@@ -30,48 +30,47 @@
 #include <fglib/netsocket.hxx>
 #include <fglib/encoding.hxx>
 
-namespace fgms
+namespace fgmp
 {
 
 /// client types
-enum eCLIENTTYPES
+enum class sender_type
 {
-	UNSET,       // unset
-	FGFS,           // a normal client
-	FGMS,           // FlightGear Multiplayer Server
-	FGAS,           // FlightGear Authentication Service
-	FGLS,           // FlightGear List Server
-	OBSERVER        // an observer
+        UNSET,       // unset
+        FGFS    = 0x46474653,           // a normal client
+        FGMS    = 0x53464746,           // FlightGear Multiplayer Server
+        FGAS,           // FlightGear Authentication Service
+        FGLS,           // FlightGear List Server
+        OBSERVER        // an observer
+};
+
+enum fgmp_commands
+{
+        REGISTER_SERVER,///< server requests to be part of our network
+        REGISTER_FGFS,  ///< fgfs requests to be part of our network
+        SERVER_QUIT,    ///< tell clients that I (a server) quit the network
+        FGFS_QUIT,      ///< tell clients that I (a fgfs) quit the network
+        REGISTER_OK,    ///< tell server that it is registered
+        GENERAL_ERROR,  ///< inform client of an error
+        SET_CLIENT_ID,  ///< tell client its ID
+        AUTH_CLIENT,    ///< fgms sends auth-request to fgas
+        AUTH_OK,        ///< fgas tells fgms authentication is OK
+        AUTH_FAILED,    ///< tell client about authentication failure
+        AUTHENTICATED,  ///< fgms tells fgfs authentication is OK
+        PING,           ///< ping a client
+        PONG,           ///< client responds with pong
+        USE_FGAS,       ///< tell fgms which fgas to use
+        NO_FGAS,        ///< tell fgms that there is no fgas currently online
+        YOU_ARE_HUB,    ///< tell fgms that is the HUB server
+        YOU_ARE_LEAVE,  ///< tell fgms that is a LEAVE server
+        NEW_SERVER,     ///< tell fgls about a new server
+        REQUEST_SERVER, ///< fgfs searching for a server
+        USE_SERVER,     ///< tell fgfs which server to use
+        REGISTER_AGAIN, ///< tell a client to register again
+        INTERNAL_COMMAND ///< mark the end of the list. Used to check if it is a command
 };
 
 
-enum Commands
-{
-	REGISTER_SERVER,///< server requests to be part of our network
-	REGISTER_FGFS,  ///< fgfs requests to be part of our network
-	SERVER_QUIT,    ///< tell clients that I (a server) quit the network
-	FGFS_QUIT,      ///< tell clients that I (a fgfs) quit the network
-	REGISTER_OK,    ///< tell server that it is registered
-	GENERAL_ERROR,  ///< inform client of an error
-	SET_CLIENT_ID,  ///< tell client its ID
-	AUTH_CLIENT,    ///< fgms sends auth-request to fgas
-	AUTH_OK,        ///< fgas tells fgms authentication is OK
-	AUTH_FAILED,    ///< tell client about authentication failure
-	AUTHENTICATED,  ///< fgms tells fgfs authentication is OK
-	PING,           ///< ping a client
-	PONG,           ///< client responds with pong
-	USE_FGAS,       ///< tell fgms which fgas to use
-	NO_FGAS,        ///< tell fgms that there is no fgas currently online
-	YOU_ARE_HUB,    ///< tell fgms that is the HUB server
-	YOU_ARE_LEAVE,  ///< tell fgms that is a LEAVE server
-	NEW_SERVER,     ///< tell fgls about a new server
-	REQUEST_SERVER, ///< fgfs searching for a server
-	USE_SERVER,     ///< tell fgfs which server to use
-	REGISTER_AGAIN, ///< tell a client to register again
-	INTERNAL_COMMAND ///< mark the end of the list. Used to check if it is a command
-};
-
-
-} // namespace fgms
+} // namespace fgmp
 
 #endif
