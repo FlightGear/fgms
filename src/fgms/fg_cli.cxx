@@ -188,6 +188,15 @@ fgcli::setup
                 "force fgms to exit"
         ));
 
+        c = new command (
+                "configure",
+                _ptr ( cli::internal_configure ),
+                PRIVLEVEL::PRIVILEGED,
+                CLI_MODE::EXEC,
+                "Enter configuration mode"
+        );
+        register_command (c);
+
         //////////////////////////////////////////////////
         // modify blacklist
         //////////////////////////////////////////////////
@@ -670,7 +679,7 @@ fgcli::cmd_whitelist_show
                         if ( id_invalid )
                         {
                                 id = 0;
-                                address.assign ( args[first_arg], 0 );
+                                address.assign ( args[first_arg] );
                                 if ( ! address.is_valid() )
                                         return RESULT::INVALID_ARG;
                         }
@@ -757,34 +766,29 @@ fgcli::cmd_whitelist_delete
         size_t first_arg
 )
 {
-        size_t num_args { args.size() - first_arg };
+        RESULT r { need_n_args ( 1, args, first_arg) };
+        if ( RESULT::OK != r )
+                return r;
+        if ( wants_help ( args[first_arg] ) )
+        {
+                show_help ( "id", "delete entry with id" );
+                show_help ( "IP", "delete entry with IP-address" );
+                return RESULT::OK;
+        }
         fgmp::netaddr address;
         size_t id;
-
-        if ( num_args == 0 )
-                return RESULT::MISSING_ARG;
-        else if ( num_args == 1 )
+        int id_invalid;
+        id = str_to_num<size_t> ( args[first_arg], id_invalid );
+        if ( id_invalid )
         {
-                if ( wants_help ( args[first_arg] ) )
-                {
-                        show_help ( "id", "delete entry with id" );
-                        show_help ( "IP", "delete entry with IP-address" );
-                        return RESULT::OK;
-                }
-                int id_invalid;
-                id = str_to_num<size_t> ( args[first_arg], id_invalid );
-                if ( id_invalid )
-                {
-                        id = 0;
-                        address.assign ( args[first_arg], 0 );
-                        if ( ! address.is_valid() )
-                                return RESULT::INVALID_ARG;
-                }
+                id = 0;
+                address.assign ( args[first_arg] );
+                if ( ! address.is_valid() )
+                        return RESULT::INVALID_ARG;
         }
-        else return no_more_args ( args, first_arg + 1 );
         if ( ( id == 0 ) && ( ! address.is_valid() ) )
         {
-                return RESULT::MISSING_ARG;;
+                return RESULT::MISSING_ARG;
         }
         fglistit Entry;
         if ( (id == 0) && (address.is_valid()) )
@@ -857,7 +861,7 @@ fgcli::cmd_whitelist_add
                                   "IP address which should be whitelisted" );
                                 return RESULT::OK;
                         }
-                        address.assign ( args[i], 0 );
+                        address.assign ( args[i] );
                         if (! address.is_valid())
                         {
                                 m_client << "% invalid IP address"
@@ -949,7 +953,7 @@ fgcli::cmd_blacklist_show
                         if ( e )
                         {
                                 id = 0;
-                                address.assign ( args[first_arg], 0 );
+                                address.assign ( args[first_arg] );
                                 if (! address.is_valid() )
                                         return RESULT::INVALID_ARG;
                         }
@@ -1054,25 +1058,23 @@ fgcli::cmd_blacklist_delete
 
         if ( num_args == 0 )
                 return RESULT::MISSING_ARG;
-        if ( num_args == 1 )
+        if ( num_args > 1 )
+                return no_more_args ( args, first_arg + 1 );
+        if ( wants_help ( args[first_arg] ) )
         {
-                if ( wants_help ( args[first_arg] ) )
-                {
-                        show_help ( "id", "delete entry with id" );
-                        show_help ( "IP", "delete entry with IP address" );
-                        return RESULT::OK;
-                }
-                int id_invalid;
-                id  = str_to_num<size_t>( args[first_arg], id_invalid );
-                if ( id_invalid )
-                {
-                        id = 0;
-                        address.assign (args[first_arg], 0);
-                        if (! address.is_valid())
-                                return RESULT::INVALID_ARG;
-                }
+                show_help ( "id", "delete entry with id" );
+                show_help ( "IP", "delete entry with IP address" );
+                return RESULT::OK;
         }
-        else return no_more_args ( args, first_arg + 1 );
+        int id_invalid;
+        id  = str_to_num<size_t>( args[first_arg], id_invalid );
+        if ( id_invalid )
+        {
+                id = 0;
+                address.assign ( args[first_arg] );
+                if (! address.is_valid())
+                        return RESULT::INVALID_ARG;
+        }
         if ( (id == 0) && (! address.is_valid()) )
                 return RESULT::MISSING_ARG;;
         if ( address.is_valid() )
@@ -1145,7 +1147,7 @@ fgcli::cmd_blacklist_add
                                   "IP address which should be blacklisted" );
                                 return RESULT::OK;
                         }
-                        address.assign (args[i], 0);
+                        address.assign ( args[i] );
                         if (! address.is_valid())
                         {
                                 m_client << "% invalid IP address"
@@ -1228,7 +1230,7 @@ fgcli::cmd_crossfeed_delete
                 if ( id_invalid )
                 {
                         id = 0;
-                        address.assign ( args[first_arg], 0 );
+                        address.assign ( args[first_arg] );
                         if ( ! address.is_valid() )
                                 return RESULT::INVALID_ARG;
                 }
@@ -1300,7 +1302,7 @@ fgcli::cmd_crossfeed_add
                                 show_help ("IP","IP address of the crossfeed");
                                 return RESULT::OK;
                         }
-                        address.assign (args[i], 0);
+                        address.assign ( args[i] );
                         if (! address.is_valid())
                         {
                                 m_client << "% invalid IP address"
@@ -1408,7 +1410,7 @@ fgcli::cmd_crossfeed_show
                         if (id_invalid)
                         {
                                 id = 0;
-                                address.assign (args[first_arg], 0);
+                                address.assign ( args[first_arg] );
                                 if (! address.is_valid())
                                         return RESULT::INVALID_ARG;
                         }
@@ -1531,7 +1533,7 @@ fgcli::cmd_relay_show
                         if (id_invalid)
                         {
                                 id = 0;
-                                address.assign (args[first_arg], 0);
+                                address.assign ( args[first_arg] );
                                 if (! address.is_valid())
                                 {
                                         name = args[first_arg];
@@ -1744,7 +1746,7 @@ fgcli::cmd_relay_delete
                 if (id_invalid)
                 {
                         id = 0;
-                        address.assign (args[first_arg], 0);
+                        address.assign ( args[first_arg] );
                         if (! address.is_valid())
                         {
                                 m_client << "% invalid IP address"
@@ -1820,7 +1822,7 @@ fgcli::cmd_relay_add
                                 show_help ( "IP", "IP address of the relay" );
                                 return RESULT::OK;
                         }
-                        address.assign (args[i], 0);
+                        address.assign ( args[i] );
                         if (! address.is_valid())
                         {
                                 m_client << "% invalid IP address"
@@ -1930,7 +1932,7 @@ fgcli::cmd_show_user
                         if ( e )
                         {
                                 id = 0;
-                                address.assign (args[first_arg], 0);
+                                address.assign ( args[first_arg] );
                                 if (! address.is_valid())
                                         name = args[first_arg];
                         }

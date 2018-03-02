@@ -30,32 +30,127 @@
 #ifndef _fgls_cli_header
 #define _fgls_cli_header
 
+#include <utility>
 #include <libcli/libcli.hxx>
 #include "fgls.hxx"
+
+namespace libcli
+{
+
+namespace CLI_MODE
+{
+        enum
+        {
+                CONFIG_FGLS = CLI_MODE::CONFIG + 1
+        };
+}
+
+}
+
+namespace fgmp
+{
 
 class fgls_cli : public libcli::cli
 {
 public:
-        fgls_cli ( fgls* fgls, int fd );
+        fgls_cli ( fgmp::fgls* fgls, int fd );
 private:
         void setup ();
         using strvec = libcli::strvec;
         using RESULT = libcli::RESULT;
+
+        //////////////////////////////////////////////////
+        // show commands
+        //////////////////////////////////////////////////
+        RESULT show_daemon ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT show_tty_cli ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT show_bind_addr ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT show_admin_user ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT show_admin_pass ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT show_admin_enable ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT show_data_port ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT show_query_port ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT show_admin_port ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT show_admin_cli ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT show_logfile_name ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT show_debug_level ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT show_check_interval ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT show_hostname ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+
+        RESULT show_settings ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT show_version ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT show_uptime ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT show_log ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+
+        //////////////////////////////////////////////////
+        // configure commands
+        //////////////////////////////////////////////////
+        RESULT cfg_fgls ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cfg_daemon ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cfg_tty_cli ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cfg_bind_addr ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cfg_admin_user ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cfg_admin_pass ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cfg_admin_enable ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cfg_data_port ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cfg_query_port ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cfg_admin_port ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cfg_admin_cli ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cfg_logfile_name ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cfg_debug_level ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cfg_check_interval ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+        RESULT cfg_hostname ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+
         //////////////////////////////////////////////////
         // general commands
         //////////////////////////////////////////////////
-        RESULT cmd_show_settings ( const std::string& command,
-                   const strvec& args, size_t first_arg );
-        RESULT cmd_show_version ( const std::string& command,
-                   const strvec& args, size_t first_arg );
-        RESULT cmd_show_uptime ( const std::string& command,
-                   const strvec& args, size_t first_arg );
-        RESULT cmd_show_log ( const std::string& command,
-                   const strvec& args, size_t first_arg );
         RESULT cmd_die ( const std::string& command,
                    const strvec& args, size_t first_arg );
-        fgls* m_fgls;
+
+        //////////////////////////////////////////////////
+        // helper methods
+        //////////////////////////////////////////////////
+        std::pair <libcli::RESULT,bool> get_cli_bool ( const std::string& arg );
+        //////////////////////////////////////////////////
+        // variables
+        //////////////////////////////////////////////////
+        fgmp::fgls* m_fgls;
 }; // class fgls_cli
+
+} // namespace fgmp
 
 #endif
 

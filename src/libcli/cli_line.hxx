@@ -70,8 +70,8 @@ namespace KEY
 class line_editor
 {
 public:
-        using std_callback      = std::function<RESULT ( void )>;
-        using character         = unsigned char;
+        using std_callback = std::function<RESULT ( void )>;
+        using character    = unsigned char;
 
         line_editor () = delete;
         line_editor ( cli_client& client );

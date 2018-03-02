@@ -1,3 +1,7 @@
+//
+// This file is part of fgms, the flightgear multiplayer server
+// https://sourceforge.net/projects/fgms/
+//
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
 // published by the Free Software Foundation; either version 2 of the
@@ -9,12 +13,14 @@
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
+// along with this program; if not see <http://www.gnu.org/licenses/>
 //
-// derived from libcli by David Parrish (david@dparrish.com)
-// Copyright (C) 2011  Oliver Schroeder
-//
+
+/**
+ * @file        libcli.cxx
+ * @author      Oliver Schroeder <fgms@o-schroeder.de>
+ * @date        2011/2018
+ */
 
 #ifdef HAVE_CONFIG_H
         #include <config.h>
@@ -115,6 +121,21 @@ cli::deny_user
 //////////////////////////////////////////////////////////////////////
 
 /**
+ * Set a function which gets regularly called (once per second).
+ * @see line_editor::set_callback
+ */
+void
+cli::regular
+(
+        line_editor::std_callback callback
+)
+{
+        m_editor.set_callback ( callback );
+} // cli::regular ()
+
+//////////////////////////////////////////////////////////////////////
+
+/**
  * Every command can be abbreviated. For this to work, cli needs to
  * know the minimum number of characters which makes an abbreviation
  * unique. The minimum number is stored in unique_len() of the command.
@@ -122,7 +143,7 @@ cli::deny_user
 void
 cli::build_shortest
 (
-        command::cmdlist& commands
+        command::cmdlist & commands
 )
 {
         for ( const auto& c : commands )
@@ -131,9 +152,18 @@ cli::build_shortest
                 {
                         if ( c == p )
                                 continue;
-                        size_t len = compare_len ( c->name(), p->name() );
+                        if ( c->m_privilege < p->m_privilege )
+                                continue;
+                        if ( ( c->m_mode != p->m_mode )
+                        &&   ( c->m_mode != CLI_MODE::ANY ) )
+                                continue;
+                        size_t len = c->compare_len (p->name(), m_compare_case);
                         if ( len > c->unique_len() )
+                        {
+                                if ( len == p->name().size() )
+                                        ++len;
                                 c->unique_len (len);
+                        }
                 }
                 if ( c->has_children () )
                         build_shortest ( c->m_children );
@@ -175,13 +205,12 @@ cli::set_privilege
         int priv
 )
 {
+        if ( priv == m_privilege )
+                return priv;
         int old = m_privilege;
         m_privilege = priv;
-        if ( priv != old )
-        {
-                m_prompt = ( priv == libcli::PRIVLEVEL::PRIVILEGED? "# ":"> " );
-                build_prompt ();
-        }
+        m_prompt = ( priv == libcli::PRIVLEVEL::PRIVILEGED? "# ":"> " );
+        build_prompt ();
         return old;
 } // cli::set_privilege ()
 
@@ -194,17 +223,16 @@ cli::set_configmode
         const std::string& config_desc
 )
 {
+        if ( mode == m_mode )
+                return m_mode;
         int old = m_mode;
         m_mode = mode;
-        if ( mode != old )
-        {
-                if ( m_mode == CLI_MODE::EXEC ) // Not config mode
-                        m_modestr = "";
-                else if ( config_desc != "" )
-                        m_modestr = "(config-" + config_desc + ")";
-                else
-                        m_modestr = "(config)";
-        }
+        if ( m_mode == CLI_MODE::EXEC ) // Not config mode
+                m_modestr = "";
+        else if ( config_desc != "" )
+                m_modestr = "(config-" + config_desc + ")";
+        else
+                m_modestr = "(config)";
         build_prompt ();
         return old;
 } // cli::set_configmode ()
@@ -230,11 +258,16 @@ cli::register_command
                 for ( const auto c : parent->m_children )
                 {
                         if ( c->name() == cmd->name() )
-                                throw arg_error (
-                                  cmd->name() + " : command already defined" );
+                        {
+                                if ( ( cmd->m_privilege == c->m_privilege )
+                                &&   ( cmd->m_mode == c->m_mode )
+                                &&   ( cmd->m_mode != CLI_MODE::ANY ) )
+                                        throw arg_error (
+                                          cmd->name() +
+                                          " : command already defined" );
+                        }
                 }
                 parent->m_children.push_back ( command::command_p(cmd) );
-                build_shortest ( parent->m_children );
                 return;
         }
         for ( const auto c : m_commands )
@@ -244,7 +277,6 @@ cli::register_command
                           cmd->name() + " : command already defined" );
         }
         m_commands.push_back ( command::command_p(cmd) );
-        build_shortest ( m_commands );
 } // cli::register_command ()
 
 //////////////////////////////////////////////////////////////////////
@@ -282,8 +314,11 @@ cli::show_help
         const std::string& desc
 )
 {
+        #if 0
         m_client << "  " << std::left << std::setfill(' ')
           << std::setw(22) << arg << desc << cli_client::endl;
+        #endif
+        m_client << align_left ( 22 ) << arg << desc << cli_client::endl;
 } // show_help()
 
 //////////////////////////////////////////////////////////////////////
@@ -308,6 +343,27 @@ cli::no_more_args
                 }
                 return RESULT::TOO_MANY_ARGS;
         }
+        return RESULT::OK;
+} // cli::no_more_args ()
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * Convenience function. Handle additional arguments of a command.
+ */
+RESULT
+cli::need_n_args
+(
+        const size_t needed_args,
+        const strvec& args,
+        size_t first_arg
+)
+{
+        size_t num_args = args.size() - first_arg;
+        if ( num_args == 0 )
+                return RESULT::MISSING_ARG;
+        if ( num_args > needed_args )
+                return RESULT::TOO_MANY_ARGS;
         return RESULT::OK;
 } // cli::no_more_args ()
 
@@ -466,6 +522,10 @@ cli::internal_quit
 
 //////////////////////////////////////////////////////////////////////
 
+/**
+ * Return to EXEC mode.
+ *
+ */
 RESULT
 cli::internal_exit
 (
@@ -477,14 +537,32 @@ cli::internal_exit
         RESULT r = no_more_args ( args, first_arg );
         if ( r != RESULT::OK )
                 return r;
-        if ( m_mode == CLI_MODE::EXEC )
-                return internal_quit ( command, args, first_arg );
-        if ( m_mode > CLI_MODE::CONFIG )
-                set_configmode ( CLI_MODE::CONFIG, "" );
-        else
-                set_configmode ( CLI_MODE::EXEC, "" );
+        set_configmode ( CLI_MODE::EXEC, "" );
         return RESULT::OK;
 } // cli::internal_exit ()
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * Exit the current mode
+ *
+ */
+RESULT
+cli::internal_end
+(
+        const std::string& command,
+        const strvec& args,
+        size_t first_arg
+)
+{
+        RESULT r = no_more_args ( args, first_arg );
+        if ( r != RESULT::OK )
+                return r;
+        if ( m_mode == CLI_MODE::EXEC )
+                return internal_quit ( command, args, first_arg );
+        set_configmode ( m_mode - 1, "" );
+        return RESULT::OK;
+} // cli::internal_end ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -538,6 +616,13 @@ cli::internal_pager
 
 //////////////////////////////////////////////////////////////////////
 
+/**
+ * Enter configuration mode
+ *
+ * This command is predefined by libcli but not automatically
+ * registered. You have to register this command if you want to
+ * use it.
+ */
 RESULT
 cli::internal_configure
 (
@@ -571,68 +656,68 @@ cli::cli
         #define _ptr(X) (std::bind (& X, this, _1, _2, _3))
 
         register_command ( new command (
-                                "help",
-                                _ptr ( cli::internal_help ),
-                                libcli::PRIVLEVEL::UNPRIVILEGED,
-                                libcli::CLI_MODE::ANY,
-                                "Description of the interactive help system"
+                "help",
+                _ptr ( cli::internal_help ),
+                libcli::PRIVLEVEL::UNPRIVILEGED,
+                libcli::CLI_MODE::ANY,
+                "Description of the interactive help system"
         ) );
         register_command ( new command (
-                                "whoami",
-                                _ptr ( cli::internal_whoami ),
-                                libcli::PRIVLEVEL::UNPRIVILEGED,
-                                libcli::CLI_MODE::EXEC,
-                                "Show who you are"
+                "whoami",
+                _ptr ( cli::internal_whoami ),
+                libcli::PRIVLEVEL::UNPRIVILEGED,
+                libcli::CLI_MODE::EXEC,
+                "Show who you are"
         ) );
         register_command ( new command (
-                                "quit",
-                                _ptr ( cli::internal_quit ),
-                                libcli::PRIVLEVEL::UNPRIVILEGED,
-                                libcli::CLI_MODE::EXEC,
-                                "Disconnect"
+                "quit",
+                _ptr ( cli::internal_quit ),
+                libcli::PRIVLEVEL::UNPRIVILEGED,
+                libcli::CLI_MODE::EXEC,
+                "Disconnect"
         ) );
         register_command ( new command (
-                                "exit",
-                                _ptr ( cli::internal_exit ),
-                                libcli::PRIVLEVEL::UNPRIVILEGED,
-                                libcli::CLI_MODE::ANY,
-                                "Exit from current mode"
+                "history",
+                _ptr ( cli::internal_history ),
+                libcli::PRIVLEVEL::UNPRIVILEGED,
+                libcli::CLI_MODE::EXEC,
+                "Show a list of previously run commands"
         ) );
         register_command ( new command (
-                                "history",
-                                _ptr ( cli::internal_history ),
-                                libcli::PRIVLEVEL::UNPRIVILEGED,
-                                libcli::CLI_MODE::EXEC,
-                                "Show a list of previously run commands"
+                "pager",
+                _ptr ( cli::internal_pager ),
+                libcli::PRIVLEVEL::UNPRIVILEGED,
+                libcli::CLI_MODE::ANY,
+                "Set number of lines on a screen"
         ) );
         register_command ( new command (
-                                "pager",
-                                _ptr ( cli::internal_pager ),
-                                libcli::PRIVLEVEL::UNPRIVILEGED,
-                                libcli::CLI_MODE::ANY,
-                                "Set number of lines on a screen"
+                "enable",
+                _ptr ( cli::internal_enable ),
+                libcli::PRIVLEVEL::UNPRIVILEGED,
+                libcli::CLI_MODE::EXEC,
+                "Turn on privileged commands"
         ) );
         register_command ( new command (
-                                "enable",
-                                _ptr ( cli::internal_enable ),
-                                libcli::PRIVLEVEL::UNPRIVILEGED,
-                                libcli::CLI_MODE::EXEC,
-                                "Turn on privileged commands"
+                "disable",
+                _ptr ( cli::internal_disable ),
+                libcli::PRIVLEVEL::PRIVILEGED,
+                libcli::CLI_MODE::EXEC,
+                "Turn off privileged commands"
         ) );
         register_command ( new command (
-                                "disable",
-                                _ptr ( cli::internal_disable ),
-                                libcli::PRIVLEVEL::PRIVILEGED,
-                                libcli::CLI_MODE::EXEC,
-                                "Turn off privileged commands"
-        ) );
+                "exit",
+                _ptr ( cli::internal_exit ),
+                libcli::PRIVLEVEL::UNPRIVILEGED,
+                libcli::CLI_MODE::ANY,
+                "return to EXEC mode"
+        ));
         register_command ( new command (
-                                "configure",
-                                _ptr ( cli::internal_configure ),
-                                libcli::PRIVLEVEL::PRIVILEGED,
-                                libcli::CLI_MODE::EXEC,
-                                "Enter configuration mode"
-        ) );
+                "end",
+                _ptr ( cli::internal_end ),
+                libcli::PRIVLEVEL::UNPRIVILEGED,
+                libcli::CLI_MODE::ANY,
+                "return to previous mode"
+        ));
         #undef _ptr
 } // cli::cli ()
 
@@ -764,45 +849,6 @@ cli::compare
                 return ( 0 == strncmp ( s1.c_str(), s2.c_str(), l ) );
         return ( 0 == strncasecmp ( s1.c_str(), s2.c_str(), l ) );
 } // cli::compare ()
-
-//////////////////////////////////////////////////////////////////////
-
-/** compare two strings
- *
- * If m_compare_case is true, the comparision is case sensitive.
- * @return index of first distinguishing character
- */
-int
-cli::compare_len
-(
-        const std::string& s1,
-        const std::string& s2
-)
-{
-        size_t max = std::min ( s1.size(), s2.size() );
-        size_t n   = 0;
-        while ( n < max )
-        {
-                if ( m_compare_case )
-                {
-                        if ( s1[n] != s2[n] )
-                        {
-                                ++n;
-                                return n;
-                        }
-                }
-                else
-                {
-                        if ( toupper(s1[n]) != toupper(s2[n]) )
-                        {
-                                ++n;
-                                return n;
-                        }
-                }
-                ++n;
-        }
-        return max;
-} // cli::compare_len ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -940,7 +986,7 @@ cli::get_completions
         {
                 if ( ! command_available ( c ) )
                         continue;
-                if ( ! compare ( word, c->name() ) )
+                if ( ! c->compare ( word, m_compare_case ) )
                         continue;
 
                 // found a valid completion
@@ -1082,7 +1128,7 @@ cli::install_filter
 /**
  * Execute the command line.
  */
-RESULT
+std::pair <libcli::RESULT, std::string>
 cli::exec_command
 (
         const command::cmdlist & cmds,
@@ -1090,8 +1136,10 @@ cli::exec_command
         size_t& start_word
 )
 {
+        using std::make_pair;
+        using std::string;
         if ( start_word >= words.size() )
-                return RESULT::ERROR_ANY;
+                return make_pair (RESULT::ERROR_ANY, "");
         std::string word { words [ start_word ] };
         size_t num_words = words.size() - 1;
 
@@ -1104,7 +1152,7 @@ cli::exec_command
                                 continue;
                         show_help ( c->name(), c->help() );
                 }
-                return RESULT::OK;
+                return make_pair (RESULT::OK, "");
         }
         int num_commands = 0;
         for ( auto c : cmds )
@@ -1113,7 +1161,7 @@ cli::exec_command
                         continue;
                 if ( wants_help ( word ) )
                 {
-                        if ( ! compare ( c->name(), word, word.size()-1) )
+                        if ( ! c->compare ( word,m_compare_case,word.size()-1) )
                                 continue;
                         show_help ( c->name(), c->help() );
                         if ( word.size () - 1 < c->unique_len() )
@@ -1121,16 +1169,16 @@ cli::exec_command
                                 ++num_commands;
                                 continue;
                         }
-                        return RESULT::OK;
+                        return make_pair (RESULT::OK, "");
                 }
-                if ( ! compare ( word, c->name() ) )
+                if ( ! c->compare ( word, m_compare_case ) )
                         continue;
                 if ( word.size () < c->unique_len() )
                 {
                         ++num_commands;
                         continue;
                 }
-                if ( ! compare ( c->name(), word, c->unique_len() ) )
+                if ( ! c->compare ( word, m_compare_case, c->unique_len() ) )
                         continue;
                 // found the command
                 if ( start_word < num_words )
@@ -1143,34 +1191,37 @@ cli::exec_command
                         {
                                 m_client << "No callback for '"
                                   << c->name() << "'" << cli_client::endl;
-                                return RESULT::ERROR_ANY;
+                                return make_pair (RESULT::ERROR_ANY, c->name());
                         }
                         // found the command and there are arguments left
                         // on the command line
                         RESULT r = c->exec ( c->name(), words, start_word );
                         if ( r == RESULT::SHOW_HELP )
                                 show_help ( "<cr>", c->help() );
-                        return r;
+                        return make_pair ( r, c->name() );
                 }
-                if ( ( c->has_children() > 0 ) && ( start_word == num_words ) )
+                if ( ( c->has_children() ) && ( start_word == num_words ) )
                 {
-                        if ( ( c->has_callback () )
-                        &&   ( start_word < num_words ) )
-                                return RESULT::ERROR_ANY;
-                        m_client << "Incomplete command" << cli_client::endl;
-                        return RESULT::ERROR_ANY;
+                        if ( c->has_callback () )
+                        {
+                                ++start_word;
+                                return make_pair (c->exec
+                                  ( c->name(), words, start_word ), c->name());
+                        }
+                        m_client << "# Incomplete command" << cli_client::endl;
+                        return make_pair (RESULT::ERROR_ANY, c->name());
                 }
                 // found the command and there are no arguments left on
                 // the command line
                 ++start_word; // words.size() - start_word == number of commands
-                return c->exec ( c->name(), words, start_word );
+                return make_pair (c->exec ( c->name(), words, start_word ), c->name());
         }
         if ( num_commands )
         {
                 m_client << "'" << word << "' is ambigous" << cli_client::endl;
-                return RESULT::ERROR_ANY;
+                return make_pair (RESULT::ERROR_ANY, "");
         }
-        return RESULT::INVALID_ARG;
+        return make_pair (RESULT::INVALID_COMMAND, word);
 } // cli::exec_command ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1235,25 +1286,33 @@ cli::run_command
         r = RESULT::OK;
 
         m_client.enable_filters ();
-        try   { r = exec_command ( m_commands, commands, arg_ptr ); }
+        std::pair <libcli::RESULT, std::string> res;
+        try   { res = exec_command ( m_commands, commands, arg_ptr ); }
         catch ( pager_wants_quit ) { /* nothing to do */ }
         m_client.disable_filters();
 
-        switch ( r )
+        switch ( res.first )
         {
         case RESULT::INVALID_ARG:
-                m_client << "% Invalid argument" << cli_client::endl;
+                m_client << "% " << res.second
+                        << " : Invalid argument" << cli_client::endl;
                 break;
         case RESULT::TOO_MANY_ARGS:
-                m_client << "% too many arguments" << cli_client::endl;
+                m_client << "% " << res.second <<
+                        " : too many arguments" << cli_client::endl;
                 break;
         case RESULT::MISSING_ARG:
-                m_client << "% missing argument" << cli_client::endl;
+                m_client << "% " << res.second
+                        << " :  missing argument" << cli_client::endl;
+                break;
+        case RESULT::INVALID_COMMAND:
+                m_client << "% " << res.second
+                        << " :  invalid command" << cli_client::endl;
                 break;
         default:
                 break;
         }
-        return r;
+        return res.first;
 } // cli::run_command ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1279,11 +1338,17 @@ cli::file
         int oldpriv = set_privilege ( privilege );
         int oldmode = set_configmode ( mode, "" );
         std::string line;
+        size_t line_number { 1 };
         for( std::string line; getline( infile, line ); )
         {
                 RESULT r { run_command ( line ) };
                 if ( RESULT::OK != r )
-                        return r;
+                {
+                        m_client << "  ... in line number "
+                                << line_number
+                                << cli_client::endl;
+                }
+                ++line_number;
         }
         set_privilege ( oldpriv );
         set_configmode ( oldmode, m_modestr );
@@ -1480,6 +1545,7 @@ void
 cli::loop
 ()
 {
+        build_shortest ( m_commands );
         if ( m_banner.size() > 0 )
         {
                 m_client << m_banner << cli_client::endl;

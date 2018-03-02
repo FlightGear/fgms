@@ -43,17 +43,17 @@
 #include "fgls.hxx"
 
 
-#ifdef _MSC_VER
-        #define M_IS_DIR _S_IFDIR
-#else // !_MSC_VER
-        #define M_IS_DIR S_IFDIR
+#ifndef _MSC_VER
         /** @brief An instance of daemon */
         fgmp::daemon Myself;
 #endif
 
-const fgmp::version fgls::m_version ( 0, 0, 1, "-dev" );
+namespace fgmp
+{
 
-using prio = fgmp::fglog::prio;
+const version fgls::m_version ( 0, 0, 1, "-dev" );
+
+using prio = fglog::prio;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -61,7 +61,7 @@ server::server
 ()
 {
         id              = ( size_t ) -1;
-        type            = fgms::eCLIENTTYPES::UNSET;
+        type            = sender_type::UNSET;
         //name  
         //location
         //admin
@@ -92,31 +92,15 @@ operator <<
 fgls::fgls
 ()
 {
-        m_run_as_daemon = false;
-        m_add_cli       = true;
-        m_bind_addr     = "";
-        // the main data channel
-        m_data_port     = 5004;
         m_reinit_data   = true;
         m_data_channel  = 0;
-        // the query channel
-        m_query_port    = m_data_port + 1;
         m_reinit_query  = true;
         m_query_channel = 0;
-        // the admin channel
-        m_admin_port    = m_data_port + 2;
         m_reinit_admin  = true;
         m_admin_channel = 0;
-        m_admin_cli     = true;
-        // logging
-        m_logfile_name  = "";
         m_reinit_log    = true;
-        m_debug_level   = prio::MEDIUM;
-        // general
         m_is_parent     = false;
-        m_check_interval = 5;
         m_have_config   = false;
-        m_server_name   = "fgls";
         m_argc          = 0;
         m_want_exit     = false;
         m_uptime        = time ( 0 );
@@ -139,8 +123,8 @@ fgls::init
         {
                 open_logfile ();
         }
-        logger.priority ( prio::MEDIUM );
-        logger.set_flags ( fgmp::fglog::flags::WITH_DATE );
+        logger.priority ( m_debug_level );
+        logger.set_flags ( fglog::flags::WITH_DATE );
 #ifndef _MSC_VER
         if ( m_run_as_daemon )
         {
@@ -162,24 +146,11 @@ fgls::init
         //
         if ( ! init_admin_channel () )
                 return false;
-        return true;
-} // fgls::init ()
-
-//////////////////////////////////////////////////////////////////////
-
-void
-fgls::loop
-()
-{
-        time_t  current_time;
-        int     bytes;
-        fgmp::netsocket* listener [3 + MAX_TELNETS];
-
         if ( m_data_channel == 0 )
         {
                 LOG ( prio::EMIT, "fgls::loop() - "
                   << "not listening on any socket!" );
-                return;
+                return false;
         }
         if ( ( m_admin_user == "" ) || ( m_admin_pass == "" ) )
         {
@@ -194,16 +165,31 @@ fgls::loop
                         );
                 }
         }
-        if ( ! m_run_as_daemon && m_add_cli )
+        if ( ! m_run_as_daemon && m_tty_cli )
         {
                 // Run admin cli in foreground reading from stdin
                 using namespace std::placeholders;
                 std::thread th { std::bind (&fgls::handle_admin, this, _1), 0 };
                 th.detach ();
         }
+        return true;
+} // fgls::init ()
+
+//////////////////////////////////////////////////////////////////////
+
+void
+fgls::loop
+()
+{
+
         LOG ( prio::EMIT, "# Main server started!" );
         m_is_parent = true;
-        while ( m_want_exit == false )
+        time_t  current_time;
+        time_t  last_time { time ( 0 ) };
+        int     bytes;
+        netsocket* listener [3 + MAX_TELNETS];
+
+        do
         {
                 if ( m_data_channel == 0 )
                 {
@@ -216,7 +202,11 @@ fgls::loop
                 listener[1] = m_query_channel;
                 listener[2] = m_admin_channel;
                 listener[3] = 0;
-                bytes = m_data_channel->select( listener, 0, m_check_interval );
+                bytes = m_data_channel->select( listener, 0, 1 );
+                #if 0
+                if ( current_time - last_time > m_check_interval )
+                        std::cout << "check time" << std::endl;
+                #endif
                 if ( bytes < 0 )
                         continue;       // some error
                 else if ( bytes == 0 )
@@ -231,7 +221,7 @@ fgls::loop
                 }
                 if ( listener[0] > 0 )
                 {       // something on the admin channel
-                        fgmp::netaddr admin_addr ( fgmp::netaddr::IPv6 );
+                        netaddr admin_addr ( netaddr::IPv6 );
                         int fd = m_admin_channel->accept ( & admin_addr );
                         if ( fd < 0 )
                         {
@@ -246,10 +236,11 @@ fgls::loop
                           "fgls::Loop() - new Admin connection from "
                           << admin_addr.to_string () );
                         using namespace std::placeholders;
-                        std::thread th { std::bind (&fgls::handle_admin, this, _1), 0 };
+                        std::thread th {
+                          std::bind (&fgls::handle_admin, this, _1), 0 };
                         th.detach ();
                 }
-        }
+        } while ( m_want_exit == false );
 } // fgls::loop ()
 
 //////////////////////////////////////////////////////////////////////
@@ -270,11 +261,11 @@ fgls::init_data_channel
                 delete m_data_channel;
                 m_data_channel = 0;
         }
-        m_data_channel = new fgmp::netsocket ();
+        m_data_channel = new netsocket ();
         try
         {
                 m_data_channel->listen_to ( m_bind_addr, m_data_port,
-                  fgmp::netsocket::UDP );
+                  netsocket::UDP );
         }
         catch ( std::runtime_error& e )
         {
@@ -309,11 +300,11 @@ fgls::init_query_channel
         {
                 return true; // query channel disabled
         }
-        m_query_channel = new fgmp::netsocket ();
+        m_query_channel = new netsocket ();
         try
         {
                 m_query_channel->listen_to ( m_bind_addr,
-                  m_query_port, fgmp::netsocket::TCP );
+                  m_query_port, netsocket::TCP );
         }
         catch ( std::runtime_error& e )
         {
@@ -336,20 +327,16 @@ fgls::init_admin_channel
         if ( ! m_reinit_admin )
                 return true;
         if ( m_admin_channel )
-        {
                 delete m_admin_channel;
-        }
         m_admin_channel = 0;
         m_reinit_admin = false;
         if  ( ( m_admin_port == 0 ) || ( m_admin_cli == false ) )
-        {
                 return true; // admin channel disabled
-        }
-        m_admin_channel = new fgmp::netsocket ();
+        m_admin_channel = new netsocket ();
         try
         {
                 m_admin_channel->listen_to ( m_bind_addr,
-                  m_admin_port, fgmp::netsocket::TCP );
+                  m_admin_port, netsocket::TCP );
         }
         catch ( std::runtime_error& e )
         {
@@ -359,6 +346,25 @@ fgls::init_admin_channel
         }
         return true;
 } // fgls::init_admin_channel()
+
+//////////////////////////////////////////////////////////////////////
+
+void
+fgls::set_bind_addr
+(
+        const std::string& addr
+)
+{
+        if ( m_bind_addr == addr )
+                return;
+        m_bind_addr = addr;
+        m_reinit_data = true;
+        m_reinit_query = true;
+        m_reinit_admin = true;
+        init_data_channel ();
+        init_query_channel ();
+        init_admin_channel ();
+} // fgls::set_bind_addr ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -427,136 +433,20 @@ fgls::process_config
         const std::string & config_name
 )
 {
-        fgmp::config  config;
-        std::string     val;
-        int             e;
 
         if ( m_have_config )    // we already have a config, so ignore
         {
                 return true;
         }
-        if ( config.read ( config_name ) )
-        {
-        LOG ( prio::EMIT, "failed to read " << config_name );
-                return false;
-        }
         LOG ( prio::EMIT, "processing " << config_name );
-        val = config.get ( "fgls.name" );
-        if ( val != "" )
+        using namespace libcli;
+        RESULT r;
+        fgls_cli cli ( this, 0 );
+        r = cli.file ( config_name, PRIVLEVEL::PRIVILEGED,CLI_MODE::CONFIG );
+        if ( RESULT::INVALID_ARG == r )
         {
-                m_server_name = val;
-        }
-        val = config.get ( "fgls.bind_address" );
-        if ( val != "" )
-        {
-                m_bind_addr = val;
-        }
-        val = config.get ( "fgls.port" );
-        if ( val != "" )
-        {
-                m_data_port = fgmp::str_to_num<uint16_t> ( val, e );
-                if ( e )
-                {
-                        LOG ( prio::URGENT,
-                          "invalid value for fgls.port: '" << val << "'"
-                        );
-                        exit ( 1 );
-                }
-        }
-        val = config.get ( "fgls.telnet" );
-        if ( val != "" )
-        {
-                m_query_port = fgmp::str_to_num<uint16_t> ( val, e );
-                if ( e )
-                {
-                        LOG ( prio::URGENT,
-                          "invalid value for fgls.telnet: '" << val << "'"
-                        );
-                        exit ( 1 );
-                }
-        }
-        val = config.get ( "fgls.admin_cli" );
-        if ( val != "" )
-        {
-                if ( ( val == "on" ) || ( val == "true" ) )
-                {
-                        m_admin_cli = true;
-                }
-                else if ( ( val == "off" ) || ( val == "false" ) )
-                {
-                        m_admin_cli = false;
-                }
-                else
-                {
-                        LOG ( prio::URGENT,
-                          "unknown value for fgls.admin_cli '"
-                          << val << "'"
-                        );
-                }
-        }
-        val = config.get ( "fgls.admin_port" );
-        if ( val != "" )
-        {
-                m_admin_port = fgmp::str_to_num<uint16_t> ( val, e );
-                if ( e )
-                {
-                        LOG ( prio::URGENT,
-                          "invalid value for fgls.admin_port: '" << val << "'"
-                        );
-                        exit ( 1 );
-                }
-        }
-        val = config.get ( "fgls.admin_user" );
-        if ( val != "" )
-        {
-                m_admin_user = val;
-        }
-        val = config.get ( "fgls.admin_pass" );
-        if ( val != "" )
-        {
-                m_admin_pass = val;
-        }
-        val = config.get ( "fgls.admin_enable" );
-        if ( val != "" )
-        {
-                m_admin_enable = val;
-        }
-        val = config.get ( "fgls.daemon" );
-        if ( val != "" )
-        {
-                if ( ( val == "on" ) || ( val == "true" ) )
-                {
-                        m_run_as_daemon = true;
-                }
-                else if ( ( val == "off" ) || ( val == "false" ) )
-                {
-                        m_run_as_daemon = false;
-                }
-                else
-                {
-                        LOG ( prio::URGENT,
-                          "unknown value for fgls.daemon '"
-                          << val << "'"
-                        );
-                }
-        }
-        val = config.get ( "fgls.logfile" );
-        if ( val != "" )
-        {
-                m_logfile_name = val;
-        }
-        val = config.get ( "fgls.checkinterval" );
-        if ( val != "" )
-        {
-                m_check_interval = fgmp::str_to_num<uint16_t> ( val, e );
-                if ( e )
-                {
-                        LOG ( prio::URGENT,
-                          "invalid value for fgls.checkinterval: '"
-                          << val << "'"
-                        );
-                        exit ( 1 );
-                }
+                LOG ( prio::EMIT, "failed to read " << config_name );
+                return false;
         }
         m_have_config = true;
         return true;
@@ -564,23 +454,7 @@ fgls::process_config
 
 //////////////////////////////////////////////////////////////////////
 
-void*
-fgls::detach_admin_cli
-(
-        void* ctx
-)
-{
-        st_telnet* t = reinterpret_cast<st_telnet*> ( ctx );
-        fgls* tmp_fgls = t->instance;
-        pthread_detach ( pthread_self() );
-        tmp_fgls->handle_admin ( t->fd );
-        delete t;
-        return 0;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void*
+void
 fgls::handle_admin
 (
         int fd
@@ -594,9 +468,9 @@ fgls::handle_admin
         if ( fd == 0 )
         {       // reading from stdin
                 m_want_exit = true;
+                m_check_interval = 1;
         }
         delete cli;
-        return 0;
 } // fgls::handle_admin()
 
 //////////////////////////////////////////////////////////////////////
@@ -719,7 +593,7 @@ fgls::parse_params
 
         m_argc = argc;
         m_argv = argv;
-        while ( ( m=getopt ( argc, argv, "hp:a:t:l:L:dDv" ) ) != -1 )
+        while ( ( m=getopt ( argc, argv, "hp:a:c:t:l:L:dDv" ) ) != -1 )
         {
                 switch (m)
                 {
@@ -727,7 +601,7 @@ fgls::parse_params
                         print_help ();
                         exit ( 0);
                 case 'p':
-                        m_data_port = fgmp::str_to_num<uint16_t> ( optarg, e );
+                        m_data_port = str_to_num<uint16_t> ( optarg, e );
                         if ( e != 0 )
                         {
                                 std::cerr << "invalid value for query port "
@@ -736,7 +610,7 @@ fgls::parse_params
                         }
                         break;
                 case 'a':
-                        m_admin_port = fgmp::str_to_num<uint16_t> ( optarg, e );
+                        m_admin_port = str_to_num<uint16_t> ( optarg, e );
                         if ( e )
                         {
                                 std::cerr << "invalid value for admin port "
@@ -744,8 +618,11 @@ fgls::parse_params
                                 exit (1);
                         }
                         break;
+                case 'c':
+                        process_config ( optarg );
+                        break;
                 case 't':
-                        m_query_port = fgmp::str_to_num<uint16_t> ( optarg, e );
+                        m_query_port = str_to_num<uint16_t> ( optarg, e );
                         if ( e )
                         {
                                 std::cerr << "invalid value for query port "
@@ -757,7 +634,7 @@ fgls::parse_params
                         m_logfile_name = optarg;
                         break;
                 case 'L':
-                        m_debug_level = static_cast<prio> (fgmp::str_to_num<uint16_t> ( optarg, e ));
+                        m_debug_level = make_prio(str_to_num<int>(optarg,e ));
                         if ( e )
                         {
                                 std::cerr << "invalid value for LEVEL "
@@ -779,6 +656,8 @@ fgls::parse_params
         return 0;
 } // fgls::parse_params()
 
+} // namespace fgmp
+
 //////////////////////////////////////////////////////////////////////
 
 int
@@ -788,7 +667,7 @@ main
         char* argv[]
 )
 {
-        fgls fgls;
+        fgmp::fgls fgls;
 
         fgls.parse_params ( argc, argv );
         fgls.read_configs ();
@@ -800,5 +679,4 @@ main
         fgls.shutdown ();
         return 0;
 }
-
 

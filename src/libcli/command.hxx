@@ -65,8 +65,8 @@ public:
                 int mode,
                 const std::string & help
         );
-        virtual ~command ();
-        virtual RESULT exec ( const std::string& name, const strvec& args,
+        ~command ();
+        RESULT exec ( const std::string& name, const strvec& args,
                 size_t& first_arg );
         inline bool has_callback () const;
         inline bool has_children () const;
@@ -76,9 +76,9 @@ public:
         inline int mode () const;
         inline size_t unique_len () const;
         inline void unique_len (size_t len );
-        virtual bool compare ( const std::string& word,
+        bool compare ( const std::string& word,
                 bool compare_case = false, const size_t len = 0 );
-        virtual int  compare_len ( const std::string& word,
+        int  compare_len ( const std::string& word,
                 bool compare_case = false );
 private:
         /// the command name
@@ -163,7 +163,7 @@ bool
 command::has_callback
 () const
 {
-        return m_cli_callback != nullptr;
+        return ( m_cli_callback != nullptr );
 } // command::has_callback ()
 
 //////////////////////////////////////////////////////////////////////
