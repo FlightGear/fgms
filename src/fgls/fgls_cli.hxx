@@ -34,19 +34,6 @@
 #include <libcli/libcli.hxx>
 #include "fgls.hxx"
 
-namespace libcli
-{
-
-namespace CLI_MODE
-{
-        enum
-        {
-                CONFIG_FGLS = CLI_MODE::CONFIG + 1
-        };
-}
-
-}
-
 namespace fgmp
 {
 
@@ -100,8 +87,11 @@ private:
         RESULT show_log ( const std::string& command,
                    const strvec& args, size_t first_arg );
 
+        RESULT show_relay ( const std::string& command,
+                   const strvec& args, size_t first_arg );
+
         //////////////////////////////////////////////////
-        // configure commands
+        // configure fgls commands
         //////////////////////////////////////////////////
         RESULT cfg_fgls ( const std::string& command,
                    const strvec& args, size_t first_arg );

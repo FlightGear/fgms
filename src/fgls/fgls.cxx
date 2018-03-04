@@ -57,22 +57,6 @@ using prio = fglog::prio;
 
 //////////////////////////////////////////////////////////////////////
 
-server::server
-()
-{
-        id              = ( size_t ) -1;
-        type            = sender_type::UNSET;
-        //name  
-        //location
-        //admin
-        //version
-        last_seen       = 0;
-        registered_at   = 0;
-
-} // server::server()
-
-//////////////////////////////////////////////////////////////////////
-
 std::ostream&
 operator <<
 (
@@ -188,7 +172,6 @@ fgls::loop
         time_t  last_time { time ( 0 ) };
         int     bytes;
         netsocket* listener [3 + MAX_TELNETS];
-
         do
         {
                 if ( m_data_channel == 0 )

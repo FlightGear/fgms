@@ -79,6 +79,10 @@ public:
 
         RESULT internal_configure
           ( const string& command, const strvec& args, size_t first_arg );
+        RESULT internal_exit
+          ( const string& command, const strvec& args, size_t first_arg );
+        RESULT internal_end
+          ( const string& command, const strvec& args, size_t first_arg );
 
 protected:
         /// The different states of the cli
@@ -126,10 +130,6 @@ protected:
         RESULT internal_dump
           ( const string& command, const strvec& args, size_t first_arg );
         RESULT internal_pager
-          ( const string& command, const strvec& args, size_t first_arg );
-        RESULT internal_exit
-          ( const string& command, const strvec& args, size_t first_arg );
-        RESULT internal_end
           ( const string& command, const strvec& args, size_t first_arg );
 
         int  check_enable ( const string& pass );

@@ -34,7 +34,7 @@ namespace fgmp
 {
 
 /// client types
-enum class sender_type
+enum class SENDER_TYPE
 {
         UNSET,       // unset
         FGFS    = 0x46474653,           // a normal client
@@ -44,7 +44,7 @@ enum class sender_type
         OBSERVER        // an observer
 };
 
-enum fgmp_commands
+enum FGMP_COMMANDS
 {
         REGISTER_SERVER,///< server requests to be part of our network
         REGISTER_FGFS,  ///< fgfs requests to be part of our network

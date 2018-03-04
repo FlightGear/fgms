@@ -290,6 +290,8 @@ endif ( MSVC )
 ##################################################
 if ( BUILD_FGLS )
         add_executable ( fgls
+                src/fgls/relay.hxx
+                src/fgls/relay.cxx
                 src/fgls/fgls.hxx
                 src/fgls/fgls.cxx
                 src/fgls/fgls_cli.hxx

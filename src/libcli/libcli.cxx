@@ -273,8 +273,13 @@ cli::register_command
         for ( const auto c : m_commands )
         {
                 if ( c->name() == cmd->name() )
-                        throw arg_error (
-                          cmd->name() + " : command already defined" );
+                {
+                        if ( ( cmd->m_privilege == c->m_privilege )
+                        &&   ( cmd->m_mode == c->m_mode )
+                        &&   ( cmd->m_mode != CLI_MODE::ANY ) )
+                                throw arg_error (
+                                  cmd->name() + " : command already defined" );
+                }
         }
         m_commands.push_back ( command::command_p(cmd) );
 } // cli::register_command ()
@@ -704,20 +709,6 @@ cli::cli
                 libcli::CLI_MODE::EXEC,
                 "Turn off privileged commands"
         ) );
-        register_command ( new command (
-                "exit",
-                _ptr ( cli::internal_exit ),
-                libcli::PRIVLEVEL::UNPRIVILEGED,
-                libcli::CLI_MODE::ANY,
-                "return to EXEC mode"
-        ));
-        register_command ( new command (
-                "end",
-                _ptr ( cli::internal_end ),
-                libcli::PRIVLEVEL::UNPRIVILEGED,
-                libcli::CLI_MODE::ANY,
-                "return to previous mode"
-        ));
         #undef _ptr
 } // cli::cli ()
 

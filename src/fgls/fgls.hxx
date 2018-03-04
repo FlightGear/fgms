@@ -33,41 +33,19 @@
 
 #include <stdint.h>
 #include <string>
+#if 0
 #include <vector>
-#include <fstream>
+#include <memory>
+#endif
 #include <fglib/daemon.hxx>
 #include <fglib/fg_thread.hxx>
 #include <fglib/fg_list.hxx>
 #include <fglib/fg_version.hxx>
 #include <fglib/fg_proto.hxx>
+#include "relay.hxx"
 
 namespace fgmp
 {
-
-//////////////////////////////////////////////////////////////////////
-
-/** An fgms server as seen from fgls
- */
-class server
-{
-public:
-        uint64_t        id;             ///< internal ID
-        sender_type     type;           ///< type of server
-        netaddr         addr;           ///< sockaddr of server
-        std::string     name;           ///< eg. mpserver01
-        std::string     location;       ///< "city/province/country"
-        std::string     admin_email;    ///< email address of admin
-        fgmp::version   version;        ///< version of server
-        time_t          last_seen;
-        time_t          registered_at;
-        server ();
-        friend std::ostream& operator << ( std::ostream& o, const server& s );
-}; // class server
-
-using ServerList = fgmp::lock_list_t<server>;
-using ServerIt   = fgmp::lock_list_t<server>::iterator;
-
-//////////////////////////////////////////////////////////////////////
 
 /** The List server
  */
@@ -106,13 +84,12 @@ protected:
         int             m_check_interval = 5;
         std::string     m_hostname       = "fgls";
 
-        /// Maximum number of concurrent telnets.
         /// List of known servers.
-        ServerList      m_server_list;
+        serverlist      m_server_list;
         /// Current selected HUB.
-        ServerIt        m_cur_hub;
+        server_it        m_cur_hub;
         /// Next server presented to clients.
-        ServerIt        m_cur_fgms;
+        server_it        m_cur_fgms;
         /// True in main thread.
         bool            m_is_parent;
         /// True if the data channel needs to be (re-) initialised.
