@@ -42,7 +42,7 @@ command::command
         int level,
         int mode,
         const std::string & help
-) : m_name {name}, m_help{help}
+) : m_name { std::move (name) }, m_help { std::move (help) }
 {
         m_privilege     = level;
         m_mode          = mode;
@@ -88,7 +88,8 @@ command::command
         int level,
         int mode,
         const std::string & help
-) : m_name {name}, m_help{help}, m_cli_callback{callback}
+) : m_name { std::move ( name) }, m_help { std::move (help) },
+    m_cli_callback { callback }
 {
         m_privilege     = level;
         m_mode          = mode;

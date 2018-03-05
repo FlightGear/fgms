@@ -1477,6 +1477,33 @@ cli::leave_config_mode
 
 //////////////////////////////////////////////////////////////////////
 
+std::pair <libcli::RESULT, bool>
+cli::get_bool
+(
+        const std::string & arg
+)
+{
+        if ( wants_help ( arg ) )
+        {
+                show_help ( "true|false|on|off", "set boolean value" );
+                return std::make_pair<libcli::RESULT,bool>
+                        ( RESULT::ERROR_ANY, false );
+        }
+        if ( arg == "" )
+                return std::make_pair<libcli::RESULT, bool>
+                        ( RESULT::MISSING_ARG, false );
+        if ( compare ( arg, "true" ) || compare ( arg, "on" ) )
+                return std::make_pair<libcli::RESULT, bool>
+                        ( RESULT::OK, true );
+        if ( compare ( arg, "false" ) || compare ( arg, "off" ) )
+                return std::make_pair<libcli::RESULT, bool>
+                        ( RESULT::OK, false );
+        return std::make_pair<libcli::RESULT, bool>
+                ( RESULT::INVALID_ARG, false );
+} // cli::get_bool ()
+
+//////////////////////////////////////////////////////////////////////
+
 /**
  * Ask the user for username and password.
  * @return true if the authentication succeeded.

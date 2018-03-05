@@ -131,7 +131,7 @@ protected:
           ( const string& command, const strvec& args, size_t first_arg );
         RESULT internal_pager
           ( const string& command, const strvec& args, size_t first_arg );
-
+        std::pair <libcli::RESULT,bool> get_bool ( const std::string& arg );
         int  check_enable ( const string& pass );
         int  check_user_auth ( const string& username, const string& password );
         void leave_config_mode ();

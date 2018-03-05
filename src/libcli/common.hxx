@@ -61,8 +61,9 @@ namespace PRIVLEVEL
 {
         enum
         {
-                UNPRIVILEGED    = 0,
-                PRIVILEGED      = 15
+                UNPRIVILEGED,
+                PRIVILEGED,
+                EXTENSION
         };
 }
 
@@ -81,7 +82,8 @@ namespace CLI_MODE
         {
                 ANY,
                 EXEC,
-                CONFIG
+                CONFIG,
+                EXTENSION       ///< use this for your own modes
         };
 }
 

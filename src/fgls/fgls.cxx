@@ -76,18 +76,7 @@ operator <<
 fgls::fgls
 ()
 {
-        m_reinit_data   = true;
-        m_data_channel  = 0;
-        m_reinit_query  = true;
-        m_query_channel = 0;
-        m_reinit_admin  = true;
-        m_admin_channel = 0;
-        m_reinit_log    = true;
-        m_is_parent     = false;
-        m_have_config   = false;
-        m_argc          = 0;
-        m_want_exit     = false;
-        m_uptime        = time ( 0 );
+        m_uptime = time ( 0 );
 } // fgls::fgls()
 
 //////////////////////////////////////////////////////////////////////
@@ -130,7 +119,7 @@ fgls::init
         //
         if ( ! init_admin_channel () )
                 return false;
-        if ( m_data_channel == 0 )
+        if ( m_data_channel == nullptr )
         {
                 LOG ( prio::EMIT, "fgls::loop() - "
                   << "not listening on any socket!" );
@@ -149,7 +138,7 @@ fgls::init
                         );
                 }
         }
-        if ( ! m_run_as_daemon && m_tty_cli )
+        if ( ! m_run_as_daemon && m_admin_cli )
         {
                 // Run admin cli in foreground reading from stdin
                 using namespace std::placeholders;
@@ -174,7 +163,7 @@ fgls::loop
         netsocket* listener [3 + MAX_TELNETS];
         do
         {
-                if ( m_data_channel == 0 )
+                if ( m_data_channel == nullptr )
                 {
                         LOG ( prio::EMIT, "lost data channel!" );
                         return;
@@ -185,8 +174,8 @@ fgls::loop
                 listener[1] = m_query_channel;
                 listener[2] = m_admin_channel;
                 listener[3] = 0;
-                bytes = m_data_channel->select( listener, 0, 1 );
-                #if 0
+                bytes = m_data_channel->select( listener, 0, m_check_interval );
+                #if 0   TODO
                 if ( current_time - last_time > m_check_interval )
                         std::cout << "check time" << std::endl;
                 #endif
@@ -236,14 +225,9 @@ fgls::init_data_channel
 ()
 {
         if ( ! m_reinit_data )
-        {
                 return true;
-        }
-        if ( m_data_channel )
-        {
+        if ( m_data_channel != nullptr )
                 delete m_data_channel;
-                m_data_channel = 0;
-        }
         m_data_channel = new netsocket ();
         try
         {
@@ -273,16 +257,12 @@ fgls::init_query_channel
 {
         if ( ! m_reinit_query )
                 return true;
-        if ( m_query_channel )
-        {
+        if ( m_query_channel != nullptr )
                 delete m_query_channel;
-        }
-        m_query_channel = 0;
+        m_query_channel = nullptr;
         m_reinit_query = false;
         if ( m_query_port == 0 )
-        {
                 return true; // query channel disabled
-        }
         m_query_channel = new netsocket ();
         try
         {
@@ -309,9 +289,9 @@ fgls::init_admin_channel
 {
         if ( ! m_reinit_admin )
                 return true;
-        if ( m_admin_channel )
+        if ( m_admin_channel != nullptr )
                 delete m_admin_channel;
-        m_admin_channel = 0;
+        m_admin_channel = nullptr;
         m_reinit_admin = false;
         if  ( ( m_admin_port == 0 ) || ( m_admin_cli == false ) )
                 return true; // admin channel disabled
@@ -358,10 +338,8 @@ fgls::open_logfile
         if ( m_reinit_log == false )
                 return; // nothing to do
         if ( m_logfile_name == "" )
-        {
                 return;
-        }
-        LOG ( prio::CONSOLE, "# using logfile " << m_logfile_name );
+        LOG ( prio::EMIT, "# using logfile '" << m_logfile_name << "'" );
         if ( ! logger.open ( m_logfile_name ) )
         {
                 LOG ( prio::URGENT,
@@ -381,23 +359,23 @@ fgls::shutdown
                 return;
         LOG ( prio::URGENT, "fgls::Shutdown() - exiting" );
         logger.close ();
-        if ( m_data_channel )
+        if ( m_data_channel != nullptr )
         {
                 m_data_channel->close ();
                 delete m_data_channel;
-                m_data_channel = 0;
+                m_data_channel = nullptr;
         }
-        if ( m_query_channel )
+        if ( m_query_channel != nullptr )
         {
                 m_query_channel->close ();
                 delete m_query_channel;
-                m_query_channel = 0;
+                m_query_channel = nullptr;
         }
-        if ( m_admin_channel )
+        if ( m_admin_channel != nullptr )
         {
                 m_admin_channel->close ();
                 delete m_admin_channel;
-                m_admin_channel = 0;
+                m_admin_channel = nullptr;
         }
 } // fgls::shutdown ()
 
@@ -418,9 +396,7 @@ fgls::process_config
 {
 
         if ( m_have_config )    // we already have a config, so ignore
-        {
                 return true;
-        }
         LOG ( prio::EMIT, "processing " << config_name );
         using namespace libcli;
         RESULT r;
@@ -466,14 +442,12 @@ fgls::handle_admin
  */
 bool
 fgls::read_configs
-(
-        bool reinit
-)
+()
 {
         std::string Path;
 
 #ifndef _MSC_VER
-        // Unix version
+        // try /etc/fgms.conf (or whatever SYSCONFDIR is)
         Path  = SYSCONFDIR;
         Path += "/fgls.conf";
         if ( process_config ( Path ) == true )
@@ -489,8 +463,6 @@ fgls::read_configs
         }
         else
         {
-                // XP=C:\Documents and Settings\<name>,
-                // Win7=C:\Users\<user>
                 cp = getenv ( "USERPROFILE" );
                 if ( cp )
                 {
@@ -564,7 +536,7 @@ fgls::print_help
  * @param argc  number of commandline arguments
  * @param argv  list of parameters
  */
-int
+void
 fgls::parse_params
 (
         int argc,
@@ -636,7 +608,6 @@ fgls::parse_params
                         exit ( 0);
                 }
         } // while()
-        return 0;
 } // fgls::parse_params()
 
 } // namespace fgmp
@@ -655,9 +626,7 @@ main
         fgls.parse_params ( argc, argv );
         fgls.read_configs ();
         if ( ! fgls.init() )
-        {
                 return 1;
-        }
         fgls.loop ();
         fgls.shutdown ();
         return 0;

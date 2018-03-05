@@ -33,10 +33,6 @@
 
 #include <stdint.h>
 #include <string>
-#if 0
-#include <vector>
-#include <memory>
-#endif
 #include <fglib/daemon.hxx>
 #include <fglib/fg_thread.hxx>
 #include <fglib/fg_list.hxx>
@@ -61,8 +57,8 @@ public:
         fgls ();
         bool    init ();
         void    loop ();
-        int     parse_params ( int argc, char* argv[] );
-        bool    read_configs ( bool reinit = false );
+        void    parse_params ( int argc, char* argv[] );
+        bool    read_configs ();
         void    shutdown ();
         friend class fgls_cli;
 protected:
@@ -70,7 +66,6 @@ protected:
         // configurable via cli
         //////////////////////////////////////////////////
         bool            m_run_as_daemon = false;
-        bool            m_tty_cli       = true;
         std::string     m_bind_addr     = "";
         std::string     m_admin_user    = "";
         std::string     m_admin_pass    = "";
@@ -84,28 +79,19 @@ protected:
         int             m_check_interval = 5;
         std::string     m_hostname       = "fgls";
 
-        /// List of known servers.
         serverlist      m_server_list;
-        /// Current selected HUB.
-        server_it        m_cur_hub;
-        /// Next server presented to clients.
-        server_it        m_cur_fgms;
-        /// True in main thread.
-        bool            m_is_parent;
-        /// True if the data channel needs to be (re-) initialised.
-        bool            m_reinit_data;  // data channel needs to be reopened
-        netsocket*        m_data_channel;
-        /// True if the query channel needs to be (re-) initialised.
-        bool            m_reinit_query; // query channel needs to be reopened
-        netsocket*        m_query_channel;
-        /// True if the admin channel needs to be (re-) initialised.
-        bool            m_reinit_admin;
-        netsocket*        m_admin_channel;
-        /// true if logfile needs to be reopened.
-        bool            m_reinit_log;
-        /// true if have read a config file
-        bool            m_have_config;
-        bool            m_want_exit;
+        server_it       m_cur_hub;
+        server_it       m_cur_fgms;
+        bool            m_reinit_data   = true;
+        bool            m_reinit_query  = true;
+        bool            m_reinit_admin  = true;
+        bool            m_reinit_log    = true;
+        bool            m_is_parent     = false;
+        bool            m_have_config   = false;
+        bool            m_want_exit     = false;
+        netsocket*      m_data_channel  = nullptr;
+        netsocket*      m_query_channel = nullptr;
+        netsocket*      m_admin_channel = nullptr;
         time_t          m_uptime;
 
         bool    init_data_channel ();
@@ -118,8 +104,8 @@ protected:
         bool    process_config ( const std::string & config_name );
         void    handle_admin ( int fd );
 
-        int     m_argc; // number of commandline arguments
-        char**  m_argv; // pointer to commandline arguments (copy)
+        int     m_argc  = 0;
+        char**  m_argv;
 }; // class fgls
 
 //////////////////////////////////////////////////////////////////////

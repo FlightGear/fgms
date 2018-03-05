@@ -34,8 +34,7 @@ namespace CLI_MODE
 {
         enum
         {
-                CONFIG_FGLS = CLI_MODE::CONFIG + 1,
-                CONFIG_RELAYS
+                CONFIG_FGLS = CLI_MODE::EXTENSION
         };
 }
 
@@ -104,14 +103,6 @@ fgls_cli::setup
                 PRIVLEVEL::UNPRIVILEGED,
                 CLI_MODE::ANY,
                 "Show if running as a daemon"
-        ), c );
-        // 'show tty_cli'
-        register_command ( new command (
-                "tty_cli",
-                _ptr ( fgls_cli::show_tty_cli ),
-                PRIVLEVEL::UNPRIVILEGED,
-                CLI_MODE::ANY,
-                "Show tty cli"
         ), c );
         // 'show bind_addr'
         register_command ( new command (
@@ -320,14 +311,6 @@ fgls_cli::setup
                 CLI_MODE::CONFIG,
                 "en-/disable daemon mode (windows only)"
         ), c);
-        // 'fgls tty_cli'
-        register_command ( new command (
-                "tty_cli",
-                _ptr ( fgls_cli::cfg_tty_cli ),
-                PRIVLEVEL::PRIVILEGED,
-                CLI_MODE::CONFIG,
-                "en-/disable admin cli on TTY "
-        ), c);
         // 'fgls bind_addr'
         register_command ( new command (
                 "bind_address",
@@ -437,13 +420,6 @@ fgls_cli::setup
                 "en-/disable daemon mode (windows only)"
         ));
         register_command ( new command (
-                "tty_cli",
-                _ptr ( fgls_cli::cfg_tty_cli ),
-                PRIVLEVEL::PRIVILEGED,
-                CLI_MODE::CONFIG_FGLS,
-                "en-/disable admin cli on TTY "
-        ));
-        register_command ( new command (
                 "bind_address",
                 _ptr ( fgls_cli::cfg_bind_addr ),
                 PRIVLEVEL::PRIVILEGED,
@@ -545,27 +521,6 @@ fgls_cli::setup
         ));
 
         //////////////////////////////////////////////////
-        // config commands in CONFIG_RELAYS mode
-        //////////////////////////////////////////////////
-
-        // enable 'exit' command in configure fgls mode
-        register_command ( new command (
-                "exit",
-                _ptr ( cli::internal_exit ),
-                libcli::PRIVLEVEL::UNPRIVILEGED,
-                libcli::CLI_MODE::CONFIG_RELAYS,
-                "return to EXEC mode"
-        ));
-        // enable 'end' command in configure fgls mode
-        register_command ( new command (
-                "end",
-                _ptr ( cli::internal_end ),
-                libcli::PRIVLEVEL::UNPRIVILEGED,
-                libcli::CLI_MODE::CONFIG_RELAYS,
-                "return to previous mode"
-        ));
-
-        //////////////////////////////////////////////////
         // general commands
         //////////////////////////////////////////////////
         register_command ( new command (
@@ -577,33 +532,6 @@ fgls_cli::setup
         ));
         #undef _ptr
 } // fgls_cli::setup()
-
-//////////////////////////////////////////////////////////////////////
-
-std::pair <libcli::RESULT, bool>
-fgls_cli::get_cli_bool
-(
-        const std::string & arg
-)
-{
-        if ( wants_help ( arg ) )
-        {
-                show_help ( "true|false|on|off", "set boolean value" );
-                return std::make_pair<libcli::RESULT,bool>
-                        ( RESULT::ERROR_ANY, false );
-        }
-        if ( arg == "" )
-                return std::make_pair<libcli::RESULT, bool>
-                        ( RESULT::MISSING_ARG, false );
-        if ( compare ( arg, "true" ) || compare ( arg, "on" ) )
-                return std::make_pair<libcli::RESULT, bool>
-                        ( RESULT::OK, true );
-        if ( compare ( arg, "false" ) || compare ( arg, "off" ) )
-                return std::make_pair<libcli::RESULT, bool>
-                        ( RESULT::OK, false );
-        return std::make_pair<libcli::RESULT, bool>
-                ( RESULT::INVALID_ARG, false );
-}
 
 //////////////////////////////////////////////////////////////////////
 
@@ -636,7 +564,7 @@ fgls_cli::cfg_daemon
         if ( RESULT::OK != n )
                 return n;
         std::pair <libcli::RESULT, bool> r 
-          { get_cli_bool ( args[first_arg] ) };
+          { get_bool ( args[first_arg] ) };
         if ( r.first == RESULT::OK )
         {
                 // if set from false to true a restart is needed
@@ -644,28 +572,6 @@ fgls_cli::cfg_daemon
         }
         return r.first;
 } // fgls_cli::cfg_daemon ()
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
-fgls_cli::cfg_tty_cli
-(
-        const std::string& command,
-        const strvec& args,
-        size_t first_arg
-)
-{
-        RESULT n { need_n_args ( 1, args, first_arg) };
-        if ( RESULT::OK != n )
-                return n;
-        std::pair <libcli::RESULT, bool> r 
-          { get_cli_bool ( args[first_arg] ) };
-        if ( r.first == RESULT::OK )
-        {
-                m_fgls->m_tty_cli = r.second;
-        }
-        return RESULT::OK;
-} // fgls_cli::cfg_tty_cli ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -877,7 +783,7 @@ fgls_cli::cfg_admin_cli
         RESULT n { need_n_args ( 1, args, first_arg) };
         if ( RESULT::OK != n )
                 return n;
-        std::pair <libcli::RESULT, bool> r { get_cli_bool ( args[first_arg] ) };
+        std::pair <libcli::RESULT, bool> r { get_bool ( args[first_arg] ) };
         if ( r.first == RESULT::OK )
         {
                 m_fgls->m_admin_cli = r.second;
@@ -998,7 +904,7 @@ fgls_cli::show_daemon
         size_t first_arg
 )
 {
-        libcli::RESULT r = no_more_args ( args, first_arg );
+        RESULT r = no_more_args ( args, first_arg );
         if ( r != RESULT::OK )
                 return r;
         m_client << libcli::align_left ( 22 )
@@ -1006,25 +912,6 @@ fgls_cli::show_daemon
                 << libcli::cli_client::endl;
         return RESULT::OK;
 } // fgls_cli::show_daemon ()
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
-fgls_cli::show_tty_cli
-(
-        const std::string& command,
-        const strvec& args,
-        size_t first_arg
-)
-{
-        libcli::RESULT r = no_more_args ( args, first_arg );
-        if ( r != RESULT::OK )
-                return r;
-        m_client << libcli::align_left ( 22 )
-                << "add cli" << ": " << m_fgls->m_tty_cli
-                << libcli::cli_client::endl;
-        return RESULT::OK;
-} // fgls_cli::show_tty_cli ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -1470,8 +1357,12 @@ fgls_cli::show_settings
         if ( r != RESULT::OK )
                 return r;
         strvec noargs;
+
+        m_client << libcli::cli_client::endl;
+        show_version (command, args, first_arg);
+        m_client << libcli::cli_client::endl;
+        m_client << "current settings:" << libcli::cli_client::endl;
         show_daemon         ( "", noargs, 0 );
-        show_tty_cli        ( "", noargs, 0 );
         show_bind_addr      ( "", noargs, 0 );
         show_admin_user     ( "", noargs, 0 );
         show_admin_pass     ( "", noargs, 0 );

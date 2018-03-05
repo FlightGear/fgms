@@ -22,20 +22,20 @@ namespace fgmp
 std::string
 timestamp_to_datestr
 (
-	time_t date
+        time_t date
 )
 {
-	struct tm* tmr { localtime ( &date ) };
-	std::stringstream s;
+        struct tm* tmr { localtime ( &date ) };
+        std::stringstream s;
 
-	s << std::setfill ('0') << std::setw(2)
-		<< tmr->tm_mday << "."
-		<< tmr->tm_mon+1 << "."
-		<< std::setw(4) << tmr->tm_year+1900 << " "
-		<< std::setw(2) << tmr->tm_hour << ":"
-		<< tmr->tm_min << ":"
-		<< tmr->tm_sec << " ";
-	return s.str();
+        s << std::setfill ('0') << std::setw(2)
+                << tmr->tm_mday << "."
+                << tmr->tm_mon+1 << "."
+                << std::setw(4) << tmr->tm_year+1900 << " "
+                << std::setw(2) << tmr->tm_hour << ":"
+                << tmr->tm_min << ":"
+                << tmr->tm_sec << " ";
+        return s.str();
 } // timestamp_to_datestr()
 
 //////////////////////////////////////////////////////////////////////
@@ -47,11 +47,11 @@ timestamp_to_datestr
 std::string
 timestamp_to_days
 (
-	time_t date
+        time_t date
 )
 {
-	time_t diff = time ( 0 ) - date;
-	return diff_to_days ( diff );
+        time_t diff = time ( 0 ) - date;
+        return diff_to_days ( diff );
 } // timestamp_to_days
 
 //////////////////////////////////////////////////////////////////////
@@ -63,40 +63,40 @@ timestamp_to_days
 std::string
 diff_to_days
 (
-	time_t date
+        time_t date
 )
 {
-	time_t diff { date };
-	unsigned int temp { 0 };
-	std::string result;
+        time_t diff { date };
+        unsigned int temp { 0 };
+        std::string result;
 
-	if ( diff > 31536000 )	// years
-	{
-		temp = diff / 31536000;
-		result += num_to_str ( temp, 2 ) + " years";
-		return result;
-	}
-	if ( diff > 86400 )	// days
-	{
-		temp = diff / 86400;
-		result += num_to_str ( temp ) + " days";
-		return result;
-	}
-	if ( diff > 3600 )	// hours
-	{
-		temp = diff / 3600;
-		result += num_to_str ( temp ) + " hours";
-		return result;
-	}
-	if ( diff > 60 )		// minutes
-	{
-		temp = diff / 60;
-		result += num_to_str ( temp ) + " minutes";
-		return result;
-	}
-	temp = diff;
-	result += num_to_str ( temp ) + " seconds";
-	return result;
+        if ( diff > 31536000 )  // years
+        {
+                temp = diff / 31536000;
+                result += num_to_str ( temp, 2 ) + " years";
+                return result;
+        }
+        if ( diff > 86400 )     // days
+        {
+                temp = diff / 86400;
+                result += num_to_str ( temp ) + " days";
+                return result;
+        }
+        if ( diff > 3600 )      // hours
+        {
+                temp = diff / 3600;
+                result += num_to_str ( temp ) + " hours";
+                return result;
+        }
+        if ( diff > 60 )                // minutes
+        {
+                temp = diff / 60;
+                result += num_to_str ( temp ) + " minutes";
+                return result;
+        }
+        temp = diff;
+        result += num_to_str ( temp ) + " seconds";
+        return result;
 } // diff_to_days
 
 //////////////////////////////////////////////////////////////////////
@@ -110,57 +110,57 @@ diff_to_days
 std::string
 byte_counter
 (
-	double bytes
+        double bytes
 )
 {
-	double ret_val;
-	std::string ret_str;
-	if ( bytes > 1099511627776. )
-	{
-		ret_val = ( bytes / 1099511627776. );
-		ret_str = num_to_str ( ret_val, 2 ) + " TiB";
-		return ret_str;
-	}
-	else if ( bytes > 1073741824. )
-	{
-		ret_val = ( bytes / 1073741824. );
-		ret_str = num_to_str ( ret_val, 2 ) + " GiB";
-		return ret_str;
-	}
-	else if ( bytes > 1048576 )
-	{
-		ret_val = ( bytes / 1048576 );
-		ret_str = num_to_str ( ret_val, 2 ) + " MiB";
-		return ret_str;
-	}
-	else if ( bytes > 1024 )
-	{
-		ret_val = ( bytes / 1024 );
-		ret_str = num_to_str ( ret_val, 2 ) + " KiB";
-		return ret_str;
-	}
-	ret_str = num_to_str ( bytes, 2 ) + " b";
-	return ret_str;
+        double ret_val;
+        std::string ret_str;
+        if ( bytes > 1099511627776. )
+        {
+                ret_val = ( bytes / 1099511627776. );
+                ret_str = num_to_str ( ret_val, 2 ) + " TiB";
+                return ret_str;
+        }
+        else if ( bytes > 1073741824. )
+        {
+                ret_val = ( bytes / 1073741824. );
+                ret_str = num_to_str ( ret_val, 2 ) + " GiB";
+                return ret_str;
+        }
+        else if ( bytes > 1048576 )
+        {
+                ret_val = ( bytes / 1048576 );
+                ret_str = num_to_str ( ret_val, 2 ) + " MiB";
+                return ret_str;
+        }
+        else if ( bytes > 1024 )
+        {
+                ret_val = ( bytes / 1024 );
+                ret_str = num_to_str ( ret_val, 2 ) + " KiB";
+                return ret_str;
+        }
+        ret_str = num_to_str ( bytes, 2 ) + " b";
+        return ret_str;
 } // byte_counter()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 /**
- * @return true	'value' ends with 'ending'
+ * @return true 'value' ends with 'ending'
  * @return false else
  */
 bool
 str_ends_with
 (
-	std::string const& value,
-	std::string const& ending
+        std::string const& value,
+        std::string const& ending
 )
 {
-	if ( ending.size() > value.size() )
-	{
-		return false;
-	}
-	return std::equal ( ending.rbegin(), ending.rend(), value.rbegin() );
+        if ( ending.size() > value.size() )
+        {
+                return false;
+        }
+        return std::equal ( ending.rbegin(), ending.rend(), value.rbegin() );
 } // str_ends_with ()
 //////////////////////////////////////////////////////////////////////
 
