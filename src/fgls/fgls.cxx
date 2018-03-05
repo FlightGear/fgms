@@ -175,7 +175,8 @@ fgls::loop
                 listener[2] = m_admin_channel;
                 listener[3] = 0;
                 bytes = m_data_channel->select( listener, 0, m_check_interval );
-                #if 0   TODO
+                #if 0
+                TODO
                 if ( current_time - last_time > m_check_interval )
                         std::cout << "check time" << std::endl;
                 #endif

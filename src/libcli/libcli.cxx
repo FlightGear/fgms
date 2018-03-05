@@ -72,6 +72,7 @@ std::vector<filter_cmds_t> filter_cmds
         { "count",   0, 1, "Count of lines"   },
         { "exclude", 1, 1, "Exclude lines that match" },
         { "include", 1, 1, "Include lines that match" },
+        { "pager",   1, 1, "activate pager" },
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -650,10 +651,6 @@ cli::cli
         int fd
 ): m_client (fd), m_editor (m_client)
 {
-        m_auth_callback   = nullptr;
-        m_enable_callback = nullptr;
-        m_compare_case    = false;
-        m_prompt = "> ";
         set_privilege ( PRIVLEVEL::UNPRIVILEGED );
         set_configmode ( CLI_MODE::EXEC, "" );
 
@@ -879,6 +876,7 @@ cli::get_filter_completions
         {
                 return;
         }
+        std::cout << "f1: " << filters [ start_word ] << std::endl;
         size_t current  { start_word };
         size_t word_num;
         bool   complete; // filter has all needed arguments?
@@ -1108,6 +1106,25 @@ cli::install_filter
                         ++f;
                         continue;
                 }
+                if ( compare ( *f, "pager" ) )
+                {
+                        if ( ( filter_cmds.size() - num ) < 1 )
+                        {
+                                m_client << "'pager' requires an arguments"
+                                  << cli_client::endl;
+                                return RESULT::MISSING_ARG;
+                        }
+                        int e;
+                        size_t v { fgmp::str_to_num<size_t>( *(++f), e ) };
+                        if ( e )
+                                return RESULT::INVALID_ARG;
+                        m_client.register_filter (
+                          new pager_filter ( & m_client, v ) );
+                        ++num;
+                        ++f;
+                        continue;
+                }
+
                 m_client << "unkown filter '" << *f << "'" << cli_client::endl;
                 return RESULT::ERROR_ANY;;
         }

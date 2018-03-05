@@ -145,6 +145,29 @@ private:
 
 //////////////////////////////////////////////////////////////////////
 
+/**
+ * 'pager' filter
+ *
+ * Invoke with
+ * @code
+ * cmd | pager 20
+ * @endcode
+ * Activates the pager which will prompt for more every 20 lines.
+ */
+class pager_filter : public filter
+{
+public:
+        pager_filter ( cli_client* client, size_t max_lines );
+        virtual ~pager_filter ();
+        bool operator () ( const std::string & line ) override;
+private:
+        size_t m_global_max;    // remember current global setting
+        size_t m_max_lines;     // setting for this filter
+        cli_client* m_client;
+}; // class pager_filter
+
+//////////////////////////////////////////////////////////////////////
+
 } // namespace libcli
 
 #endif

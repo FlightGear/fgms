@@ -140,7 +140,7 @@ protected:
         bool authenticate_user ();
         line_editor m_editor;   ///< internal line editor
         std::string m_username; ///< login name of user
-        bool    m_compare_case; ///< compare commands case sensitive?
+        bool    m_compare_case  = false;
         std::string m_prompt;   ///< current prompt
         std::string m_hostname; ///< part of the prompt
         std::string m_modestr;  ///< part of the prompt
@@ -150,8 +150,8 @@ protected:
         int             m_mode;         ///< current 'mode' of the cli
         CLI_STATE       m_state;        ///< current state of the cli
         userlist        m_users;        ///< internally known users
-        auth_func       m_auth_callback;
-        enable_func     m_enable_callback;
+        auth_func       m_auth_callback         = nullptr;
+        enable_func     m_enable_callback       = nullptr;
         command::cmdlist m_commands;    ///< list of known commands
 };
 

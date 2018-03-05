@@ -84,7 +84,8 @@ private:
         size_t m_lines_out = 0;
         /// Maximum number of lines to write to the client
         /// before presenting the pager ('more')
-        size_t m_max_screen_lines = 20;
+        /// disabled by default
+        size_t m_max_screen_lines = 0;
         /// Current output mode. If set to PRINT_MODE::FILTERED
         /// all lines are processed by active filters and the
         /// internal pager.

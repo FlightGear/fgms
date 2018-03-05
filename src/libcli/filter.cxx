@@ -143,5 +143,37 @@ count_filter::operator ()
 
 //////////////////////////////////////////////////////////////////////
 
+pager_filter::pager_filter
+(
+        cli_client* client,
+        size_t max_lines
+) : m_client ( client )
+{
+        m_global_max = m_client->max_screen_lines ();
+        m_client->max_screen_lines ( max_lines );
+} // pager_filter::pager_filter ()
+
+//////////////////////////////////////////////////////////////////////
+
+pager_filter::~pager_filter
+()
+{
+        m_client->max_screen_lines ( m_global_max ); // restore original value
+} // pager_filter::~pager_filter ()
+
+//////////////////////////////////////////////////////////////////////
+
+bool
+pager_filter::operator ()
+(
+        const std::string & line
+)
+{
+        return true;
+} // pager_filter::operator () ()
+
+
+//////////////////////////////////////////////////////////////////////
+
 } // namespace libcli
 
