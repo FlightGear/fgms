@@ -26,6 +26,7 @@
 #include "config.h"
 #endif
 
+#include <stdexcept>
 #include "cli_client.hxx"
 #include "common.hxx"
 #include "filter.hxx"
@@ -150,7 +151,7 @@ pager_filter::pager_filter
 ) : m_client ( client )
 {
         m_global_max = m_client->max_screen_lines ();
-        m_client->max_screen_lines ( max_lines );
+        m_client->max_screen_lines ( max_lines - 1 );
 } // pager_filter::pager_filter ()
 
 //////////////////////////////////////////////////////////////////////
@@ -172,8 +173,45 @@ pager_filter::operator ()
         return true;
 } // pager_filter::operator () ()
 
+//////////////////////////////////////////////////////////////////////
+
+file_filter::file_filter
+(
+        const std::string & filename,
+        bool append
+)
+{
+        if ( append )
+                file.open ( filename, std::ofstream::out | std::ofstream::app );
+        else
+                file.open ( filename, std::ofstream::out );
+        if ( ! file )
+                throw std::runtime_error ( "could not open '" + filename + "'");
+} // file_filter::file_filter ()
 
 //////////////////////////////////////////////////////////////////////
+
+file_filter::~file_filter
+()
+{
+        if ( file )
+                file.close ();
+} // file_filter::~file_filter ()
+
+//////////////////////////////////////////////////////////////////////
+
+bool
+file_filter::operator ()
+(
+        const std::string & line
+)
+{
+        file << line;
+        return false; // no output to screen
+} // file_filter::operator () ()
+
+//////////////////////////////////////////////////////////////////////
+
 
 } // namespace libcli
 

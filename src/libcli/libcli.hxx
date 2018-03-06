@@ -101,7 +101,8 @@ protected:
         RESULT parse_line   ( const string& line, strvec & commands,
                               strvec & filters );
         bool command_available ( const command::command_p cmd ) const;
-        RESULT install_filter ( const strvec & filter_cmds );
+        std::pair <libcli::RESULT, std::string>
+                install_filter ( const strvec & filter_cmds );
         std::pair <libcli::RESULT, std::string>
                 exec_command ( const command::cmdlist & cmds,
                               const strvec & words, size_t & start_word );
@@ -138,6 +139,27 @@ protected:
         void list_completions ();
         bool wants_help ( const string& arg );
         bool authenticate_user ();
+        RESULT install_begin_filter (
+                const strvec & filters,
+                const size_t start );
+        RESULT install_between_filter (
+                const strvec & filters,
+                const size_t start );
+        RESULT install_count_filter (
+                const strvec & filters,
+                const size_t start );
+        RESULT install_exclude_filter (
+                const strvec & filters,
+                const size_t start );
+        RESULT install_include_filter (
+                const strvec & filters,
+                const size_t start );
+        RESULT install_pager_filter (
+                const strvec & filters,
+                const size_t start );
+        RESULT install_file_filter (
+                const strvec & filters,
+                const size_t start );
         line_editor m_editor;   ///< internal line editor
         std::string m_username; ///< login name of user
         bool    m_compare_case  = false;
@@ -146,8 +168,8 @@ protected:
         std::string m_modestr;  ///< part of the prompt
         std::string m_banner;   ///< presented when connecting to the cli
         std::string m_enable_password;
-        int             m_privilege;    ///< current privilege level of the user
-        int             m_mode;         ///< current 'mode' of the cli
+        int             m_privilege = -1;    ///< current privilege level of the user
+        int             m_mode  = -1;         ///< current 'mode' of the cli
         CLI_STATE       m_state;        ///< current state of the cli
         userlist        m_users;        ///< internally known users
         auth_func       m_auth_callback         = nullptr;

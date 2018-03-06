@@ -67,12 +67,13 @@ struct filter_cmds_t
 // define some useful help texts for internal filters.
 std::vector<filter_cmds_t> filter_cmds
 {
-        { "begin",   1, 3, "Begin with lines that match" },
+        { "begin",   1, 3, "begin WORD - Begin with lines that match WORD" },
         { "between", 2, 3, "Between lines that match" },
         { "count",   0, 1, "Count of lines"   },
         { "exclude", 1, 1, "Exclude lines that match" },
         { "include", 1, 1, "Include lines that match" },
         { "pager",   1, 1, "activate pager" },
+        { "file",    2, 1, "write output to a file" },
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -320,10 +321,6 @@ cli::show_help
         const std::string& desc
 )
 {
-        #if 0
-        m_client << "  " << std::left << std::setfill(' ')
-          << std::setw(22) << arg << desc << cli_client::endl;
-        #endif
         m_client << align_left ( 22 ) << arg << desc << cli_client::endl;
 } // show_help()
 
@@ -366,12 +363,14 @@ cli::need_n_args
 )
 {
         size_t num_args = args.size() - first_arg;
-        if ( num_args == 0 )
+        if ( ( num_args == 0 )
+        ||   ( num_args < needed_args )   // too few
+        ||   ( num_args > args.size() ) ) // overflow
                 return RESULT::MISSING_ARG;
         if ( num_args > needed_args )
                 return RESULT::TOO_MANY_ARGS;
         return RESULT::OK;
-} // cli::no_more_args ()
+} // cli::need_n_args ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -611,7 +610,7 @@ cli::internal_pager
         }
         else return no_more_args ( args, first_arg + 1 );
 
-        m_client.max_screen_lines ( lines );
+        m_client.max_screen_lines ( lines - 1);
         if ( lines == 0 )
                 m_client  << "pager disabled!" << cli_client::endl;
         else
@@ -752,7 +751,7 @@ cli::parse_line
         bool   in_filter { false };
         while ( pos < line.size() )
         {
-                size_t start = line.find_first_not_of ( " ", pos );
+                size_t start = line.find_first_not_of ( " \t\f\n\r\v", pos );
                 size_t end;
                 if ( start == std::string::npos )
                         return RESULT::OK;
@@ -794,7 +793,7 @@ cli::parse_line
                         pos = end + 1;
                         continue;
                 }
-                end = line.find_first_of ( " |#\"'", start );
+                end = line.find_first_of ( " \t\f\n\r\v|#\"'", start );
                 if ( in_filter )
                 {
                         filters.push_back (
@@ -876,7 +875,6 @@ cli::get_filter_completions
         {
                 return;
         }
-        std::cout << "f1: " << filters [ start_word ] << std::endl;
         size_t current  { start_word };
         size_t word_num;
         bool   complete; // filter has all needed arguments?
@@ -1015,120 +1013,370 @@ cli::get_completions
 
 //////////////////////////////////////////////////////////////////////
 
-/**
- * Parse through 'filter_cmds' and register the filters with
- * m_client.
- */
 RESULT
-cli::install_filter
+cli::install_begin_filter
 (
-        const strvec & filter_cmds
+        const strvec & filters,
+        const size_t start
 )
 {
-        size_t num { 0 };
-        strvec::const_iterator f { filter_cmds.begin() };
-        while ( f != filter_cmds.end() )
+        RESULT r { need_n_args ( 1, filters, start ) };
+        if ( RESULT::MISSING_ARG == r )
         {
-                ++num;
-                if ( compare ( *f, "include" ) )
+                show_help ("WORD", "start output with line including WORD" );
+                return RESULT::ERROR_ANY;;
+        }
+        if ( RESULT::TOO_MANY_ARGS == r )
+        {
+                if ( "|" != filters[start + 1] )
+                        return r;
+        }
+        if ( wants_help ( filters[start] ) )
+        {
+                show_help ("WORD", "show only lines including WORD" );
+                return RESULT::ERROR_ANY;;
+        }
+        m_client.register_filter ( new begin_filter ( filters[start] ) );
+        return RESULT::OK;
+} // cli::install_exclude_filter ()
+
+//////////////////////////////////////////////////////////////////////
+
+RESULT
+cli::install_between_filter
+(
+        const strvec & filters,
+        const size_t start
+)
+{
+        std::string start_word;
+        std::string end_word;
+        size_t arg_num { 0 };
+        for ( size_t i=start; i < filters.size(); i++ )
+        {
+                switch ( arg_num )
                 {
-                        if ( ( filter_cmds.size() - num ) < 1 )
+                case 0: // start_word
+                        if ( wants_help ( filters[i] ) )
                         {
-                                m_client << "'include' requires an argument"
-                                  << cli_client::endl;
-                                return RESULT::MISSING_ARG;
+                                show_help ("WORD",
+                                  "start output with line containing WORD" );
+                                return RESULT::ERROR_ANY;;
                         }
-                        m_client.register_filter (
-                          new match_filter ( *(++f), false ) );
+                        start_word = filters[i];
+                        break;
+                case 1: // endword
+                        if ( wants_help ( filters[i] ) )
+                        {
+                                show_help ("WORD",
+                                  "end output with line containing WORD" );
+                                return RESULT::ERROR_ANY;;
+                        }
+                        break;
+                default:
+                        if ( filters[i] == "|" )        // next filter
+                        {
+                                i = filters.size() + 1;
+                                break;
+                        }
+                        return no_more_args ( filters, i );
+                }
+                ++arg_num;
+        }
+        if ( arg_num < 2 )
+                return RESULT::MISSING_ARG;
+        m_client.register_filter (
+          new between_filter ( start_word, end_word ) );
+        return RESULT::OK;
+} // cli::install_between_filter ()
+
+//////////////////////////////////////////////////////////////////////
+
+RESULT
+cli::install_count_filter
+(
+        const strvec & filters,
+        const size_t start
+)
+{
+        RESULT r = no_more_args ( filters, start );
+        if ( RESULT::TOO_MANY_ARGS == r ) 
+        {
+                if ( "|" != filters[start] )
+                        return r;
+        }
+        if ( RESULT::SHOW_HELP == r )
+                return r;
+        m_client.register_filter ( new count_filter ( & m_client ) );
+        return RESULT::OK;
+} // cli::install_count_filter ()
+
+//////////////////////////////////////////////////////////////////////
+
+RESULT
+cli::install_exclude_filter
+(
+        const strvec & filters,
+        const size_t start
+)
+{
+        RESULT r { need_n_args ( 1, filters, start ) };
+        if ( RESULT::MISSING_ARG == r )
+        {
+                show_help ("WORD", "show only lines including WORD" );
+                return RESULT::ERROR_ANY;;
+        }
+        if ( RESULT::TOO_MANY_ARGS == r )
+        {
+                if ( "|" != filters[start + 1] )
+                        return r;
+        }
+        if ( wants_help ( filters[start] ) )
+        {
+                show_help ("WORD", "show only lines including WORD" );
+                return RESULT::ERROR_ANY;;
+        }
+        m_client.register_filter ( new match_filter ( filters[start], true ) );
+        return RESULT::OK;
+} // cli::install_exclude_filter ()
+
+//////////////////////////////////////////////////////////////////////
+
+RESULT
+cli::install_include_filter
+(
+        const strvec & filters,
+        const size_t start
+)
+{
+        RESULT r { need_n_args ( 1, filters, start ) };
+        if ( RESULT::MISSING_ARG == r )
+        {
+                show_help ("WORD", "show only lines including WORD" );
+                return RESULT::ERROR_ANY;;
+        }
+        if ( RESULT::TOO_MANY_ARGS == r )
+        {
+                if ( "|" != filters[start + 1] )
+                        return r;
+        }
+        if ( wants_help ( filters[start] ) )
+        {
+                show_help ("WORD", "show only lines including WORD" );
+                return RESULT::ERROR_ANY;;
+        }
+        m_client.register_filter ( new match_filter ( filters[start], false ) );
+        return RESULT::OK;
+} // cli::install_include_filter ()
+
+//////////////////////////////////////////////////////////////////////
+
+RESULT
+cli::install_pager_filter
+(
+        const strvec & filters,
+        const size_t start
+)
+{
+        RESULT r { need_n_args ( 1, filters, start ) };
+        if ( RESULT::MISSING_ARG == r )
+        {
+                show_help ("LINE", "prompt every LINE lines" );
+                return RESULT::ERROR_ANY;;
+        }
+        if ( RESULT::TOO_MANY_ARGS == r )
+        {
+                if ( "|" != filters[start + 1] )
+                        return r;
+        }
+        if ( wants_help ( filters[start] ) )
+        {
+                show_help ("LINE", "prompt every LINE lines" );
+                return RESULT::ERROR_ANY;;
+        }
+        int e;
+        size_t v { fgmp::str_to_num<size_t> ( filters[start], e ) };
+        if ( e )
+                return RESULT::INVALID_ARG;
+        m_client.register_filter ( new pager_filter (  & m_client, v ) );
+        return RESULT::OK;
+} // cli::install_pager_filter ()
+
+//////////////////////////////////////////////////////////////////////
+
+RESULT
+cli::install_file_filter
+(
+        const strvec & filters,
+        const size_t start
+)
+{
+        bool append;
+        std::string filename;
+        size_t arg_num { 0 };
+        for ( size_t i=start; i < filters.size(); i++ )
+        {
+                switch ( arg_num )
+                {
+                case 0: // append|replace
+                        if ( wants_help ( filters[i] ) )
+                        {
+                                show_help ("append", "append to file" );
+                                show_help ("replace", "relpace file" );
+                                return RESULT::ERROR_ANY;;
+                        }
+                        if ( compare ( filters[i], "append" ) )
+                                append = true;
+                        else if ( compare ( filters[i], "replace" ) )
+                                append = false;
+                        else
+                                return RESULT::INVALID_ARG;
+                        break;
+                case 1: // filename
+                        if ( wants_help ( filters[i] ) )
+                        {
+                                show_help ("filename",
+                                  "write output to 'filename'" );
+                                return RESULT::ERROR_ANY;;
+                        }
+                        filename = filters[i];
+                        break;
+                default:
+                        if ( filters[i] == "|" )        // next filter
+                        {
+                                i = filters.size() + 1;
+                                break;
+                        }
+                        return no_more_args ( filters, i );
+                }
+                ++arg_num;
+        }
+        if ( arg_num < 2 )
+                return RESULT::MISSING_ARG;
+        try
+        {
+                m_client.register_filter (
+                  new file_filter ( filename, append ) );
+        }
+        catch ( std::runtime_error& e )
+        {
+                m_client << "% " << e.what() << cli_client::endl;
+                return RESULT::ERROR_ANY;
+        }
+        return RESULT::OK;
+} // cli::install_file_filter ()
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * Parse through 'filters' and register the filters with
+ * m_client.
+ */
+std::pair <libcli::RESULT, std::string>
+cli::install_filter
+(
+        const strvec & filters
+)
+{
+        using std::make_pair;
+        using std::string;
+        strvec::const_iterator f { filters.begin() };
+        if ( *f == "?" )
+        {       // nothing but a '?' => list all possible filters
+                for ( auto f : filter_cmds )
+                {
+                        show_help ( f.name, f.help );
+                }
+                return make_pair (RESULT::ERROR_ANY, "");
+        }
+        size_t num { 1 };
+        while ( f != filters.end() )
+        {
+                if ( *f == "|" ) // nect filter
+                {
                         ++f;
                         ++num;
                         continue;
                 }
-                if ( compare ( *f, "exclude" ) )
+                if ( wants_help ( *f ) ) // handle '?'
                 {
-                        if ( ( filter_cmds.size() - num ) < 1 )
+                        std::string word { *f, 0, (*f).size() - 1 };
+                        for ( auto t : filter_cmds )
                         {
-                                m_client << "'exclude' requires an argument"
-                                  << cli_client::endl;
-                                return RESULT::MISSING_ARG;
+                                if ( ! compare ( word, t.name) )
+                                        continue;
+                                show_help ( t.name, t.help );
+
                         }
-                        m_client.register_filter (
-                          new match_filter ( *(++f), true ) );
-                        ++f;
-                        ++num;
-                        continue;
+                        return make_pair (RESULT::ERROR_ANY, "");
                 }
                 if ( compare ( *f, "begin" ) )
                 {
-                        if ( f->size () < 3 )
-                        {
-                                m_client << "'" << *f << "' is ambigous"
-                                  << cli_client::endl;
-                                return RESULT::ERROR_ANY;
-                        }
-                        if ( ( filter_cmds.size() - num ) < 1 )
-                        {
-                                m_client << "'begin' requires an argument"
-                                  << cli_client::endl;
-                                return RESULT::MISSING_ARG;
-                        }
-                        m_client.register_filter (
-                          new begin_filter ( *(++f) ) );
-                        ++f;
-                        ++num;
+                        RESULT r = install_begin_filter ( filters, num );
+                        if ( RESULT::OK != r )
+                                return make_pair (r, "begin");
+                        f   += 2; // 'begin'  + 'arg1'
+                        num += 2;
                         continue;
                 }
                 if ( compare ( *f, "between" ) )
                 {
-                        if ( f->size () < 3 )
-                        {
-                                m_client << "'" << *f << "' is ambigous"
-                                  << cli_client::endl;
-                                return RESULT::ERROR_ANY;
-                        }
-                        if ( ( filter_cmds.size() - num ) < 2 )
-                        {
-                                m_client << "'between' requires two arguments"
-                                  << cli_client::endl;
-                                return RESULT::MISSING_ARG;
-                        }
-                        m_client.register_filter (
-                          new between_filter ( *(++f), *(++f) ) );
-                        ++f;
-                        num += 2;
+                        RESULT r = install_between_filter ( filters, num );
+                        if ( RESULT::OK != r )
+                                return make_pair (r, "between");
+                        f   += 3; // 'between'  + 'arg1' + 'arg2'
+                        num += 3;
                         continue;
                 }
                 if ( compare ( *f, "count" ) )
                 {
-                        m_client.register_filter (
-                          new count_filter ( & m_client ) );
-                        ++num;
-                        ++f;
+                        RESULT r = install_count_filter ( filters, num );
+                        if ( RESULT::OK != r )
+                                return make_pair (r, "count");
+                        f   += 1; // 'count'
+                        num += 1;
+                        continue;
+                }
+                if ( compare ( *f, "include" ) )
+                {
+                        RESULT r = install_include_filter ( filters, num );
+                        if ( RESULT::OK != r )
+                                return make_pair (r, "include");
+                        f   += 2; // 'include' + 'arg1'
+                        num += 2;
+                        continue;
+                }
+                if ( compare ( *f, "exclude" ) )
+                {
+                        RESULT r = install_exclude_filter ( filters, num );
+                        if ( RESULT::OK != r )
+                                return make_pair (r, "exclude");
+                        f   += 2; // 'exclude' + 'arg1'
+                        num += 2;
                         continue;
                 }
                 if ( compare ( *f, "pager" ) )
                 {
-                        if ( ( filter_cmds.size() - num ) < 1 )
-                        {
-                                m_client << "'pager' requires an arguments"
-                                  << cli_client::endl;
-                                return RESULT::MISSING_ARG;
-                        }
-                        int e;
-                        size_t v { fgmp::str_to_num<size_t>( *(++f), e ) };
-                        if ( e )
-                                return RESULT::INVALID_ARG;
-                        m_client.register_filter (
-                          new pager_filter ( & m_client, v ) );
-                        ++num;
-                        ++f;
+                        RESULT r = install_pager_filter ( filters, num );
+                        if ( RESULT::OK != r )
+                                return make_pair (r, "pager");
+                        f   += 2; // 'pager' + 'arg1'
+                        num += 2;
                         continue;
                 }
-
+                if ( compare ( *f, "file" ) )
+                {
+                        RESULT r = install_file_filter ( filters, num );
+                        if ( RESULT::OK != r )
+                                return make_pair (r, "file");
+                        f   += 3; // 'file' + 'arg1' + 'arg2'
+                        num += 3;
+                        continue;
+                }
                 m_client << "unkown filter '" << *f << "'" << cli_client::endl;
-                return RESULT::ERROR_ANY;;
+                return make_pair (RESULT::INVALID_COMMAND, *f);
         }
-        return RESULT::OK; // keep compiler happy
+        return make_pair (RESULT::OK, "");
 } // cli::install_filter ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1222,7 +1470,8 @@ cli::exec_command
                 // found the command and there are no arguments left on
                 // the command line
                 ++start_word; // words.size() - start_word == number of commands
-                return make_pair (c->exec ( c->name(), words, start_word ), c->name());
+                return make_pair (
+                  c->exec ( c->name(), words, start_word ), c->name());
         }
         if ( num_commands )
         {
@@ -1283,21 +1532,25 @@ cli::run_command
 
         if ( commands.size() == 0 ) // command line is empty
                 return r;
+
+        std::pair <libcli::RESULT, std::string> res;
+        res = std::make_pair (RESULT::OK, "");
         if ( filters.size() > 0 )
         {
-                r = install_filter ( filters );
-                if ( RESULT::OK != r )
-                        return r;
+                res = install_filter ( filters );
         }
 
-        size_t arg_ptr { 0 };
-        r = RESULT::OK;
+        if ( RESULT::OK == res.first )
+        {
+                size_t arg_ptr { 0 };
+                r = RESULT::OK;
 
-        m_client.enable_filters ();
-        std::pair <libcli::RESULT, std::string> res;
-        try   { res = exec_command ( m_commands, commands, arg_ptr ); }
-        catch ( pager_wants_quit ) { /* nothing to do */ }
-        m_client.disable_filters();
+                m_client.enable_filters ();
+                try   { res = exec_command ( m_commands, commands, arg_ptr ); }
+                catch ( pager_wants_quit ) { /* nothing to do */ }
+                m_client.disable_filters();
+                r = res.first;
+        }
 
         switch ( res.first )
         {
@@ -1311,11 +1564,11 @@ cli::run_command
                 break;
         case RESULT::MISSING_ARG:
                 m_client << "% " << res.second
-                        << " :  missing argument" << cli_client::endl;
+                        << " : missing argument" << cli_client::endl;
                 break;
         case RESULT::INVALID_COMMAND:
                 m_client << "% " << res.second
-                        << " :  invalid command" << cli_client::endl;
+                        << " : invalid command" << cli_client::endl;
                 break;
         default:
                 break;

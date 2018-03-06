@@ -28,6 +28,7 @@
 
 #include <string>
 #include <functional>
+#include <fstream>
 #include <memory>
 #include "common.hxx"
 
@@ -108,7 +109,9 @@ private:
 class between_filter : public filter
 {
 public:
-        between_filter ( const std::string & start_match, const std::string & end_match );
+        between_filter (
+                const std::string & start_match,
+                const std::string & end_match );
         bool operator () ( const std::string & line ) override;
 private:
         std::string m_start_match;
@@ -164,6 +167,27 @@ private:
         size_t m_global_max;    // remember current global setting
         size_t m_max_lines;     // setting for this filter
         cli_client* m_client;
+}; // class pager_filter
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * 'file' filter
+ *
+ * Invoke with
+ * @code
+ * cmd | file append|replace out.txt
+ * @endcode
+ * Write the output to out.txt.
+ */
+class file_filter : public filter
+{
+public:
+        file_filter ( const std::string & filename, bool append );
+        virtual ~file_filter ();
+        bool operator () ( const std::string & line ) override;
+private:
+        std::ofstream file;
 }; // class pager_filter
 
 //////////////////////////////////////////////////////////////////////
