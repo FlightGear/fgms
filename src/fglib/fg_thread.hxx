@@ -39,7 +39,7 @@ namespace fgmp
 //using mutex_t = pthread_mutex_t;
 using mutex_t = std::mutex;
 
-/**
+/**@ingroup fglib
  * @brief Add a mutex to an abitrary class.
  *
  * Example:
@@ -87,15 +87,16 @@ private:
  */
 using lockguard = std::lock_guard<mutex_t>;
 
-/**
+/**@ingroup fglib
  * @brief a std::list<> protected by lockable
  */
 template<class T>
 class lock_list_t: public std::list<T>, public lockable
 { }; // class lock_list_t
 
-/**
+/**@ingroup fglib
  * @brief a lock_list<string> 
+ * @todo needs renaming
  */
 using str_list = lock_list_t<std::string>;
 /**

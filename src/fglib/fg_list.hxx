@@ -76,7 +76,7 @@ protected:
 
 //////////////////////////////////////////////////////////////////////
 
-/** 
+/** @ingroup fglib
  * @class list
  * @brief a generic list implementation for fgms
  * 

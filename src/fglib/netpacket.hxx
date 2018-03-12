@@ -29,7 +29,8 @@
 #include <cstring>
 #include "encoding.hxx"
 
-/** A class for network buffers.
+/**@ingroup fglib
+ * @brief A class for network buffers.
  * It automatically manages the buffer, all you need to do is
  * read/write the data.
  */

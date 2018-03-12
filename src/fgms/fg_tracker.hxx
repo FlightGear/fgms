@@ -114,7 +114,7 @@ public:
 	//  constructors
 	//
 	//////////////////////////////////////////////////
-	tracker ( int port, std::string server, std::string m_server_name, std::string m_domain, std::string m_version);
+	tracker ( int port, std::string server, std::string m_server_name, std::string m_domain, std::string m_version );
 	~tracker ();
 
 	//////////////////////////////////////////////////

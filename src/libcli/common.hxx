@@ -37,15 +37,18 @@ namespace libcli
 using strvec  = std::vector<std::string>;
 using strlist = std::list<std::string>;
 
+/** Return values for most libcli methods
+ *
+ */
 enum class RESULT
 {
-        OK,
-        ERROR_ANY,
-        INVALID_ARG,
-        TOO_MANY_ARGS,
-        MISSING_ARG,
-        INVALID_COMMAND,
-        SHOW_HELP
+	OK,		///< everything went good
+	ERROR_ANY,	///< an error occurred, the method printed a message
+	INVALID_ARG,	///< passed arguments do match requirements
+	TOO_MANY_ARGS,	///< passed more arguments then required
+	MISSING_ARG,	///< passed less arguments then required
+	INVALID_COMMAND,///< the command name is invalid
+	SHOW_HELP	///< syntax was ok, but please show a help message
 };
 
 /**
@@ -59,13 +62,17 @@ enum class RESULT
  */
 namespace PRIVLEVEL
 {
-        enum
-        {
-                UNPRIVILEGED,
-                PRIVILEGED,
-                EXTENSION
-        };
+enum
+{
+	DENIED,
+	UNPRIVILEGED,
+	PRIVILEGED,
+	EXTENSION
+};
 }
+
+/// alias for easier understanding
+using cmd_priv = int;
 
 /**
  * libcli supports different modes of operation. Currently two modes are
@@ -78,24 +85,27 @@ namespace PRIVLEVEL
  */
 namespace CLI_MODE
 {
-        enum
-        {
-                ANY,
-                EXEC,
-                CONFIG,
-                EXTENSION       ///< use this for your own modes
-        };
+enum
+{
+	ANY,
+	EXEC,
+	CONFIG,
+	EXTENSION       ///< use this for your own modes
+};
 }
+
+/// alias for easier understanding
+using cmd_mode = int;
 
 class arg_error : public std::exception
 {
 public:
-        arg_error ( const std::string& r ):reason{r} {};
-        virtual const char* what() const throw()
-        {
-                return reason.c_str();
-        }
-        const std::string reason;
+	arg_error ( const std::string& r ) :reason {r} {};
+	virtual const char* what() const throw()
+	{
+		return reason.c_str();
+	}
+	const std::string reason;
 };
 
 } // namespace libcli

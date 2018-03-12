@@ -23,32 +23,26 @@
  */
 
 #ifdef HAVE_CONFIG_H
-        #include <config.h>
+#include <config.h>
 #endif
 
 #include <exception>
 #include <vector>
-#include <stdio.h>
-#include <errno.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <memory.h>
-#include <string.h>
-#include <ctype.h>
-#include <unistd.h>
+#include <random>
 #include <fglib/fg_log.hxx>
 #include <fglib/fg_util.hxx>
 #include "libcli.hxx"
 
 #if defined(_MSC_VER) || defined(__CYGWIN__)
-        // some windows quick fixes
-        #ifdef __cplusplus
-                extern "C" {
-        #endif
-                extern char *crypt(const char *key, const char *salt);
-        #ifdef __cplusplus
-                }
-        #endif
+	// some windows quick fixes
+	#ifdef __cplusplus
+	extern "C"
+	{
+	#endif
+		extern char* crypt ( const char* key, const char* salt );
+	#ifdef __cplusplus
+	}
+	#endif
 #endif
 
 namespace libcli
@@ -58,23 +52,42 @@ namespace libcli
  */
 struct filter_cmds_t
 {
-        const std::string name;
-        const size_t num_args;
-        const size_t unique_len;
-        const std::string help;
+	const std::string name;
+	const size_t num_args;
+	const size_t unique_len;
+	const std::string help;
 };
 
 // define some useful help texts for internal filters.
 std::vector<filter_cmds_t> filter_cmds
 {
-        { "begin",   1, 3, "begin WORD - Begin with lines that match WORD" },
-        { "between", 2, 3, "Between lines that match" },
-        { "count",   0, 1, "Count of lines"   },
-        { "exclude", 1, 1, "Exclude lines that match" },
-        { "include", 1, 1, "Include lines that match" },
-        { "pager",   1, 1, "activate pager" },
-        { "file",    2, 1, "write output to a file" },
+	{ "begin",   1, 3, "begin WORD - Begin with lines that match WORD" },
+	{ "between", 2, 3, "Between lines that match" },
+	{ "count",   0, 1, "Count of lines"   },
+	{ "exclude", 1, 1, "Exclude lines that match" },
+	{ "include", 1, 1, "Include lines that match" },
+	{ "pager",   1, 1, "activate pager" },
+	{ "file",    2, 1, "write output to a file" },
 };
+
+namespace
+{
+
+	//////////////////////////////////////////////////
+
+	// little helper for parse_line()
+	inline bool
+	is_quote
+	(
+		int c
+	)
+	{
+		return ( ( c == '\"' ) || ( c == '\'' ) );
+	} // is_quote()
+
+	//////////////////////////////////////////////////
+
+} // anonymous namespace
 
 //////////////////////////////////////////////////////////////////////
 
@@ -86,18 +99,19 @@ std::vector<filter_cmds_t> filter_cmds
 void
 cli::allow_user
 (
-        const std::string& username,
-        const std::string& password
+	const std::string& username,
+	const std::string& password,
+	const cmd_priv     privlevel
 )
 {
-        auto u = m_users.find (username);
-        if (u != m_users.end())
-        {
-                LOG ( fgmp::fglog::prio::EMIT,
-                  "user '" << username << "' already exists!" );
-                return;
-        }
-        m_users[username] = password;
+	auto u = m_users.find ( username );
+	if ( u != m_users.end() )
+	{
+		LOG ( fgmp::fglog::prio::EMIT,
+			"user '" << username << "' already exists!" );
+		return;
+	}
+	m_users[username] = { password, privlevel };
 } // cli::allow_user ()
 
 //////////////////////////////////////////////////////////////////////
@@ -109,15 +123,19 @@ cli::allow_user
 void
 cli::deny_user
 (
-        const std::string& username
+	const std::string& username
 )
 {
-        if ( m_users.empty() )
-                return;
-        auto u = m_users.find ( username );
-        if ( u == m_users.end() )
-                return;
-        m_users.erase (u);
+	if ( m_users.empty() )
+	{
+		return;
+	}
+	auto u = m_users.find ( username );
+	if ( u == m_users.end() )
+	{
+		return;
+	}
+	m_users.erase ( u );
 } // cli::deny_user ()
 
 //////////////////////////////////////////////////////////////////////
@@ -129,10 +147,10 @@ cli::deny_user
 void
 cli::regular
 (
-        line_editor::std_callback callback
+	line_editor::std_callback callback
 )
 {
-        m_editor.set_callback ( callback );
+	m_editor.set_callback ( callback );
 } // cli::regular ()
 
 //////////////////////////////////////////////////////////////////////
@@ -145,31 +163,42 @@ cli::regular
 void
 cli::build_shortest
 (
-        command::cmdlist & commands
+	command::cmdlist& commands
 )
 {
-        for ( const auto& c : commands )
-        {
-                for ( const auto& p : commands )
-                {
-                        if ( c == p )
-                                continue;
-                        if ( c->m_privilege < p->m_privilege )
-                                continue;
-                        if ( ( c->m_mode != p->m_mode )
-                        &&   ( c->m_mode != CLI_MODE::ANY ) )
-                                continue;
-                        size_t len = c->compare_len (p->name(), m_compare_case);
-                        if ( len > c->unique_len() )
-                        {
-                                if ( len == p->name().size() )
-                                        ++len;
-                                c->unique_len (len);
-                        }
-                }
-                if ( c->has_children () )
-                        build_shortest ( c->m_children );
-        }
+for ( const auto& c : commands )
+	{
+for ( const auto& p : commands )
+		{
+			if ( c == p )
+			{
+				continue;
+			}
+			if ( c->m_privilege < p->m_privilege )
+			{
+				continue;
+			}
+			if ( ( c->m_mode != p->m_mode )
+					&&   ( c->m_mode != CLI_MODE::ANY ) )
+			{
+				continue;
+			}
+			size_t len = c->compare_len (
+			  p->name(), m_compare_case );
+			if ( len > c->unique_len() )
+			{
+				if ( len == p->name().size() )
+				{
+					++len;
+				}
+				c->unique_len ( len );
+			}
+		}
+		if ( c->has_children () )
+		{
+			build_shortest ( c->m_children );
+		}
+	}
 } // cli::build_shortest ()
 
 //////////////////////////////////////////////////////////////////////
@@ -186,14 +215,20 @@ void
 cli::build_prompt
 ()
 {
-        std::string prompt;
-        if ( m_hostname != "" )
-                prompt += m_hostname;
-        if ( m_modestr != "" )
-                prompt += m_modestr;
-        if ( m_prompt != "" )
-                prompt += m_prompt;
-        m_editor.set_prompt ( prompt );
+	std::string prompt;
+	if ( m_hostname != "" )
+	{
+		prompt += m_hostname;
+	}
+	if ( m_modestr != "" )
+	{
+		prompt += m_modestr;
+	}
+	if ( m_prompt != "" )
+	{
+		prompt += m_prompt;
+	}
+	m_editor.set_prompt ( prompt );
 } // cli::build_prompt ()
 
 //////////////////////////////////////////////////////////////////////
@@ -201,42 +236,42 @@ cli::build_prompt
 /**
  * Set the privilege level of the current user.
  */
-int
+cmd_priv
 cli::set_privilege
 (
-        int priv
+	const cmd_priv priv
 )
 {
-        if ( priv == m_privilege )
-                return priv;
-        int old = m_privilege;
-        m_privilege = priv;
-        m_prompt = ( priv == libcli::PRIVLEVEL::PRIVILEGED? "# ":"> " );
-        build_prompt ();
-        return old;
+	if ( priv == m_privilege )
+		return priv;
+	cmd_priv old = m_privilege;
+	m_privilege  = priv;
+	m_prompt = ( priv == PRIVLEVEL::PRIVILEGED? "# ":"> " );
+	build_prompt ();
+	return old;
 } // cli::set_privilege ()
 
 //////////////////////////////////////////////////////////////////////
 
-int
+cmd_mode
 cli::set_configmode
 (
-        int mode,
-        const std::string& config_desc
+	const cmd_mode mode,
+	const std::string& config_desc
 )
 {
-        if ( mode == m_mode )
-                return m_mode;
-        int old = m_mode;
-        m_mode = mode;
-        if ( m_mode == CLI_MODE::EXEC ) // Not config mode
-                m_modestr = "";
-        else if ( config_desc != "" )
-                m_modestr = "(config-" + config_desc + ")";
-        else
-                m_modestr = "(config)";
-        build_prompt ();
-        return old;
+	if ( mode == m_mode )
+		return m_mode;
+	cmd_mode old = m_mode;
+	m_mode = mode;
+	if ( m_mode == CLI_MODE::EXEC ) // Not config mode
+		m_modestr = "";
+	else if ( config_desc != "" )
+		m_modestr = "(config-" + config_desc + ")";
+	else
+		m_modestr = "(config)";
+	build_prompt ();
+	return old;
 } // cli::set_configmode ()
 
 //////////////////////////////////////////////////////////////////////
@@ -249,41 +284,44 @@ cli::set_configmode
 void
 cli::register_command
 (
-        command*   cmd,
-        command*   parent
+	command*   cmd,
+	command*   parent
 )
 {
-        if ( ! cmd )
-                return;
-        if ( parent )
-        {
-                for ( const auto c : parent->m_children )
-                {
-                        if ( c->name() == cmd->name() )
-                        {
-                                if ( ( cmd->m_privilege == c->m_privilege )
-                                &&   ( cmd->m_mode == c->m_mode )
-                                &&   ( cmd->m_mode != CLI_MODE::ANY ) )
-                                        throw arg_error (
-                                          cmd->name() +
-                                          " : command already defined" );
-                        }
-                }
-                parent->m_children.push_back ( command::command_p(cmd) );
-                return;
-        }
-        for ( const auto c : m_commands )
-        {
-                if ( c->name() == cmd->name() )
-                {
-                        if ( ( cmd->m_privilege == c->m_privilege )
-                        &&   ( cmd->m_mode == c->m_mode )
-                        &&   ( cmd->m_mode != CLI_MODE::ANY ) )
-                                throw arg_error (
-                                  cmd->name() + " : command already defined" );
-                }
-        }
-        m_commands.push_back ( command::command_p(cmd) );
+	if ( ! cmd )
+	{
+		return;
+	}
+	if ( parent )
+	{
+		for ( const auto c : parent->m_children )
+		{
+			if ( c->name() == cmd->name() )
+			{
+				if ( ( cmd->m_privilege == c->m_privilege )
+				&&   ( cmd->m_mode == c->m_mode )
+				&&   ( cmd->m_mode != CLI_MODE::ANY ) )
+					throw arg_error (
+						cmd->name() +
+						" : command already defined" );
+			}
+		}
+		parent->m_children.push_back ( command::command_p ( cmd ) );
+		return;
+	}
+	for ( const auto c : m_commands )
+	{
+		if ( c->name() == cmd->name() )
+		{
+			if ( ( cmd->m_privilege == c->m_privilege )
+			&&   ( cmd->m_mode == c->m_mode )
+			&&   ( cmd->m_mode != CLI_MODE::ANY ) )
+				throw arg_error (
+					cmd->name() +
+					" : command already defined" );
+		}
+	}
+	m_commands.push_back ( command::command_p ( cmd ) );
 } // cli::register_command ()
 
 //////////////////////////////////////////////////////////////////////
@@ -294,19 +332,19 @@ cli::register_command
 void
 cli::unregister_command
 (
-        const std::string & name
+	const std::string& name
 )
 {
-        command::cmdlist::iterator c = m_commands.begin();
-        while ( c != m_commands.end() )
-        {
-                if ( (*c)->name() == name )
-                {
-                        m_commands.erase ( c );
-                        break;
-                }
-                ++c;
-        }
+	command::cmdlist::iterator c = m_commands.begin();
+	while ( c != m_commands.end() )
+	{
+		if ( ( *c )->name() == name )
+		{
+			m_commands.erase ( c );
+			break;
+		}
+		++c;
+	}
 } // cli::unregister_command ()
 
 //////////////////////////////////////////////////////////////////////
@@ -317,11 +355,11 @@ cli::unregister_command
 void
 cli::show_help
 (
-        const std::string& arg,
-        const std::string& desc
+	const std::string& arg,
+	const std::string& desc
 )
 {
-        m_client << align_left ( 22 ) << arg << desc << cli_client::endl;
+	m_client << align_left ( 22 ) << arg << desc << cli_client::endl;
 } // show_help()
 
 //////////////////////////////////////////////////////////////////////
@@ -332,21 +370,21 @@ cli::show_help
 RESULT
 cli::no_more_args
 (
-        const strvec& args,
-        size_t first_arg
+	const strvec& args,
+	const size_t first_arg
 )
 {
-        size_t num_args = args.size() - first_arg;
-        if ( num_args > 0 )
-        {
-                if ( ( num_args == 1 ) && ( args[ first_arg ] == "?" ) )
-                {
-                        show_help ( "|" , "Output modifiers" );
-                        return RESULT::SHOW_HELP;
-                }
-                return RESULT::TOO_MANY_ARGS;
-        }
-        return RESULT::OK;
+	size_t num_args = args.size() - first_arg;
+	if ( num_args > 0 )
+	{
+		if ( ( num_args == 1 ) && ( args[ first_arg ] == "?" ) )
+		{
+			show_help ( "|" , "Output modifiers" );
+			return RESULT::SHOW_HELP;
+		}
+		return RESULT::TOO_MANY_ARGS;
+	}
+	return RESULT::OK;
 } // cli::no_more_args ()
 
 //////////////////////////////////////////////////////////////////////
@@ -357,67 +395,83 @@ cli::no_more_args
 RESULT
 cli::need_n_args
 (
-        const size_t needed_args,
-        const strvec& args,
-        size_t first_arg
-)
+	const size_t needed_args,
+	const strvec& args,
+	const size_t first_arg
+) const
 {
-        size_t num_args = args.size() - first_arg;
-        if ( ( num_args == 0 )
-        ||   ( num_args < needed_args )   // too few
-        ||   ( num_args > args.size() ) ) // overflow
-                return RESULT::MISSING_ARG;
-        if ( num_args > needed_args )
-                return RESULT::TOO_MANY_ARGS;
-        return RESULT::OK;
+	size_t num_args = args.size() - first_arg;
+	if ( ( num_args == 0 )
+	||   ( num_args < needed_args )   // too few
+	||   ( num_args > args.size() ) ) // overflow
+	{
+		return RESULT::MISSING_ARG;
+	}
+	if ( num_args > needed_args )
+		return RESULT::TOO_MANY_ARGS;
+	/* this breaks get_bool() !
+	if ( wants_help ( args[num_args] ) )
+		return RESULT::SHOW_HELP;
+	*/
+	return RESULT::OK;
 } // cli::need_n_args ()
+
+//////////////////////////////////////////////////////////////////////
+
+/** @name Prefefined Commands
+ * @{
+ */
 
 //////////////////////////////////////////////////////////////////////
 
 RESULT
 cli::internal_enable
 (
-        const std::string& command,
-        const strvec& args,
-        size_t first_arg
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
 )
 {
-        RESULT r = no_more_args ( args, first_arg );
-        if ( r != RESULT::OK )
-                return r;
-        if ( m_privilege == PRIVLEVEL::PRIVILEGED )
-        {       // already enabled
-                return RESULT::OK;
-        }
-        if ( ( m_enable_password == "" ) && ( m_enable_callback == nullptr ) )
-        {       // no password needed
-                m_client << "-ok-" << cli_client::endl;
-                m_state = CLI_STATE::NORMAL;
-                set_privilege ( PRIVLEVEL::PRIVILEGED );
-                return RESULT::OK;
-        }
-        std::string password;
-        int c;
-        m_editor.do_echo ( false );
-        m_editor.do_prompt ( false );
-        m_client << "Password: " << cli_client::flush;
-        c = m_editor.read_line ();
-        password = m_editor.get_line ();
-        m_editor.do_echo ( true );
-        m_editor.do_prompt ( true );
-        int priv = check_enable ( password );
-        if ( priv != -1 )
-        {
-                m_client << "-ok-" << cli_client::endl;
-                m_state = CLI_STATE::NORMAL;
-                set_privilege ( priv );
-        }
-        else
-        {
-                m_client << cli_client::endl << "Access denied"
-                  << cli_client::endl << cli_client::endl;
-        }
-        return RESULT::OK;
+	RESULT r = no_more_args ( args, first_arg );
+	if ( r != RESULT::OK )
+	{
+		return r;
+	}
+	if ( m_privilege == PRIVLEVEL::PRIVILEGED )
+	{
+		// already enabled
+		return RESULT::OK;
+	}
+	if ( ( m_enable_password == "" ) && ( m_enable_callback == nullptr ) )
+	{
+		// no password needed
+		m_client << "-ok-" << cli_client::endl;
+		m_state = CLI_STATE::NORMAL;
+		set_privilege ( PRIVLEVEL::PRIVILEGED );
+		return RESULT::OK;
+	}
+	std::string password;
+	int c;
+	m_editor.do_echo ( false );
+	m_editor.do_prompt ( false );
+	m_client << "Password: " << cli_client::flush;
+	c = m_editor.read_line ();
+	password = m_editor.get_line ();
+	m_editor.do_echo ( true );
+	m_editor.do_prompt ( true );
+	int priv = check_enable ( password );
+	if ( priv != -1 )
+	{
+		m_client << "-ok-" << cli_client::endl;
+		m_state = CLI_STATE::NORMAL;
+		set_privilege ( priv );
+	}
+	else
+	{
+		m_client << cli_client::endl << "Access denied"
+			 << cli_client::endl << cli_client::endl;
+	}
+	return RESULT::OK;
 } // cli::internal_enable ()
 
 //////////////////////////////////////////////////////////////////////
@@ -425,17 +479,19 @@ cli::internal_enable
 RESULT
 cli::internal_disable
 (
-        const std::string& command,
-        const strvec& args,
-        size_t first_arg
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
 )
 {
-        RESULT r = no_more_args ( args, first_arg );
-        if ( r != RESULT::OK )
-                return r;
-        set_privilege ( libcli::PRIVLEVEL::UNPRIVILEGED );
-        set_configmode ( libcli::CLI_MODE::EXEC, "" );
-        return RESULT::OK;
+	RESULT r = no_more_args ( args, first_arg );
+	if ( r != RESULT::OK )
+	{
+		return r;
+	}
+	set_privilege ( PRIVLEVEL::UNPRIVILEGED );
+	set_configmode ( CLI_MODE::EXEC, "" );
+	return RESULT::OK;
 } //  cli::internal_disable ()
 
 //////////////////////////////////////////////////////////////////////
@@ -443,31 +499,33 @@ cli::internal_disable
 RESULT
 cli::internal_help
 (
-        const std::string& command,
-        const strvec& args,
-        size_t first_arg
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
 )
 {
-        RESULT r = no_more_args ( args, first_arg );
-        if ( r != RESULT::OK )
-                return r;
-        m_client << cli_client::endl;
-        m_client <<
-          "Help may be requested at any point in a command by entering\r\n"
-          "a question mark '?'.  If nothing matches, the help list will\r\n"
-          "be empty and you must backup until entering a '?' shows the\r\n"
-          "available options.\r\n"
-          "Two styles of help are provided:\r\n"
-          "1. Full help is available when you are ready to enter a\r\n"
-          "   command argument and press the <TAB> key, or enter a\r\n"
-          "   question mark.\r\n"
-          "   argument.\r\n"
-          "2. Partial help is provided when an abbreviated argument is entered"
-          "\r\n"
-          "   and you want to know what arguments match the input\r\n"
-          "   (e.g. 'show pr?'.)\r\n"
-          << cli_client::endl;
-        return RESULT::OK;
+	RESULT r = no_more_args ( args, first_arg );
+	if ( r != RESULT::OK )
+	{
+		return r;
+	}
+	m_client << cli_client::endl;
+	m_client <<
+		 "Help may be requested at any point in a command by entering\r\n"
+		 "a question mark '?'.  If nothing matches, the help list will\r\n"
+		 "be empty and you must backup until entering a '?' shows the\r\n"
+		 "available options.\r\n"
+		 "Two styles of help are provided:\r\n"
+		 "1. Full help is available when you are ready to enter a\r\n"
+		 "   command argument and press the <TAB> key, or enter a\r\n"
+		 "   question mark.\r\n"
+		 "   argument.\r\n"
+		 "2. Partial help is provided when an abbreviated argument is entered"
+		 "\r\n"
+		 "   and you want to know what arguments match the input\r\n"
+		 "   (e.g. 'show pr?'.)\r\n"
+		 << cli_client::endl;
+	return RESULT::OK;
 } // cli::internal_help ()
 
 //////////////////////////////////////////////////////////////////////
@@ -475,17 +533,19 @@ cli::internal_help
 RESULT
 cli::internal_whoami
 (
-        const std::string& command,
-        const strvec& args,
-        size_t first_arg
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
 )
 {
-        RESULT r = no_more_args ( args, first_arg );
-        if ( r != RESULT::OK )
-                return r;
-        m_client << cli_client::endl;
-        m_client << "You are '" << m_username << "'" << cli_client::endl;
-        return RESULT::OK;
+	RESULT r = no_more_args ( args, first_arg );
+	if ( r != RESULT::OK )
+	{
+		return r;
+	}
+	m_client << cli_client::endl;
+	m_client << "You are '" << m_username << "'" << cli_client::endl;
+	return RESULT::OK;
 } // cli::internal_whoami ()
 
 //////////////////////////////////////////////////////////////////////
@@ -493,17 +553,19 @@ cli::internal_whoami
 RESULT
 cli::internal_history
 (
-        const std::string& command,
-        const strvec& args,
-        size_t first_arg
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
 )
 {
-        RESULT r = no_more_args ( args, first_arg );
-        if ( r != RESULT::OK )
-                return r;
-        m_client << cli_client::endl;
-        m_editor.show_history ();
-        return RESULT::OK;
+	RESULT r = no_more_args ( args, first_arg );
+	if ( r != RESULT::OK )
+	{
+		return r;
+	}
+	m_client << cli_client::endl;
+	m_editor.show_history ();
+	return RESULT::OK;
 } // cli::internal_history ()
 
 //////////////////////////////////////////////////////////////////////
@@ -511,18 +573,20 @@ cli::internal_history
 RESULT
 cli::internal_quit
 (
-        const std::string& command,
-        const strvec& args,
-        size_t first_arg
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
 )
 {
-        RESULT r = no_more_args ( args, first_arg );
-        if ( r != RESULT::OK )
-                return r;
-        set_privilege ( libcli::PRIVLEVEL::UNPRIVILEGED );
-        set_configmode ( libcli::CLI_MODE::EXEC, "" );
-        m_state = CLI_STATE::QUIT;
-        return RESULT::OK;
+	RESULT r = no_more_args ( args, first_arg );
+	if ( r != RESULT::OK )
+	{
+		return r;
+	}
+	set_privilege ( PRIVLEVEL::UNPRIVILEGED );
+	set_configmode ( CLI_MODE::EXEC, "" );
+	m_state = CLI_STATE::QUIT;
+	return RESULT::OK;
 } // cli::internal_quit ()
 
 //////////////////////////////////////////////////////////////////////
@@ -534,16 +598,18 @@ cli::internal_quit
 RESULT
 cli::internal_exit
 (
-        const std::string& command,
-        const strvec& args,
-        size_t first_arg
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
 )
 {
-        RESULT r = no_more_args ( args, first_arg );
-        if ( r != RESULT::OK )
-                return r;
-        set_configmode ( CLI_MODE::EXEC, "" );
-        return RESULT::OK;
+	RESULT r = no_more_args ( args, first_arg );
+	if ( r != RESULT::OK )
+	{
+		return r;
+	}
+	set_configmode ( CLI_MODE::EXEC, "" );
+	return RESULT::OK;
 } // cli::internal_exit ()
 
 //////////////////////////////////////////////////////////////////////
@@ -555,18 +621,22 @@ cli::internal_exit
 RESULT
 cli::internal_end
 (
-        const std::string& command,
-        const strvec& args,
-        size_t first_arg
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
 )
 {
-        RESULT r = no_more_args ( args, first_arg );
-        if ( r != RESULT::OK )
-                return r;
-        if ( m_mode == CLI_MODE::EXEC )
-                return internal_quit ( command, args, first_arg );
-        set_configmode ( m_mode - 1, "" );
-        return RESULT::OK;
+	RESULT r = no_more_args ( args, first_arg );
+	if ( r != RESULT::OK )
+	{
+		return r;
+	}
+	if ( m_mode == CLI_MODE::EXEC )
+	{
+		return internal_quit ( command, args, first_arg );
+	}
+	set_configmode ( m_mode - 1, "" );
+	return RESULT::OK;
 } // cli::internal_end ()
 
 //////////////////////////////////////////////////////////////////////
@@ -574,49 +644,54 @@ cli::internal_end
 RESULT
 cli::internal_pager
 (
-        const std::string& command,
-        const strvec& args,
-        size_t first_arg
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
 )
 {
-        size_t num_args { args.size() - first_arg };
-        size_t lines { 0 };
-
-        if ( num_args == 0 )
-        {
-                if ( m_client.max_screen_lines() == 0 )
-                {
-                        m_client  << "pager is disabled!" << cli_client::endl;
-                }
-                m_client  << "show " << m_client.max_screen_lines()
-                        << " lines without pausing" << cli_client::endl;
-                return RESULT::OK;
-        }
-        else if ( num_args == 1 )
-        {
-                if ( wants_help ( args[first_arg]) )
-                {
-                        show_help ( "<0-512>",
-                          "Number of lines on screen "
-                          "(0 for no pausing)" );
-                        show_help ( "<cr>",
-                          "show current number of lines" );
-                        return RESULT::OK;
-                }
-                int invalid { -1 };
-                lines = fgmp::str_to_num<size_t> ( args[first_arg], invalid );
-                if ( invalid )
-                        return RESULT::INVALID_ARG;
-        }
-        else return no_more_args ( args, first_arg + 1 );
-
-        m_client.max_screen_lines ( lines - 1);
-        if ( lines == 0 )
-                m_client  << "pager disabled!" << cli_client::endl;
-        else
-                m_client  << "show " << m_client.max_screen_lines()
-                        << " lines without pausing" << cli_client::endl;
-        return RESULT::OK;
+	size_t num_args { args.size() - first_arg };
+	size_t lines { 0 };
+	if ( num_args == 0 )
+	{
+		if ( m_client.max_screen_lines() == 0 )
+		{
+			m_client  << "pager is disabled!" << cli_client::endl;
+		}
+		m_client  << "show " << m_client.max_screen_lines()
+			  << " lines without pausing" << cli_client::endl;
+		return RESULT::OK;
+	}
+	else if ( num_args == 1 )
+	{
+		if ( wants_help ( args[first_arg] ) )
+		{
+			show_help ( "<0-512>",
+				    "Number of lines on screen "
+				    "(0 for no pausing)" );
+			show_help ( "<cr>",
+				    "show current number of lines" );
+			return RESULT::OK;
+		}
+		int invalid { -1 };
+		lines = fgmp::str_to_num<size_t> ( args[first_arg], invalid );
+		if ( invalid )
+		{
+			return RESULT::INVALID_ARG;
+		}
+	}
+	else
+	{
+		return no_more_args ( args, first_arg + 1 );
+	}
+	m_client.max_screen_lines ( lines );
+	if ( lines == 0 )
+	{
+		m_client  << "pager disabled!" << cli_client::endl;
+	}
+	else
+		m_client  << "show " << m_client.max_screen_lines()
+			  << " lines without pausing" << cli_client::endl;
+	return RESULT::OK;
 } // cli::internal_pager ()
 
 //////////////////////////////////////////////////////////////////////
@@ -631,81 +706,187 @@ cli::internal_pager
 RESULT
 cli::internal_configure
 (
-        const std::string& command,
-        const strvec& args,
-        size_t first_arg
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
 )
 {
-        RESULT r = no_more_args ( args, first_arg );
-        if ( r != RESULT::OK )
-                return r;
-        set_configmode ( CLI_MODE::CONFIG, "" );
-        return RESULT::OK;
+	RESULT r = no_more_args ( args, first_arg );
+	if ( r != RESULT::OK )
+	{
+		return r;
+	}
+	set_configmode ( CLI_MODE::CONFIG, "" );
+	return RESULT::OK;
 } // cli::internal_configure ()
+
+//////////////////////////////////////////////////////////////////////
+
+RESULT
+cli::internal_add_users
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	std::string username;
+	std::string password;
+	cmd_priv    privlevel { PRIVLEVEL::UNPRIVILEGED };
+	size_t      arg_num { 0 };
+	int e;
+	for ( size_t i=first_arg; i < args.size(); i++ )
+	{
+		switch ( arg_num )
+		{
+		case 0:	// username
+			if ( wants_help ( args[i] ) )
+			{
+				show_help ( "USERNAME",
+				  "loginname of the user" );
+				return RESULT::OK;
+			}
+			username = args[i];
+			break;
+		case 1: // password
+			if ( wants_help ( args[i] ) )
+			{
+				show_help ( "PASSWORD",
+				  "password of the user" );
+				return RESULT::OK;
+			}
+			password = args[i];
+			break;
+		case 2: // privlevel
+			if ( wants_help ( args[i] ) )
+			{
+				show_help ( "PRIVLEVEL",
+				  "privilege level of the user" );
+				return RESULT::OK;
+			}
+			privlevel = fgmp::str_to_num<cmd_priv> ( args[i], e );
+			if ( e )
+				return RESULT::INVALID_ARG;
+			break;
+		default:
+			return no_more_args ( args, i );
+		}
+		arg_num++;
+	}
+	if ( arg_num < 2 )
+		return RESULT::MISSING_ARG;
+	allow_user ( username, password, privlevel );
+	return RESULT::OK;
+} // cli::internal_users ()
+
+//////////////////////////////////////////////////////////////////////
+
+RESULT
+cli::internal_show_users
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	std::string username;
+	size_t      arg_num { 0 };
+	for ( size_t i=first_arg; i < args.size(); i++ )
+	{
+		switch ( arg_num )
+		{
+		case 0:	// username
+			if ( wants_help ( args[i] ) )
+			{
+				show_help ( "USERNAME",
+				  "show users which match USERNAME" );
+				return RESULT::OK;
+			}
+			username = args[i];
+			break;
+		default:
+			return no_more_args ( args, i );
+		}
+		arg_num++;
+	}
+	for ( auto u : m_users )
+	{
+		if ( ! fgmp::compare ( username, u.first, m_compare_case ) )
+			continue;
+		m_client << u.first << " "
+			<< u.second.password << " "
+			<< u.second.privlevel << cli_client::endl;
+	}
+	return RESULT::OK;
+} // cli::internal_show_users ()
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * @}
+ */
 
 //////////////////////////////////////////////////////////////////////
 
 cli::cli
 (
-        int fd
-): m_client (fd), m_editor (m_client)
+	int fd
+) : m_client ( fd ), m_editor ( m_client )
 {
-        set_privilege ( PRIVLEVEL::UNPRIVILEGED );
-        set_configmode ( CLI_MODE::EXEC, "" );
-
-        using namespace std::placeholders;
-        #define _ptr(X) (std::bind (& X, this, _1, _2, _3))
-
-        register_command ( new command (
-                "help",
-                _ptr ( cli::internal_help ),
-                libcli::PRIVLEVEL::UNPRIVILEGED,
-                libcli::CLI_MODE::ANY,
-                "Description of the interactive help system"
-        ) );
-        register_command ( new command (
-                "whoami",
-                _ptr ( cli::internal_whoami ),
-                libcli::PRIVLEVEL::UNPRIVILEGED,
-                libcli::CLI_MODE::EXEC,
-                "Show who you are"
-        ) );
-        register_command ( new command (
-                "quit",
-                _ptr ( cli::internal_quit ),
-                libcli::PRIVLEVEL::UNPRIVILEGED,
-                libcli::CLI_MODE::EXEC,
-                "Disconnect"
-        ) );
-        register_command ( new command (
-                "history",
-                _ptr ( cli::internal_history ),
-                libcli::PRIVLEVEL::UNPRIVILEGED,
-                libcli::CLI_MODE::EXEC,
-                "Show a list of previously run commands"
-        ) );
-        register_command ( new command (
-                "pager",
-                _ptr ( cli::internal_pager ),
-                libcli::PRIVLEVEL::UNPRIVILEGED,
-                libcli::CLI_MODE::ANY,
-                "Set number of lines on a screen"
-        ) );
-        register_command ( new command (
-                "enable",
-                _ptr ( cli::internal_enable ),
-                libcli::PRIVLEVEL::UNPRIVILEGED,
-                libcli::CLI_MODE::EXEC,
-                "Turn on privileged commands"
-        ) );
-        register_command ( new command (
-                "disable",
-                _ptr ( cli::internal_disable ),
-                libcli::PRIVLEVEL::PRIVILEGED,
-                libcli::CLI_MODE::EXEC,
-                "Turn off privileged commands"
-        ) );
-        #undef _ptr
+	set_privilege ( PRIVLEVEL::UNPRIVILEGED );
+	set_configmode ( CLI_MODE::EXEC, "" );
+	using namespace std::placeholders;
+#define _ptr(X) (std::bind (& X, this, _1, _2, _3))
+	register_command ( new command (
+		"help",
+		_ptr ( cli::internal_help ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Description of the interactive help system"
+	) );
+	register_command ( new command (
+		"whoami",
+		_ptr ( cli::internal_whoami ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::EXEC,
+		"Show who you are"
+	) );
+	register_command ( new command (
+		"quit",
+		_ptr ( cli::internal_quit ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::EXEC,
+		"Disconnect"
+	) );
+	register_command ( new command (
+		"history",
+		_ptr ( cli::internal_history ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::EXEC,
+		"Show a list of previously run commands"
+	) );
+	register_command ( new command (
+		"pager",
+		_ptr ( cli::internal_pager ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Set number of lines on a screen"
+	) );
+	register_command ( new command (
+		"enable",
+		_ptr ( cli::internal_enable ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::EXEC,
+		"Turn on privileged commands"
+	) );
+	register_command ( new command (
+		"disable",
+		_ptr ( cli::internal_disable ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::EXEC,
+		"Turn off privileged commands"
+	) );
+#undef _ptr
 } // cli::cli ()
 
 //////////////////////////////////////////////////////////////////////
@@ -713,23 +894,14 @@ cli::cli
 cli::~cli
 ()
 {
-        m_users.clear();
-        m_commands.clear();
+	m_users.clear();
+	m_commands.clear();
 } // cli::~cli ()
 
 //////////////////////////////////////////////////////////////////////
 
 namespace
 {
-        // little helper for parse_line()
-        inline bool
-        is_quote
-        (
-                int c
-        )
-        {
-                return ( ( c == '\"' ) || ( c == '\'' ) );
-        } // is_quote()
 
 } // namespace
 
@@ -742,100 +914,82 @@ namespace
 RESULT
 cli::parse_line
 (
-        const std::string & line,
-        strvec & commands,
-        strvec & filters
+	const std::string& line,
+	strvec& commands,
+	strvec& filters
 )
 {
-        size_t pos { 0 };
-        bool   in_filter { false };
-        while ( pos < line.size() )
-        {
-                size_t start = line.find_first_not_of ( " \t\f\n\r\v", pos );
-                size_t end;
-                if ( start == std::string::npos )
-                        return RESULT::OK;
-                if ( line[start] == '|' )
-                {
-                        if ( in_filter )
-                                filters.push_back ( "|" );
-                        else
-                                in_filter = true;
-                        pos = start + 1;
-                        continue;
-                }
-                if ( '#' ==  line[start] )
-                {
-                        return RESULT::OK;
-                }
-                if ( is_quote ( line[start] ) )
-                {
-                        char q = line[start];
-                        ++start;
-                        end = line.find ( q, start );
-                        if ( end == std::string::npos )
-                        {
-                                m_client << "unterminated quote"
-                                  << cli_client::endl;
-                                commands.clear ();
-                                return RESULT::INVALID_ARG;
-                        }
-                        if ( in_filter )
-                        {
-                                filters.push_back (
-                                  line.substr (start, end - start) );
-                        }
-                        else
-                        {
-                                commands.push_back (
-                                  line.substr (start, end - start) );
-                        }
-                        pos = end + 1;
-                        continue;
-                }
-                end = line.find_first_of ( " \t\f\n\r\v|#\"'", start );
-                if ( in_filter )
-                {
-                        filters.push_back (
-                          line.substr ( start, end - start ) );
-                }
-                else
-                {
-                        commands.push_back (
-                          line.substr ( start, end - start ) );
-                }
-                if ( start == end )
-                        return RESULT::OK;
-                pos = end;
-        }
-        return RESULT::OK;
+	size_t pos { 0 };
+	bool   in_filter { false };
+	while ( pos < line.size() )
+	{
+		size_t start = line.find_first_not_of ( " \t\f\n\r\v", pos );
+		size_t end;
+		if ( start == std::string::npos )
+		{
+			return RESULT::OK;
+		}
+		if ( line[start] == '|' )
+		{
+			if ( in_filter )
+			{
+				filters.push_back ( "|" );
+			}
+			else
+			{
+				in_filter = true;
+			}
+			pos = start + 1;
+			continue;
+		}
+		if ( '#' ==  line[start] )
+		{
+			return RESULT::OK;
+		}
+		if ( is_quote ( line[start] ) )
+		{
+			char q = line[start];
+			++start;
+			end = line.find ( q, start );
+			if ( end == std::string::npos )
+			{
+				m_client << "unterminated quote"
+					 << cli_client::endl;
+				commands.clear ();
+				return RESULT::INVALID_ARG;
+			}
+			if ( in_filter )
+			{
+				filters.push_back (
+					line.substr ( start, end - start ) );
+			}
+			else
+			{
+				commands.push_back (
+					line.substr ( start, end - start ) );
+			}
+			pos = end + 1;
+			continue;
+		}
+		end = line.find_first_of ( " \t\f\n\r\v|#\"'", start );
+		if ( in_filter )
+		{
+			filters.push_back (
+				line.substr ( start, end - start ) );
+		}
+		else
+		{
+			commands.push_back (
+				line.substr ( start, end - start ) );
+		}
+		if ( start == end )
+		{
+			return RESULT::OK;
+		}
+		pos = end;
+	}
+	return RESULT::OK;
 } // cli::parse_line ()
-
-//////////////////////////////////////////////////////////////////////
-
-/** compare two strings
- *
- * If m_compare_case is true, the comparision is case sensitive.
- * Compare only s1.length() characters.
- *
- * @return true if s1 and s2 are equal
- * @return false if they are not euqal.
- */
-bool
-cli::compare
-(
-        const std::string& s1,
-        const std::string& s2,
-        const size_t len
-)
-{
-        size_t l = len;
-        if ( l == 0 )
-                l = s1.size();
-        if ( m_compare_case )
-                return ( 0 == strncmp ( s1.c_str(), s2.c_str(), l ) );
-        return ( 0 == strncasecmp ( s1.c_str(), s2.c_str(), l ) );
-} // cli::compare ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -846,14 +1000,18 @@ cli::compare
 bool
 cli::command_available
 (
-        const command::command_p cmd
+	const command::command_p cmd
 ) const
 {
-        if ( m_privilege < cmd->m_privilege )
-                return false;
-        if ( ( m_mode != cmd->m_mode ) && ( cmd->m_mode != CLI_MODE::ANY ) )
-                return false;
-        return true;
+	if ( m_privilege < cmd->m_privilege )
+	{
+		return false;
+	}
+	if ( ( m_mode != cmd->m_mode ) && ( cmd->m_mode != CLI_MODE::ANY ) )
+	{
+		return false;
+	}
+	return true;
 } // cli::command_available ()
 
 //////////////////////////////////////////////////////////////////////
@@ -865,81 +1023,90 @@ cli::command_available
 void
 cli::get_filter_completions
 (
-        const strvec & filters,
-        size_t start_word,
-        char last_char
+	const strvec& filters,
+	const size_t start_word,
+	const char last_char
 )
 {
-
-        if ( start_word > filters.size() )
-        {
-                return;
-        }
-        size_t current  { start_word };
-        size_t word_num;
-        bool   complete; // filter has all needed arguments?
-        bool found { false };
-        while ( current < filters.size() )
-        {
-                word_num = current;
-                std::string word { filters [ current ] };
-                if ( word  == "|" )
-                {
-                        ++current;
-                        continue;
-                }
-                for ( auto f : filter_cmds )
-                {
-                        complete = false;
-                        if ( ! compare ( word, f.name) )
-                                continue;
-                        found = true;
-                        if ( word.size () < f.unique_len )
-                        {
-                                show_help ( f.name, f.help );
-                                continue;
-                        }
-                        // found a unique filter name
-                        if ( current != filters.size() - 1 )
-                                // only expand at end of line
-                                continue;
-                        if ( ( f.name != word ) || ( last_char != ' ' ) )
-                        {       // needs expansion
-                                m_editor.replace_word ( f.name + ' ' );
-                                return;
-                        }
-
-                        // eat up arguments
-                        size_t num_args { 0 };
-                        while ( current + 1 < filters.size() )
-                        {
-                                ++current;
-                                if ( filters [ current ] == "|" )
-                                        break;
-                                ++num_args;
-                                if ( num_args == f.num_args )
-                                        break;
-                        }
-                        if ( num_args < f.num_args )
-                        {
-                                m_client << "'" << f.name << "' needs "
-                                  << f.num_args << " arguments"
-                                  << cli_client::endl;
-                                return;
-                        }
-                        // we have the filter and all needed arguments
-                        complete = true;
-                        break;
-                }
-                if ( ! found )
-                        break;
-                ++current;
-        }
-        if ( ! found )
-        {
-                m_client << "invalid filter: '" << filters[word_num]
-                  << "'" << cli_client::endl;
-        }
+	if ( start_word > filters.size() )
+	{
+		return;
+	}
+	size_t current  { start_word };
+	size_t word_num;
+	bool   complete; // filter has all needed arguments?
+	bool found { false };
+	while ( current < filters.size() )
+	{
+		word_num = current;
+		std::string word { filters [ current ] };
+		if ( word  == "|" )
+		{
+			++current;
+			continue;
+		}
+		for ( auto f : filter_cmds )
+		{
+			complete = false;
+			if ( ! fgmp::compare ( word, f.name, m_compare_case ) )
+			{
+				continue;
+			}
+			found = true;
+			if ( word.size () < f.unique_len )
+			{
+				show_help ( f.name, f.help );
+				continue;
+			}
+			// found a unique filter name
+			if ( current != filters.size() - 1 )
+				// only expand at end of line
+			{
+				continue;
+			}
+			if ( ( f.name != word ) || ( last_char != ' ' ) )
+			{
+				// needs expansion
+				m_editor.replace_word ( f.name + ' ' );
+				return;
+			}
+			// eat up arguments
+			size_t num_args { 0 };
+			while ( current + 1 < filters.size() )
+			{
+				++current;
+				if ( filters [ current ] == "|" )
+				{
+					break;
+				}
+				++num_args;
+				if ( num_args == f.num_args )
+				{
+					break;
+				}
+			}
+			if ( num_args < f.num_args )
+			{
+				m_client << "'" << f.name << "' needs "
+					 << f.num_args << " arguments"
+					 << cli_client::endl;
+				return;
+			}
+			// we have the filter and all needed arguments
+			complete = true;
+			break;
+		}
+		if ( ! found )
+		{
+			break;
+		}
+		++current;
+	}
+	if ( ! found )
+	{
+		m_client << "invalid filter: '" << filters[word_num]
+			 << "'" << cli_client::endl;
+	}
 } // cli::get_filter_completions ()
 
 //////////////////////////////////////////////////////////////////////
@@ -952,92 +1119,108 @@ cli::get_filter_completions
 void
 cli::get_completions
 (
-        const command::cmdlist & cmds,
-        const strvec & words,
-        const size_t start_word,
-        char last_char
+	const command::cmdlist& cmds,
+	const strvec& words,
+	const size_t start_word,
+	char last_char
 )
 {
-        if ( start_word >= words.size() )
-        {
-                for ( auto c : cmds )
-                {
-                        if ( ! command_available ( c ) )
-                                continue;
-                        show_help ( c->name(), c->help() );
-                }
-                return;
-        }
-        std::string word { words [ start_word ] };
-        for ( auto c : cmds )
-        {
-                if ( ! command_available ( c ) )
-                        continue;
-                if ( ! c->compare ( word, m_compare_case ) )
-                        continue;
-
-                // found a valid completion
-                if ( word.size () < c->unique_len() )
-                {       // not unique
-                        show_help ( c->name(), c->help() );
-                        continue;
-                }
-                if ( ( last_char != ' ' )       // at the end of a word
-                &&   ( start_word + 1 < words.size() ) ) // more words to go
-                {
-                        if ( c->has_children () )
-                        {
-                                // found the command, now list possible
-                                // sub commands
-                                get_completions ( c->m_children, words,
-                                  start_word + 1, last_char );
-                        }
-                        return;
-                }
-                if ( last_char == ' ' )
-                {       // word completed, list subcommands
-                        if ( c->has_children () )
-                        {
-                                // found the command, now list possible
-                                // sub commands
-                                get_completions ( c->m_children, words,
-                                  start_word + 1, last_char );
-                        }
-                        return;
-                }
-                // at the end of the word
-                m_editor.replace_word ( c->name() + ' ' );
-                return;
-        }
+	if ( start_word >= words.size() )
+	{
+		for ( auto c : cmds )
+		{
+			if ( ! command_available ( c ) )
+			{
+				continue;
+			}
+			show_help ( c->name(), c->help() );
+		}
+		return;
+	}
+	std::string word { words [ start_word ] };
+	for ( auto c : cmds )
+	{
+		if ( ! command_available ( c ) )
+		{
+			continue;
+		}
+		if ( ! c->compare ( word, m_compare_case ) )
+		{
+			continue;
+		}
+		// found a valid completion
+		if ( word.size () < c->unique_len() )
+		{
+			// not unique
+			show_help ( c->name(), c->help() );
+			continue;
+		}
+		if ( ( last_char != ' ' )       // at the end of a word
+		&&   ( start_word + 1 < words.size() ) ) // more words to go
+		{
+			if ( c->has_children () )
+			{
+				// found the command, now list possible
+				// sub commands
+				get_completions ( c->m_children, words,
+						  start_word + 1, last_char );
+			}
+			return;
+		}
+		if ( last_char == ' ' )
+		{
+			// word completed, list subcommands
+			if ( c->has_children () )
+			{
+				// found the command, now list possible
+				// sub commands
+				get_completions ( c->m_children, words,
+						  start_word + 1, last_char );
+			}
+			return;
+		}
+		// at the end of the word
+		m_editor.replace_word ( c->name() + ' ' );
+		return;
+	}
 } // cli::get_completions ()
+
+//////////////////////////////////////////////////////////////////////
+
+/** @name Parsing and activating filters
+ *
+ * @{
+ */
 
 //////////////////////////////////////////////////////////////////////
 
 RESULT
 cli::install_begin_filter
 (
-        const strvec & filters,
-        const size_t start
+	const strvec& filters,
+	const size_t start
 )
 {
-        RESULT r { need_n_args ( 1, filters, start ) };
-        if ( RESULT::MISSING_ARG == r )
-        {
-                show_help ("WORD", "start output with line including WORD" );
-                return RESULT::ERROR_ANY;;
-        }
-        if ( RESULT::TOO_MANY_ARGS == r )
-        {
-                if ( "|" != filters[start + 1] )
-                        return r;
-        }
-        if ( wants_help ( filters[start] ) )
-        {
-                show_help ("WORD", "show only lines including WORD" );
-                return RESULT::ERROR_ANY;;
-        }
-        m_client.register_filter ( new begin_filter ( filters[start] ) );
-        return RESULT::OK;
+	RESULT r { need_n_args ( 1, filters, start ) };
+	if ( RESULT::MISSING_ARG == r )
+	{
+		show_help ( "WORD", "start output with line including WORD" );
+		return RESULT::ERROR_ANY;;
+	}
+	if ( RESULT::TOO_MANY_ARGS == r )
+	{
+		if ( "|" != filters[start + 1] )
+		{
+			return r;
+		}
+	}
+	if ( wants_help ( filters[start] ) )
+	{
+		show_help ( "WORD", "show only lines including WORD" );
+		return RESULT::ERROR_ANY;;
+	}
+	m_client.register_filter ( new begin_filter ( filters[start] ) );
+	return RESULT::OK;
 } // cli::install_exclude_filter ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1045,49 +1228,51 @@ cli::install_begin_filter
 RESULT
 cli::install_between_filter
 (
-        const strvec & filters,
-        const size_t start
+	const strvec& filters,
+	const size_t start
 )
 {
-        std::string start_word;
-        std::string end_word;
-        size_t arg_num { 0 };
-        for ( size_t i=start; i < filters.size(); i++ )
-        {
-                switch ( arg_num )
-                {
-                case 0: // start_word
-                        if ( wants_help ( filters[i] ) )
-                        {
-                                show_help ("WORD",
-                                  "start output with line containing WORD" );
-                                return RESULT::ERROR_ANY;;
-                        }
-                        start_word = filters[i];
-                        break;
-                case 1: // endword
-                        if ( wants_help ( filters[i] ) )
-                        {
-                                show_help ("WORD",
-                                  "end output with line containing WORD" );
-                                return RESULT::ERROR_ANY;;
-                        }
-                        break;
-                default:
-                        if ( filters[i] == "|" )        // next filter
-                        {
-                                i = filters.size() + 1;
-                                break;
-                        }
-                        return no_more_args ( filters, i );
-                }
-                ++arg_num;
-        }
-        if ( arg_num < 2 )
-                return RESULT::MISSING_ARG;
-        m_client.register_filter (
-          new between_filter ( start_word, end_word ) );
-        return RESULT::OK;
+	std::string start_word;
+	std::string end_word;
+	size_t arg_num { 0 };
+	for ( size_t i=start; i < filters.size(); i++ )
+	{
+		switch ( arg_num )
+		{
+		case 0: // start_word
+			if ( wants_help ( filters[i] ) )
+			{
+				show_help ( "WORD",
+				  "start output with line containing WORD" );
+				return RESULT::ERROR_ANY;;
+			}
+			start_word = filters[i];
+			break;
+		case 1: // endword
+			if ( wants_help ( filters[i] ) )
+			{
+				show_help ( "WORD",
+				  "end output with line containing WORD" );
+				return RESULT::ERROR_ANY;;
+			}
+			break;
+		default:
+			if ( filters[i] == "|" )        // next filter
+			{
+				i = filters.size() + 1;
+				break;
+			}
+			return no_more_args ( filters, i );
+		}
+		++arg_num;
+	}
+	if ( arg_num < 2 )
+	{
+		return RESULT::MISSING_ARG;
+	}
+	m_client.register_filter (
+		new between_filter ( start_word, end_word ) );
+	return RESULT::OK;
 } // cli::install_between_filter ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1095,20 +1280,24 @@ cli::install_between_filter
 RESULT
 cli::install_count_filter
 (
-        const strvec & filters,
-        const size_t start
+	const strvec& filters,
+	const size_t start
 )
 {
-        RESULT r = no_more_args ( filters, start );
-        if ( RESULT::TOO_MANY_ARGS == r ) 
-        {
-                if ( "|" != filters[start] )
-                        return r;
-        }
-        if ( RESULT::SHOW_HELP == r )
-                return r;
-        m_client.register_filter ( new count_filter ( & m_client ) );
-        return RESULT::OK;
+	RESULT r = no_more_args ( filters, start );
+	if ( RESULT::TOO_MANY_ARGS == r )
+	{
+		if ( "|" != filters[start] )
+		{
+			return r;
+		}
+	}
+	if ( RESULT::SHOW_HELP == r )
+	{
+		return r;
+	}
+	m_client.register_filter ( new count_filter ( & m_client ) );
+	return RESULT::OK;
 } // cli::install_count_filter ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1116,28 +1305,30 @@ cli::install_count_filter
 RESULT
 cli::install_exclude_filter
 (
-        const strvec & filters,
-        const size_t start
+	const strvec& filters,
+	const size_t start
 )
 {
-        RESULT r { need_n_args ( 1, filters, start ) };
-        if ( RESULT::MISSING_ARG == r )
-        {
-                show_help ("WORD", "show only lines including WORD" );
-                return RESULT::ERROR_ANY;;
-        }
-        if ( RESULT::TOO_MANY_ARGS == r )
-        {
-                if ( "|" != filters[start + 1] )
-                        return r;
-        }
-        if ( wants_help ( filters[start] ) )
-        {
-                show_help ("WORD", "show only lines including WORD" );
-                return RESULT::ERROR_ANY;;
-        }
-        m_client.register_filter ( new match_filter ( filters[start], true ) );
-        return RESULT::OK;
+	RESULT r { need_n_args ( 1, filters, start ) };
+	if ( RESULT::MISSING_ARG == r )
+	{
+		show_help ( "WORD", "show only lines including WORD" );
+		return RESULT::ERROR_ANY;;
+	}
+	if ( RESULT::TOO_MANY_ARGS == r )
+	{
+		if ( "|" != filters[start + 1] )
+		{
+			return r;
+		}
+	}
+	if ( wants_help ( filters[start] ) )
+	{
+		show_help ( "WORD", "show only lines including WORD" );
+		return RESULT::ERROR_ANY;;
+	}
+	m_client.register_filter ( new match_filter ( filters[start], true ) );
+	return RESULT::OK;
 } // cli::install_exclude_filter ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1145,28 +1336,30 @@ cli::install_exclude_filter
 RESULT
 cli::install_include_filter
 (
-        const strvec & filters,
-        const size_t start
+	const strvec& filters,
+	const size_t start
 )
 {
-        RESULT r { need_n_args ( 1, filters, start ) };
-        if ( RESULT::MISSING_ARG == r )
-        {
-                show_help ("WORD", "show only lines including WORD" );
-                return RESULT::ERROR_ANY;;
-        }
-        if ( RESULT::TOO_MANY_ARGS == r )
-        {
-                if ( "|" != filters[start + 1] )
-                        return r;
-        }
-        if ( wants_help ( filters[start] ) )
-        {
-                show_help ("WORD", "show only lines including WORD" );
-                return RESULT::ERROR_ANY;;
-        }
-        m_client.register_filter ( new match_filter ( filters[start], false ) );
-        return RESULT::OK;
+	RESULT r { need_n_args ( 1, filters, start ) };
+	if ( RESULT::MISSING_ARG == r )
+	{
+		show_help ( "WORD", "show only lines including WORD" );
+		return RESULT::ERROR_ANY;;
+	}
+	if ( RESULT::TOO_MANY_ARGS == r )
+	{
+		if ( "|" != filters[start + 1] )
+		{
+			return r;
+		}
+	}
+	if ( wants_help ( filters[start] ) )
+	{
+		show_help ( "WORD", "show only lines including WORD" );
+		return RESULT::ERROR_ANY;;
+	}
+	m_client.register_filter ( new match_filter ( filters[start], false ) );
+	return RESULT::OK;
 } // cli::install_include_filter ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1174,32 +1367,36 @@ cli::install_include_filter
 RESULT
 cli::install_pager_filter
 (
-        const strvec & filters,
-        const size_t start
+	const strvec& filters,
+	const size_t start
 )
 {
-        RESULT r { need_n_args ( 1, filters, start ) };
-        if ( RESULT::MISSING_ARG == r )
-        {
-                show_help ("LINE", "prompt every LINE lines" );
-                return RESULT::ERROR_ANY;;
-        }
-        if ( RESULT::TOO_MANY_ARGS == r )
-        {
-                if ( "|" != filters[start + 1] )
-                        return r;
-        }
-        if ( wants_help ( filters[start] ) )
-        {
-                show_help ("LINE", "prompt every LINE lines" );
-                return RESULT::ERROR_ANY;;
-        }
-        int e;
-        size_t v { fgmp::str_to_num<size_t> ( filters[start], e ) };
-        if ( e )
-                return RESULT::INVALID_ARG;
-        m_client.register_filter ( new pager_filter (  & m_client, v ) );
-        return RESULT::OK;
+	RESULT r { need_n_args ( 1, filters, start ) };
+	if ( RESULT::MISSING_ARG == r )
+	{
+		show_help ( "LINE", "prompt every LINE lines" );
+		return RESULT::ERROR_ANY;;
+	}
+	if ( RESULT::TOO_MANY_ARGS == r )
+	{
+		if ( "|" != filters[start + 1] )
+		{
+			return r;
+		}
+	}
+	if ( wants_help ( filters[start] ) )
+	{
+		show_help ( "LINE", "prompt every LINE lines" );
+		return RESULT::ERROR_ANY;;
+	}
+	int e;
+	size_t v { fgmp::str_to_num<size_t> ( filters[start], e ) };
+	if ( e )
+	{
+		return RESULT::INVALID_ARG;
+	}
+	m_client.register_filter ( new pager_filter (  & m_client, v ) );
+	return RESULT::OK;
 } // cli::install_pager_filter ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1207,63 +1404,73 @@ cli::install_pager_filter
 RESULT
 cli::install_file_filter
 (
-        const strvec & filters,
-        const size_t start
+	const strvec& filters,
+	const size_t start
 )
 {
-        bool append;
-        std::string filename;
-        size_t arg_num { 0 };
-        for ( size_t i=start; i < filters.size(); i++ )
-        {
-                switch ( arg_num )
-                {
-                case 0: // append|replace
-                        if ( wants_help ( filters[i] ) )
-                        {
-                                show_help ("append", "append to file" );
-                                show_help ("replace", "relpace file" );
-                                return RESULT::ERROR_ANY;;
-                        }
-                        if ( compare ( filters[i], "append" ) )
-                                append = true;
-                        else if ( compare ( filters[i], "replace" ) )
-                                append = false;
-                        else
-                                return RESULT::INVALID_ARG;
-                        break;
-                case 1: // filename
-                        if ( wants_help ( filters[i] ) )
-                        {
-                                show_help ("filename",
-                                  "write output to 'filename'" );
-                                return RESULT::ERROR_ANY;;
-                        }
-                        filename = filters[i];
-                        break;
-                default:
-                        if ( filters[i] == "|" )        // next filter
-                        {
-                                i = filters.size() + 1;
-                                break;
-                        }
-                        return no_more_args ( filters, i );
-                }
-                ++arg_num;
-        }
-        if ( arg_num < 2 )
-                return RESULT::MISSING_ARG;
-        try
-        {
-                m_client.register_filter (
-                  new file_filter ( filename, append ) );
-        }
-        catch ( std::runtime_error& e )
-        {
-                m_client << "% " << e.what() << cli_client::endl;
-                return RESULT::ERROR_ANY;
-        }
-        return RESULT::OK;
+	bool append;
+	std::string filename;
+	size_t arg_num { 0 };
+	for ( size_t i=start; i < filters.size(); i++ )
+	{
+		switch ( arg_num )
+		{
+		case 0: // append|replace
+			if ( wants_help ( filters[i] ) )
+			{
+				show_help ( "append", "append to file" );
+				show_help ( "replace", "relpace file" );
+				return RESULT::ERROR_ANY;;
+			}
+			if ( fgmp::compare ( filters[i],
+				"append", m_compare_case ) )
+			{
+				append = true;
+			}
+			else if ( fgmp::compare ( filters[i],
+				"replace", m_compare_case ) )
+			{
+				append = false;
+			}
+			else
+			{
+				return RESULT::INVALID_ARG;
+			}
+			break;
+		case 1: // filename
+			if ( wants_help ( filters[i] ) )
+			{
+				show_help ( "filename",
+					    "write output to 'filename'" );
+				return RESULT::ERROR_ANY;;
+			}
+			filename = filters[i];
+			break;
+		default:
+			if ( filters[i] == "|" )        // next filter
+			{
+				i = filters.size() + 1;
+				break;
+			}
+			return no_more_args ( filters, i );
+		}
+		++arg_num;
+	}
+	if ( arg_num < 2 )
+	{
+		return RESULT::MISSING_ARG;
+	}
+	try
+	{
+		m_client.register_filter (
+			new file_filter ( filename, append ) );
+	}
+	catch ( std::runtime_error& e )
+	{
+		m_client << "% " << e.what() << cli_client::endl;
+		return RESULT::ERROR_ANY;
+	}
+	return RESULT::OK;
 } // cli::install_file_filter ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1272,112 +1479,135 @@ cli::install_file_filter
  * Parse through 'filters' and register the filters with
  * m_client.
  */
-std::pair <libcli::RESULT, std::string>
+std::pair<libcli::RESULT,std::string>
 cli::install_filter
 (
-        const strvec & filters
+	const strvec& filters
 )
 {
-        using std::make_pair;
-        using std::string;
-        strvec::const_iterator f { filters.begin() };
-        if ( *f == "?" )
-        {       // nothing but a '?' => list all possible filters
-                for ( auto f : filter_cmds )
-                {
-                        show_help ( f.name, f.help );
-                }
-                return make_pair (RESULT::ERROR_ANY, "");
-        }
-        size_t num { 1 };
-        while ( f != filters.end() )
-        {
-                if ( *f == "|" ) // nect filter
-                {
-                        ++f;
-                        ++num;
-                        continue;
-                }
-                if ( wants_help ( *f ) ) // handle '?'
-                {
-                        std::string word { *f, 0, (*f).size() - 1 };
-                        for ( auto t : filter_cmds )
-                        {
-                                if ( ! compare ( word, t.name) )
-                                        continue;
-                                show_help ( t.name, t.help );
-
-                        }
-                        return make_pair (RESULT::ERROR_ANY, "");
-                }
-                if ( compare ( *f, "begin" ) )
-                {
-                        RESULT r = install_begin_filter ( filters, num );
-                        if ( RESULT::OK != r )
-                                return make_pair (r, "begin");
-                        f   += 2; // 'begin'  + 'arg1'
-                        num += 2;
-                        continue;
-                }
-                if ( compare ( *f, "between" ) )
-                {
-                        RESULT r = install_between_filter ( filters, num );
-                        if ( RESULT::OK != r )
-                                return make_pair (r, "between");
-                        f   += 3; // 'between'  + 'arg1' + 'arg2'
-                        num += 3;
-                        continue;
-                }
-                if ( compare ( *f, "count" ) )
-                {
-                        RESULT r = install_count_filter ( filters, num );
-                        if ( RESULT::OK != r )
-                                return make_pair (r, "count");
-                        f   += 1; // 'count'
-                        num += 1;
-                        continue;
-                }
-                if ( compare ( *f, "include" ) )
-                {
-                        RESULT r = install_include_filter ( filters, num );
-                        if ( RESULT::OK != r )
-                                return make_pair (r, "include");
-                        f   += 2; // 'include' + 'arg1'
-                        num += 2;
-                        continue;
-                }
-                if ( compare ( *f, "exclude" ) )
-                {
-                        RESULT r = install_exclude_filter ( filters, num );
-                        if ( RESULT::OK != r )
-                                return make_pair (r, "exclude");
-                        f   += 2; // 'exclude' + 'arg1'
-                        num += 2;
-                        continue;
-                }
-                if ( compare ( *f, "pager" ) )
-                {
-                        RESULT r = install_pager_filter ( filters, num );
-                        if ( RESULT::OK != r )
-                                return make_pair (r, "pager");
-                        f   += 2; // 'pager' + 'arg1'
-                        num += 2;
-                        continue;
-                }
-                if ( compare ( *f, "file" ) )
-                {
-                        RESULT r = install_file_filter ( filters, num );
-                        if ( RESULT::OK != r )
-                                return make_pair (r, "file");
-                        f   += 3; // 'file' + 'arg1' + 'arg2'
-                        num += 3;
-                        continue;
-                }
-                m_client << "unkown filter '" << *f << "'" << cli_client::endl;
-                return make_pair (RESULT::INVALID_COMMAND, *f);
-        }
-        return make_pair (RESULT::OK, "");
+	using std::make_pair;
+	using std::string;
+	strvec::const_iterator f { filters.begin() };
+	if ( *f == "?" )
+	{
+		// nothing but a '?' => list all possible filters
+		for ( auto f : filter_cmds )
+		{
+			show_help ( f.name, f.help );
+		}
+		return make_pair ( RESULT::ERROR_ANY, "" );
+	}
+	size_t num { 1 };
+	while ( f != filters.end() )
+	{
+		if ( *f == "|" ) // nect filter
+		{
+			++f;
+			++num;
+			continue;
+		}
+		if ( wants_help ( *f ) ) // handle '?'
+		{
+			std::string word { *f, 0, ( *f ).size() - 1 };
+			for ( auto t : filter_cmds )
+			{
+				if ( ! fgmp::compare ( word, t.name,
+					m_compare_case ) )
+				{
+					continue;
+				}
+				show_help ( t.name, t.help );
+			}
+			return make_pair ( RESULT::ERROR_ANY, "" );
+		}
+		if ( fgmp::compare ( *f, "begin", m_compare_case ) )
+		{
+			RESULT r = install_begin_filter ( filters, num );
+			if ( RESULT::OK != r )
+			{
+				return make_pair ( r, "begin" );
+			}
+			f   += 2; // 'begin'  + 'arg1'
+			num += 2;
+			continue;
+		}
+		if ( fgmp::compare ( *f, "between", m_compare_case ) )
+		{
+			RESULT r = install_between_filter ( filters, num );
+			if ( RESULT::OK != r )
+			{
+				return make_pair ( r, "between" );
+			}
+			f   += 3; // 'between'  + 'arg1' + 'arg2'
+			num += 3;
+			continue;
+		}
+		if ( fgmp::compare ( *f, "count", m_compare_case ) )
+		{
+			RESULT r = install_count_filter ( filters, num );
+			if ( RESULT::OK != r )
+			{
+				return make_pair ( r, "count" );
+			}
+			f   += 1; // 'count'
+			num += 1;
+			continue;
+		}
+		if ( fgmp::compare ( *f, "include", m_compare_case ) )
+		{
+			RESULT r = install_include_filter ( filters, num );
+			if ( RESULT::OK != r )
+			{
+				return make_pair ( r, "include" );
+			}
+			f   += 2; // 'include' + 'arg1'
+			num += 2;
+			continue;
+		}
+		if ( fgmp::compare ( *f, "exclude", m_compare_case ) )
+		{
+			RESULT r = install_exclude_filter ( filters, num );
+			if ( RESULT::OK != r )
+			{
+				return make_pair ( r, "exclude" );
+			}
+			f   += 2; // 'exclude' + 'arg1'
+			num += 2;
+			continue;
+		}
+		if ( fgmp::compare ( *f, "pager", m_compare_case ) )
+		{
+			RESULT r = install_pager_filter ( filters, num );
+			if ( RESULT::OK != r )
+			{
+				return make_pair ( r, "pager" );
+			}
+			f   += 2; // 'pager' + 'arg1'
+			num += 2;
+			continue;
+		}
+		if ( fgmp::compare ( *f, "file", m_compare_case ) )
+		{
+			RESULT r = install_file_filter ( filters, num );
+			if ( RESULT::OK != r )
+			{
+				return make_pair ( r, "file" );
+			}
+			f   += 3; // 'file' + 'arg1' + 'arg2'
+			num += 3;
+			continue;
+		}
+		m_client << "unkown filter '" << *f << "'" << cli_client::endl;
+		return make_pair ( RESULT::INVALID_COMMAND, *f );
+	}
+	return make_pair ( RESULT::OK, "" );
 } // cli::install_filter ()
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * @}
+ */
 
 //////////////////////////////////////////////////////////////////////
 
@@ -1387,98 +1617,112 @@ cli::install_filter
 std::pair <libcli::RESULT, std::string>
 cli::exec_command
 (
-        const command::cmdlist & cmds,
-        const strvec & words,
-        size_t& start_word
+	const command::cmdlist& cmds,
+	const strvec& words,
+	size_t& start_word
 )
 {
-        using std::make_pair;
-        using std::string;
-        if ( start_word >= words.size() )
-                return make_pair (RESULT::ERROR_ANY, "");
-        std::string word { words [ start_word ] };
-        size_t num_words = words.size() - 1;
-
-        // deal with ? for help
-        if ( word == "?" )
-        {
-                for ( auto c : cmds )
-                {
-                        if ( ! command_available ( c ) )
-                                continue;
-                        show_help ( c->name(), c->help() );
-                }
-                return make_pair (RESULT::OK, "");
-        }
-        int num_commands = 0;
-        for ( auto c : cmds )
-        {
-                if ( ! command_available ( c ) )
-                        continue;
-                if ( wants_help ( word ) )
-                {
-                        if ( ! c->compare ( word,m_compare_case,word.size()-1) )
-                                continue;
-                        show_help ( c->name(), c->help() );
-                        if ( word.size () - 1 < c->unique_len() )
-                        {
-                                ++num_commands;
-                                continue;
-                        }
-                        return make_pair (RESULT::OK, "");
-                }
-                if ( ! c->compare ( word, m_compare_case ) )
-                        continue;
-                if ( word.size () < c->unique_len() )
-                {
-                        ++num_commands;
-                        continue;
-                }
-                if ( ! c->compare ( word, m_compare_case, c->unique_len() ) )
-                        continue;
-                // found the command
-                if ( start_word < num_words )
-                {
-                        ++start_word;
-                        if ( c->has_children () )
-                                return exec_command (
-                                  c->m_children, words, start_word );
-                        if ( ! c->has_callback () )
-                        {
-                                m_client << "No callback for '"
-                                  << c->name() << "'" << cli_client::endl;
-                                return make_pair (RESULT::ERROR_ANY, c->name());
-                        }
-                        // found the command and there are arguments left
-                        // on the command line
-                        RESULT r = c->exec ( c->name(), words, start_word );
-                        if ( r == RESULT::SHOW_HELP )
-                                show_help ( "<cr>", c->help() );
-                        return make_pair ( r, c->name() );
-                }
-                if ( ( c->has_children() ) && ( start_word == num_words ) )
-                {
-                        if ( c->has_callback () )
-                        {
-                                ++start_word;
-                                return make_pair (c->exec
-                                  ( c->name(), words, start_word ), c->name());
-                        }
-                        m_client << "# Incomplete command" << cli_client::endl;
-                        return make_pair (RESULT::ERROR_ANY, c->name());
-                }
-                // found the command and there are no arguments left on
-                // the command line
-                ++start_word; // words.size() - start_word == number of commands
-                return make_pair (
-                  c->exec ( c->name(), words, start_word ), c->name());
-        }
-        if ( num_commands )
-        {
-                m_client << "'" << word << "' is ambigous" << cli_client::endl;
-                return make_pair (RESULT::ERROR_ANY, "");
-        }
-        return make_pair (RESULT::INVALID_COMMAND, word);
+	using std::make_pair;
+	using std::string;
+	if ( start_word >= words.size() )
+	{
+		return make_pair ( RESULT::ERROR_ANY, "" );
+	}
+	std::string word { words [ start_word ] };
+	size_t num_words = words.size() - 1;
+	// deal with ? for help
+	if ( word == "?" )
+	{
+		for ( auto c : cmds )
+		{
+			if ( ! command_available ( c ) )
+			{
+				continue;
+			}
+			show_help ( c->name(), c->help() );
+		}
+		return make_pair ( RESULT::OK, "" );
+	}
+	int num_commands = 0;
+	for ( auto c : cmds )
+	{
+		if ( ! command_available ( c ) )
+		{
+			continue;
+		}
+		if ( wants_help ( word ) )
+		{
+			if ( ! c->compare( word,m_compare_case,word.size()-1 ) )
+			{
+				continue;
+			}
+			show_help ( c->name(), c->help() );
+			if ( word.size () - 1 < c->unique_len() )
+			{
+				++num_commands;
+				continue;
+			}
+			return make_pair ( RESULT::OK, "" );
+		}
+		if ( ! c->compare ( word, m_compare_case ) )
+		{
+			continue;
+		}
+		if ( word.size () < c->unique_len() )
+		{
+			++num_commands;
+			continue;
+		}
+		if ( ! c->compare ( word, m_compare_case, c->unique_len() ) )
+		{
+			continue;
+		}
+		// found the command
+		if ( start_word < num_words )
+		{
+			++start_word;
+			if ( c->has_children () )
+				return exec_command (
+				  c->m_children, words, start_word );
+			if ( ! c->has_callback () )
+			{
+				m_client << "No callback for '"
+				  << c->name() << "'" << cli_client::endl;
+				return make_pair( RESULT::ERROR_ANY,c->name() );
+			}
+			// found the command and there are arguments left
+			// on the command line
+			RESULT r = (*c) ( c->name(), words, start_word );
+			if ( r == RESULT::SHOW_HELP )
+			{
+				show_help ( "<cr>", c->help() );
+			}
+			return make_pair ( r, c->name() );
+		}
+		if ( ( c->has_children() ) && ( start_word == num_words ) )
+		{
+			if ( c->has_callback () )
+			{
+				++start_word;
+				return make_pair (
+				  (*c) ( c->name(), words, start_word ),
+				  c->name() );
+			}
+			m_client << "# Incomplete command" << cli_client::endl;
+			return make_pair ( RESULT::ERROR_ANY, c->name() );
+		}
+		// found the command and there are no arguments left on
+		// the command line
+		++start_word; // words.size() - start_word == number of commands
+		return make_pair (
+		  (*c) ( c->name(), words, start_word ), c->name() );
+	}
+	if ( num_commands )
+	{
+		m_client << "'" << word << "' is ambigous" << cli_client::endl;
+		return make_pair ( RESULT::ERROR_ANY, "" );
+	}
+	return make_pair ( RESULT::INVALID_COMMAND, word );
 } // cli::exec_command ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1487,31 +1731,34 @@ void
 cli::list_completions
 ()
 {
-        std::string s { m_editor.get_line() };
-        strvec commands;
-        strvec filters;
-
-        RESULT r { parse_line ( s, commands, filters ) };
-        if ( RESULT::OK != r )
-                return;
-        if ( commands.size() == 0 ) // command line is empty
-                return;
-        m_client << cli_client::endl;
-        if ( m_editor.cursor_pos() != m_editor.size() )
-        {
-                // We are not at the end of the line
-                // completion currently not possible.
-                // This test fails if there are more than
-                // one space at the end.
-                return;
-        }
-        if ( filters.size() > 0 )
-        {
-                get_filter_completions ( filters, 0,
-                  m_editor.char_before_cursor() );
-                return;
-        }
-        get_completions ( m_commands,commands,0,m_editor.char_before_cursor() );
+	std::string s { m_editor.get_line() };
+	strvec commands;
+	strvec filters;
+	RESULT r { parse_line ( s, commands, filters ) };
+	if ( RESULT::OK != r )
+	{
+		return;
+	}
+	if ( commands.size() == 0 ) // command line is empty
+	{
+		return;
+	}
+	m_client << cli_client::endl;
+	if ( m_editor.cursor_pos() != m_editor.size() )
+	{
+		// We are not at the end of the line
+		// completion currently not possible.
+		// This test fails if there are more than
+		// one space at the end.
+		return;
+	}
+	if ( filters.size() > 0 )
+	{
+		get_filter_completions ( filters, 0,
+		  m_editor.char_before_cursor() );
+		return;
+	}
+	get_completions ( m_commands,commands,0,m_editor.char_before_cursor() );
 } // cli::list_completions ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1519,61 +1766,65 @@ cli::list_completions
 RESULT
 cli::run_command
 (
-        const std::string& line
+	const std::string& line
 )
 {
-        std::string s { line };
-        strvec commands;
-        strvec filters;
-
-        RESULT r { parse_line ( s, commands, filters ) };
-        if ( RESULT::OK != r )
-                return r;
-
-        if ( commands.size() == 0 ) // command line is empty
-                return r;
-
-        std::pair <libcli::RESULT, std::string> res;
-        res = std::make_pair (RESULT::OK, "");
-        if ( filters.size() > 0 )
-        {
-                res = install_filter ( filters );
-        }
-
-        if ( RESULT::OK == res.first )
-        {
-                size_t arg_ptr { 0 };
-                r = RESULT::OK;
-
-                m_client.enable_filters ();
-                try   { res = exec_command ( m_commands, commands, arg_ptr ); }
-                catch ( pager_wants_quit ) { /* nothing to do */ }
-                m_client.disable_filters();
-                r = res.first;
-        }
-
-        switch ( res.first )
-        {
-        case RESULT::INVALID_ARG:
-                m_client << "% " << res.second
-                        << " : Invalid argument" << cli_client::endl;
-                break;
-        case RESULT::TOO_MANY_ARGS:
-                m_client << "% " << res.second <<
-                        " : too many arguments" << cli_client::endl;
-                break;
-        case RESULT::MISSING_ARG:
-                m_client << "% " << res.second
-                        << " : missing argument" << cli_client::endl;
-                break;
-        case RESULT::INVALID_COMMAND:
-                m_client << "% " << res.second
-                        << " : invalid command" << cli_client::endl;
-                break;
-        default:
-                break;
-        }
-        return res.first;
+	std::string s { line };
+	strvec commands;
+	strvec filters;
+	RESULT r { parse_line ( s, commands, filters ) };
+	if ( RESULT::OK != r )
+	{
+		return r;
+	}
+	if ( commands.size() == 0 ) // command line is empty
+	{
+		return r;
+	}
+	std::pair <RESULT, std::string> res;
+	res = std::make_pair ( RESULT::OK, "" );
+	if ( filters.size() > 0 )
+	{
+		res = install_filter ( filters );
+	}
+	if ( RESULT::OK == res.first )
+	{
+		size_t arg_ptr { 0 };
+		r = RESULT::OK;
+		m_client.enable_filters ();
+		try
+		{
+			res = exec_command ( m_commands, commands, arg_ptr );
+		}
+		catch ( pager_wants_quit )
+		{
+			/* nothing to do */
+		}
+		m_client.disable_filters();
+		r = res.first;
+	}
+	switch ( res.first )
+	{
+	case RESULT::INVALID_ARG:
+		m_client << "% " << res.second
+			 << " : Invalid argument" << cli_client::endl;
+		break;
+	case RESULT::TOO_MANY_ARGS:
+		m_client << "% " << res.second <<
+			 " : too many arguments" << cli_client::endl;
+		break;
+	case RESULT::MISSING_ARG:
+		m_client << "% " << res.second
+			 << " : missing argument" << cli_client::endl;
+		break;
+	case RESULT::INVALID_COMMAND:
+		m_client << "% " << res.second
+			 << " : invalid command" << cli_client::endl;
+		break;
+	default:
+		break;
+	}
+	return res.first;
 } // cli::run_command ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1586,34 +1837,34 @@ cli::run_command
 RESULT
 cli::file
 (
-        const std::string& filename,
-        int privilege,
-        int mode
+	const std::string& filename,
+	const cmd_priv privilege,
+	const cmd_mode mode
 )
 {
-        std::ifstream infile { filename };
-        if ( ! infile )
-        {
-                return RESULT::INVALID_ARG;
-        }
-        int oldpriv = set_privilege ( privilege );
-        int oldmode = set_configmode ( mode, "" );
-        std::string line;
-        size_t line_number { 1 };
-        for( std::string line; getline( infile, line ); )
-        {
-                RESULT r { run_command ( line ) };
-                if ( RESULT::OK != r )
-                {
-                        m_client << "  ... in line number "
-                                << line_number
-                                << cli_client::endl;
-                }
-                ++line_number;
-        }
-        set_privilege ( oldpriv );
-        set_configmode ( oldmode, m_modestr );
-        return RESULT::OK;
+	std::ifstream infile { filename };
+	if ( ! infile )
+	{
+		return RESULT::INVALID_ARG;
+	}
+	cmd_priv oldpriv = set_privilege ( privilege );
+	cmd_mode oldmode = set_configmode ( mode, "" );
+	std::string line;
+	size_t line_number { 1 };
+	for ( std::string line; getline ( infile, line ); )
+	{
+		RESULT r { run_command ( line ) };
+		if ( RESULT::OK != r )
+		{
+			m_client << "  ... in line number "
+				 << line_number
+				 << cli_client::endl;
+		}
+		++line_number;
+	}
+	set_privilege ( oldpriv );
+	set_configmode ( oldmode, m_modestr );
+	return RESULT::OK;
 } // cli::file
 
 //////////////////////////////////////////////////////////////////////
@@ -1622,15 +1873,19 @@ cli::file
 bool
 cli::wants_help
 (
-        const std::string& arg
+	const std::string& arg
 )
 {
-        size_t l { arg.size() };
-        if ( l == 0 )
-                return false;
-        if (arg[l-1] == '?')
-                return true;
-        return false;
+	size_t l { arg.size() };
+	if ( l == 0 )
+	{
+		return false;
+	}
+	if ( arg[l-1] == '?' )
+	{
+		return true;
+	}
+	return false;
 } // cli::wants_help ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1650,55 +1905,59 @@ const std::string MD5_PREFIX = "$1$";
 bool
 cli::pass_matches
 (
-        const std::string& pass,
-        const std::string& tried_pass
-)
+	const std::string& pass,
+	const std::string& tried_pass
+) const
 {
-        int des;
-        int idx = 0;
-        des = ! pass.compare (0, DES_PREFIX.size(), DES_PREFIX);
-        if (des)
-        {
-                idx = sizeof ( DES_PREFIX )-1;
-        }
-        std::string trial;
-        if ( des || (! pass.compare (0, MD5_PREFIX.size(), MD5_PREFIX)))
-        {
-                trial = crypt ( (char*) tried_pass.c_str(), (char*) pass.c_str() );
-        }
-        else
-        {
-                trial = tried_pass;
-        }
-        return ( pass.compare (idx, pass.size(), trial) == 0 );
+	int des;
+	int idx = 0;
+	des = ! pass.compare ( 0, DES_PREFIX.size(), DES_PREFIX );
+	if ( des )
+	{
+		idx = sizeof ( DES_PREFIX )-1;
+	}
+	std::string trial;
+	if ( des || ( ! pass.compare ( 0, MD5_PREFIX.size(), MD5_PREFIX ) ) )
+	{
+		trial = crypt (
+		  ( char* ) tried_pass.c_str(), ( char* ) pass.c_str() );
+	}
+	else
+	{
+		trial = tried_pass;
+	}
+	return ( pass.compare ( idx, pass.size(), trial ) == 0 );
 } // cli::pass_matches ()
 
 //////////////////////////////////////////////////////////////////////
 
 /**
  * Check the enable password against the internal enable password or
- * an authentication callback..
+ * an authentication callback.
  * @return -1 if the password was wrong.
  * @return >= 0 the privilege level granted to the user.
  */
-int
+cmd_priv
 cli::check_enable
 (
-        const std::string& pass
-)
+	const std::string& pass
+) const
 {
-        if ( m_enable_password != "" )
-        {       // check stored static enable password 
-                if ( pass_matches ( m_enable_password, pass ) )
-                        return PRIVLEVEL::PRIVILEGED;
-                return -1;
-        }
-        // check callback
-        if ( m_enable_callback )
-        {
-                return m_enable_callback ( pass );
-        }
-        return PRIVLEVEL::PRIVILEGED;
+	if ( m_enable_password != "" )
+	{
+		// check stored static enable password
+		if ( pass_matches ( m_enable_password, pass ) )
+		{
+			return PRIVLEVEL::PRIVILEGED;
+		}
+		return PRIVLEVEL::DENIED;
+	}
+	// check callback
+	if ( m_enable_callback )
+	{
+		return m_enable_callback ( pass );
+	}
+	return PRIVLEVEL::PRIVILEGED;
 } // cli::check_enable ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1713,23 +1972,25 @@ cli::check_enable
 int
 cli::check_user_auth
 (
-        const std::string& username,
-        const std::string& password
-)
+	const std::string& username,
+	const std::string& password
+) const
 {
-        // check callback
-        if ( m_auth_callback )
-        {
-                return m_auth_callback ( username, password );
-        }
-        // check internal userlist
-        auto u = m_users.find ( username );
-        if ( u != m_users.end() )
-        {
-                if ( pass_matches (u->second, password) )
-                        return PRIVLEVEL::UNPRIVILEGED;
-        }
-        return -1;
+	// check callback
+	if ( m_auth_callback )
+	{
+		return m_auth_callback ( username, password );
+	}
+	// check internal userlist
+	auto u = m_users.find ( username );
+	if ( u != m_users.end() )
+	{
+		if ( pass_matches ( u->second.password, password ) )
+		{
+			return u->second.privlevel;
+		}
+	}
+	return PRIVLEVEL::DENIED;
 } // cli::check_user_auth ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1738,11 +1999,11 @@ void
 cli::leave_config_mode
 ()
 {
-        if ( m_mode != CLI_MODE::EXEC )
-        {
-                m_client << cli_client::endl;
-                set_configmode ( CLI_MODE::EXEC, "" );
-        }
+	if ( m_mode != CLI_MODE::EXEC )
+	{
+		m_client << cli_client::endl;
+		set_configmode ( CLI_MODE::EXEC, "" );
+	}
 } // cli::leave_config_mode ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1750,26 +2011,28 @@ cli::leave_config_mode
 std::pair <libcli::RESULT, bool>
 cli::get_bool
 (
-        const std::string & arg
+	const std::string& arg
 )
 {
-        if ( wants_help ( arg ) )
-        {
-                show_help ( "true|false|on|off", "set boolean value" );
-                return std::make_pair<libcli::RESULT,bool>
-                        ( RESULT::ERROR_ANY, false );
-        }
-        if ( arg == "" )
-                return std::make_pair<libcli::RESULT, bool>
-                        ( RESULT::MISSING_ARG, false );
-        if ( compare ( arg, "true" ) || compare ( arg, "on" ) )
-                return std::make_pair<libcli::RESULT, bool>
-                        ( RESULT::OK, true );
-        if ( compare ( arg, "false" ) || compare ( arg, "off" ) )
-                return std::make_pair<libcli::RESULT, bool>
-                        ( RESULT::OK, false );
-        return std::make_pair<libcli::RESULT, bool>
-                ( RESULT::INVALID_ARG, false );
+	if ( wants_help ( arg ) )
+	{
+		show_help ( "enable|disable|on|off", "set boolean value" );
+		return std::make_pair<RESULT,bool>
+		       ( RESULT::ERROR_ANY, false );
+	}
+	if ( arg == "" )
+		return std::make_pair<RESULT, bool>
+		       ( RESULT::MISSING_ARG, false );
+	if ( fgmp::compare ( arg, "enable", m_compare_case )
+	||   fgmp::compare ( arg, "on", m_compare_case ) )
+		return std::make_pair<RESULT, bool>
+		       ( RESULT::OK, true );
+	if ( fgmp::compare ( arg, "disable", m_compare_case )
+	||   fgmp::compare ( arg, "off", m_compare_case ) )
+		return std::make_pair<RESULT, bool>
+		       ( RESULT::OK, false );
+	return std::make_pair<RESULT, bool>
+	       ( RESULT::INVALID_ARG, false );
 } // cli::get_bool ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1783,45 +2046,44 @@ bool
 cli::authenticate_user
 ()
 {
-        std::string password;
-        int c;
-        int counter { 0 };
-
-        while ( m_state != CLI_STATE::NORMAL )
-        {
-                m_client << "Username: " << cli_client::flush;
-                c = m_editor.read_line ();
-                m_username = m_editor.get_line ();
-                m_editor.do_echo ( false );
-                m_client << "Password: " << cli_client::flush;
-                c = m_editor.read_line ();
-                password = m_editor.get_line ();
-                m_editor.do_echo ( true );
-                int priv = check_user_auth ( m_username, password );
-                if ( priv != -1 )
-                {
-                        m_client << "-ok-" << cli_client::endl;
-                        set_privilege ( priv );
-                        return true;
-                }
-                else
-                {
-                        m_client << cli_client::endl
-                          << "Access denied."
-                          << cli_client::endl << cli_client::endl;
-                        using fgmp::fglog;
-                        LOG ( fglog::prio::URGENT,
-                          "Bad login '" << m_username << "' / '"
-                          << password << "'" );
-                        m_state = CLI_STATE::LOGIN;
-                        ++counter;
-                        if ( counter == 3 )
-                        {
-                                return false;
-                        }
-                }
-        }
-        return true;
+	std::string password;
+	int c;
+	int counter { 0 };
+	while ( m_state != CLI_STATE::NORMAL )
+	{
+		m_client << "Username: " << cli_client::flush;
+		c = m_editor.read_line ();
+		m_username = m_editor.get_line ();
+		m_editor.do_echo ( false );
+		m_client << "Password: " << cli_client::flush;
+		c = m_editor.read_line ();
+		password = m_editor.get_line ();
+		m_editor.do_echo ( true );
+		int priv = check_user_auth ( m_username, password );
+		if ( priv != PRIVLEVEL::DENIED )
+		{
+			m_client << "-ok-" << cli_client::endl;
+			set_privilege ( priv );
+			return true;
+		}
+		else
+		{
+			m_client << cli_client::endl
+				 << "Access denied."
+				 << cli_client::endl << cli_client::endl;
+			using fgmp::fglog;
+			LOG ( fglog::prio::URGENT,
+			      "Bad login '" << m_username << "' / '"
+			      << password << "'" );
+			m_state = CLI_STATE::LOGIN;
+			++counter;
+			if ( counter == 3 )
+			{
+				return false;
+			}
+		}
+	}
+	return true;
 } // cli::authenticate_user ()
 
 //////////////////////////////////////////////////////////////////////
@@ -1833,48 +2095,53 @@ void
 cli::loop
 ()
 {
-        build_shortest ( m_commands );
-        if ( m_banner.size() > 0 )
-        {
-                m_client << m_banner << cli_client::endl;
-        }
-        // authentication required ?
-        if ( ( ! m_users.empty() ) || ( m_auth_callback != nullptr ) )
-        {
-                m_editor.do_prompt ( false );
-                if ( ! authenticate_user () )
-                        return;
-                m_editor.do_prompt ( true );
-        }
-        // start off in unprivileged mode
-        set_privilege  ( PRIVLEVEL::UNPRIVILEGED );
-        set_configmode ( CLI_MODE::EXEC, "" );
-        m_state = CLI_STATE::NORMAL;
-        m_client << "type '?' or 'help' for help."
-          << cli_client::endl << cli_client::endl;
-        bool clear_buffer = true;
-        do
-        {
-                int c = m_editor.read_line ( clear_buffer );
-                switch ( c )
-                {
-                case KEY::LF:
-                        // find and execute command
-                        run_command ( m_editor.get_line () );
-                        clear_buffer = true;
-                        break;
-                case KEY::TAB:
-                        // find completions
-                        list_completions ();
-                        clear_buffer = false;
-                        break;
-                case '?':
-                        // show help
-                        run_command ( m_editor.get_line() );
-                        clear_buffer = false;
-                        break;
-                }
-        } while ( m_state != CLI_STATE::QUIT );
+	build_shortest ( m_commands );
+	if ( m_banner.size() > 0 )
+	{
+		m_client << m_banner << cli_client::endl;
+	}
+	// authentication required ?
+	if ( ( ! m_users.empty() ) || ( m_auth_callback != nullptr ) )
+	{
+		m_editor.do_prompt ( false );
+		if ( ! authenticate_user () )
+		{
+			return;
+		}
+		m_editor.do_prompt ( true );
+	}
+	else
+	{
+		// start off in unprivileged mode
+		set_privilege  ( PRIVLEVEL::UNPRIVILEGED );
+	}
+	set_configmode ( CLI_MODE::EXEC, "" );
+	m_state = CLI_STATE::NORMAL;
+	m_client << "type '?' or 'help' for help."
+		 << cli_client::endl << cli_client::endl;
+	bool clear_buffer = true;
+	do
+	{
+		int c = m_editor.read_line ( clear_buffer );
+		switch ( c )
+		{
+		case KEY::LF:
+			// find and execute command
+			run_command ( m_editor.get_line () );
+			clear_buffer = true;
+			break;
+		case KEY::TAB:
+			// find completions
+			list_completions ();
+			clear_buffer = false;
+			break;
+		case '?':
+			// show help
+			run_command ( m_editor.get_line() );
+			clear_buffer = false;
+			break;
+		}
+	} while ( m_state != CLI_STATE::QUIT );
 } // cli::loop ()
 
 //////////////////////////////////////////////////////////////////////

@@ -46,6 +46,10 @@
 namespace fgmp
 {
 
+/** @ingroup fglib
+ * @brief A class for configuration files
+ * @deprecated Will be replaced by libcli
+ */
 class config
 {
 public:

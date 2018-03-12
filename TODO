@@ -1,4 +1,38 @@
+Software is never 'finished'. It is 'ready for use' at best, and fgms
+is in in this state. Here are some points which need some thoughts. If
+you plan to lay your hands on any of them, please drop me an email.
 
+libcli
+------
+- Generic setter and getter for variables
+  This is more complicated then thought on a first glance. The idea is to have
+  a 'command' which is able to modify a variable:
+
+  template <typename type>
+  class setter : public command
+  {
+  public:
+  	setter (
+		const std::string& name,
+		const cmd_priv level,
+		const cmd_mode mode,
+		type & variable,
+		const std::string& help
+	);
+  private:
+  	type & m_variable;
+  };
+
+- Store user passwords encrypted (needs crypt)
+  We should provide our own crypt(3) implementation so we do not rely
+  on the systems implementation. For windows we only have a minimal
+  implementation supporting DES.
+
+- keep logins in a (static) list, so we can see active users
+- store logins when users log out, so we can see logins from the past
+
+fgms
+----
 - create an IRC like chat protocoll
 - implement server to server communication
   special messages for server internal purposes

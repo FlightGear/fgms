@@ -39,7 +39,7 @@
 namespace fgmp
 {
 
-/****
+/**@ingroup fglib
 * A class for inet addresses.
 *
 * @author       Oliver Schroeder <post@o-schroeder.de>

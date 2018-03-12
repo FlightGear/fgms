@@ -1,87 +1,91 @@
 1.0.0
-	[NEW]	gave netaddr and netsocket a complete overhaul.
-		they support IPv6 now.
-	[MISC]	elaborated fgls a bit more, but it still doesn't really do
-		something yet.
-	[NEW]	added a cli to fgls
-	[MISC]	cleaned up CMakeList.txt even more
-	[MISC]	moved some more files to src/fglib
-	[MISC]	general code cleanup on some of the files
+        [FIX]   the pager is disabled by default
+        [NEW]   'pager' as a filter (so the pager can be enabled per command)
+        [NEW]   'file' filter, to write output of a command to a file
+        [FIX]   '?' now works with filters
+        [NEW]   gave netaddr and netsocket a complete overhaul.
+                they support IPv6 now.
+        [MISC]  elaborated fgls a bit more, but it still doesn't really do
+                something yet.
+        [NEW]   added a cli to fgls
+        [MISC]  cleaned up CMakeList.txt even more
+        [MISC]  moved some more files to src/fglib
+        [MISC]  general code cleanup on some of the files
 
-	[MISC]	moved contrib/etc to etc
-	[MISC]	CMakeList.txt: reordered, reformatted
-		added a summary at the end
-	[NEW]	created fglib/fg_log
-		A logging class with a logbuffer, which can be 
-		accessed from outside. Useful for the cli to
-		show the log
-	[MISC]	deleted src/simgear/debug/*
-		Changed all files to use log::logstream instead of 
-		SG_LOG
-	[NEW]	added fgls
-		It does nothing useful, yet.
-	[NEW]	fgms cli is now able to show the logs :-)
-	[MISC]	added additional config settings with documentation
-		to etc/fgms_production.skel.conf
-	[NEW]	added etc/fgls_skel.conf
-	[FIX]
+        [MISC]  moved contrib/etc to etc
+        [MISC]  CMakeList.txt: reordered, reformatted
+                added a summary at the end
+        [NEW]   created fglib/fg_log
+                A logging class with a logbuffer, which can be 
+                accessed from outside. Useful for the cli to
+                show the log
+        [MISC]  deleted src/simgear/debug/*
+                Changed all files to use log::logstream instead of 
+                SG_LOG
+        [NEW]   added fgls
+                It does nothing useful, yet.
+        [NEW]   fgms cli is now able to show the logs :-)
+        [MISC]  added additional config settings with documentation
+                to etc/fgms_production.skel.conf
+        [NEW]   added etc/fgls_skel.conf
+        [FIX]
 
-	[MISC]	moved files which are used from other servers
-		from src/server to src/fglib
-	[NEW]	incorporated files from fgms-1.x
-		netsocket, netaddr, netpacket, encoding
-	[MISC]	renamed src/server to src/fgms
-	[MISC]	renamed fg_server to fgms
-	[MISC]	splittest fg_list into fg_list and fg_player
-	[NEW]	Created a class for version (which is now set
-		in fgms.cxx)
-		removed version file
-	[MISC]	removed tiny_xdr (replaced by encoding)
-	[MISC]	removed plib
-	[MISC]	removed fg_common.hxx
-	[MISC]	cleaned CMakeList.txt (a bit)
-	[MISC]	re-idented all files to use tab instead of space,
-		using tabwidth of 8 characters
-	
+        [MISC]  moved files which are used from other servers
+                from src/server to src/fglib
+        [NEW]   incorporated files from fgms-1.x
+                netsocket, netaddr, netpacket, encoding
+        [MISC]  renamed src/server to src/fgms
+        [MISC]  renamed fg_server to fgms
+        [MISC]  splittest fg_list into fg_list and fg_player
+        [NEW]   Created a class for version (which is now set
+                in fgms.cxx)
+                removed version file
+        [MISC]  removed tiny_xdr (replaced by encoding)
+        [MISC]  removed plib
+        [MISC]  removed fg_common.hxx
+        [MISC]  cleaned CMakeList.txt (a bit)
+        [MISC]  re-idented all files to use tab instead of space,
+                using tabwidth of 8 characters
+
 
 0.13.2
-	[FIX]	fixed a major bug which prevented packet forwarding
-		at all.
+        [FIX]   fixed a major bug which prevented packet forwarding
+                at all.
 
 0.13.1
-	[FIX]   fixed a minor bug which prevented
-		forwarding of packets with MsgID != FGFS::POS_DATA
+        [FIX]   fixed a minor bug which prevented
+                forwarding of packets with MsgID != FGFS::POS_DATA
 
 0.13.0
-	[NEW]	honour client provided radar range
-	[NEW]	show client provided radar range in cli
-	[NEW]	show client protocol version in CLI
-	[FIX]	fgms only checks major version of client protocol
-		it's strongly suggested to increase the minor version if
-		the protocol has changed at all, increase the major version
-		if the new version is incompatible to previous versions
-	[NEW]	added a whitelist, configurable via config file and cli
-		That way a client can whitelist its uplink, whithout the
-		need to configure the uplink as a valid relay.
-	[NEW]	Ping Packets
-		fgms responds to PING packets (MsgID 9)
-		Packet is sent verbatim back to sender, only the MsgID is
-		set to PONG (ID 10).
-		It's up to fgfs to make something out of it.
-	[NEW]	Serverside configurable value of MaxRadarRange, default 2000 nm
-	[FIX]	fg_tracker:
-		if we receive a SIGPIPE, try to reconnect to tracker
-	[NEW]	fg_cli:
-		the number of lines to display before pausing is now
-		configurable (with 'pager' command).
-	[FIX]	config file:
-		renamed server.domain to server.FQDN
-		(!!! update config file !!!)
+        [NEW]   honour client provided radar range
+        [NEW]   show client provided radar range in cli
+        [NEW]   show client protocol version in CLI
+        [FIX]   fgms only checks major version of client protocol
+                it's strongly suggested to increase the minor version if
+                the protocol has changed at all, increase the major version
+                if the new version is incompatible to previous versions
+        [NEW]   added a whitelist, configurable via config file and cli
+                That way a client can whitelist its uplink, whithout the
+                need to configure the uplink as a valid relay.
+        [NEW]   Ping Packets
+                fgms responds to PING packets (MsgID 9)
+                Packet is sent verbatim back to sender, only the MsgID is
+                set to PONG (ID 10).
+                It's up to fgfs to make something out of it.
+        [NEW]   Serverside configurable value of MaxRadarRange, default 2000 nm
+        [FIX]   fg_tracker:
+                if we receive a SIGPIPE, try to reconnect to tracker
+        [NEW]   fg_cli:
+                the number of lines to display before pausing is now
+                configurable (with 'pager' command).
+        [FIX]   config file:
+                renamed server.domain to server.FQDN
+                (!!! update config file !!!)
 
 0.12.1
-	[FIX]	make ReplyAdress usable as RadarRange
-	[RM]	Obsolete FGTracker v1
-	[MISC]	Update Authors, install and todo list
-	[FIX]	Wrong LOG message. Address issue #10
-	[OTS]	Bump version 0.12.1
+        [FIX]   make ReplyAdress usable as RadarRange
+        [RM]    Obsolete FGTracker v1
+        [MISC]  Update Authors, install and todo list
+        [FIX]   Wrong LOG message. Address issue #10
+        [OTS]   Bump version 0.12.1
 

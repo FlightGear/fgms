@@ -30,6 +30,9 @@
 	#define DEBUG_LINE
 #endif
 
+/** @ingroup fglib
+ * @breif support for easy debugging
+ */
 class DEBUG
 {
 public:

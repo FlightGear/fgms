@@ -43,7 +43,10 @@ using filterlist = std::vector < filter_p >;
 
 //////////////////////////////////////////////////////////////////////
 
-/**
+/** @ingroup libcli
+ *
+ * @brief Base class for filters
+ *
  * Pure virtual base class for output filters, from which all real
  * filter must be derived.
  * Filters are special internal commands. All output to clients is
@@ -52,11 +55,17 @@ using filterlist = std::vector < filter_p >;
 class filter
 {
 public:
-        virtual bool operator () ( const std::string & line ) = 0;
-        virtual ~filter () {};
+	virtual bool operator () ( const std::string& line ) = 0;
+	virtual ~filter () {};
 protected:
-        filter () {}; // disable direct instantiation
+	filter () {}; // disable direct instantiation
 };
+
+//////////////////////////////////////////////////////////////////////
+
+/** @weakgroup filters existing filters
+ * @{
+ */
 
 //////////////////////////////////////////////////////////////////////
 
@@ -71,11 +80,11 @@ protected:
 class match_filter : public filter
 {
 public:
-        match_filter ( const std::string & match, bool invert );
-        bool operator () ( const std::string & line ) override;
+	match_filter ( const std::string& match, bool invert );
+	bool operator () ( const std::string& line ) override;
 private:
-        std::string m_match_this;
-        bool  m_invert;
+	std::string m_match_this;
+	bool  m_invert;
 }; // class match_filter
 
 //////////////////////////////////////////////////////////////////////
@@ -89,11 +98,11 @@ private:
 class begin_filter : public filter
 {
 public:
-        begin_filter ( const std::string & match );
-        bool operator () ( const std::string & line ) override;
+	begin_filter ( const std::string& match );
+	bool operator () ( const std::string& line ) override;
 private:
-        std::string m_match_this;
-        bool  m_have_match = false;
+	std::string m_match_this;
+	bool  m_have_match = false;
 }; // class begin_filter
 
 //////////////////////////////////////////////////////////////////////
@@ -109,14 +118,14 @@ private:
 class between_filter : public filter
 {
 public:
-        between_filter (
-                const std::string & start_match,
-                const std::string & end_match );
-        bool operator () ( const std::string & line ) override;
+	between_filter (
+		const std::string& start_match,
+		const std::string& end_match );
+	bool operator () ( const std::string& line ) override;
 private:
-        std::string m_start_match;
-        std::string m_end_match;
-        bool  m_have_match = false;
+	std::string m_start_match;
+	std::string m_end_match;
+	bool  m_have_match = false;
 }; // class between_filter
 
 //////////////////////////////////////////////////////////////////////
@@ -124,7 +133,7 @@ private:
 /**
  * 'count' filter
  *
- * Invoke with 
+ * Invoke with
  * @code
  * cmd | count
  * @endcode
@@ -138,12 +147,12 @@ private:
 class count_filter : public filter
 {
 public:
-        count_filter ( cli_client* client );
-        virtual ~count_filter ();
-        bool operator () ( const std::string & line ) override;
+	count_filter ( cli_client* client );
+	virtual ~count_filter ();
+	bool operator () ( const std::string& line ) override;
 private:
-        size_t  m_counter = 0;
-        cli_client* m_client;
+	size_t  m_counter = 0;
+	cli_client* m_client;
 }; // class count_filter
 
 //////////////////////////////////////////////////////////////////////
@@ -160,13 +169,13 @@ private:
 class pager_filter : public filter
 {
 public:
-        pager_filter ( cli_client* client, size_t max_lines );
-        virtual ~pager_filter ();
-        bool operator () ( const std::string & line ) override;
+	pager_filter ( cli_client* client, size_t max_lines );
+	virtual ~pager_filter ();
+	bool operator () ( const std::string& line ) override;
 private:
-        size_t m_global_max;    // remember current global setting
-        size_t m_max_lines;     // setting for this filter
-        cli_client* m_client;
+	size_t m_global_max;    // remember current global setting
+	size_t m_max_lines;     // setting for this filter
+	cli_client* m_client;
 }; // class pager_filter
 
 //////////////////////////////////////////////////////////////////////
@@ -183,12 +192,16 @@ private:
 class file_filter : public filter
 {
 public:
-        file_filter ( const std::string & filename, bool append );
-        virtual ~file_filter ();
-        bool operator () ( const std::string & line ) override;
+	file_filter ( const std::string& filename, bool append );
+	virtual ~file_filter ();
+	bool operator () ( const std::string& line ) override;
 private:
-        std::ofstream file;
+	std::ofstream file;
 }; // class pager_filter
+
+//////////////////////////////////////////////////////////////////////
+
+/* @} */
 
 //////////////////////////////////////////////////////////////////////
 

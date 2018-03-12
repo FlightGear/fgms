@@ -38,14 +38,14 @@ namespace libcli
  */
 command::command
 (
-        const std::string & name,
-        int level,
-        int mode,
-        const std::string & help
-) : m_name { std::move (name) }, m_help { std::move (help) }
+	const std::string& name,
+	const cmd_priv level,
+	const cmd_mode mode,
+	const std::string& help
+) : m_name { std::move ( name ) }, m_help { std::move ( help ) }
 {
-        m_privilege     = level;
-        m_mode          = mode;
+	m_privilege     = level;
+	m_mode          = mode;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -83,16 +83,16 @@ command::command
  */
 command::command
 (
-        const std::string & name,
-        cli_callback_func callback,
-        int level,
-        int mode,
-        const std::string & help
-) : m_name { std::move ( name) }, m_help { std::move (help) },
+	const std::string& name,
+	cli_callback_func callback,
+	const cmd_priv level,
+	const cmd_mode mode,
+	const std::string& help
+) : m_name { std::move ( name ) }, m_help { std::move ( help ) },
     m_cli_callback { callback }
 {
-        m_privilege     = level;
-        m_mode          = mode;
+	m_privilege     = level;
+	m_mode          = mode;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -108,18 +108,18 @@ command::~command
  * Execute the callback function when this command is invoked
  */
 RESULT
-command::exec
+command::operator ()
 (
-        const std::string & name,
-        const strvec & args,
-        size_t& first_arg
+	const std::string& name,
+	const strvec& args,
+	size_t& first_arg
 )
 {
-        if ( m_cli_callback == nullptr )
-        {
-                throw arg_error ( "command::exec: no cli_callback" );
-        }
-        return m_cli_callback ( name, args, first_arg );
+	if ( m_cli_callback == nullptr )
+	{
+		throw arg_error ( "command::exec: no cli_callback" );
+	}
+	return m_cli_callback ( name, args, first_arg );
 } // command::exec ()
 
 //////////////////////////////////////////////////////////////////////
@@ -136,17 +136,21 @@ command::exec
 bool
 command::compare
 (
-        const std::string& word,
-        bool compare_case,
-        const size_t len
+	const std::string& word,
+	const bool compare_case,
+	const size_t len
 )
 {
-        size_t l { len };
-        if ( l == 0 )
-                l = word.size ();
-        if ( compare_case )
-                return ( 0 == strncmp ( m_name.c_str(), word.c_str(), l ) );
-        return ( 0 == strncasecmp ( m_name.c_str(), word.c_str(), l ) );
+	size_t l { len };
+	if ( l == 0 )
+	{
+		l = word.size ();
+	}
+	if ( compare_case )
+	{
+		return ( 0 == strncmp ( m_name.c_str(), word.c_str(), l ) );
+	}
+	return ( 0 == strncasecmp ( m_name.c_str(), word.c_str(), l ) );
 } // command::compare ()
 
 //////////////////////////////////////////////////////////////////////
@@ -160,28 +164,31 @@ command::compare
 int
 command::compare_len
 (
-        const std::string& word,
-        bool compare_case
+	const std::string& word,
+	const bool compare_case
 )
 {
-        size_t max { std::min ( m_name.size(), word.size() ) };
-        size_t n { 0 };
-
-        while ( n < max )
-        {
-                if ( compare_case )
-                {
-                        if ( m_name[n] != word[n] )
-                                return ++n;
-                }
-                else
-                {
-                        if ( toupper ( m_name[n] ) != toupper ( word[n] ) )
-                                return ++n;
-                }
-                ++n;
-        }
-        return max;
+	size_t max { std::min ( m_name.size(), word.size() ) };
+	size_t n { 0 };
+	while ( n < max )
+	{
+		if ( compare_case )
+		{
+			if ( m_name[n] != word[n] )
+			{
+				return ++n;
+			}
+		}
+		else
+		{
+			if ( toupper ( m_name[n] ) != toupper ( word[n] ) )
+			{
+				return ++n;
+			}
+		}
+		++n;
+	}
+	return max;
 } // command::compare_len ()
 
 //////////////////////////////////////////////////////////////////////

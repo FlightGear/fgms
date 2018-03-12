@@ -500,7 +500,7 @@ netaddr::is_mapped_v4
 //////////////////////////////////////////////////////////////////////
 
 /**
- * @defgroup netaddr operators
+ * @name netaddr operators
  * @{
  */
 

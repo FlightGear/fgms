@@ -48,10 +48,10 @@ enum class ATC_TYPE
 };
 
 //////////////////////////////////////////////////////////////////////
-/** 
+/**
  * @class pilot
  * @brief Represent a pilot
- * 
+ *
  * pilot objects are stored in the fgms::m_pilot_list
  * They are created and added in FGMS::AddClient
  * They are dropped with FGMS::DropClient after expiry time
@@ -62,7 +62,7 @@ class pilot : public list_item
 public:
 
 	std::string	origin;
-	/** @brief The password 
+	/** @brief The password
 	 *  @warning This is not currently used
 	 */
 	std::string	passwd;
@@ -84,7 +84,7 @@ public:
 	uint16_t proto_major;
 	/** @brief client minor protocol version */
 	uint16_t proto_minor;
-	/** @brief in case of errors the reason is stored here 
+	/** @brief in case of errors the reason is stored here
 	 * @see FGMS::AddBadClient
 	 */
 	std::string	error;    // in case of errors
@@ -98,7 +98,7 @@ public:
 	bool	do_update;
 	pilot ();
 	pilot ( const std::string& name );
-	pilot ( const pilot& p);
+	pilot ( const pilot& p );
 	void operator =  ( const pilot& p );
 	virtual bool operator ==  ( const pilot& p );
 private:

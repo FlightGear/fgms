@@ -44,7 +44,7 @@ using sys_sock = ::sockaddr;
 
 const int MAXSOCKADDR = 128; // unix domain socket
 
-/**
+/**@ingroup fglib
  * @brief Socket address, internet style.
  *
  * This class handles systems socket addresses

@@ -40,8 +40,8 @@ namespace fgmp
 /// Dynamic relays can not be edited/deleted via cli
 enum class CONFIG_TYPE
 {
-        DYNAMIC,
-        STATIC
+	DYNAMIC,
+	STATIC
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -51,21 +51,21 @@ enum class CONFIG_TYPE
 class server
 {
 public:
-        uint64_t        id;             ///< internal ID
-        SENDER_TYPE     sender_type;    ///< type of server
-        CONFIG_TYPE     config_type;    ///< dynamic/static
-        netaddr         addr;           ///< sockaddr of server
-        std::string     name;           ///< eg. mpserver01
-        std::string     location;       ///< "city/province/country"
-        std::string     admin_email;    ///< email address of admin
-        fgmp::version   version;        ///< version of server
-        time_t          last_seen;
-        time_t          registered_at;
+	uint64_t        id;             ///< internal ID
+	SENDER_TYPE     sender_type;    ///< type of server
+	CONFIG_TYPE     config_type;    ///< dynamic/static
+	netaddr         addr;           ///< sockaddr of server
+	std::string     name;           ///< eg. mpserver01
+	std::string     location;       ///< "city/province/country"
+	std::string     admin_email;    ///< email address of admin
+	fgmp::version   version;        ///< version of server
+	time_t          last_seen;
+	time_t          registered_at;
 
-        server ();
-        bool operator ==  ( const server& s ) const;
-        bool operator !=  ( const server& s ) const;
-        friend std::ostream& operator << ( std::ostream& o, const server& s );
+	server ();
+	bool operator ==  ( const server& s ) const;
+	bool operator !=  ( const server& s ) const;
+	friend std::ostream& operator << ( std::ostream& o, const server& s );
 }; // class server
 
 using server_p   = std::shared_ptr<server>;

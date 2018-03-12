@@ -51,6 +51,10 @@
 namespace fgmp
 {
 
+
+/** @defgroup fglib The Multiplayer Library */
+/** @{ */
+
 /** A wrapper class around unix sockets
  *
  * Sockets are the uniform interface between the user process and the
@@ -123,6 +127,11 @@ private:
 	int   m_handle;
 	bool  m_is_stream;
 }; // class netsocket
+
+//////////////////////////////////////////////////////////////////////
+
+/** @} */
+
 //////////////////////////////////////////////////////////////////////
 
 } // namespace fgmp

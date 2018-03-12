@@ -37,7 +37,10 @@
 namespace fgmp
 {
 
-/** Implement everything necessary to become a daemon
+/** @ingroup fglib
+ *
+ * @brief Implement everything necessary to become a daemon
+ * @note  Only used on unixoid plattforms
  */
 class daemon
 {

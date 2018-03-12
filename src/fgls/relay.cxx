@@ -32,16 +32,15 @@ namespace fgmp
 server::server
 ()
 {
-        id              = ( size_t ) -1;
-        sender_type     = SENDER_TYPE::UNSET;
-        config_type     = CONFIG_TYPE::DYNAMIC;
-        //name  
-        //location
-        //admin
-        //version
-        last_seen       = 0;
-        registered_at   = time ( 0 );
-
+	id              = ( size_t ) -1;
+	sender_type     = SENDER_TYPE::UNSET;
+	config_type     = CONFIG_TYPE::DYNAMIC;
+	//name
+	//location
+	//admin
+	//version
+	last_seen       = 0;
+	registered_at   = time ( 0 );
 } // server::server()
 
 //////////////////////////////////////////////////////////////////////
@@ -49,12 +48,14 @@ server::server
 bool
 server::operator ==
 (
-        const server& s
+	const server& s
 ) const
 {
-        if ( ( addr == s.addr ) && ( name == s.name ) )
-                return true;
-        return false;
+	if ( ( addr == s.addr ) && ( name == s.name ) )
+	{
+		return true;
+	}
+	return false;
 } // server::operator ==
 
 //////////////////////////////////////////////////////////////////////
@@ -63,12 +64,14 @@ server::operator ==
 bool
 server::operator !=
 (
-        const server& s
+	const server& s
 ) const
 {
-        if ( ( addr == s.addr ) && ( name == s.name ) )
-                return false;
-        return true;
+	if ( ( addr == s.addr ) && ( name == s.name ) )
+	{
+		return false;
+	}
+	return true;
 } // server::operator !=
 
 //////////////////////////////////////////////////////////////////////

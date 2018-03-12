@@ -39,7 +39,7 @@
 namespace fgmp
 {
 
-/**
+/**@ingroup fglib
  * @brief Provide a logging class for fgms
  *
  * The purpose is to have logging priorities and only really log messages

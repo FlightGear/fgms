@@ -34,7 +34,7 @@ pilot::pilot
 ()
 {
 	name		= "";
-	join_time	= time (0);
+	join_time	= time ( 0 );
 	last_seen	= join_time;
 	passwd		= "";
 	model_name	= "";
@@ -56,7 +56,7 @@ pilot::pilot
 )
 {
 	this->name	= name;
-	join_time	= time (0);
+	join_time	= time ( 0 );
 	last_seen	= 0;
 	passwd		= "";
 	model_name 	= "";
@@ -78,7 +78,7 @@ pilot::pilot
 	const pilot& p
 )
 {
-	this->assign (p);
+	this->assign ( p );
 }
 //////////////////////////////////////////////////////////////////////
 
@@ -89,7 +89,7 @@ pilot::operator =
 	const pilot& p
 )
 {
-	this->assign (p);
+	this->assign ( p );
 }
 //////////////////////////////////////////////////////////////////////
 
@@ -100,8 +100,10 @@ pilot::operator ==
 	const pilot& p
 )
 {
-	if ((address == p.address) && (name == p.name))
+	if ( ( address == p.address ) && ( name == p.name ) )
+	{
 		return true;
+	}
 	return false;
 }
 //////////////////////////////////////////////////////////////////////
@@ -116,7 +118,7 @@ pilot::assign
 	//
 	// using str.c_str() here to prevent copy-on-write in std::string!
 	//
-	list_item::assign (p);
+	list_item::assign ( p );
 	origin		= p.origin.c_str();
 	passwd		= p.passwd.c_str();
 	model_name	= p.model_name.c_str();

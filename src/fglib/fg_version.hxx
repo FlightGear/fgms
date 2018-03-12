@@ -30,7 +30,7 @@
 namespace fgmp
 {
 
-/**
+/**@ingroup fglib
  * A class to manage the version of a program/library
  */
 class version
