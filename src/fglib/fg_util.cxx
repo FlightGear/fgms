@@ -9,6 +9,7 @@
 #include <sstream>
 #include <iomanip>
 #include <string.h>
+#include <time.h>
 #include "fg_util.hxx"
 
 namespace fgmp
@@ -26,8 +27,7 @@ timestamp_to_datestr
 	time_t date
 )
 {
-	struct tm* tmr
-		localtime ( &date )
+	struct tm* tmr { localtime ( &date ) };
 	std::stringstream s;
 	s << std::setfill ( '0' ) << std::setw ( 2 )
 	  << tmr->tm_mday << "."

@@ -333,17 +333,13 @@ fgms::init
 	logger.set_flags ( fglog::flags::WITH_DATE );
 	LOG ( prio::EMIT, "# FlightGear Multiplayer Server v"
 	      << m_version.str() << " started" );
-	if ( m_initialized == false )
+	if ( m_listening )
 	{
-		if ( m_listening )
-		{
-			shutdown ();
-		}
-		m_initialized     = true;
-		m_listening       = false;
-		m_data_channel    = 0;
-		m_num_max_clients = 0;
+		shutdown ();
 	}
+	m_listening       = false;
+	m_data_channel    = 0;
+	m_num_max_clients = 0;
 	if ( ! init_data_channel () )
 	{
 		return false;
@@ -1998,7 +1994,7 @@ fgms::set_msglogfile
 	const std::string& name
 )
 {
-	m_msglog_filename = name;
+	m_tracker_logname = name;
 } // fgms::set_msglogfile ()
 //////////////////////////////////////////////////////////////////////
 
@@ -2027,12 +2023,12 @@ fgms::tracker_log
 	}
 	if ( ! m_tracker_log.is_open() )
 	{
-		m_tracker_log.open ( m_msglog_filename, std::ios::out|std::ios::app );;
+		m_tracker_log.open ( m_tracker_logname, std::ios::out|std::ios::app );;
 		if ( ! m_tracker_log.is_open() )
 		{
 			LOG ( prio::EMIT,
 			      "ERROR: Failed to OPEN/append "
-			      << m_msglog_filename << " file !" )
+			      << m_tracker_logname << " file !" )
 			return;
 		}
 	}
@@ -2064,10 +2060,6 @@ void
 fgms::shutdown
 ()
 {
-	if ( m_initialized == false )
-	{
-		return;
-	}
 	if ( ! m_is_parent )
 	{
 		return;
@@ -2107,7 +2099,6 @@ fgms::shutdown
 	m_black_list.clear ();
 	m_relay_map.clear ();   // clear(): is a std::map (NOT a fglist)
 	m_listening = false;
-	m_initialized = false;
 } // fgms::shutdown ()
 //////////////////////////////////////////////////////////////////////
 

@@ -138,7 +138,6 @@ protected:
 	//  private variables
 	//
 	//////////////////////////////////////////////////
-	bool		m_initialized		= false;
 	bool		m_reinit_data		= true;
 	bool		m_reinit_query		= true;
 	bool		m_reinit_admin		= true;
@@ -166,7 +165,7 @@ protected:
 	std::string	m_exit_filename		= "fgms_exit";
 	std::string	m_reset_filename	= "fgms_reset";
 	std::string	m_stats_filename	= "fgms_stats";
-	std::string	m_msglog_filename	= "message.log";
+	std::string	m_tracker_logname	= "tracker.log";
 	std::string	m_bind_addr		= "";
 	std::string	m_FQDN			= "local";
 	std::string	m_hostname		= "fgms";
