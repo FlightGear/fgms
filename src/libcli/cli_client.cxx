@@ -58,6 +58,8 @@ namespace libcli
 /** Construct a client connection.
  *
  * @param fd 0 for stdin/stdout. >0 for socket connections.
+ *        If using a socket, the socket must be fully initialised
+ *        and ready for use.
  */
 cli_client::cli_client
 (
@@ -117,19 +119,19 @@ cli_client::~cli_client
 	if ( m_read_fd == fileno ( stdin ) )
 	{
 		// restore terminal attributes
-	#ifndef _MSC_VER
+		#ifndef _MSC_VER
 		( void ) tcsetattr ( fileno ( stdin ), TCSANOW, &OldModes );
-	#endif
+		#endif
 		std::cout << std::endl;
 	}
 	else
 	{
 		// close socket
-	#if defined(UL_CYGWIN) || !defined (UL_WIN32)
+		#if defined(UL_CYGWIN) || !defined (UL_WIN32)
 		::close ( m_read_fd );
-	#else
+		#else
 		::closesocket ( m_read_fd );
-	#endif
+		#endif
 	}
 } // cli_client::~cli_client ()
 
@@ -150,9 +152,7 @@ cli_client::wait_for_input
 {
 	#ifdef _MSC_VER
 	if ( m_read_fd == fileno ( stdin ) )
-	{
 		return wait_for_key ( seconds * 1000 );
-	}
 	#endif
 	struct timeval tv ;
 	tv.tv_sec = seconds;
@@ -161,15 +161,19 @@ cli_client::wait_for_input
 	FD_ZERO ( &r );
 	FD_SET ( m_read_fd, &r );
 	if ( seconds == 0 )
-	{
 		return select ( m_read_fd+1, &r, 0, 0, 0 );
-	}
 	return select ( m_read_fd+1, &r, 0, 0, &tv );
 } // cli_client::wait_for_input ()
 
 //////////////////////////////////////////////////////////////////////
 
 /**
+ * Present a 'more' prompt to the user. Leaves three options for the
+ * user:
+ * - press 'q' to immediatly quit the output and return to the prompt
+ * - press SPACE to show the next page of output.
+ * - press RETURN to scroll up one line and show the next line.
+ *
  * @return true if user pressed 'q'
  * @return false on any other key
  */
@@ -211,6 +215,9 @@ cli_client::pager
 //////////////////////////////////////////////////////////////////////
 
 /**
+ * Check if the pager is active. If active present the pager
+ * and return its result.
+ *
  * @return true if user pressed 'q'
  * @return false on any other key
  */
@@ -221,13 +228,9 @@ cli_client::check_pager
 )
 {
 	if ( out.m_max_screen_lines == 0 ) // pager not active
-	{
 		return false;
-	}
 	if ( out.m_lines_out > out.m_max_screen_lines )
-	{
 		return pager ( out );
-	}
 	return false;
 } // cli_client::check_pager ()
 
@@ -250,9 +253,7 @@ cli_client::apply_filters
 	{
 		print = ( *f ) ( out.m_output.str() );
 		if ( ! print )
-		{
 			break;
-		}
 	}
 	if ( print )
 	{
@@ -262,9 +263,7 @@ cli_client::apply_filters
 	out.m_output.str ( "" );
 	out.m_print_mode = PRINT_MODE::FILTERED;
 	if ( check_pager ( out ) )
-	{
 		throw pager_wants_quit ();
-	}
 	return out;
 } // cli_client& cli_client::apply_filters()
 
@@ -290,13 +289,9 @@ cli_client::endl
 {
 	out.m_output << "\r\n";
 	if ( out.m_print_mode == PRINT_MODE::FILTERED )
-	{
 		apply_filters ( out );
-	}
 	else
-	{
 		flush ( out );
-	}
 	return out;
 } // endl()
 

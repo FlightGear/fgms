@@ -38,10 +38,8 @@
 #endif
 #include <fglib/fg_log.hxx>
 #include <fglib/fg_util.hxx>
-#include <fglib/fg_config.hxx>
 #include "fgls_cli.hxx"
 #include "fgls.hxx"
-
 
 #ifndef _MSC_VER
 /** @brief An instance of daemon */
@@ -93,64 +91,46 @@ fgls::init
 	// enable logging
 	//
 	if ( m_logfile_name != "" )
-	{
 		open_logfile ();
-	}
 	logger.priority ( m_debug_level );
 	logger.set_flags ( fglog::flags::WITH_DATE );
-#ifndef _MSC_VER
-	if ( m_run_as_daemon )
-	{
-		Myself.daemonize ();
-	}
-#endif
+	LOG ( prio::EMIT, "# FlightGear List Server v"
+		<< m_version.str() << " started" );
 	//
 	// enable data channel
 	//
 	if ( ! init_data_channel () )
-	{
 		return false;
-	}
 	//
 	// enable query channel
 	//
 	if ( ! init_query_channel () )
-	{
 		return false;
-	}
 	//
 	// enable admin channel
 	//
 	if ( ! init_admin_channel () )
-	{
 		return false;
-	}
 	if ( m_data_channel == nullptr )
 	{
 		LOG ( prio::EMIT, "fgls::loop() - "
 		      << "not listening on any socket!" );
 		return false;
 	}
-	if ( ( m_admin_user == "" ) || ( m_admin_pass == "" ) )
-	{
-		if ( m_admin_channel )
-		{
-			m_admin_channel->close ();
-			delete m_admin_channel;
-			m_admin_channel = 0;
-			LOG ( prio::EMIT,
-			      "# Admin port disabled, "
-			      "please set user and password"
-			    );
-		}
-	}
-	if ( ! m_run_as_daemon && m_admin_cli )
+	if ( ! m_run_as_daemon && m_cli_enabled )
 	{
 		// Run admin cli in foreground reading from stdin
 		using namespace std::placeholders;
 		std::thread th { std::bind ( &fgls::handle_admin, this, _1 ), 0 };
 		th.detach ();
 	}
+#ifndef _MSC_VER
+	if ( m_run_as_daemon )
+	{
+		m_myself.daemonize ();
+		LOG ( prio::URGENT, "# My PID is " << m_myself.get_pid() );
+	}
+#endif
 	return true;
 } // fgls::init ()
 
@@ -188,13 +168,9 @@ fgls::loop
 		}
 #endif
 		if ( bytes < 0 )
-		{
 			continue;        // some error
-		}
 		else if ( bytes == 0 )
-		{
 			continue;
-		}
 		if ( listener[0] > 0 )
 		{
 			// something on the data channel
@@ -243,13 +219,9 @@ fgls::init_data_channel
 ()
 {
 	if ( ! m_reinit_data )
-	{
 		return true;
-	}
 	if ( m_data_channel != nullptr )
-	{
 		delete m_data_channel;
-	}
 	m_data_channel = new netsocket ();
 	try
 	{
@@ -278,19 +250,13 @@ fgls::init_query_channel
 ()
 {
 	if ( ! m_reinit_query )
-	{
 		return true;
-	}
 	if ( m_query_channel != nullptr )
-	{
 		delete m_query_channel;
-	}
 	m_query_channel = nullptr;
 	m_reinit_query = false;
 	if ( m_query_port == 0 )
-	{
 		return true;        // query channel disabled
-	}
 	m_query_channel = new netsocket ();
 	try
 	{
@@ -315,25 +281,19 @@ bool
 fgls::init_admin_channel
 ()
 {
-	if ( ! m_reinit_admin )
-	{
+	if ( ! m_reinit_cli )
 		return true;
-	}
 	if ( m_admin_channel != nullptr )
-	{
 		delete m_admin_channel;
-	}
 	m_admin_channel = nullptr;
-	m_reinit_admin = false;
-	if  ( ( m_admin_port == 0 ) || ( m_admin_cli == false ) )
-	{
+	m_reinit_cli = false;
+	if  ( ( m_cli_port == 0 ) || ( m_cli_enabled == false ) )
 		return true;        // admin channel disabled
-	}
 	m_admin_channel = new netsocket ();
 	try
 	{
 		m_admin_channel->listen_to ( m_bind_addr,
-					     m_admin_port, netsocket::TCP );
+					     m_cli_port, netsocket::TCP );
 	}
 	catch ( std::runtime_error& e )
 	{
@@ -359,7 +319,7 @@ fgls::set_bind_addr
 	m_bind_addr = addr;
 	m_reinit_data = true;
 	m_reinit_query = true;
-	m_reinit_admin = true;
+	m_reinit_cli = true;
 	init_data_channel ();
 	init_query_channel ();
 	init_admin_channel ();
@@ -372,13 +332,9 @@ fgls::open_logfile
 ()
 {
 	if ( m_reinit_log == false )
-	{
 		return;        // nothing to do
-	}
 	if ( m_logfile_name == "" )
-	{
 		return;
-	}
 	LOG ( prio::EMIT, "# using logfile '" << m_logfile_name << "'" );
 	if ( ! logger.open ( m_logfile_name ) )
 	{
@@ -396,9 +352,7 @@ fgls::shutdown
 ()
 {
 	if ( ! m_is_parent )
-	{
 		return;
-	}
 	LOG ( prio::URGENT, "fgls::Shutdown() - exiting" );
 	logger.close ();
 	if ( m_data_channel != nullptr )
@@ -437,9 +391,7 @@ fgls::process_config
 )
 {
 	if ( m_have_config )    // we already have a config, so ignore
-	{
 		return true;
-	}
 	LOG ( prio::EMIT, "processing " << config_name );
 	using namespace libcli;
 	RESULT r;
@@ -488,45 +440,38 @@ fgls::read_configs
 ()
 {
 	std::string Path;
-#ifndef _MSC_VER
+	const char* config_name = "fgls.conf";
+	#ifndef _MSC_VER
 	// try /etc/fgms.conf (or whatever SYSCONFDIR is)
 	Path  = SYSCONFDIR;
-	Path += "/fgls.conf";
+	Path += "/";
+	Path += config_name;
 	if ( process_config ( Path ) == true )
-	{
 		return true;
-	}
 	// failed, try to find config in home dir
 	Path = getenv ( "HOME" );
-#else
+	#else
 	// windows version
 	char* cp = getenv ( "HOME" );
 	if ( cp )
-	{
 		Path = cp;
-	}
 	else
 	{
 		cp = getenv ( "USERPROFILE" );
 		if ( cp )
-		{
 			Path = cp;
-		}
 	}
-#endif
+	#endif
 	if ( Path != "" )
 	{
-		Path += "/fgls.conf";
+		Path += "/";
+		Path += config_name;
 		if ( process_config ( Path ) == true )
-		{
 			return true;
-		}
 	}
 	// failed, try current directory
-	if ( process_config ( "fgls.conf" ) == true )
-	{
+	if ( process_config ( config_name ) == true )
 		return true;
-	}
 	LOG ( prio::EMIT,
 	      "Could not find a config file => using defaults" );
 	return true;
@@ -560,21 +505,21 @@ fgls::print_help
 {
 	print_version ();
 	std::cout <<
-		  "syntax: " << m_argv[0] << " [options]\n"
-		  "\n"
-		  "options are:\n"
-		  "-h          print this help screen\n"
-		  "-p PORT     listen port for data\n"
-		  "-a PORT     listen port for admin cli\n"
-		  "-t PORT     listen port for telnet queries\n"
-		  "-l LOGFILE  log to LOGFILE\n"
-		  "-L LEVEL    verbosity of log in range 0 (few) to 3 (much)\n"
-		  "            5 to disable\n"
-		  "-d          do not run in backgound (overwrite config file)\n"
-		  "-D          do run in backgound (overwrite config file)\n"
-		  "            default is: run in background\n"
-		  "-v          print version and exit\n"
-		  "\n";
+	  "syntax: " << m_argv[0] << " [options]\n"
+	  "\n"
+	  "options are:\n"
+	  "-h          print this help screen\n"
+	  "-p PORT     listen port for data\n"
+	  "-a PORT     listen port for admin cli\n"
+	  "-t PORT     listen port for telnet queries\n"
+	  "-l LOGFILE  log to LOGFILE\n"
+	  "-L LEVEL    verbosity of log in range 0 (few) to 3 (much)\n"
+	  "            5 to disable\n"
+	  "-d          do not run in backgound (overwrite config file)\n"
+	  "-D          do run in backgound (overwrite config file)\n"
+	  "            default is: run in background\n"
+	  "-v          print version and exit\n"
+	  "\n";
 } // fgls::print_help()
 
 //////////////////////////////////////////////////////////////////////
@@ -607,16 +552,16 @@ fgls::parse_params
 			if ( e != 0 )
 			{
 				std::cerr << "invalid value for query port "
-					  "'" << optarg << "' " << e  << std::endl;
+				  "'" << optarg << "' " << e  << std::endl;
 				exit ( 1 );
 			}
 			break;
 		case 'a':
-			m_admin_port = str_to_num<uint16_t> ( optarg, e );
+			m_cli_port = str_to_num<uint16_t> ( optarg, e );
 			if ( e )
 			{
 				std::cerr << "invalid value for admin port "
-					  "'" << optarg << "'" << std::endl;
+				  "'" << optarg << "'" << std::endl;
 				exit ( 1 );
 			}
 			break;
@@ -628,7 +573,7 @@ fgls::parse_params
 			if ( e )
 			{
 				std::cerr << "invalid value for query port "
-					  "'" << optarg << "'" << std::endl;
+				  "'" << optarg << "'" << std::endl;
 				exit ( 1 );
 			}
 			break;
@@ -640,7 +585,7 @@ fgls::parse_params
 			if ( e )
 			{
 				std::cerr << "invalid value for LEVEL "
-					  "'" << optarg << "'" << std::endl;
+				  "'" << optarg << "'" << std::endl;
 				exit ( 1 );
 			}
 			break;

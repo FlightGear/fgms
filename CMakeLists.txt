@@ -238,8 +238,6 @@ set ( Libfgmp_SRCS
         src/fglib/netpacket.cxx
         src/fglib/netsocket.hxx
         src/fglib/netsocket.cxx
-        src/fglib/fg_config.hxx 
-        src/fglib/fg_config.cxx 
         src/fglib/fg_geometry.hxx
         src/fglib/fg_geometry.cxx
         src/fglib/fg_version.hxx

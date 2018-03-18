@@ -29,15 +29,20 @@
 namespace libcli
 {
 
-/// new configure modes
-namespace CLI_MODE
-{
-enum
-{
-	CONFIG_FGMS = CLI_MODE::EXTENSION
-};
-}
-
+	/// new configure modes
+	namespace CLI_MODE
+	{
+		enum
+		{
+			CONFIG_FGMS = CLI_MODE::EXTENSION,
+			CONFIG_CLI,
+			CONFIG_TRACKER,
+			CONFIG_WHITELIST,
+			CONFIG_BLACKLIST,
+			CONFIG_CROSSFEED,
+			CONFIG_RELAY
+		};
+	}
 }
 
 namespace fgmp
@@ -67,6 +72,7 @@ fgcli::setup
 {
 	using namespace libcli;
 	command* c;
+	command* c2;
 	//////////////////////////////////////////////////
 	// general setup
 	//////////////////////////////////////////////////
@@ -82,14 +88,6 @@ fgcli::setup
 	//////////////////////////////////////////////////
 	// setup authentication (if required)
 	//////////////////////////////////////////////////
-	if ( m_fgms->m_admin_user != "" )
-	{
-		allow_user ( m_fgms->m_admin_user, m_fgms->m_admin_pass, PRIVLEVEL::PRIVILEGED );
-	}
-	if ( m_fgms->m_admin_enable != "" )
-	{
-		set_enable_password ( m_fgms->m_admin_enable );
-	}
 	using namespace std::placeholders;
 	#define _ptr(X) (std::bind (& X, this, _1, _2, _3))
 	//////////////////////////////////////////////////
@@ -104,104 +102,13 @@ fgcli::setup
 		"show system information"
 	);
 	register_command ( c );
-	//////////////////////////////////////////////////
-	// show sub commands
-	//////////////////////////////////////////////////
-	// // 'show daemon'
+	// 'show users'
 	register_command ( new command (
-		"daemon",
-		_ptr ( fgcli::show_daemon ),
+		"users",
+		_ptr ( fgcli::show_pilots ),
 		libcli::PRIVLEVEL::UNPRIVILEGED,
 		libcli::CLI_MODE::ANY,
-		"Show if running as a daemon"
-	), c );
-	// 'show bind_addr'
-	register_command ( new command (
-		"bind_addr",
-		_ptr ( fgcli::show_bind_addr ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show bind address"
-	), c );
-	// 'show admin_user'
-	register_command ( new command (
-		"admin_user",
-		_ptr ( fgcli::show_admin_user ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show admin user"
-	), c );
-	// 'show admin_pass'
-	register_command ( new command (
-		"admin_pass",
-		_ptr ( fgcli::show_admin_pass ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show admin password"
-	), c );
-	// 'show enable_pass'
-	register_command ( new command (
-		"enable_pass",
-		_ptr ( fgcli::show_admin_enable ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show enable password"
-	), c );
-	// 'show data_port'
-	register_command ( new command (
-		"data_port",
-		_ptr ( fgcli::show_data_port ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show data port"
-	), c );
-	// 'show query_port'
-	register_command ( new command (
-		"query_port",
-		_ptr ( fgcli::show_query_port ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show query port"
-	), c );
-	// 'show admin_port'
-	register_command ( new command (
-		"admin_port",
-		_ptr ( fgcli::show_admin_port ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show admin port"
-	), c );
-	// 'show admin_cli'
-	register_command ( new command (
-		"admin_cli",
-		_ptr ( fgcli::show_admin_cli ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show admin cli"
-	), c );
-	// 'show logfile'
-	register_command ( new command (
-		"logfile",
-		_ptr ( fgcli::show_logfile_name ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show logfile name"
-	), c );
-	// 'show debug'
-	register_command ( new command (
-		"debug",
-		_ptr ( fgcli::show_debug_level ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show debug level"
-	), c );
-	// 'show hostname'
-	register_command ( new command (
-		"hostname",
-		_ptr ( fgcli::show_debug_level ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show server name"
+		"Show list of pilots"
 	), c );
 	// 'show settings'
 	register_command ( new command (
@@ -210,54 +117,6 @@ fgcli::setup
 		libcli::PRIVLEVEL::UNPRIVILEGED,
 		libcli::CLI_MODE::ANY,
 		"Show general settings"
-	), c );
-	// 'show version'
-	register_command ( new command (
-		"version",
-		_ptr ( fgcli::show_version ),
-		libcli::PRIVLEVEL::UNPRIVILEGED,
-		libcli::CLI_MODE::ANY,
-		"Show running version information"
-	), c );
-	// 'show uptime'
-	register_command ( new command (
-		"uptime",
-		_ptr ( fgcli::show_uptime ),
-		libcli::PRIVLEVEL::UNPRIVILEGED,
-		libcli::CLI_MODE::ANY,
-		"Show uptime information"
-	), c );
-	// 'show player_expires'
-	register_command ( new command (
-		"player_expires",
-		_ptr ( fgcli::show_player_expires ),
-		libcli::PRIVLEVEL::UNPRIVILEGED,
-		libcli::CLI_MODE::ANY,
-		"Show grace time of pilots before they expire"
-	), c );
-	// 'show max_radar_range'
-	register_command ( new command (
-		"max_radar_range",
-		_ptr ( fgcli::show_max_radar_range ),
-		libcli::PRIVLEVEL::UNPRIVILEGED,
-		libcli::CLI_MODE::ANY,
-		"Show maximum radar range"
-	), c );
-	// 'show fqdn'
-	register_command ( new command (
-		"fqdn",
-		_ptr ( fgcli::show_fqdn ),
-		libcli::PRIVLEVEL::UNPRIVILEGED,
-		libcli::CLI_MODE::ANY,
-		"Show the fully qualified domain name"
-	), c );
-	// 'show out_of_reach'
-	register_command ( new command (
-		"out_of_reach",
-		_ptr ( fgcli::show_out_of_reach ),
-		libcli::PRIVLEVEL::UNPRIVILEGED,
-		libcli::CLI_MODE::ANY,
-		"Show out of reach"
 	), c );
 	// 'show log'
 	register_command ( new command (
@@ -315,22 +174,149 @@ fgcli::setup
 		libcli::CLI_MODE::ANY,
 		"Show status of tracker"
 	), c );
-	// 'show pilots'
+
+	//////////////////////////////////////////////////
+	// 'show fgms' command
+	//////////////////////////////////////////////////
+	// 'show fgms'
+	c2 = new command (
+		"fgms",
+		libcli::PRIVLEVEL::UNPRIVILEGED,
+		libcli::CLI_MODE::EXEC,
+		"show fgms information"
+	);
+	register_command ( c2, c );
+	// 'show fgms daemon'
 	register_command ( new command (
-		"pilots",
-		_ptr ( fgcli::show_pilots ),
+		"daemon",
+		_ptr ( fgcli::show_daemon ),
 		libcli::PRIVLEVEL::UNPRIVILEGED,
 		libcli::CLI_MODE::ANY,
-		"Show list of pilots"
-	), c );
-	// 'show users'
+		"Show if running as a daemon"
+	), c2 );
+	// 'show fgms bind_addr'
+	register_command ( new command (
+		"bind_addr",
+		_ptr ( fgcli::show_bind_addr ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show bind address"
+	), c2 );
+	// 'show fgms data_port'
+	register_command ( new command (
+		"data_port",
+		_ptr ( fgcli::show_data_port ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show data port"
+	), c2 );
+	// 'show fgms query_port'
+	register_command ( new command (
+		"query_port",
+		_ptr ( fgcli::show_query_port ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show query port"
+	), c2 );
+	// 'show fgms logfile'
+	register_command ( new command (
+		"logfile",
+		_ptr ( fgcli::show_logfile_name ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show logfile name"
+	), c2 );
+	// 'show fgms debug'
+	register_command ( new command (
+		"debug",
+		_ptr ( fgcli::show_debug_level ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show debug level"
+	), c2 );
+	// 'show fgms hostname'
+	register_command ( new command (
+		"hostname",
+		_ptr ( fgcli::show_debug_level ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show server name"
+	), c2 );
+	// 'show fgms version'
+	register_command ( new command (
+		"version",
+		_ptr ( fgcli::show_version ),
+		libcli::PRIVLEVEL::UNPRIVILEGED,
+		libcli::CLI_MODE::ANY,
+		"Show running version information"
+	), c2 );
+	// 'show fgms uptime'
+	register_command ( new command (
+		"uptime",
+		_ptr ( fgcli::show_uptime ),
+		libcli::PRIVLEVEL::UNPRIVILEGED,
+		libcli::CLI_MODE::ANY,
+		"Show uptime information"
+	), c2 );
+	// 'show fgms player_expires'
+	register_command ( new command (
+		"player_expires",
+		_ptr ( fgcli::show_player_expires ),
+		libcli::PRIVLEVEL::UNPRIVILEGED,
+		libcli::CLI_MODE::ANY,
+		"Show grace time of pilots before they expire"
+	), c2 );
+	// 'show fgms max_radar_range'
+	register_command ( new command (
+		"max_radar_range",
+		_ptr ( fgcli::show_max_radar_range ),
+		libcli::PRIVLEVEL::UNPRIVILEGED,
+		libcli::CLI_MODE::ANY,
+		"Show maximum radar range"
+	), c2 );
+	// 'show fgms fqdn'
+	register_command ( new command (
+		"fqdn",
+		_ptr ( fgcli::show_fqdn ),
+		libcli::PRIVLEVEL::UNPRIVILEGED,
+		libcli::CLI_MODE::ANY,
+		"Show the fully qualified domain name"
+	), c2 );
+	// 'show fgms out_of_reach'
+	register_command ( new command (
+		"out_of_reach",
+		_ptr ( fgcli::show_out_of_reach ),
+		libcli::PRIVLEVEL::UNPRIVILEGED,
+		libcli::CLI_MODE::ANY,
+		"Show out of reach"
+	), c2 );
+
+	//////////////////////////////////////////////////
+	// 'show cli' command
+	//////////////////////////////////////////////////
+	// 'show cli'
+	c2 = new command (
+		"cli",
+		libcli::PRIVLEVEL::UNPRIVILEGED,
+		libcli::CLI_MODE::EXEC,
+		"show cli information"
+	);
+	register_command ( c2, c );
+	register_command ( new command (
+		"port",
+		_ptr ( fgcli::show_cli_port ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show admin port"
+	), c2 );
+	// 'show cli users'
 	register_command ( new command (
 		"users",
 		_ptr ( cli::internal_show_users ),
 		libcli::PRIVLEVEL::UNPRIVILEGED,
-		libcli::CLI_MODE::ANY,
+		CLI_MODE::ANY,
 		"Show list of allowed cli users"
-	), c );
+	), c2 );
 
 	//////////////////////////////////////////////////
 	//
@@ -355,20 +341,116 @@ fgcli::setup
 		_ptr ( fgcli::cfg_fgms ),
 		PRIVLEVEL::PRIVILEGED,
 		CLI_MODE::EXEC,
-		"configure fgms internal properties"
+		"configure fgms properties"
 	), c );
+	// 'configure cli' in EXEC mode
+	register_command ( new command (
+		"cli",
+		_ptr ( fgcli::cfg_cli ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::EXEC,
+		"configure cli properties"
+	), c );
+	// 'configure tracker' in EXEC mode
+	register_command ( new command (
+		"tracker",
+		_ptr ( fgcli::cfg_tracker ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::EXEC,
+		"configure tracker properties"
+	), c );
+	// 'configure whitelist' in EXEC mode
+	register_command ( new command (
+		"whitelist",
+		_ptr ( fgcli::cfg_whitelist ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::EXEC,
+		"configure whitelist"
+	), c );
+	// 'configure blacklist' in EXEC mode
+	register_command ( new command (
+		"blacklist",
+		_ptr ( fgcli::cfg_blacklist ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::EXEC,
+		"configure blacklist"
+	), c );
+	// 'configure crossfeed' in EXEC mode
+	register_command ( new command (
+		"crossfeed",
+		_ptr ( fgcli::cfg_crossfeed ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::EXEC,
+		"configure crossfeeds"
+	), c );
+	// 'configure relay' in EXEC mode
+	register_command ( new command (
+		"relay",
+		_ptr ( fgcli::cfg_relay ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::EXEC,
+		"configure relays"
+	), c );
+
 	//////////////////////////////////////////////////
 	// config commands in CONFIG mode
 	//////////////////////////////////////////////////
 	// 'fgms'
-	c = new command (
+	register_command ( new command (
 		"fgms",
 		_ptr ( fgcli::cfg_fgms ),
 		PRIVLEVEL::PRIVILEGED,
 		CLI_MODE::CONFIG,
-		"configure fgms internal properties"
-	);
-	register_command ( c );
+		"configure fgms properties"
+	) );
+	// 'cli'
+	register_command ( new command (
+		"cli",
+		_ptr ( fgcli::cfg_cli ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG,
+		"configure cli properties"
+	) );
+	// 'tracker'
+	register_command ( new command (
+		"tracker",
+		_ptr ( fgcli::cfg_tracker ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG,
+		"configure tracker properties"
+	) );
+	// 'whitelist'
+	register_command ( new command (
+		"whitelist",
+		_ptr ( fgcli::cfg_whitelist ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG,
+		"configure whitelist"
+	) );
+	// 'blacklist'
+	register_command ( new command (
+		"blacklist",
+		_ptr ( fgcli::cfg_blacklist ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG,
+		"configure blacklist"
+	) );
+	// 'crossfeed'
+	register_command ( new command (
+		"crossfeed",
+		_ptr ( fgcli::cfg_crossfeed ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG,
+		"configure crossfeeds"
+	) );
+	// 'relay'
+	register_command ( new command (
+		"relay",
+		_ptr ( fgcli::cfg_relay ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG,
+		"configure relays"
+	) );
 	// enable 'exit' command
 	register_command ( new command (
 		"exit",
@@ -385,145 +467,7 @@ fgcli::setup
 		libcli::CLI_MODE::CONFIG,
 		"return to previous mode"
 	) );
-	//////////////////////////////////////////////////
-	// 'fgms' subcommands
-	//////////////////////////////////////////////////
-	// 'fgms daemon'
-	register_command ( new command (
-		"daemon",
-		_ptr ( fgcli::cfg_daemon ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"en-/disable daemon mode (windows only)"
-	), c );
-	// 'fgms bind_addr'
-	register_command ( new command (
-		"bind_address",
-		_ptr ( fgcli::cfg_bind_addr ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Set bind address (only listen to this address)"
-	), c );
-	// 'fgms admin_user'
-	register_command ( new command (
-		"admin_user",
-		_ptr ( fgcli::cfg_admin_user ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Set admin user name"
-	), c );
-	// 'fgms admin_pass'
-	register_command ( new command (
-		"admin_pass",
-		_ptr ( fgcli::cfg_admin_pass ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Set admin password"
-	), c );
-	// 'fgms admin_enable'
-	register_command ( new command (
-		"admin_enable",
-		_ptr ( fgcli::cfg_admin_enable ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Set enable password"
-	), c );
-	// 'fgms data_port'
-	register_command ( new command (
-		"data_port",
-		_ptr ( fgcli::cfg_data_port ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Set data port"
-	), c );
-	// 'fgms query_port'
-	register_command ( new command (
-		"query_port",
-		_ptr ( fgcli::cfg_query_port ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Set query port"
-	), c );
-	// 'fgms admin_port'
-	register_command ( new command (
-		"admin_port",
-		_ptr ( fgcli::cfg_admin_port ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Set port of admin cli"
-	), c );
-	// 'fgms admin_cli'
-	register_command ( new command (
-		"admin_cli",
-		_ptr ( fgcli::cfg_admin_cli ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"en-/disable admin cli"
-	), c );
-	// 'fgms logfile'
-	register_command ( new command (
-		"logfile",
-		_ptr ( fgcli::cfg_logfile_name ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Set logfile name"
-	), c );
-	// 'fgms debug_level'
-	register_command ( new command (
-		"debug_level",
-		_ptr ( fgcli::cfg_debug_level ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Set debug level"
-	), c );
-	// 'fgms hostname'
-	register_command ( new command (
-		"hostname",
-		_ptr ( fgcli::cfg_hostname ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Set server name"
-	), c );
-	// 'fgms player_expires'
-	register_command ( new command (
-		"player_expires",
-		_ptr ( fgcli::cfg_player_expires ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Configure player expires"
-	), c );
-	// 'fgms max_radar_range'
-	register_command ( new command (
-		"max_radar_range",
-		_ptr ( fgcli::cfg_max_radar_range ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Configure max radar range"
-	), c );
-	// 'user NAME PASS PRIV'
-	register_command ( new command (
-		"user",
-		_ptr ( cli::internal_add_users ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Configure users"
-	) );
-	// 'fgms fqdn'
-	register_command ( new command (
-		"fqdn",
-		_ptr ( fgcli::cfg_fqdn ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Set FQDN"
-	), c );
-	// 'fgms out_of_reach'
-	register_command ( new command (
-		"out_of_reach",
-		_ptr ( fgcli::cfg_out_of_reach ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Configure out of reach"
-	), c );
+
 	//////////////////////////////////////////////////
 	// config commands in CONFIG_FGMS mode
 	//////////////////////////////////////////////////
@@ -542,27 +486,6 @@ fgcli::setup
 		"Set bind address (only listen to this address)"
 	) );
 	register_command ( new command (
-		"admin_user",
-		_ptr ( fgcli::cfg_admin_user ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGMS,
-		"Set admin user name"
-	) );
-	register_command ( new command (
-		"admin_pass",
-		_ptr ( fgcli::cfg_admin_pass ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGMS,
-		"Set admin password"
-	) );
-	register_command ( new command (
-		"admin_enable",
-		_ptr ( fgcli::cfg_admin_enable ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGMS,
-		"Set enable password"
-	) );
-	register_command ( new command (
 		"data_port",
 		_ptr ( fgcli::cfg_data_port ),
 		PRIVLEVEL::PRIVILEGED,
@@ -575,20 +498,6 @@ fgcli::setup
 		PRIVLEVEL::PRIVILEGED,
 		CLI_MODE::CONFIG_FGMS,
 		"Set query port"
-	) );
-	register_command ( new command (
-		"admin_port",
-		_ptr ( fgcli::cfg_admin_port ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGMS,
-		"Set port of admin cli"
-	) );
-	register_command ( new command (
-		"admin_cli",
-		_ptr ( fgcli::cfg_admin_cli ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGMS,
-		"en-/disable admin cli"
 	) );
 	register_command ( new command (
 		"logfile",
@@ -639,6 +548,13 @@ fgcli::setup
 		CLI_MODE::CONFIG_FGMS,
 		"Configure out of reach"
 	) );
+	register_command ( new command (
+		"hub_mode",
+		_ptr ( fgcli::cfg_hub_mode ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_FGMS,
+		"enable/disable hub mode"
+	) );
 	// enable 'exit' command
 	register_command ( new command (
 		"exit",
@@ -655,102 +571,297 @@ fgcli::setup
 		libcli::CLI_MODE::CONFIG_FGMS,
 		"return to previous mode"
 	) );
+
 	//////////////////////////////////////////////////
-	// modify blacklist
+	// config commands in CONFIG_CLI mode
 	//////////////////////////////////////////////////
+	// 'enable true|false'
+	register_command ( new command (
+		"enable",
+		_ptr ( fgcli::cfg_cli_enable ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_CLI,
+		"enable/disable admin cli"
+	) );
+	// 'port PORT'
+	register_command ( new command (
+		"port",
+		_ptr ( fgcli::cfg_cli_port ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_CLI,
+		"Set port of admin cli"
+	) );
+	// 'user NAME PASSWORD LEVEL'
+	register_command ( new command (
+		"user",
+		_ptr ( fgcli::internal_add_user ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_CLI,
+		"add cli users"
+	) );
+	// 'delete user NAME'
 	c = new command (
-		"blacklist",
-		libcli::PRIVLEVEL::PRIVILEGED,
-		libcli::CLI_MODE::CONFIG,
-		"show/modify blacklist"
+		"delete",
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_CLI,
+		"Enter configuration mode"
 	);
 	register_command ( c );
 	register_command ( new command (
-		"delete",
-		_ptr ( fgcli::cmd_blacklist_delete ),
-		libcli::PRIVLEVEL::PRIVILEGED,
-		libcli::CLI_MODE::CONFIG,
-		"delete entries in the blacklist"
+		"user",
+		_ptr ( fgcli::internal_del_user ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_CLI,
+		"delete cli users"
 	), c );
+	// enable 'exit' command
+	register_command ( new command (
+		"exit",
+		_ptr ( cli::internal_exit ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_CLI,
+		"return to EXEC mode"
+	) );
+	// enable 'exit' command
+	register_command ( new command (
+		"end",
+		_ptr ( cli::internal_end ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_CLI,
+		"return to previous mode"
+	) );
+
+	//////////////////////////////////////////////////
+	// config commands in CONFIG_TRACKER mode
+	//////////////////////////////////////////////////
+	register_command ( new command (
+		"enabled",
+		_ptr ( fgcli::cfg_tracker_enable ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_TRACKER,
+		"enable tracker"
+	) );
+	register_command ( new command (
+		"logfile",
+		_ptr ( fgcli::cfg_tracker_log ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_TRACKER,
+		"set tracker logfile"
+	) );
+	register_command ( new command (
+		"server",
+		_ptr ( fgcli::cfg_tracker_server ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_TRACKER,
+		"set tracking server"
+	) );
+	register_command ( new command (
+		"port",
+		_ptr ( fgcli::cfg_tracker_port ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_TRACKER,
+		"set port for tracking server"
+	) );
+	register_command ( new command (
+		"frequence",
+		_ptr ( fgcli::cfg_tracker_freq ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_TRACKER,
+		"set frequence for tracker updates"
+	) );
+	// enable 'exit' command
+	register_command ( new command (
+		"exit",
+		_ptr ( cli::internal_exit ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_TRACKER,
+		"return to EXEC mode"
+	) );
+	// enable 'exit' command
+	register_command ( new command (
+		"end",
+		_ptr ( cli::internal_end ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_TRACKER,
+		"return to previous mode"
+	) );
+
+	//////////////////////////////////////////////////
+	// modify blacklist
+	//////////////////////////////////////////////////
+	// 'add TTL IP REASON'
 	register_command ( new command (
 		"add",
 		_ptr ( fgcli::cmd_blacklist_add ),
 		libcli::PRIVLEVEL::PRIVILEGED,
-		libcli::CLI_MODE::CONFIG,
+		libcli::CLI_MODE::CONFIG_BLACKLIST,
 		"Add entries to the blacklist"
+	) );
+	// 'delete ID|IP'
+	register_command ( new command (
+		"delete",
+		_ptr ( fgcli::cmd_blacklist_delete ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_BLACKLIST,
+		"delete entries in the blacklist"
+	) );
+	// 'show'
+	register_command ( new command (
+		"show",
+		_ptr ( fgcli::show_blacklist ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_BLACKLIST,
+		"Show entries in the blacklist"
 	), c );
+	// enable 'exit' command
+	register_command ( new command (
+		"exit",
+		_ptr ( cli::internal_exit ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_BLACKLIST,
+		"return to EXEC mode"
+	) );
+	// enable 'exit' command
+	register_command ( new command (
+		"end",
+		_ptr ( cli::internal_end ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_BLACKLIST,
+		"return to previous mode"
+	) );
+
 	//////////////////////////////////////////////////
 	// modify crossfeeds
 	//////////////////////////////////////////////////
-	c = new command (
-		"crossfeed",
-		libcli::PRIVLEVEL::PRIVILEGED,
-		libcli::CLI_MODE::CONFIG,
-		"modify crossfeeds"
-	);
-	register_command ( c );
-	register_command ( new command (
-		"delete",
-		_ptr ( fgcli::cmd_crossfeed_delete ),
-		libcli::PRIVLEVEL::PRIVILEGED,
-		libcli::CLI_MODE::CONFIG,
-		"delete crossfeeds"
-	), c );
+	// 'add IP PORT NAME'
 	register_command ( new command (
 		"add",
 		_ptr ( fgcli::cmd_crossfeed_add ),
 		libcli::PRIVLEVEL::PRIVILEGED,
-		libcli::CLI_MODE::CONFIG,
+		libcli::CLI_MODE::CONFIG_CROSSFEED,
 		"Add crossfeeds"
+	) );
+	// 'delete ID|IP'
+	register_command ( new command (
+		"delete",
+		_ptr ( fgcli::cmd_crossfeed_delete ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_CROSSFEED,
+		"delete crossfeeds"
+	) );
+	// 'show'
+	register_command ( new command (
+		"show",
+		_ptr ( fgcli::show_crossfeed ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_CROSSFEED,
+		"Show configured crossfeeds"
 	), c );
+	// enable 'exit' command
+	register_command ( new command (
+		"exit",
+		_ptr ( cli::internal_exit ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_CROSSFEED,
+		"return to EXEC mode"
+	) );
+	// enable 'exit' command
+	register_command ( new command (
+		"end",
+		_ptr ( cli::internal_end ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_CROSSFEED,
+		"return to previous mode"
+	) );
+
 	//////////////////////////////////////////////////
 	// modify relays
 	//////////////////////////////////////////////////
-	c = new command (
-		"relay",
-		libcli::PRIVLEVEL::PRIVILEGED,
-		libcli::CLI_MODE::CONFIG,
-		"modify relays"
-	);
-	register_command ( c );
-	register_command ( new command (
-		"delete",
-		_ptr ( fgcli::cmd_relay_delete ),
-		libcli::PRIVLEVEL::PRIVILEGED,
-		libcli::CLI_MODE::CONFIG,
-		"delete relay"
-	), c );
+	// 'add IP PORT NAME'
 	register_command ( new command (
 		"add",
 		_ptr ( fgcli::cmd_relay_add ),
 		libcli::PRIVLEVEL::PRIVILEGED,
-		libcli::CLI_MODE::CONFIG,
+		libcli::CLI_MODE::CONFIG_RELAY,
 		"Add relay"
+	) );
+	// 'delete ID|IP'
+	register_command ( new command (
+		"delete",
+		_ptr ( fgcli::cmd_relay_delete ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_RELAY,
+		"delete relay"
+	) );
+	// 'show'
+	register_command ( new command (
+		"show",
+		_ptr ( fgcli::show_relay ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_RELAY,
+		"Show list of relays"
 	), c );
+	// enable 'exit' command
+	register_command ( new command (
+		"exit",
+		_ptr ( cli::internal_exit ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_RELAY,
+		"return to EXEC mode"
+	) );
+	// enable 'exit' command
+	register_command ( new command (
+		"end",
+		_ptr ( cli::internal_end ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_RELAY,
+		"return to previous mode"
+	) );
+
 	//////////////////////////////////////////////////
 	// modify whitelist
 	//////////////////////////////////////////////////
-	c = new command (
-		"whitelist",
-		libcli::PRIVLEVEL::PRIVILEGED,
-		libcli::CLI_MODE::CONFIG,
-		"modify whitelist"
-	);
-	register_command ( c );
-	register_command ( new command (
-		"delete",
-		_ptr ( fgcli::cmd_whitelist_delete ),
-		libcli::PRIVLEVEL::PRIVILEGED,
-		libcli::CLI_MODE::CONFIG,
-		"delete whitelist entry"
-	), c );
+	// 'add TTL IP REASON'
 	register_command ( new command (
 		"add",
 		_ptr ( fgcli::cmd_whitelist_add ),
 		libcli::PRIVLEVEL::PRIVILEGED,
-		libcli::CLI_MODE::CONFIG,
+		libcli::CLI_MODE::CONFIG_WHITELIST,
 		"Add entries to the whitelist"
+	) );
+	// 'delete ID|IP'
+	register_command ( new command (
+		"delete",
+		_ptr ( fgcli::cmd_whitelist_delete ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_WHITELIST,
+		"delete whitelist entry"
+	) );
+	// 'show'
+	register_command ( new command (
+		"show",
+		_ptr ( fgcli::show_whitelist ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_WHITELIST,
+		"Show entries in the whitelist"
 	), c );
+	// enable 'exit' command
+	register_command ( new command (
+		"exit",
+		_ptr ( cli::internal_exit ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_WHITELIST,
+		"return to EXEC mode"
+	) );
+	// enable 'exit' command
+	register_command ( new command (
+		"end",
+		_ptr ( cli::internal_end ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_WHITELIST,
+		"return to previous mode"
+	) );
+
 	//////////////////////////////////////////////////
 	//
 	// general commands
@@ -779,9 +890,7 @@ fgcli::show_daemon
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_client << libcli::align_left ( 22 )
 		 << "I am daemon" << ": " << m_fgms->m_run_as_daemon
 		 << libcli::cli_client::endl;
@@ -800,86 +909,17 @@ fgcli::show_bind_addr
 {
 	libcli::RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	std::string bind_addr;
 	if ( m_fgms->m_bind_addr == "" )
-	{
 		bind_addr = "*";
-	}
 	else
-	{
 		bind_addr = m_fgms->m_bind_addr;
-	}
 	m_client << libcli::align_left ( 22 )
 		 << "bind address"<< ": " << bind_addr
 		 << libcli::cli_client::endl;
 	return RESULT::OK;
 } // fgcli::show_bind_addr ()
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
-fgcli::show_admin_user
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	libcli::RESULT r = no_more_args ( args, first_arg );
-	if ( r != RESULT::OK )
-	{
-		return r;
-	}
-	m_client << libcli::align_left ( 22 )
-		 << "admin user" << ": " << m_fgms->m_admin_user
-		 << libcli::cli_client::endl;
-	return RESULT::OK;
-} // fgcli::show_admin_user ()
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
-fgcli::show_admin_pass
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	libcli::RESULT r = no_more_args ( args, first_arg );
-	if ( r != RESULT::OK )
-	{
-		return r;
-	}
-	m_client << libcli::align_left ( 22 )
-		 << "admin pass" << ": " << m_fgms->m_admin_pass
-		 << libcli::cli_client::endl;
-	return RESULT::OK;
-} // fgcli::show_admin_pass ()
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
-fgcli::show_admin_enable
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	libcli::RESULT r = no_more_args ( args, first_arg );
-	if ( r != RESULT::OK )
-	{
-		return r;
-	}
-	m_client << libcli::align_left ( 22 )
-		 << "admin enable" << ": " << m_fgms->m_admin_enable
-		 << libcli::cli_client::endl;
-	return RESULT::OK;
-} // fgcli::show_admin_enable
 
 //////////////////////////////////////////////////////////////////////
 
@@ -893,9 +933,7 @@ fgcli::show_data_port
 {
 	libcli::RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_client << libcli::align_left ( 22 )
 		 << "data port" << ": " << m_fgms->m_data_port
 		 << libcli::cli_client::endl;
@@ -914,9 +952,7 @@ fgcli::show_query_port
 {
 	libcli::RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_client << libcli::align_left ( 22 )
 		 << "query port" << ": " << m_fgms->m_query_port
 		 << libcli::cli_client::endl;
@@ -926,7 +962,7 @@ fgcli::show_query_port
 //////////////////////////////////////////////////////////////////////
 
 libcli::RESULT
-fgcli::show_admin_port
+fgcli::show_cli_port
 (
 	const std::string& command,
 	const strvec& args,
@@ -935,35 +971,12 @@ fgcli::show_admin_port
 {
 	libcli::RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_client << libcli::align_left ( 22 )
-		 << "admin port" << ": " << m_fgms->m_admin_port
+		 << "cli port" << ": " << m_fgms->m_cli_port
 		 << libcli::cli_client::endl;
 	return RESULT::OK;
-} // fgcli::show_admin_port ()
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
-fgcli::show_admin_cli
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	libcli::RESULT r = no_more_args ( args, first_arg );
-	if ( r != RESULT::OK )
-	{
-		return r;
-	}
-	m_client << libcli::align_left ( 22 )
-		 << "admin cli" << ": " << m_fgms->m_admin_cli
-		 << libcli::cli_client::endl;
-	return RESULT::OK;
-} // fgcli::show_admin_cli ()
+} // fgcli::show_cli_port ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -977,9 +990,7 @@ fgcli::show_logfile_name
 {
 	libcli::RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_client << libcli::align_left ( 22 )
 		 << "logfile name" << ": " << m_fgms->m_logfile_name
 		 << libcli::cli_client::endl;
@@ -998,9 +1009,7 @@ fgcli::show_debug_level
 {
 	libcli::RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_client << libcli::align_left ( 22 )
 		 << "debug level" << ": " << ( int ) m_fgms->m_debug_level
 		 << libcli::cli_client::endl;
@@ -1019,9 +1028,7 @@ fgcli::show_hostname
 {
 	libcli::RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_client << libcli::align_left ( 22 )
 		 << "server name" << ": " << m_fgms->m_hostname
 		 << libcli::cli_client::endl;
@@ -1043,9 +1050,7 @@ fgcli::show_stats
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	time_t   difftime;
 	time_t   now;
 	uint64_t accumulated_sent        = 0;
@@ -1074,24 +1079,24 @@ fgcli::show_stats
 		 << m_fgms->m_cross_list.pkts_sent << " packets"
 		 << " (" << m_fgms->m_cross_list.pkts_sent / difftime << "/s)"
 		 << " / " << byte_counter ( m_fgms->m_cross_list.bytes_sent )
-		 << " (" << byte_counter (
-			 ( double ) m_fgms->m_cross_list.bytes_sent / difftime ) << "/s)"
+		 << " (" << byte_counter ( ( double )
+		   m_fgms->m_cross_list.bytes_sent / difftime ) << "/s)"
 		 << libcli::cli_client::endl;
 	m_client << libcli::align_left ( 22 )
 		 << "to relays:"
 		 << m_fgms->m_relay_list.pkts_sent << " packets"
 		 << " (" << m_fgms->m_relay_list.pkts_sent / difftime << "/s)"
 		 << " / " << byte_counter ( m_fgms->m_relay_list.bytes_sent )
-		 << " (" << byte_counter (
-			 ( double ) m_fgms->m_relay_list.bytes_sent / difftime ) << "/s)"
+		 << " (" << byte_counter ( ( double )
+		   m_fgms->m_relay_list.bytes_sent / difftime ) << "/s)"
 		 << libcli::cli_client::endl;
 	m_client << libcli::align_left ( 22 )
 		 << "to users:"
 		 << m_fgms->m_player_list.pkts_sent << " packets"
 		 << " (" << m_fgms->m_player_list.pkts_sent / difftime << "/s)"
 		 << " / " << byte_counter ( m_fgms->m_player_list.bytes_sent )
-		 << " (" << byte_counter (
-			 ( double ) m_fgms->m_player_list.bytes_sent / difftime ) << "/s)"
+		 << " (" << byte_counter ( ( double )
+		   m_fgms->m_player_list.bytes_sent / difftime ) << "/s)"
 		 << libcli::cli_client::endl;
 	m_client << "Receive counters:" << libcli::cli_client::endl;
 	m_client << libcli::align_left ( 22 )
@@ -1126,37 +1131,36 @@ fgcli::show_stats
 		telnet_per_second = ( float ) m_fgms->m_queries_received /
 				    ( time ( 0 ) - m_fgms->m_uptime );
 	else
-	{
 		telnet_per_second = 0;
-	}
 	m_client << libcli::align_left ( 22 )
 		 << "telnet connections: "
 		 << m_fgms->m_queries_received
-		 << " (" << std::setprecision ( 2 ) << telnet_per_second << " t/s)"
+		 << " (" << std::setprecision ( 2 )
+		 << telnet_per_second << " t/s)"
 		 << libcli::cli_client::endl;
 	m_client << libcli::align_left ( 22 )
 		 << "blacklist:"
 		 << m_fgms->m_black_list.pkts_rcvd << " packets"
 		 << " (" << m_fgms->m_black_list.pkts_rcvd / difftime << "/s)"
 		 << " / " << byte_counter ( m_fgms->m_black_list.bytes_rcvd )
-		 << " (" << byte_counter (
-			 ( double ) m_fgms->m_black_list.bytes_rcvd / difftime ) << "/s)"
+		 << " (" << byte_counter ( ( double )
+		   m_fgms->m_black_list.bytes_rcvd / difftime ) << "/s)"
 		 << libcli::cli_client::endl;
 	m_client << libcli::align_left ( 22 )
 		 << "relays:"
 		 << m_fgms->m_relay_list.pkts_rcvd << " packets"
 		 << " (" << m_fgms->m_relay_list.pkts_rcvd / difftime << "/s)"
 		 << " / " << byte_counter ( m_fgms->m_relay_list.bytes_rcvd )
-		 << " (" << byte_counter (
-			 ( double ) m_fgms->m_relay_list.bytes_rcvd / difftime ) << "/s)"
+		 << " (" << byte_counter ( ( double )
+		   m_fgms->m_relay_list.bytes_rcvd / difftime ) << "/s)"
 		 << libcli::cli_client::endl;
 	m_client << libcli::align_left ( 22 )
 		 << "users:"
 		 << m_fgms->m_player_list.pkts_rcvd << " packets"
 		 << " (" << m_fgms->m_player_list.pkts_rcvd / difftime << "/s)"
 		 << " / " << byte_counter ( m_fgms->m_player_list.bytes_rcvd )
-		 << " (" << byte_counter (
-			 ( double ) m_fgms->m_player_list.bytes_rcvd / difftime ) << "/s)"
+		 << " (" << byte_counter ( ( double )
+		   m_fgms->m_player_list.bytes_rcvd / difftime ) << "/s)"
 		 << libcli::cli_client::endl;
 	accumulated_sent        += m_fgms->m_cross_list.bytes_sent;
 	accumulated_sent_pkts   += m_fgms->m_cross_list.pkts_sent;
@@ -1205,22 +1209,16 @@ fgcli::show_settings
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	strvec noargs;
 	m_client << libcli::cli_client::endl;
 	show_version        ( "", noargs, 0 );
 	m_client << libcli::cli_client::endl;
 	m_client << "current settings:" << libcli::cli_client::endl;
 	show_bind_addr      ( "", noargs, 0 );
-	show_admin_user     ( "", noargs, 0 );
-	show_admin_pass     ( "", noargs, 0 );
-	show_admin_enable   ( "", noargs, 0 );
 	show_data_port      ( "", noargs, 0 );
 	show_query_port     ( "", noargs, 0 );
-	show_admin_port     ( "", noargs, 0 );
-	show_admin_cli      ( "", noargs, 0 );
+	show_cli_port       ( "", noargs, 0 );
 	show_logfile_name   ( "", noargs, 0 );
 	show_debug_level    ( "", noargs, 0 );
 	show_player_expires ( "", noargs, 0 );
@@ -1246,9 +1244,7 @@ fgcli::show_uptime
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_client << "UP since " << timestamp_to_datestr ( m_fgms->m_uptime )
 		 << "(" << timestamp_to_days ( m_fgms->m_uptime ) << ")"
 		 << libcli::cli_client::endl;
@@ -1270,9 +1266,7 @@ fgcli::show_player_expires
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_client << libcli::align_left ( 22 )
 		 << "player expires" << ": "
 		 << m_fgms->m_player_expires
@@ -1295,9 +1289,7 @@ fgcli::show_max_radar_range
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_client << libcli::align_left ( 22 )
 		 << "radar range" << ": "
 		 << m_fgms->m_max_radar_range
@@ -1320,9 +1312,7 @@ fgcli::show_out_of_reach
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_client << libcli::align_left ( 22 )
 		 << "out of reach" << ": "
 		 << m_fgms->m_out_of_reach
@@ -1345,9 +1335,7 @@ fgcli::show_fqdn
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_client << libcli::align_left ( 22 )
 		 << "fqdn" << ": "
 		 << m_fgms->m_FQDN
@@ -1370,9 +1358,7 @@ fgcli::show_log
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	fgmp::str_list*  buf = logger.logbuf();
 	fgmp::str_it     it;
 	buf->lock ();
@@ -1380,9 +1366,7 @@ fgcli::show_log
 	try
 	{
 		for ( it = buf->begin(); it != buf->end(); it++ )
-		{
 			m_client << *it << libcli::cli_client::endl;
-		}
 	}
 	catch ( libcli::pager_wants_quit )
 	{
@@ -1408,18 +1392,12 @@ fgcli::show_version
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	std::string s;
-	if ( m_fgms->m_me_is_hub )
-	{
+	if ( m_fgms->m_hub_mode )
 		s = "HUB";
-	}
 	else
-	{
 		s = "LEAVE";
-	}
 	m_client << "This is " << m_fgms->m_hostname
 		 << " (" << m_fgms->m_FQDN << ")"
 		 << libcli::cli_client::endl;
@@ -1428,13 +1406,13 @@ fgcli::show_version
 	m_client << "using protocol version v"
 		 << m_fgms->m_proto_major_version << "."
 		 << m_fgms->m_proto_minor_version << libcli::cli_client::endl;
-	if ( m_fgms->m_is_tracked )
+	if ( m_fgms->m_tracker_enabled )
 		m_client << "This server is tracked: "
-			 << m_fgms->m_tracker->get_server () << libcli::cli_client::endl;
+			<< m_fgms->m_tracker->get_server ()
+			<< libcli::cli_client::endl;
 	else
-	{
-		m_client << "This server is NOT tracked" << libcli::cli_client::endl;
-	}
+		m_client << "This server is NOT tracked"
+			<< libcli::cli_client::endl;
 	show_uptime ( command, args, first_arg );
 	return RESULT::OK;
 } // fgcli::show_version ()
@@ -1463,9 +1441,7 @@ fgcli::show_whitelist
 	bool   brief { false };
 	fgmp::netaddr address;
 	if ( num_args > 1 )
-	{
 		return no_more_args ( args, first_arg + 1 );
-	}
 	if ( num_args == 1 )
 	{
 		if ( wants_help ( args[first_arg] ) )
@@ -1478,21 +1454,17 @@ fgcli::show_whitelist
 			return RESULT::OK;
 		}
 		if ( compare ( args[first_arg], "brief", m_compare_case ) )
-		{
 			brief = true;
-		}
 		else
 		{
 			int id_invalid { -1 };
-			id  = str_to_num<size_t> ( args[first_arg], id_invalid );
+			id  = str_to_num<size_t>( args[first_arg], id_invalid );
 			if ( id_invalid )
 			{
 				id = 0;
 				address.assign ( args[first_arg] );
 				if ( ! address.is_valid() )
-				{
 					return RESULT::INVALID_ARG;
-				}
 			}
 		}
 	}
@@ -1504,7 +1476,8 @@ fgcli::show_whitelist
 	time_t  now;
 	now = time ( 0 );
 	difftime = now - m_fgms->m_uptime;
-	m_client << m_fgms->m_white_list.name << ":" << libcli::cli_client::endl;
+	m_client << m_fgms->m_white_list.name << ":" <<
+		libcli::cli_client::endl;
 	m_client << libcli::cli_client::endl;
 	for ( size_t i = 0; i < Count; i++ )
 	{
@@ -1513,16 +1486,12 @@ fgcli::show_whitelist
 		if ( address.is_valid() )
 		{
 			if ( Entry.address != address )
-			{
 				continue;
-			}
 		}
 		else if ( id )
 		{
 			if ( Entry.id != id )
-			{
 				continue;
-			}
 		}
 		EntriesFound++;
 		m_client << "id " << Entry.id << ": "
@@ -1552,9 +1521,10 @@ fgcli::show_whitelist
 			 << m_fgms->m_white_list.pkts_rcvd << " packets"
 			 << " (" << m_fgms->m_white_list.pkts_rcvd / difftime
 			 << "/s)"
-			 << " / " << byte_counter ( m_fgms->m_white_list.bytes_rcvd )
-			 << " (" << byte_counter (
-				 ( double ) ( m_fgms->m_white_list.bytes_rcvd/difftime ) )
+			 << " / "
+			 << byte_counter ( m_fgms->m_white_list.bytes_rcvd )
+			 << " (" << byte_counter ( ( double )
+			   ( m_fgms->m_white_list.bytes_rcvd/difftime ) )
 			 << "/s)"
 			 << libcli::cli_client::endl;
 	}
@@ -1587,9 +1557,7 @@ fgcli::show_blacklist
 	size_t EntriesFound = 0;
 	size_t id = 0;
 	if ( num_args > 1 )
-	{
 		return no_more_args ( args, first_arg + 1 );
-	}
 	if ( num_args == 1 )
 	{
 		if ( wants_help ( args[first_arg] ) )
@@ -1602,9 +1570,7 @@ fgcli::show_blacklist
 			return RESULT::OK;
 		}
 		else if ( compare ( args[first_arg], "brief", m_compare_case ) )
-		{
 			brief = true;
-		}
 		else
 		{
 			int e;
@@ -1614,9 +1580,7 @@ fgcli::show_blacklist
 				id = 0;
 				address.assign ( args[first_arg] );
 				if ( ! address.is_valid() )
-				{
 					return RESULT::INVALID_ARG;
-				}
 			}
 		}
 	}
@@ -1637,30 +1601,22 @@ fgcli::show_blacklist
 		{
 			// only list matching entries
 			if ( Entry.address != address )
-			{
 				continue;
-			}
 		}
 		else if ( id )
 		{
 			if ( Entry.id != id )
-			{
 				continue;
-			}
 		}
 		EntriesFound++;
 		m_client << "id " << Entry.id << ": "
 			 << Entry.address.to_string() << " : " << Entry.name
 			 << libcli::cli_client::endl;
 		if ( brief == true )
-		{
 			continue;
-		}
 		std::string expire = "NEVER";
 		if ( Entry.timeout != 0 )
-		{
 			expire = num_to_str ( Entry.timeout, 0 ) + " seconds";
-		}
 		m_client << "  entered      : "
 			 << timestamp_to_datestr ( Entry.join_time )
 			 << libcli::cli_client::endl;
@@ -1678,9 +1634,7 @@ fgcli::show_blacklist
 			 << libcli::cli_client::endl;
 	}
 	if ( EntriesFound )
-	{
 		m_client << libcli::cli_client::endl;
-	}
 	m_client << EntriesFound << " entries found"
 		 << libcli::cli_client::endl;
 	if ( EntriesFound )
@@ -1690,8 +1644,8 @@ fgcli::show_blacklist
 			 << " (" << m_fgms->m_black_list.pkts_rcvd / difftime
 			 << "/s) / "
 			 << byte_counter ( m_fgms->m_black_list.bytes_rcvd )
-			 << " (" << byte_counter (
-				 ( double ) ( m_fgms->m_black_list.bytes_rcvd/difftime ) )
+			 << " (" << byte_counter ( ( double )
+			   ( m_fgms->m_black_list.bytes_rcvd/difftime ) )
 			 << "/s)"
 			 << libcli::cli_client::endl;
 	}
@@ -1723,9 +1677,7 @@ fgcli::show_crossfeed
 	fgmp::netaddr   address;
 	bool            brief = false;
 	if ( num_args > 1 )
-	{
 		return no_more_args ( args, first_arg + 1 );
-	}
 	if ( num_args == 1 )
 	{
 		if ( wants_help ( args[first_arg] ) )
@@ -1738,9 +1690,7 @@ fgcli::show_crossfeed
 			return RESULT::OK;
 		}
 		else if ( compare ( args[first_arg], "brief", m_compare_case ) )
-		{
 			brief = true;
-		}
 		else
 		{
 			int id_invalid = -1;
@@ -1750,9 +1700,7 @@ fgcli::show_crossfeed
 				id = 0;
 				address.assign ( args[first_arg] );
 				if ( ! address.is_valid() )
-				{
 					return RESULT::INVALID_ARG;
-				}
 			}
 		}
 	}
@@ -1773,16 +1721,12 @@ fgcli::show_crossfeed
 		{
 			// only list matching entries
 			if ( Entry.address != address )
-			{
 				continue;
-			}
 		}
 		else if ( id )
 		{
 			if ( Entry.id != id )
-			{
 				continue;
-			}
 		}
 		EntriesFound++;
 		m_client << "id " << Entry.id << ": "
@@ -1791,9 +1735,7 @@ fgcli::show_crossfeed
 			 << " : " << Entry.name
 			 << libcli::cli_client::endl;
 		if ( brief == true )
-		{
 			continue;
-		}
 		m_client << "  entered      : "
 			 << timestamp_to_datestr ( Entry.join_time )
 			 << libcli::cli_client::endl;
@@ -1806,14 +1748,12 @@ fgcli::show_crossfeed
 			 << libcli::cli_client::endl;
 		m_client << "  sent bytes   : "
 			 << byte_counter ( Entry.bytes_sent )
-			 << "(" << byte_counter (
-				 ( double ) Entry.bytes_sent / difftime ) << "/s)"
+			 << "(" << byte_counter ( ( double )
+			   Entry.bytes_sent / difftime ) << "/s)"
 			 << libcli::cli_client::endl;
 	}
 	if ( EntriesFound )
-	{
 		m_client << libcli::cli_client::endl;
-	}
 	m_client << EntriesFound << " entries found"
 		 << libcli::cli_client::endl;
 	if ( EntriesFound )
@@ -1823,8 +1763,8 @@ fgcli::show_crossfeed
 			 << "(" << m_fgms->m_cross_list.pkts_sent / difftime
 			 << "/s) / "
 			 << byte_counter ( m_fgms->m_cross_list.bytes_sent )
-			 << "(" << byte_counter (
-				 ( double ) ( m_fgms->m_cross_list.bytes_sent/difftime ) )
+			 << "(" << byte_counter ( ( double )
+			   ( m_fgms->m_cross_list.bytes_sent/difftime ) )
 			 << "/s)"
 			 << libcli::cli_client::endl;
 	}
@@ -1857,9 +1797,7 @@ fgcli::show_relay
 	bool            brief = false;
 	std::string     name;
 	if ( num_args > 1 )
-	{
 		return no_more_args ( args, first_arg + 1 );
-	}
 	if ( num_args == 1 )
 	{
 		if ( wants_help ( args[first_arg] ) )
@@ -1873,9 +1811,7 @@ fgcli::show_relay
 			return RESULT::OK;
 		}
 		else if ( compare ( args[first_arg], "brief", m_compare_case ) )
-		{
 			brief = true;
-		}
 		else
 		{
 			int id_invalid = -1;
@@ -1885,9 +1821,7 @@ fgcli::show_relay
 				id = 0;
 				address.assign ( args[first_arg] );
 				if ( ! address.is_valid() )
-				{
 					name = args[first_arg];
-				}
 			}
 		}
 	}
@@ -1908,23 +1842,17 @@ fgcli::show_relay
 		{
 			// only list matching entries
 			if ( Entry.address != address )
-			{
 				continue;
-			}
 		}
 		else if ( id )
 		{
 			if ( Entry.id != id )
-			{
 				continue;
-			}
 		}
 		else if ( name != "" )
 		{
 			if ( Entry.name.find ( name ) == std::string::npos )
-			{
 				continue;
-			}
 		}
 		EntriesFound++;
 		m_client << "id " << Entry.id
@@ -1933,9 +1861,7 @@ fgcli::show_relay
 			 << " : " << Entry.name
 			 << libcli::cli_client::endl;
 		if ( brief == true )
-		{
 			continue;
-		}
 		m_client << "  entered   : "
 			 << timestamp_to_datestr ( Entry.join_time )
 			 << libcli::cli_client::endl;
@@ -1946,38 +1872,36 @@ fgcli::show_relay
 			 << Entry.pkts_sent << " packets"
 			 << " (" << Entry.pkts_sent / difftime << "/s)"
 			 << " / " << byte_counter ( Entry.bytes_sent )
-			 << " (" << byte_counter (
-				 ( double ) Entry.bytes_sent / difftime ) << "/s)"
+			 << " (" << byte_counter ( ( double )
+			   Entry.bytes_sent / difftime ) << "/s)"
 			 << libcli::cli_client::endl;
 		m_client << "  rcvd      : "
 			 << Entry.pkts_rcvd << " packets"
 			 << " (" << Entry.pkts_rcvd / difftime << "/s)"
 			 << " / " << byte_counter ( Entry.bytes_rcvd )
-			 << " (" << byte_counter (
-				 ( double ) Entry.bytes_rcvd / difftime ) << "/s)"
+			 << " (" << byte_counter ( ( double )
+			   Entry.bytes_rcvd / difftime ) << "/s)"
 			 << libcli::cli_client::endl;
 	}
 	m_client << libcli::cli_client::endl;
 	m_client << EntriesFound << " entries found"
 		 << libcli::cli_client::endl;
 	if ( brief )
-	{
 		return RESULT::OK;
-	}
 	m_client << "Totals:" << libcli::cli_client::endl;
 	m_client << "  sent      : "
 		 << m_fgms->m_relay_list.pkts_sent << " packets"
 		 << " (" << m_fgms->m_relay_list.pkts_sent / difftime << "/s)"
 		 << " / " << byte_counter ( m_fgms->m_relay_list.bytes_sent )
-		 << " (" << byte_counter (
-			 ( double ) m_fgms->m_relay_list.bytes_sent / difftime ) << "/s)"
+		 << " (" << byte_counter ( ( double )
+		   m_fgms->m_relay_list.bytes_sent / difftime ) << "/s)"
 		 << libcli::cli_client::endl;
 	m_client << "  received  : "
 		 << m_fgms->m_relay_list.pkts_rcvd << " packets"
 		 << " (" << m_fgms->m_relay_list.pkts_rcvd / difftime << "/s)"
 		 << " / " << byte_counter ( m_fgms->m_relay_list.bytes_rcvd )
-		 << " (" << byte_counter (
-			 ( double ) m_fgms->m_relay_list.bytes_rcvd / difftime ) << "/s)"
+		 << " (" << byte_counter ( ( double )
+		   m_fgms->m_relay_list.bytes_rcvd / difftime ) << "/s)"
 		 << libcli::cli_client::endl;
 	return RESULT::OK;
 } // fgcli::show_relay ()
@@ -2001,12 +1925,11 @@ fgcli::show_tracker
 {
 	size_t num_args { args.size() - first_arg };
 	if ( num_args > 0 )
-	{
 		return no_more_args ( args, first_arg + 1 );
-	}
-	if ( ! m_fgms->m_is_tracked )
+	if ( ! m_fgms->m_tracker_enabled )
 	{
-		m_client << "This server is NOT tracked" << libcli::cli_client::endl;
+		m_client << "This server is NOT tracked"
+			<< libcli::cli_client::endl;
 		m_client << libcli::cli_client::endl;
 		return RESULT::OK;
 	}
@@ -2021,16 +1944,16 @@ fgcli::show_tracker
 	if ( m_fgms->m_tracker->is_connected () )
 	{
 		m_client << "state: connected since "
-			 << timestamp_to_datestr ( m_fgms->m_tracker->last_connected )
+			 << timestamp_to_datestr (
+			   m_fgms->m_tracker->last_connected )
 			 << " ("
-			 << timestamp_to_days ( m_fgms->m_tracker->last_connected )
+			 << timestamp_to_days (
+			   m_fgms->m_tracker->last_connected )
 			 << " ago)"
 			 << libcli::cli_client::endl;
 	}
 	else
-	{
 		m_client << "state: NOT connected!" << libcli::cli_client::endl;
-	}
 	std::string A = "NEVER";
 	if ( m_fgms->m_tracker->last_seen != 0 )
 	{
@@ -2043,22 +1966,25 @@ fgcli::show_tracker
 		B = timestamp_to_days ( m_fgms->m_tracker->last_sent );
 		B += " ago";
 	}
-	m_client << "last seen " << A << ", last sent " << B << libcli::cli_client::endl;
+	m_client << "last seen " << A
+		<< ", last sent " << B << libcli::cli_client::endl;
 	m_client << "I had " << m_fgms->m_tracker->lost_connections
 		 << " lost connections" << libcli::cli_client::endl;
 	m_client << libcli::cli_client::endl;
 	m_client << "Counters:" << libcli::cli_client::endl;
-	m_client << "  sent    : " << m_fgms->m_tracker->pkts_sent << " packets";
+	m_client << "  sent    : "
+		<< m_fgms->m_tracker->pkts_sent << " packets";
 	m_client << " (" << m_fgms->m_tracker->pkts_sent / difftime << "/s)";
 	m_client << " / " << byte_counter ( m_fgms->m_tracker->bytes_sent );
-	m_client << " (" << byte_counter (
-			 ( double ) m_fgms->m_tracker->bytes_sent / difftime ) << "/s)";
+	m_client << " (" << byte_counter ( ( double )
+	  m_fgms->m_tracker->bytes_sent / difftime ) << "/s)";
 	m_client << libcli::cli_client::endl;
-	m_client << "  received: " << m_fgms->m_tracker->pkts_rcvd << " packets";
+	m_client << "  received: "
+		<< m_fgms->m_tracker->pkts_rcvd << " packets";
 	m_client << " (" << m_fgms->m_tracker->pkts_rcvd / difftime << "/s)";
 	m_client << " / " << byte_counter ( m_fgms->m_tracker->bytes_rcvd );
-	m_client << " (" << byte_counter (
-			 ( double ) m_fgms->m_tracker->bytes_rcvd / difftime ) << "/s)";
+	m_client << " (" << byte_counter ( ( double )
+	  m_fgms->m_tracker->bytes_rcvd / difftime ) << "/s)";
 	m_client << libcli::cli_client::endl;
 	m_client << "  queue size: " << m_fgms->m_tracker->queue_size ()
 		 << " messages" << libcli::cli_client::endl;
@@ -2094,9 +2020,7 @@ fgcli::show_pilots
 	std::string     name;
 	bool            brief = false;
 	if ( num_args > 1 )
-	{
 		return no_more_args ( args, first_arg + 1 );
-	}
 	if ( num_args == 1 )
 	{
 		if ( wants_help ( args[first_arg] ) )
@@ -2112,9 +2036,7 @@ fgcli::show_pilots
 			return RESULT::OK;
 		}
 		else if ( compare ( args[first_arg], "brief", m_compare_case ) )
-		{
 			brief = true;
-		}
 		else
 		{
 			int e = -1;
@@ -2124,9 +2046,7 @@ fgcli::show_pilots
 				id = 0;
 				address.assign ( args[first_arg] );
 				if ( ! address.is_valid() )
-				{
 					name = args[first_arg];
-				}
 			}
 		}
 	}
@@ -2140,7 +2060,8 @@ fgcli::show_pilots
 	point3d PlayerPosGeod;
 	std::string  Origin;
 	std::string  Fullname;
-	m_client << m_fgms->m_player_list.name << ":" << libcli::cli_client::endl;
+	m_client << m_fgms->m_player_list.name << ":"
+		<< libcli::cli_client::endl;
 	m_client << libcli::cli_client::endl;
 	if ( name == "local" )
 	{
@@ -2161,55 +2082,39 @@ fgcli::show_pilots
 		{
 			// only list matching entries
 			if ( Player.address != address )
-			{
 				continue;
-			}
 		}
 		else if ( id )
 		{
 			if ( Player.id != id )
-			{
 				continue;
-			}
 		}
 		else if ( name != "" )
 		{
 			if ( Player.name.find ( name ) == std::string::npos )
-			{
 				continue;
-			}
 		}
 		else if ( OnlyLocal == true )
 		{
 			if ( Player.is_local == false )
-			{
 				continue;
-			}
 		}
 		else if ( OnlyRemote == true )
 		{
 			if ( Player.is_local == true )
-			{
 				continue;
-			}
 		}
 		cart_to_geod ( Player.last_pos, PlayerPosGeod );
 		if ( Player.is_local )
-		{
 			Origin = "LOCAL";
-		}
 		else
 		{
 			fgms::ip2relay_it Relay =
 				m_fgms->m_relay_map.find ( Player.address );
 			if ( Relay != m_fgms->m_relay_map.end() )
-			{
 				Origin = Relay->second;
-			}
 			else
-			{
 				Origin = Player.origin;
-			}
 		}
 		Fullname = Player.name + std::string ( "@" ) + Origin;
 		std::string ATC;
@@ -2246,9 +2151,7 @@ fgcli::show_pilots
 			 << libcli::cli_client::endl;
 		EntriesFound++;
 		if ( brief == true )
-		{
 			continue;
-		}
 		if ( Player.has_errors == true )
 		{
 			m_client << "         "
@@ -2272,11 +2175,13 @@ fgcli::show_pilots
 			 << " ago" << libcli::cli_client::endl;
 		m_client << "         "
 			 << libcli::align_left ( 15 )
-			 << "joined" << timestamp_to_datestr ( Player.join_time )
+			 << "joined" << timestamp_to_datestr (
+			   Player.join_time )
 			 << libcli::cli_client::endl;
 		m_client << "         "
 			 << libcli::align_left ( 15 )
-			 << "last seen" << timestamp_to_datestr ( Player.last_seen )
+			 << "last seen" << timestamp_to_datestr (
+			   Player.last_seen )
 			 << libcli::cli_client::endl;
 		m_client << "         "
 			 << libcli::align_left ( 15 )
@@ -2293,8 +2198,8 @@ fgcli::show_pilots
 				 << "sent" << Player.pkts_sent << " packets "
 				 << "(" << Player.pkts_sent / difftime << "/s)"
 				 << " / " << byte_counter ( Player.bytes_sent )
-				 << " (" << byte_counter (
-					 ( double ) Player.bytes_sent / difftime )
+				 << " (" << byte_counter ( ( double )
+				   Player.bytes_sent / difftime )
 				 << "/s)"
 				 << libcli::cli_client::endl;
 		}
@@ -2303,8 +2208,8 @@ fgcli::show_pilots
 			 << "rcvd" << Player.pkts_rcvd << " packets "
 			 << "(" << Player.pkts_rcvd / difftime << "/s)"
 			 << " / " << byte_counter ( Player.bytes_rcvd )
-			 << " (" << byte_counter (
-				 ( double ) Player.bytes_rcvd / difftime ) << "/s)"
+			 << " (" << byte_counter ( ( double )
+			   Player.bytes_rcvd / difftime ) << "/s)"
 			 << libcli::cli_client::endl;
 		m_client << "         "
 			 << libcli::align_left ( 15 )
@@ -2317,7 +2222,8 @@ fgcli::show_pilots
 	}
 	difftime = now - m_fgms->m_uptime;
 	m_client << libcli::cli_client::endl;
-	m_client << EntriesFound << " entries found" << libcli::cli_client::endl;
+	m_client << EntriesFound << " entries found"
+		<< libcli::cli_client::endl;
 	if ( ! brief )
 	{
 		m_client << "Totals:" << libcli::cli_client::endl;
@@ -2326,8 +2232,8 @@ fgcli::show_pilots
 			 << " (" << m_fgms->m_player_list.pkts_sent / difftime
 			 << "/s) / "
 			 << byte_counter ( m_fgms->m_player_list.bytes_sent )
-			 << " (" << byte_counter (
-				 ( double ) m_fgms->m_player_list.bytes_sent / difftime )
+			 << " (" << byte_counter ( ( double )
+			   m_fgms->m_player_list.bytes_sent / difftime )
 			 << "/s)"
 			 << libcli::cli_client::endl;
 		m_client << "          received: "
@@ -2335,8 +2241,8 @@ fgcli::show_pilots
 			 << " (" << m_fgms->m_player_list.pkts_rcvd / difftime
 			 << "/s) / "
 			 << byte_counter ( m_fgms->m_player_list.bytes_rcvd )
-			 << " (" << byte_counter (
-				 ( double ) m_fgms->m_player_list.bytes_rcvd / difftime )
+			 << " (" << byte_counter ( ( double )
+			   m_fgms->m_player_list.bytes_rcvd / difftime )
 			 << "/s)"
 			 << libcli::cli_client::endl;
 	}
@@ -2355,15 +2261,12 @@ fgcli::cfg_fgms
 {
 	RESULT r { no_more_args ( args, first_arg ) };
 	if ( RESULT::OK != r )
-	{
 		return r;
-	}
 	set_configmode ( libcli::CLI_MODE::CONFIG_FGMS, "fgms" );
 	return RESULT::OK;
 } // fgcli::cfg_fgms ()
 
 //////////////////////////////////////////////////////////////////////
-
 
 libcli::RESULT
 fgcli::cfg_daemon
@@ -2375,9 +2278,7 @@ fgcli::cfg_daemon
 {
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
-	{
 		return n;
-	}
 	std::pair <libcli::RESULT, bool> r { get_bool ( args[first_arg] ) };
 	if ( r.first == RESULT::OK )
 	{
@@ -2399,13 +2300,10 @@ fgcli::cfg_bind_addr
 {
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
-	{
 		return n;
-	}
 	if ( wants_help ( args[first_arg] ) )
 	{
-		show_help ( "IP",
-			    "only listen on IP" );
+		show_help ( "IP", "only listen on IP" );
 		return RESULT::ERROR_ANY;
 	}
 	fgmp::netaddr address;
@@ -2427,81 +2325,6 @@ fgcli::cfg_bind_addr
 //////////////////////////////////////////////////////////////////////
 
 libcli::RESULT
-fgcli::cfg_admin_user
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	RESULT n { need_n_args ( 1, args, first_arg ) };
-	if ( RESULT::OK != n )
-	{
-		return n;
-	}
-	if ( wants_help ( args[first_arg] ) )
-	{
-		show_help ( "USERNAME",
-			    "set admin username to USERNAME" );
-		return RESULT::ERROR_ANY;
-	}
-	m_fgms->m_admin_user = args[first_arg];
-	return RESULT::OK;
-} // fgcli::cfg_admin_user ()
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
-fgcli::cfg_admin_pass
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	RESULT n { need_n_args ( 1, args, first_arg ) };
-	if ( RESULT::OK != n )
-	{
-		return n;
-	}
-	if ( wants_help ( args[first_arg] ) )
-	{
-		show_help ( "PASSWORD",
-			    "set admin password to PASSWORD" );
-		return RESULT::ERROR_ANY;
-	}
-	m_fgms->m_admin_pass = args[first_arg];
-	return RESULT::OK;
-} // fgcli::cfg_admin_pass ()
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
-fgcli::cfg_admin_enable
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	RESULT n { need_n_args ( 1, args, first_arg ) };
-	if ( RESULT::OK != n )
-	{
-		return n;
-	}
-	if ( wants_help ( args[first_arg] ) )
-	{
-		show_help ( "PASSWORD",
-			    "set enable password to PASSWORD" );
-		return RESULT::ERROR_ANY;
-	}
-	m_fgms->m_admin_enable = args[first_arg];
-	return RESULT::OK;
-} // fgcli::cfg_admin_enable ()
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
 fgcli::cfg_data_port
 (
 	const std::string& command,
@@ -2511,25 +2334,18 @@ fgcli::cfg_data_port
 {
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
-	{
 		return n;
-	}
 	if ( wants_help ( args[first_arg] ) )
 	{
-		show_help ( "PORT",
-			    "set data port to PORT" );
+		show_help ( "PORT", "set data port to PORT" );
 		return RESULT::ERROR_ANY;
 	}
 	int e;
 	int p { str_to_num<uint16_t> ( args[first_arg], e ) };
 	if ( e )
-	{
 		return RESULT::INVALID_ARG;
-	}
 	if ( m_fgms->m_data_port == p )
-	{
 		return RESULT::OK;
-	}
 	m_fgms->m_data_port = p;
 	m_fgms->m_reinit_data = true;
 	m_fgms->init_data_channel ();
@@ -2548,25 +2364,18 @@ fgcli::cfg_query_port
 {
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
-	{
 		return n;
-	}
 	if ( wants_help ( args[first_arg] ) )
 	{
-		show_help ( "PORT",
-			    "set query port to PORT" );
+		show_help ( "PORT", "set query port to PORT" );
 		return RESULT::ERROR_ANY;
 	}
 	int e;
 	int p { str_to_num<uint16_t> ( args[first_arg], e ) };
 	if ( e )
-	{
 		return RESULT::INVALID_ARG;
-	}
 	if ( m_fgms->m_query_port == p )
-	{
 		return RESULT::OK;
-	}
 	m_fgms->m_query_port = p;
 	m_fgms->m_reinit_query = true;
 	m_fgms->init_query_channel ();
@@ -2576,7 +2385,24 @@ fgcli::cfg_query_port
 //////////////////////////////////////////////////////////////////////
 
 libcli::RESULT
-fgcli::cfg_admin_port
+fgcli::cfg_cli
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT r { no_more_args ( args, first_arg ) };
+	if ( RESULT::OK != r )
+		return r;
+	set_configmode ( libcli::CLI_MODE::CONFIG_CLI, "cli" );
+	return RESULT::OK;
+} // fgcli::cfg_cli ()
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::cfg_cli_enable
 (
 	const std::string& command,
 	const strvec& args,
@@ -2585,53 +2411,42 @@ fgcli::cfg_admin_port
 {
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
-	{
 		return n;
-	}
+	std::pair <libcli::RESULT, bool> r { get_bool ( args[first_arg] ) };
+	if ( r.first == RESULT::OK )
+		m_fgms->m_cli_enabled = r.second;
+	return r.first;
+} // fgcli::cfg_cli_enable
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::cfg_cli_port
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT n { need_n_args ( 1, args, first_arg ) };
+	if ( RESULT::OK != n )
+		return n;
 	if ( wants_help ( args[first_arg] ) )
 	{
-		show_help ( "PORT",
-			    "set admin port to PORT" );
+		show_help ( "PORT", "set cli port to PORT" );
 		return RESULT::ERROR_ANY;
 	}
 	int e;
 	int p { str_to_num<uint16_t> ( args[first_arg], e ) };
 	if ( e )
-	{
 		return RESULT::INVALID_ARG;
-	}
-	if ( m_fgms->m_admin_port == p )
-	{
+	if ( m_fgms->m_cli_port == p )
 		return RESULT::OK;
-	}
-	m_fgms->m_admin_port = p;
+	m_fgms->m_cli_port = p;
 	m_fgms->m_reinit_admin = true;
 	m_fgms->init_admin_channel ();
 	return RESULT::OK;
-} // fgcli::cfg_admin_port
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
-fgcli::cfg_admin_cli
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	RESULT n { need_n_args ( 1, args, first_arg ) };
-	if ( RESULT::OK != n )
-	{
-		return n;
-	}
-	std::pair <libcli::RESULT, bool> r { get_bool ( args[first_arg] ) };
-	if ( r.first == RESULT::OK )
-	{
-		m_fgms->m_admin_cli = r.second;
-	}
-	return r.first;
-} // fgcli::cfg_admin_cli ()
+} // fgcli::cfg_cli_port
 
 //////////////////////////////////////////////////////////////////////
 
@@ -2645,13 +2460,10 @@ fgcli::cfg_logfile_name
 {
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
-	{
 		return n;
-	}
 	if ( wants_help ( args[first_arg] ) )
 	{
-		show_help ( "NAME",
-			    "set logfile to NAME" );
+		show_help ( "NAME", "set logfile to NAME" );
 		return RESULT::ERROR_ANY;
 	}
 	m_fgms->m_reinit_log = true;
@@ -2672,21 +2484,16 @@ fgcli::cfg_debug_level
 {
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
-	{
 		return n;
-	}
 	if ( wants_help ( args[first_arg] ) )
 	{
-		show_help ( "LEVEL",
-			    "set debug level to LEVEL seconds" );
+		show_help ( "LEVEL", "set debug level to LEVEL seconds" );
 		return RESULT::ERROR_ANY;
 	}
 	int e;
 	int p { str_to_num<uint16_t> ( args[first_arg], e ) };
 	if ( e )
-	{
 		return RESULT::INVALID_ARG;
-	}
 	m_fgms->m_debug_level = fgmp::make_prio ( p );
 	logger.priority ( m_fgms->m_debug_level );
 	return RESULT::OK;
@@ -2704,9 +2511,7 @@ fgcli::cfg_hostname
 {
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
-	{
 		return n;
-	}
 	if ( wants_help ( args[first_arg] ) )
 	{
 		show_help ( "NAME", "set NAME as hostname" );
@@ -2729,9 +2534,7 @@ fgcli::cfg_fqdn
 {
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
-	{
 		return n;
-	}
 	if ( wants_help ( args[first_arg] ) )
 	{
 		show_help ( "NAME", "set NAME as hostname" );
@@ -2754,9 +2557,7 @@ fgcli::cfg_player_expires
 {
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
-	{
 		return n;
-	}
 	if ( wants_help ( args[first_arg] ) )
 	{
 		show_help ( "SECONDS", "set player_expires to SECONDS" );
@@ -2765,9 +2566,7 @@ fgcli::cfg_player_expires
 	int e;
 	int p { str_to_num<uint16_t> ( args[first_arg], e ) };
 	if ( e )
-	{
 		return RESULT::INVALID_ARG;
-	}
 	m_fgms->m_player_expires = p;
 	return RESULT::OK;
 } // fgcli::cfg_player_expires
@@ -2784,9 +2583,7 @@ fgcli::cfg_max_radar_range
 {
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
-	{
 		return n;
-	}
 	if ( wants_help ( args[first_arg] ) )
 	{
 		show_help ( "NM", "set max radar range to NM" );
@@ -2795,9 +2592,7 @@ fgcli::cfg_max_radar_range
 	int e;
 	int p { str_to_num<uint16_t> ( args[first_arg], e ) };
 	if ( e )
-	{
 		return RESULT::INVALID_ARG;
-	}
 	m_fgms->m_max_radar_range = p;
 	return RESULT::OK;
 } // fgcli::cfg_max_radar_range
@@ -2814,9 +2609,7 @@ fgcli::cfg_out_of_reach
 {
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
-	{
 		return n;
-	}
 	if ( wants_help ( args[first_arg] ) )
 	{
 		show_help ( "NM", "set out of reach to NM" );
@@ -2825,14 +2618,184 @@ fgcli::cfg_out_of_reach
 	int e;
 	int p { str_to_num<uint16_t> ( args[first_arg], e ) };
 	if ( e )
-	{
 		return RESULT::INVALID_ARG;
-	}
 	m_fgms->m_out_of_reach = p;
 	return RESULT::OK;
 } // fgcli::cfg_out_of_reach
 
 //////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::cfg_hub_mode
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT n { need_n_args ( 1, args, first_arg ) };
+	if ( RESULT::OK != n )
+		return n;
+	std::pair <libcli::RESULT, bool> r { get_bool ( args[first_arg] ) };
+	if ( r.first == RESULT::OK )
+		m_fgms->m_hub_mode = r.second;
+	return r.first;
+} // fgcli::cfg_hub_mode
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::cfg_tracker
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT r { no_more_args ( args, first_arg ) };
+	if ( RESULT::OK != r )
+		return r;
+	set_configmode ( libcli::CLI_MODE::CONFIG_TRACKER, "tracker" );
+	return RESULT::OK;
+} // fgcli::cfg_tracker ()
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::cfg_tracker_enable
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT n { need_n_args ( 1, args, first_arg ) };
+	if ( RESULT::OK != n )
+		return n;
+	std::pair <libcli::RESULT, bool> r { get_bool ( args[first_arg] ) };
+	if ( r.first == RESULT::OK )
+	{
+		m_fgms->m_tracker_enabled = r.second;
+		m_fgms->m_tracker_reinit = true;
+	}
+	return r.first;
+} // fgcli::cfg_tracker_enable ()
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::cfg_tracker_log
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT n { need_n_args ( 1, args, first_arg ) };
+	if ( RESULT::OK != n )
+		return n;
+	if ( wants_help ( args[first_arg] ) )
+	{
+		show_help ( "NAME", "tracker writes messages to NAME" );
+		return RESULT::ERROR_ANY;
+	}
+	m_fgms->m_tracker_logname = args[first_arg];
+	return RESULT::OK;
+} // fgcli::cfg_tracker_log
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::cfg_tracker_server
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT n { need_n_args ( 1, args, first_arg ) };
+	if ( RESULT::OK != n )
+		return n;
+	if ( wants_help ( args[first_arg] ) )
+	{
+		show_help ( "NAME|IP", "name or ip of the tracking server " );
+		return RESULT::ERROR_ANY;
+	}
+	m_fgms->m_tracker_server = args[first_arg];
+	m_fgms->m_tracker_reinit = true;
+	return RESULT::OK;
+} // fgcli::cfg_tracker_server
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::cfg_tracker_port
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT n { need_n_args ( 1, args, first_arg ) };
+	if ( RESULT::OK != n )
+		return n;
+	if ( wants_help ( args[first_arg] ) )
+	{
+		show_help ( "PORT", "PORT number of the tracking server" );
+		return RESULT::ERROR_ANY;
+	}
+	int e;
+	int p { str_to_num<uint16_t> ( args[first_arg], e ) };
+	if ( e )
+		return RESULT::INVALID_ARG;
+	m_fgms->m_tracker_port = p;
+	m_fgms->m_tracker_reinit = true;
+	return RESULT::OK;
+} // fgcli::cfg_tracker_port
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::cfg_tracker_freq
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT n { need_n_args ( 1, args, first_arg ) };
+	if ( RESULT::OK != n )
+		return n;
+	if ( wants_help ( args[first_arg] ) )
+	{
+		show_help ( "FREQ", "frequencw in seconds for tracker updates");
+		return RESULT::ERROR_ANY;
+	}
+	int e;
+	int p { str_to_num<uint16_t> ( args[first_arg], e ) };
+	if ( e )
+		return RESULT::INVALID_ARG;
+	m_fgms->m_tracker_freq = p;
+	m_fgms->m_tracker_reinit = true;
+	return RESULT::OK;
+} // fgcli::cfg_tracker_freq
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::cfg_whitelist
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT r { no_more_args ( args, first_arg ) };
+	if ( RESULT::OK != r )
+		return r;
+	set_configmode ( libcli::CLI_MODE::CONFIG_WHITELIST, "whitelist" );
+	return RESULT::OK;
+} // fgcli::cfg_whitelist ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -2857,9 +2820,7 @@ fgcli::cmd_whitelist_delete
 {
 	RESULT r { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != r )
-	{
 		return r;
-	}
 	if ( wants_help ( args[first_arg] ) )
 	{
 		show_help ( "id", "delete entry with id" );
@@ -2875,27 +2836,19 @@ fgcli::cmd_whitelist_delete
 		id = 0;
 		address.assign ( args[first_arg] );
 		if ( ! address.is_valid() )
-		{
 			return RESULT::INVALID_ARG;
-		}
 	}
 	if ( ( id == 0 ) && ( ! address.is_valid() ) )
-	{
 		return RESULT::MISSING_ARG;
-	}
 	fglistit Entry;
 	if ( ( id == 0 ) && ( address.is_valid() ) )
 	{
 		// match IP
 		Entry = m_fgms->m_white_list.find ( address );
 		if ( Entry != m_fgms->m_white_list.end() )
-		{
 			m_fgms->m_white_list.erase ( Entry );
-		}
 		else
-		{
-			m_client << "no entry found!" << libcli::cli_client::endl;
-		}
+			m_client << "no entry found!"<<libcli::cli_client::endl;
 		return RESULT::OK;
 	}
 	Entry = m_fgms->m_white_list.find_by_id ( id );
@@ -2905,9 +2858,7 @@ fgcli::cmd_whitelist_delete
 		m_client << "deleted!" << libcli::cli_client::endl;
 	}
 	else
-	{
 		m_client << "no entry found!" << libcli::cli_client::endl;
-	}
 	return RESULT::OK;
 } // fgcli::cmd_whitelist_delete
 
@@ -2920,7 +2871,7 @@ fgcli::cmd_whitelist_delete
  *
  *  possible arguments:
  *  blacklist add ?
- *  blacklist add TTL IP-address [reason]
+ *  blacklist add IP-address [TTL|reason] [reason]
  */
 libcli::RESULT
 fgcli::cmd_whitelist_add
@@ -2932,48 +2883,47 @@ fgcli::cmd_whitelist_add
 {
 	fgmp::netaddr address;
 	std::string   Reason;
-	time_t TTL { -1 };
+	time_t TTL { 0 };	// default: never expire
 	int    I;
 	size_t arg_num { 0 };
 	for ( size_t i=first_arg; i < args.size(); i++ )
 	{
 		switch ( arg_num )
 		{
-		case 0: // must be TTL or '?'
-			if ( wants_help ( args[i] ) )
-			{
-				show_help ( "TTL",
-					    "timeout of the new entry in seconds" );
-				return RESULT::OK;
-			}
-			TTL = str_to_num<size_t> ( args[i], I );
-			if ( I )
-			{
-				m_client << "% invalid TTL" << libcli::cli_client::endl;
-				return RESULT::ERROR_ANY;
-			}
-			break;
-		case 1: // IP or '?'
+		case 0: // IP or '?'
 			if ( wants_help ( args[i] ) )
 			{
 				show_help ( "IP",
-					    "IP address which should be whitelisted" );
+				    "IP address which should be whitelisted" );
 				return RESULT::OK;
 			}
 			address.assign ( args[i] );
 			if ( ! address.is_valid() )
 			{
 				m_client << "% invalid IP address"
-					 <<  libcli::cli_client::endl;
+					<<  libcli::cli_client::endl;
 				return RESULT::ERROR_ANY;
 			}
 			break;
-		case 2: // reason or '?'
+		case 1: // reason, TTL or '?'
 			if ( wants_help ( args[i] ) )
 			{
 				show_help ( "STRING",
-					    "a reason for this whitelist entry" );
+				    "a reason for this whitelist entry OR" );
+				show_help ( "TTL",
+				    "timeout of the new entry in seconds" );
 				show_help ( "<cr>", "add this IP" );
+				return RESULT::OK;
+			}
+			TTL = str_to_num<size_t> ( args[i], I );
+			if ( I )
+				Reason = args[i];
+			break;
+		case 2: // must be REASON or '?'
+			if ( wants_help ( args[i] ) )
+			{
+				show_help ( "STRING",
+				    "a reason for this whitelist entry" );
 				return RESULT::OK;
 			}
 			Reason = args[i];
@@ -2984,17 +2934,13 @@ fgcli::cmd_whitelist_add
 		arg_num++;
 	}
 	if ( ( TTL == -1 ) || ( ! address.is_valid() ) )
-	{
 		return RESULT::MISSING_ARG;
-	}
 	fgmp::list_item E ( Reason );
 	E.address = address;
 	size_t Newid;
 	fglistit CurrentEntry = m_fgms->m_white_list.find ( E.address );
 	if ( CurrentEntry == m_fgms->m_white_list.end() )
-	{
 		Newid = m_fgms->m_white_list.add ( E, TTL );
-	}
 	else
 	{
 		m_client << "% entry already exists (id "
@@ -3002,9 +2948,25 @@ fgcli::cmd_whitelist_add
 			 << libcli::cli_client::endl;
 		return RESULT::ERROR_ANY;
 	}
-	m_client << "added with id " << Newid << libcli::cli_client::endl;
 	return RESULT::OK;
 } // fgcli::cmd_whitelist_add
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::cfg_blacklist
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT r { no_more_args ( args, first_arg ) };
+	if ( RESULT::OK != r )
+		return r;
+	set_configmode ( libcli::CLI_MODE::CONFIG_BLACKLIST, "blacklist" );
+	return RESULT::OK;
+} // fgcli::cfg_blacklist ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -3032,13 +2994,9 @@ fgcli::cmd_blacklist_delete
 	fglistit        Entry;
 	size_t          id;
 	if ( num_args == 0 )
-	{
 		return RESULT::MISSING_ARG;
-	}
 	if ( num_args > 1 )
-	{
 		return no_more_args ( args, first_arg + 1 );
-	}
 	if ( wants_help ( args[first_arg] ) )
 	{
 		show_help ( "id", "delete entry with id" );
@@ -3052,37 +3010,25 @@ fgcli::cmd_blacklist_delete
 		id = 0;
 		address.assign ( args[first_arg] );
 		if ( ! address.is_valid() )
-		{
 			return RESULT::INVALID_ARG;
-		}
 	}
 	if ( ( id == 0 ) && ( ! address.is_valid() ) )
-	{
 		return RESULT::MISSING_ARG;
-	};
 	if ( address.is_valid() )
 	{
 		// match IP
 		Entry = m_fgms->m_black_list.find ( address );
 		if ( Entry != m_fgms->m_black_list.end() )
-		{
 			m_fgms->m_black_list.erase ( Entry );
-		}
 		else
-		{
-			m_client << "no entry found!" << libcli::cli_client::endl;
-		}
+			m_client << "no entry found!"<<libcli::cli_client::endl;
 		return RESULT::OK;
 	}
 	Entry = m_fgms->m_black_list.find_by_id ( id );
 	if ( Entry != m_fgms->m_black_list.end() )
-	{
 		m_fgms->m_black_list.erase ( Entry );
-	}
 	else
-	{
 		m_client << "no entry found!" << libcli::cli_client::endl;
-	}
 	m_client << "deleted!" << libcli::cli_client::endl;
 	return RESULT::OK;
 } // fgcli::cmd_blacklist_delete
@@ -3107,35 +3053,21 @@ fgcli::cmd_blacklist_add
 	size_t first_arg
 )
 {
-	time_t         TTL = -1;
-	int            I;
-	fgmp::netaddr  address;
-	std::string    Reason;
-	fglistit       Entry;
-	size_t arg_num { 0 };
+	fgmp::netaddr	address;
+	std::string	Reason;
+	fglistit	Entry;
+	size_t		arg_num { 0 };
+	time_t		TTL { 0 };
+	int		I;
 	for ( size_t i=first_arg; i < args.size(); i++ )
 	{
 		switch ( arg_num )
 		{
-		case 0: // must be TTL or '?'
-			if ( wants_help ( args[i] ) )
-			{
-				show_help ( "TTL",
-					    "timeout of the new entry in seconds" );
-				return RESULT::OK;
-			}
-			TTL  = str_to_num<size_t> ( args[i], I );
-			if ( I )
-			{
-				m_client << "% invalid TTL" << libcli::cli_client::endl;
-				return RESULT::ERROR_ANY;
-			}
-			break;
-		case 1: // IP or '?'
+		case 0: // IP or '?'
 			if ( wants_help ( args[i] ) )
 			{
 				show_help ( "IP",
-					    "IP address which should be blacklisted" );
+				    "IP address which should be blacklisted" );
 				return RESULT::OK;
 			}
 			address.assign ( args[i] );
@@ -3146,12 +3078,25 @@ fgcli::cmd_blacklist_add
 				return RESULT::ERROR_ANY;
 			}
 			break;
-		case 2: // reason or '?'
+		case 1: // reason, TTL or '?'
 			if ( wants_help ( args[i] ) )
 			{
 				show_help ( "STRING",
-					    "a reason for this blacklist entry" );
+				    "a reason for this blacklist entry OR" );
+				show_help ( "TTL",
+				    "timeout of the new entry in seconds" );
 				show_help ( "<cr>", "add this IP" );
+				return RESULT::OK;
+			}
+			TTL = str_to_num<size_t> ( args[i], I );
+			if ( I )
+				Reason = args[i];
+			break;
+		case 2: // must be REASON or '?'
+			if ( wants_help ( args[i] ) )
+			{
+				show_help ( "STRING",
+				    "a reason for this blacklist entry" );
 				return RESULT::OK;
 			}
 			Reason = args[i];
@@ -3166,9 +3111,7 @@ fgcli::cmd_blacklist_add
 	size_t Newid;
 	fglistit CurrentEntry = m_fgms->m_black_list.find ( E.address );
 	if ( CurrentEntry == m_fgms->m_black_list.end() )
-	{
 		Newid = m_fgms->m_black_list.add ( E, TTL );
-	}
 	else
 	{
 		m_client << "% entry already exists (id "
@@ -3176,9 +3119,25 @@ fgcli::cmd_blacklist_add
 			 << libcli::cli_client::endl;
 		return RESULT::ERROR_ANY;
 	}
-	m_client << "added with id " << Newid << libcli::cli_client::endl;
 	return RESULT::OK;
 } // fgcli::cmd_blacklist_add
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::cfg_crossfeed
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT r { no_more_args ( args, first_arg ) };
+	if ( RESULT::OK != r )
+		return r;
+	set_configmode ( libcli::CLI_MODE::CONFIG_CROSSFEED, "crossfeed" );
+	return RESULT::OK;
+} // fgcli::cfg_crossfeed ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -3205,9 +3164,7 @@ fgcli::cmd_crossfeed_delete
 	fgmp::netaddr   address;
 	size_t id = 0;
 	if ( num_args == 0 )
-	{
 		return RESULT::MISSING_ARG;
-	}
 	if ( num_args == 1 )
 	{
 		if ( wants_help ( args[first_arg] ) )
@@ -3224,36 +3181,28 @@ fgcli::cmd_crossfeed_delete
 			id = 0;
 			address.assign ( args[first_arg] );
 			if ( ! address.is_valid() )
-			{
 				return RESULT::INVALID_ARG;
-			}
 		}
 	}
 	if ( ( id == 0 ) && ( ! address.is_valid() ) )
-	{
 		return RESULT::MISSING_ARG;
-	}
 	fglistit Entry;
 	if ( ( id == 0 ) && ( address.is_valid() ) )
 	{
 		// match IP
 		Entry = m_fgms->m_cross_list.find ( address );
 		if ( Entry != m_fgms->m_cross_list.end() )
-		{
 			m_fgms->m_cross_list.erase ( Entry );
-		}
 		else
 		{
-			m_client << "no entry found" << libcli::cli_client::endl;
+			m_client << "no entry found"<<libcli::cli_client::endl;
 			return RESULT::OK;
 		}
 		return RESULT::OK;
 	}
 	Entry = m_fgms->m_cross_list.find_by_id ( id );
 	if ( Entry != m_fgms->m_cross_list.end() )
-	{
 		m_fgms->m_cross_list.erase ( Entry );
-	}
 	else
 	{
 		m_client << "no entry found" << libcli::cli_client::endl;
@@ -3294,7 +3243,7 @@ fgcli::cmd_crossfeed_add
 		case 0: // IP or '?'
 			if ( wants_help ( args[i] ) )
 			{
-				show_help ( "IP","IP address of the crossfeed" );
+				show_help( "IP","IP address of the crossfeed" );
 				return RESULT::OK;
 			}
 			address.assign ( args[i] );
@@ -3335,18 +3284,14 @@ fgcli::cmd_crossfeed_add
 		arg_num++;
 	}
 	if ( ( ! address.is_valid() ) || ( port == 0 ) )
-	{
 		return RESULT::MISSING_ARG;
-	}
 	fgmp::list_item E ( name );
 	E.address = address;
 	E.address.port ( port );
 	size_t Newid;
 	fglistit CurrentEntry = m_fgms->m_cross_list.find ( E.address, true );
 	if ( CurrentEntry == m_fgms->m_cross_list.end() )
-	{
 		Newid = m_fgms->m_cross_list.add ( E, port );
-	}
 	else
 	{
 		m_client << "entry already exists (id "
@@ -3354,9 +3299,25 @@ fgcli::cmd_crossfeed_add
 			 << libcli::cli_client::endl;
 		return RESULT::ERROR_ANY;
 	}
-	m_client << "added with id " << Newid << libcli::cli_client::endl;
 	return RESULT::OK;
 } // fgcli::cmd_crossfeed_add
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::cfg_relay
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT r { no_more_args ( args, first_arg ) };
+	if ( RESULT::OK != r )
+		return r;
+	set_configmode ( libcli::CLI_MODE::CONFIG_RELAY, "relay" );
+	return RESULT::OK;
+} // fgcli::cfg_relay ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -3384,9 +3345,7 @@ fgcli::cmd_relay_delete
 	int             id_invalid = -1;
 	fgmp::netaddr   address;
 	if ( num_args > 1 )
-	{
 		return no_more_args ( args, first_arg + 1 );
-	}
 	if ( num_args == 1 )
 	{
 		if ( wants_help ( args[first_arg] ) )
@@ -3409,30 +3368,24 @@ fgcli::cmd_relay_delete
 		}
 	}
 	if ( ( id == 0 ) && ( ! address.is_valid() ) )
-	{
 		return RESULT::MISSING_ARG;
-	}
 	fglistit Entry;
 	if ( ( id == 0 ) && ( address.is_valid() ) )
 	{
 		// match IP
 		Entry = m_fgms->m_relay_list.find ( address );
 		if ( Entry != m_fgms->m_relay_list.end() )
-		{
 			m_fgms->m_relay_list.erase ( Entry );
-		}
 		else
 		{
-			m_client << "no entry found" << libcli::cli_client::endl;
+			m_client << "no entry found"<<libcli::cli_client::endl;
 			return RESULT::ERROR_ANY;
 		}
 		return RESULT::OK;
 	}
 	Entry = m_fgms->m_relay_list.find_by_id ( id );
 	if ( Entry != m_fgms->m_relay_list.end() )
-	{
 		m_fgms->m_relay_list.erase ( Entry );
-	}
 	else
 	{
 		m_client << "no entry found" << libcli::cli_client::endl;
@@ -3519,9 +3472,7 @@ fgcli::cmd_relay_add
 	size_t Newid;
 	fglistit CurrentEntry = m_fgms->m_relay_list.find ( E.address, true );
 	if ( CurrentEntry == m_fgms->m_relay_list.end() )
-	{
 		Newid = m_fgms->m_relay_list.add ( E, 0 );
-	}
 	else
 	{
 		m_client << "entry already exists (id "
@@ -3529,7 +3480,6 @@ fgcli::cmd_relay_add
 			 << libcli::cli_client::endl;
 		return RESULT::ERROR_ANY;
 	}
-	m_client << "added with id " << Newid << libcli::cli_client::endl;
 	return RESULT::OK;
 } // fgcli::cmd_relay_add
 
@@ -3548,9 +3498,7 @@ fgcli::cmd_die
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_fgms->m_want_exit = true;
 	return RESULT::OK;
 } // fgcli::cmd_die

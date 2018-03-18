@@ -49,6 +49,12 @@ line_editor::line_editor
 
 //////////////////////////////////////////////////////////////////////
 
+/**
+ * The line_editor keeps a list of already processed input lines
+ * which can be recalled by cursor movement up and down. This
+ * methods sets the maximum number of lines to remember. Defaults
+ * to 256 lines.
+ */
 void
 line_editor::max_history
 (
@@ -56,9 +62,7 @@ line_editor::max_history
 )
 {
 	while ( max > m_history.size() )
-	{
 		m_history.pop_back ();
-	}
 	m_max_history = max;
 } // line_editor::max_history ()
 
@@ -66,7 +70,7 @@ line_editor::max_history
 
 /**
  * Show history of commands.
- * @TODO: implement !# to reuse a history command (like in bash)
+ * @todo: implement !# to reuse a history command (like in bash)
  */
 void
 line_editor::show_history
@@ -104,13 +108,9 @@ line_editor::add_history
 ()
 {
 	if ( ( ! m_echo ) || ( m_line.size () == 0 ) )
-	{
 		return;
-	}
 	if ( m_max_history == m_history.size() )
-	{
 		m_history.pop_back ();
-	}
 	m_history.push_back ( m_line );
 } // line_editor::add_history ()
 
@@ -125,9 +125,7 @@ line_editor::do_history_up
 ()
 {
 	if ( ! m_echo )
-	{
 		return;
-	}
 	if ( m_history.size () == 0 )
 	{
 		m_client.write_direct ( TTY::BELL );
@@ -165,9 +163,7 @@ line_editor::do_history_down
 ()
 {
 	if ( ! m_echo )
-	{
 		return;
-	}
 	if ( m_in_history == m_history.end() )
 	{
 		m_client.write_direct ( TTY::BELL );
@@ -176,9 +172,7 @@ line_editor::do_history_down
 	clear_line ();
 	m_in_history++;
 	if ( m_in_history == m_history.end() )
-	{
 		return;
-	}
 	m_line   = *m_in_history;
 	m_cursor = m_line.size ();
 	m_client << m_line;
@@ -195,9 +189,7 @@ line_editor::prompt_user
 () const
 {
 	if ( ! m_show_prompt )
-	{
 		return;
-	}
 	m_client << m_prompt;
 	m_client.flush ();
 } // line_editor::prompt ()
@@ -249,17 +241,13 @@ line_editor::get_input
 		{
 			// timeout every second
 			if ( m_callback && m_callback() != RESULT::OK )
-			{
 				break;
-			}
 			continue;
 		}
 		if ( m_client.read_char ( c ) < 0 )
 		{
 			if ( errno == EINTR )
-			{
 				continue;
-			}
 		}
 		return ret;
 	}
@@ -283,13 +271,9 @@ line_editor::delete_back_char
 		return;
 	}
 	if ( c == KEY::BACKSPACE )
-	{
 		m_cursor--;
-	}
 	if ( c == KEY::DEL )
-	{
 		m_client.write_direct ( ' ' );
-	}
 	m_line.erase ( m_cursor, 1 );
 	if ( m_echo )
 	{
@@ -306,8 +290,8 @@ line_editor::delete_back_char
 namespace
 {
 
-// little helper for line_editor::delete_back_word
-// return true if 'c' is a delimiter
+/// little helper for line_editor::delete_back_word
+/// return true if 'c' is a delimiter
 bool
 is_delimiter
 (
@@ -316,9 +300,7 @@ is_delimiter
 {
 	std::string delimiter = " |";
 	if ( delimiter.find ( c ) != std::string::npos )
-	{
 		return true;
-	}
 	return false;
 } // is_delimiter
 
@@ -345,9 +327,7 @@ line_editor::delete_back_word
 		m_cursor--;
 		m_line.erase ( m_cursor, 1 );
 		if ( m_echo )
-		{
 			m_client.write_direct ( TTY::BS );
-		}
 		nc++;
 	}
 	while ( ( m_cursor > 0 ) && ( !is_delimiter ( m_line[m_cursor - 1] ) ) )
@@ -356,9 +336,7 @@ line_editor::delete_back_word
 		m_cursor--;
 		m_line.erase ( m_cursor, 1 );
 		if ( m_echo )
-		{
 			m_client.write_direct ( TTY::BS );
-		}
 		nc++;
 	}
 	if ( m_echo )
@@ -368,13 +346,9 @@ line_editor::delete_back_word
 		if ( m_echo )
 		{
 			for ( size_t i = 0; i < nc; i++ )
-			{
 				m_client.write_direct ( ' ' );
-			}
 			for ( size_t i = 0; i < nc; i++ )
-			{
 				m_client.write_direct ( TTY::BS );
-			}
 		}
 		back_to_cursor ();
 	}
@@ -390,13 +364,9 @@ line_editor::back_to_cursor
 () const
 {
 	if ( ! m_echo )
-	{
 		return;
-	}
 	for ( size_t i = m_cursor; i < m_line.size(); i++ )
-	{
 		m_client.write_direct ( TTY::BS );
-	}
 } // line_editor::back_to_cursor ()
 
 //////////////////////////////////////////////////////////////////////
@@ -409,9 +379,7 @@ line_editor::print_line_from_cursor
 () const
 {
 	if ( ! m_echo )
-	{
 		return;
-	}
 	const char* s = &m_line[m_cursor];
 	m_client << s;
 	m_client.flush ();
@@ -427,9 +395,7 @@ line_editor::redraw_line
 () const
 {
 	if ( ! m_echo )
-	{
 		return;
-	}
 	m_client.write_direct ( TTY::CR );
 	m_client.write_direct ( TTY::LF );
 	prompt_user ();
@@ -452,9 +418,7 @@ line_editor::clear_line
 		m_client.write_direct ( TTY::CR );
 		prompt_user ();
 		for ( size_t i = 0; i < m_line.size(); i++ )
-		{
 			m_client.write_direct ( ' ' );
-		}
 		m_client.write_direct ( TTY::CR );
 		prompt_user ();
 	}
@@ -473,15 +437,11 @@ line_editor::clear_eol
 ()
 {
 	if ( m_cursor == m_line.size() )
-	{
 		return;
-	}
 	if ( m_echo )
 	{
 		for ( size_t i = m_cursor; i < m_line.size(); i++ )
-		{
 			m_client.write_direct ( ' ' );
-		}
 		back_to_cursor ();
 	}
 	m_line.erase ( m_cursor );
@@ -494,13 +454,9 @@ line_editor::cursor_left
 ()
 {
 	if ( m_cursor == 0 )
-	{
 		return;
-	}
 	if ( m_echo )
-	{
 		m_client.write_direct ( TTY::BS );
-	}
 	m_cursor--;
 } // line_editor::cursor_left ()
 
@@ -511,13 +467,9 @@ line_editor::cursor_right
 ()
 {
 	if ( m_cursor >= m_line.size() )
-	{
 		return;
-	}
 	if ( m_echo )
-	{
 		m_client.write_direct ( m_line[m_cursor] );
-	}
 	m_cursor++;
 } // line_editor::cursor_right ()
 
@@ -542,9 +494,7 @@ line_editor::jump_end_of_line
 ()
 {
 	if ( m_echo )
-	{
 		print_line_from_cursor ();
-	}
 	m_cursor = m_line.size ();
 } // line_editor::jump_end_of_line ()
 
@@ -558,9 +508,7 @@ line_editor::append
 {
 	m_line.append ( 1, c );
 	if ( m_echo )
-	{
 		m_client.write_direct ( c );
-	}
 	m_cursor++;
 } // line_editor::append ()
 
@@ -579,13 +527,9 @@ line_editor::insert
 )
 {
 	if ( m_insertmode )
-	{
 		m_line.insert ( m_cursor, 1, c );
-	}
 	else
-	{
 		m_line[m_cursor] = c;
-	}
 	print_line_from_cursor ();      // checks for m_echo
 	m_cursor++;
 	back_to_cursor ();
@@ -649,9 +593,7 @@ line_editor::try_logout
 ()
 {
 	if ( m_line.size () )
-	{
 		return false;
-	}
 	m_line = "quit";
 	m_client << "quit" << cli_client::endl;
 	return true;
@@ -700,9 +642,7 @@ line_editor::read_line
 	else
 	{
 		if ( m_line[ m_line.size() - 1 ] == '?' )
-		{
 			delete_back_char ( KEY::BACKSPACE );
-		}
 		redraw_line ();
 		show_prompt = false;
 	}
@@ -714,9 +654,7 @@ line_editor::read_line
 			show_prompt = false;
 		}
 		if ( get_input ( c ) < 0 )
-		{
 			break;
-		}
 		switch ( c )
 		{
 		case KEY::SPECIAL:
@@ -752,9 +690,7 @@ line_editor::read_line
 		case KEY::LF:
 		case KEY::CR:
 			if ( m_in_history != m_history.end () )
-			{
 				m_in_history = m_history.end ();
-			}
 			add_history ();
 			m_client << cli_client::endl;
 			return KEY::LF;
@@ -779,9 +715,7 @@ line_editor::read_line
 			continue;
 		case KEY::LOGOUT:
 			if ( try_logout () == true )
-			{
 				break;
-			}
 			continue;
 		case ctrl ( 'A' ) :
 			jump_start_of_line ();
@@ -811,9 +745,7 @@ line_editor::read_line
 				append ( c );
 			}
 			else
-			{
 				insert ( c );
-			}
 		} // switch
 	}
 	return c;

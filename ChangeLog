@@ -1,4 +1,7 @@
 1.0.0
+        [NEW]   fgms uses the cli to read its configuration
+                !!! the format of the configuration file has changed !!!
+                See etc/fgms_skel.conf
         [FIX]   the pager is disabled by default
         [NEW]   'pager' as a filter (so the pager can be enabled per command)
         [NEW]   'file' filter, to write output of a command to a file

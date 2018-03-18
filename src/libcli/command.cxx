@@ -46,7 +46,7 @@ command::command
 {
 	m_privilege     = level;
 	m_mode          = mode;
-}
+} // command::command ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -116,11 +116,9 @@ command::operator ()
 )
 {
 	if ( m_cli_callback == nullptr )
-	{
 		throw arg_error ( "command::exec: no cli_callback" );
-	}
 	return m_cli_callback ( name, args, first_arg );
-} // command::exec ()
+} // command::operator () ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -143,13 +141,9 @@ command::compare
 {
 	size_t l { len };
 	if ( l == 0 )
-	{
 		l = word.size ();
-	}
 	if ( compare_case )
-	{
 		return ( 0 == strncmp ( m_name.c_str(), word.c_str(), l ) );
-	}
 	return ( 0 == strncasecmp ( m_name.c_str(), word.c_str(), l ) );
 } // command::compare ()
 
@@ -175,16 +169,12 @@ command::compare_len
 		if ( compare_case )
 		{
 			if ( m_name[n] != word[n] )
-			{
 				return ++n;
-			}
 		}
 		else
 		{
 			if ( toupper ( m_name[n] ) != toupper ( word[n] ) )
-			{
 				return ++n;
-			}
 		}
 		++n;
 	}

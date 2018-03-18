@@ -34,7 +34,8 @@ namespace CLI_MODE
 {
 	enum
 	{
-		CONFIG_FGLS = CLI_MODE::EXTENSION
+		CONFIG_FGLS = CLI_MODE::EXTENSION,
+		CONFIG_CLI
 	};
 }
 
@@ -64,6 +65,7 @@ fgls_cli::setup
 {
 	using namespace libcli;
 	command* c;
+	command* c2;
 	set_hostname ( m_fgls->m_hostname );
 	std::stringstream banner;
 	banner << "\r\n"
@@ -72,15 +74,6 @@ fgls_cli::setup
 	       << "This is " << m_fgls->m_hostname << "\r\n"
 	       << "------------------------------------------------\r\n";
 	set_banner ( banner.str() );
-	if ( m_fgls->m_admin_user != "" )
-	{	// FIXME: privlevel
-		allow_user ( m_fgls->m_admin_user,
-			m_fgls->m_admin_pass, PRIVLEVEL::PRIVILEGED );
-	}
-	if ( m_fgls->m_admin_enable != "" )
-	{
-		set_enable_password ( m_fgls->m_admin_enable );
-	}
 	using namespace std::placeholders;
 	#define _ptr(X) (std::bind (& X, this, _1, _2, _3))
 	//////////////////////////////////////////////////
@@ -98,110 +91,6 @@ fgls_cli::setup
 	//////////////////////////////////////////////////
 	// show subcommands
 	//////////////////////////////////////////////////
-	// 'show daemon'
-	register_command ( new command (
-		"daemon",
-		_ptr ( fgls_cli::show_daemon ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show if running as a daemon"
-	), c );
-	// 'show bind_addr'
-	register_command ( new command (
-		"bind_addr",
-		_ptr ( fgls_cli::show_bind_addr ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show bind address"
-	), c );
-	// 'show admin_user'
-	register_command ( new command (
-		"admin_user",
-		_ptr ( fgls_cli::show_admin_user ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show admin user"
-	), c );
-	// 'show admin_pass'
-	register_command ( new command (
-		"admin_pass",
-		_ptr ( fgls_cli::show_admin_pass ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show admin password"
-	), c );
-	// 'show enable_pass'
-	register_command ( new command (
-		"enable_pass",
-		_ptr ( fgls_cli::show_admin_enable ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show enable password"
-	), c );
-	// 'show data_port'
-	register_command ( new command (
-		"data_port",
-		_ptr ( fgls_cli::show_data_port ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show data port"
-	), c );
-	// 'show query_port'
-	register_command ( new command (
-		"query_port",
-		_ptr ( fgls_cli::show_query_port ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show query port"
-	), c );
-	// 'show admin_port'
-	register_command ( new command (
-		"admin_port",
-		_ptr ( fgls_cli::show_admin_port ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show admin port"
-	), c );
-	// 'show admin_cli'
-	register_command ( new command (
-		"admin_cli",
-		_ptr ( fgls_cli::show_admin_cli ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show admin cli"
-	), c );
-	// 'show logfile'
-	register_command ( new command (
-		"logfile",
-		_ptr ( fgls_cli::show_logfile_name ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show logfile name"
-	), c );
-	// 'show debug'
-	register_command ( new command (
-		"debug",
-		_ptr ( fgls_cli::show_debug_level ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show debug level"
-	), c );
-	// 'show check_interval'
-	register_command ( new command (
-		"check_interval",
-		_ptr ( fgls_cli::show_check_interval ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show check interval"
-	), c );
-	// 'show hostname'
-	register_command ( new command (
-		"hostname",
-		_ptr ( fgls_cli::show_hostname ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::ANY,
-		"Show server name"
-	), c );
 	// 'show log'
 	register_command ( new command (
 		"log",
@@ -218,30 +107,133 @@ fgls_cli::setup
 		CLI_MODE::ANY,
 		"Show general settings"
 	), c );
-	// 'show version'
+	// 'show relay'
+	register_command ( new command (
+		"relays",
+		_ptr ( fgls_cli::show_relay ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show lsit of known relays"
+	), c );
+
+	//////////////////////////////////////////////////
+	// 'show fgls' subcommands
+	//////////////////////////////////////////////////
+	c2 = new command (
+		"fgls",
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::EXEC,
+		"show fgls information"
+	);
+	register_command ( c2, c );
+	// 'show daemon'
+	register_command ( new command (
+		"daemon",
+		_ptr ( fgls_cli::show_daemon ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show if running as a daemon"
+	), c2 );
+	// 'show fgls bind_addr'
+	register_command ( new command (
+		"bind_addr",
+		_ptr ( fgls_cli::show_bind_addr ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show bind address"
+	), c2 );
+	// 'show fgls data_port'
+	register_command ( new command (
+		"data_port",
+		_ptr ( fgls_cli::show_data_port ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show data port"
+	), c2 );
+	// 'show fgls query_port'
+	register_command ( new command (
+		"query_port",
+		_ptr ( fgls_cli::show_query_port ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show query port"
+	), c2 );
+	// 'show fgls logfile'
+	register_command ( new command (
+		"logfile",
+		_ptr ( fgls_cli::show_logfile_name ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show logfile name"
+	), c2 );
+	// 'show fgls debug'
+	register_command ( new command (
+		"debug",
+		_ptr ( fgls_cli::show_debug_level ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show debug level"
+	), c2 );
+	// 'show fgls check_interval'
+	register_command ( new command (
+		"check_interval",
+		_ptr ( fgls_cli::show_check_interval ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show check interval"
+	), c2 );
+	// 'show fgls hostname'
+	register_command ( new command (
+		"hostname",
+		_ptr ( fgls_cli::show_hostname ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show server name"
+	), c2 );
+	// 'show fgls version'
 	register_command ( new command (
 		"version",
 		_ptr ( fgls_cli::show_version ),
 		PRIVLEVEL::UNPRIVILEGED,
 		CLI_MODE::ANY,
 		"Show running version information"
-	), c );
-	// 'show uptime'
+	), c2 );
+	// 'show fgls uptime'
 	register_command ( new command (
 		"uptime",
 		_ptr ( fgls_cli::show_uptime ),
 		PRIVLEVEL::UNPRIVILEGED,
 		CLI_MODE::ANY,
 		"Show uptime information"
-	), c );
-	// 'show relay'
+	), c2 );
+
+	//////////////////////////////////////////////////
+	// 'show cli' subcommands
+	//////////////////////////////////////////////////
+	// 'show cli'
+	c2 = new command (
+		"cli",
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::EXEC,
+		"show cli information"
+	);
+	register_command ( c2, c );
 	register_command ( new command (
-		"relay",
-		_ptr ( fgls_cli::show_relay ),
+		"port",
+		_ptr ( fgls_cli::show_cli_port ),
 		PRIVLEVEL::UNPRIVILEGED,
 		CLI_MODE::ANY,
-		"Show lsit of known relays"
-	), c );
+		"Show admin port"
+	), c2 );
+	// 'show cli users'
+	register_command ( new command (
+		"users",
+		_ptr ( cli::internal_show_users ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show list of allowed cli users"
+	), c2 );
+
 	//////////////////////////////////////////////////
 	//
 	// configure commands
@@ -265,230 +257,113 @@ fgls_cli::setup
 		_ptr ( fgls_cli::cfg_fgls ),
 		PRIVLEVEL::PRIVILEGED,
 		CLI_MODE::EXEC,
-		"configure fgls internal properties"
+		"configure fgls properties"
 	), c );
+	// 'configure cli' in EXEC mode
+	register_command ( new command (
+		"cli",
+		_ptr ( fgls_cli::cfg_cli ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::EXEC,
+		"configure cli properties"
+	), c );
+
 	//////////////////////////////////////////////////
 	// config commands in CONFIG mode
 	//////////////////////////////////////////////////
 	// 'fgls'
-	c = new command (
+	register_command ( new command (
 		"fgls",
 		_ptr ( fgls_cli::cfg_fgls ),
 		PRIVLEVEL::PRIVILEGED,
 		CLI_MODE::CONFIG,
-		"configure fgls internal properties"
-	);
-	register_command ( c );
+		"configure fgls properties"
+	) );
+	// 'cli'
+	register_command ( new command (
+		"cli",
+		_ptr ( fgls_cli::cfg_cli ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG,
+		"configure cli properties"
+	) );
 	// enable 'exit' command
 	register_command ( new command (
 		"exit",
 		_ptr ( cli::internal_exit ),
-		libcli::PRIVLEVEL::PRIVILEGED,
-		libcli::CLI_MODE::CONFIG,
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG,
 		"return to EXEC mode"
 	) );
 	// enable 'end' command
 	register_command ( new command (
 		"end",
 		_ptr ( cli::internal_end ),
-		libcli::PRIVLEVEL::PRIVILEGED,
-		libcli::CLI_MODE::CONFIG,
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG,
 		"return to previous mode"
 	) );
+
 	//////////////////////////////////////////////////
-	// 'fgls' subcommands
+	// config commands in CONFIG_FGLS mode
 	//////////////////////////////////////////////////
 	// 'fgls daemon'
 	register_command ( new command (
 		"daemon",
 		_ptr ( fgls_cli::cfg_daemon ),
 		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
+		CLI_MODE::CONFIG_FGLS,
 		"en-/disable daemon mode (windows only)"
-	), c );
+	) );
 	// 'fgls bind_addr'
 	register_command ( new command (
 		"bind_address",
 		_ptr ( fgls_cli::cfg_bind_addr ),
 		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
+		CLI_MODE::CONFIG_FGLS,
 		"Set bind address (only listen to this address)"
-	), c );
-	// 'fgls admin_user'
-	register_command ( new command (
-		"admin_user",
-		_ptr ( fgls_cli::cfg_admin_user ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Set admin user name"
-	), c );
-	// 'fgls admin_pass'
-	register_command ( new command (
-		"admin_pass",
-		_ptr ( fgls_cli::cfg_admin_pass ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Set admin password"
-	), c );
-	// 'fgls admin_enable'
-	register_command ( new command (
-		"admin_enable",
-		_ptr ( fgls_cli::cfg_admin_enable ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Set enable password"
-	), c );
+	) );
 	// 'fgls data_port'
 	register_command ( new command (
 		"data_port",
 		_ptr ( fgls_cli::cfg_data_port ),
 		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
+		CLI_MODE::CONFIG_FGLS,
 		"Set data port"
-	), c );
+	) );
 	// 'fgls query_port'
 	register_command ( new command (
 		"query_port",
 		_ptr ( fgls_cli::cfg_query_port ),
 		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
+		CLI_MODE::CONFIG_FGLS,
 		"Set query port"
-	), c );
-	// 'fgls admin_port'
-	register_command ( new command (
-		"admin_port",
-		_ptr ( fgls_cli::cfg_admin_port ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Set port of admin cli"
-	), c );
-	// 'fgls admin_cli'
-	register_command ( new command (
-		"admin_cli",
-		_ptr ( fgls_cli::cfg_admin_cli ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"en-/disable admin cli"
-	), c );
+	) );
 	// 'fgls logfile'
 	register_command ( new command (
 		"logfile",
 		_ptr ( fgls_cli::cfg_logfile_name ),
 		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
+		CLI_MODE::CONFIG_FGLS,
 		"Set logfile name"
-	), c );
+	) );
 	// 'fgls debug_level'
 	register_command ( new command (
 		"debug_level",
 		_ptr ( fgls_cli::cfg_debug_level ),
 		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
+		CLI_MODE::CONFIG_FGLS,
 		"Set debug level"
-	), c );
+	) );
 	// 'fgls check_interval'
 	register_command ( new command (
 		"check_interval",
 		_ptr ( fgls_cli::cfg_check_interval ),
 		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
+		CLI_MODE::CONFIG_FGLS,
 		"Set check interval "
-	), c );
+	) );
 	// 'fgls hostname'
-	register_command ( new command (
-		"hostname",
-		_ptr ( fgls_cli::cfg_hostname ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG,
-		"Set server name"
-	), c );
-	//////////////////////////////////////////////////
-	// config commands in CONFIG_FGLS mode
-	//////////////////////////////////////////////////
-	register_command ( new command (
-		"daemon",
-		_ptr ( fgls_cli::cfg_daemon ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGLS,
-		"en-/disable daemon mode (windows only)"
-	) );
-	register_command ( new command (
-		"bind_address",
-		_ptr ( fgls_cli::cfg_bind_addr ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGLS,
-		"Set bind address (only listen to this address)"
-	) );
-	register_command ( new command (
-		"admin_user",
-		_ptr ( fgls_cli::cfg_admin_user ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGLS,
-		"Set admin user name"
-	) );
-	register_command ( new command (
-		"admin_pass",
-		_ptr ( fgls_cli::cfg_admin_pass ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGLS,
-		"Set admin password"
-	) );
-	register_command ( new command (
-		"admin_enable",
-		_ptr ( fgls_cli::cfg_admin_enable ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGLS,
-		"Set enable password"
-	) );
-	register_command ( new command (
-		"data_port",
-		_ptr ( fgls_cli::cfg_data_port ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGLS,
-		"Set data port"
-	) );
-	register_command ( new command (
-		"query_port",
-		_ptr ( fgls_cli::cfg_query_port ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGLS,
-		"Set query port"
-	) );
-	register_command ( new command (
-		"admin_port",
-		_ptr ( fgls_cli::cfg_admin_port ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGLS,
-		"Set port of admin cli"
-	) );
-	register_command ( new command (
-		"admin_cli",
-		_ptr ( fgls_cli::cfg_admin_cli ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGLS,
-		"en-/disable admin cli"
-	) );
-	register_command ( new command (
-		"logfile",
-		_ptr ( fgls_cli::cfg_logfile_name ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGLS,
-		"Set logfile name"
-	) );
-	register_command ( new command (
-		"debug_level",
-		_ptr ( fgls_cli::cfg_debug_level ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGLS,
-		"Set debug level"
-	) );
-	register_command ( new command (
-		"check_interval",
-		_ptr ( fgls_cli::cfg_check_interval ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::CONFIG_FGLS,
-		"Set check interval "
-	) );
 	register_command ( new command (
 		"hostname",
 		_ptr ( fgls_cli::cfg_hostname ),
@@ -500,18 +375,78 @@ fgls_cli::setup
 	register_command ( new command (
 		"exit",
 		_ptr ( cli::internal_exit ),
-		libcli::PRIVLEVEL::UNPRIVILEGED,
-		libcli::CLI_MODE::CONFIG_FGLS,
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::CONFIG_FGLS,
 		"return to EXEC mode"
 	) );
 	// enable 'end' command in configure fgls mode
 	register_command ( new command (
 		"end",
 		_ptr ( cli::internal_end ),
-		libcli::PRIVLEVEL::UNPRIVILEGED,
-		libcli::CLI_MODE::CONFIG_FGLS,
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::CONFIG_FGLS,
 		"return to previous mode"
 	) );
+
+	//////////////////////////////////////////////////
+	// config commands in CONFIG_CLI mode
+	//////////////////////////////////////////////////
+	// 'enable true|false'
+	register_command ( new command (
+		"enable",
+		_ptr ( fgls_cli::cfg_cli_enable ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_CLI,
+		"enable/disable admin cli"
+	) );
+	// 'port PORT'
+	register_command ( new command (
+		"port",
+		_ptr ( fgls_cli::cfg_cli_port ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_CLI,
+		"set port of admin cli"
+	) );
+	// 'user NAME PASSWORD LEVEL'
+	register_command ( new command (
+		"user",
+		_ptr ( fgls_cli::internal_add_user ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_CLI,
+		"add cli users"
+	) );
+	// 'delete user NAME'
+	c = new command (
+		"delete",
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_CLI,
+		"add cli users"
+	);
+	register_command ( c );
+	register_command ( new command (
+		"user",
+		_ptr ( fgls_cli::internal_del_user ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_CLI,
+		"delete cli users"
+	), c );
+	// enable 'exit' command in configure cli mode
+	register_command ( new command (
+		"exit",
+		_ptr ( cli::internal_exit ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::CONFIG_CLI,
+		"return to EXEC mode"
+	) );
+	// enable 'end' command in configure cli mode
+	register_command ( new command (
+		"end",
+		_ptr ( cli::internal_end ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::CONFIG_CLI,
+		"return to previous mode"
+	) );
+
 	//////////////////////////////////////////////////
 	// general commands
 	//////////////////////////////////////////////////
@@ -537,9 +472,7 @@ fgls_cli::cfg_fgls
 {
 	RESULT r { no_more_args ( args, first_arg ) };
 	if ( RESULT::OK != r )
-	{
 		return r;
-	}
 	set_configmode ( libcli::CLI_MODE::CONFIG_FGLS, "fgls" );
 	return RESULT::OK;
 } // fgls_cli::cfg_fgls ()
@@ -556,9 +489,7 @@ fgls_cli::cfg_daemon
 {
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
-	{
 		return n;
-	}
 	std::pair <libcli::RESULT, bool> r { get_bool ( args[first_arg] ) };
 	if ( r.first == RESULT::OK )
 	{
@@ -580,9 +511,7 @@ fgls_cli::cfg_bind_addr
 {
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
-	{
 		return n;
-	}
 	if ( wants_help ( args[first_arg] ) )
 	{
 		show_help ( "IP", "only listen on IP" );
@@ -603,81 +532,6 @@ fgls_cli::cfg_bind_addr
 	m_fgls->set_bind_addr ( args[first_arg] );
 	return RESULT::OK;
 } // fgls_cli::cfg_bind_addr ()
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
-fgls_cli::cfg_admin_user
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	RESULT n { need_n_args ( 1, args, first_arg ) };
-	if ( RESULT::OK != n )
-	{
-		return n;
-	}
-	if ( wants_help ( args[first_arg] ) )
-	{
-		show_help ( "USERNAME",
-			    "set admin username to USERNAME" );
-		return RESULT::ERROR_ANY;
-	}
-	m_fgls->m_admin_user = args[first_arg];
-	return RESULT::OK;
-} // fgls_cli::cfg_admin_user ()
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
-fgls_cli::cfg_admin_pass
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	RESULT n { need_n_args ( 1, args, first_arg ) };
-	if ( RESULT::OK != n )
-	{
-		return n;
-	}
-	if ( wants_help ( args[first_arg] ) )
-	{
-		show_help ( "PASSWORD",
-			    "set admin password to PASSWORD" );
-		return RESULT::ERROR_ANY;
-	}
-	m_fgls->m_admin_pass = args[first_arg];
-	return RESULT::OK;
-} // fgls_cli::cfg_admin_pass ()
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
-fgls_cli::cfg_admin_enable
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	RESULT n { need_n_args ( 1, args, first_arg ) };
-	if ( RESULT::OK != n )
-	{
-		return n;
-	}
-	if ( wants_help ( args[first_arg] ) )
-	{
-		show_help ( "PASSWORD",
-			    "set enable password to PASSWORD" );
-		return RESULT::ERROR_ANY;
-	}
-	m_fgls->m_admin_enable = args[first_arg];
-	return RESULT::OK;
-} // fgls_cli::cfg_admin_enable ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -742,55 +596,6 @@ fgls_cli::cfg_query_port
 //////////////////////////////////////////////////////////////////////
 
 libcli::RESULT
-fgls_cli::cfg_admin_port
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	RESULT n { need_n_args ( 1, args, first_arg ) };
-	if ( RESULT::OK != n )
-		return n;
-	if ( wants_help ( args[first_arg] ) )
-	{
-		show_help ( "PORT", "set admin port to PORT" );
-		return RESULT::ERROR_ANY;
-	}
-	int e;
-	int p { str_to_num<uint16_t> ( args[first_arg], e ) };
-	if ( e )
-		return RESULT::INVALID_ARG;
-	if ( m_fgls->m_admin_port == p )
-		return RESULT::OK;
-	m_fgls->m_admin_port = p;
-	m_fgls->m_reinit_admin = true;
-	m_fgls->init_admin_channel ();
-	return RESULT::OK;
-} // fgls_cli::cfg_admin_port
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
-fgls_cli::cfg_admin_cli
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	RESULT n { need_n_args ( 1, args, first_arg ) };
-	if ( RESULT::OK != n )
-		return n;
-	std::pair <libcli::RESULT, bool> r { get_bool ( args[first_arg] ) };
-	if ( r.first == RESULT::OK )
-		m_fgls->m_admin_cli = r.second;
-	return RESULT::OK;
-} // fgls_cli::cfg_admin_cli ()
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
 fgls_cli::cfg_logfile_name
 (
 	const std::string& command,
@@ -833,9 +638,7 @@ fgls_cli::cfg_debug_level
 	int e;
 	int p { str_to_num<uint16_t> ( args[first_arg], e ) };
 	if ( e )
-	{
 		return RESULT::INVALID_ARG;
-	}
 	m_fgls->m_debug_level = fgmp::make_prio ( p );
 	logger.priority ( m_fgls->m_debug_level );
 	return RESULT::OK;
@@ -894,6 +697,72 @@ fgls_cli::cfg_hostname
 //////////////////////////////////////////////////////////////////////
 
 libcli::RESULT
+fgls_cli::cfg_cli
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT r { no_more_args ( args, first_arg ) };
+	if ( RESULT::OK != r )
+		return r;
+	set_configmode ( libcli::CLI_MODE::CONFIG_CLI, "cli" );
+	return RESULT::OK;
+} // fgls_cli::cfg_cli ()
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgls_cli::cfg_cli_enable
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT n { need_n_args ( 1, args, first_arg ) };
+	if ( RESULT::OK != n )
+		return n;
+	std::pair <libcli::RESULT, bool> r { get_bool ( args[first_arg] ) };
+	if ( r.first == RESULT::OK )
+		m_fgls->m_cli_enabled = r.second;
+	return r.first;
+} // fgls_cli::cfg_cli_enable ()
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgls_cli::cfg_cli_port
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT n { need_n_args ( 1, args, first_arg ) };
+	if ( RESULT::OK != n )
+		return n;
+	if ( wants_help ( args[first_arg] ) )
+	{
+		show_help ( "PORT", "set cli port to PORT" );
+		return RESULT::ERROR_ANY;
+	}
+	int e;
+	int p { str_to_num<uint16_t> ( args[first_arg], e ) };
+	if ( e )
+		return RESULT::INVALID_ARG;
+	if ( m_fgls->m_cli_port == p )
+		return RESULT::OK;
+	m_fgls->m_query_port = p;
+	m_fgls->m_reinit_query = true;
+	m_fgls->init_query_channel ();
+	return RESULT::OK;
+} // fgls_cli::cfg_cli_port ()
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
 fgls_cli::show_daemon
 (
 	const std::string& command,
@@ -937,63 +806,6 @@ fgls_cli::show_bind_addr
 //////////////////////////////////////////////////////////////////////
 
 libcli::RESULT
-fgls_cli::show_admin_user
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	libcli::RESULT r = no_more_args ( args, first_arg );
-	if ( r != RESULT::OK )
-		return r;
-	m_client << libcli::align_left ( 22 )
-		 << "admin user" << ": " << m_fgls->m_admin_user
-		 << libcli::cli_client::endl;
-	return RESULT::OK;
-} // fgls_cli::show_admin_user ()
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
-fgls_cli::show_admin_pass
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	libcli::RESULT r = no_more_args ( args, first_arg );
-	if ( r != RESULT::OK )
-		return r;
-	m_client << libcli::align_left ( 22 )
-		 << "admin pass" << ": " << m_fgls->m_admin_pass
-		 << libcli::cli_client::endl;
-	return RESULT::OK;
-} // fgls_cli::show_admin_pass ()
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
-fgls_cli::show_admin_enable
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	libcli::RESULT r = no_more_args ( args, first_arg );
-	if ( r != RESULT::OK )
-		return r;
-	m_client << libcli::align_left ( 22 )
-		 << "admin enable" << ": " << m_fgls->m_admin_enable
-		 << libcli::cli_client::endl;
-	return RESULT::OK;
-} // fgls_cli::show_admin_enable
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
 fgls_cli::show_data_port
 (
 	const std::string& command,
@@ -1032,7 +844,7 @@ fgls_cli::show_query_port
 //////////////////////////////////////////////////////////////////////
 
 libcli::RESULT
-fgls_cli::show_admin_port
+fgls_cli::show_cli_port
 (
 	const std::string& command,
 	const strvec& args,
@@ -1043,29 +855,10 @@ fgls_cli::show_admin_port
 	if ( r != RESULT::OK )
 		return r;
 	m_client << libcli::align_left ( 22 )
-		 << "admin port" << ": " << m_fgls->m_admin_port
+		 << "cli port" << ": " << m_fgls->m_cli_port
 		 << libcli::cli_client::endl;
 	return RESULT::OK;
-} // fgls_cli::show_admin_port ()
-
-//////////////////////////////////////////////////////////////////////
-
-libcli::RESULT
-fgls_cli::show_admin_cli
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	libcli::RESULT r = no_more_args ( args, first_arg );
-	if ( r != RESULT::OK )
-		return r;
-	m_client << libcli::align_left ( 22 )
-		 << "admin cli" << ": " << m_fgls->m_admin_cli
-		 << libcli::cli_client::endl;
-	return RESULT::OK;
-} // fgls_cli::show_admin_cli ()
+} // fgls_cli::show_cli_port ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -1204,7 +997,7 @@ operator <<
 	return out;
 }
 
-}
+} // anonymous namespace
 
 //////////////////////////////////////////////////////////////////////
 
@@ -1234,9 +1027,7 @@ fgls_cli::show_relay
 	fgmp::netaddr address;
 	size_t id { 0 };
 	if ( compare ( args[first_arg], "brief", m_compare_case ) )
-	{
 		brief = true;
-	}
 	else
 	{
 		int e;
@@ -1246,9 +1037,7 @@ fgls_cli::show_relay
 			id = 0;
 			address.assign ( args[first_arg] );
 			if ( ! address.is_valid() )
-			{
 				name = args[first_arg];
-			}
 		}
 	}
 	using namespace libcli;
@@ -1261,37 +1050,29 @@ fgls_cli::show_relay
 		{
 			// show only entries that match the ip
 			if ( s->addr != address )
-			{
 				continue;
-			}
 		}
 		else if ( 0 != id )
 		{
 			// show only the entry with id
 			if ( id != s->id )
-			{
 				continue;
-			}
 		}
 		else if ( "" != name )
 		{
 			// show only entries which match name
 			if ( ! compare ( s->name, name, m_compare_case ) )
-			{
 				continue;
-			}
 		}
 		++entries_matched;
 		m_client
-				<< "id " << s->id
-				<< ": "  << s->addr.to_string ()
-				<< ": "  << s->addr.port ()
-				<< " : " << s->name
-				<< cli_client::endl;
+			<< "id " << s->id
+			<< ": "  << s->addr.to_string ()
+			<< ": "  << s->addr.port ()
+			<< " : " << s->name
+			<< cli_client::endl;
 		if ( brief )
-		{
 			continue;
-		}
 		m_client << "  sender    : "
 			 << s->sender_type
 			 << cli_client::endl;
@@ -1336,9 +1117,7 @@ fgls_cli::show_log
 {
 	libcli::RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	fgmp::str_list* buf = logger.logbuf();
 	fgmp::str_it it;
 	buf->lock ();
@@ -1347,9 +1126,7 @@ fgls_cli::show_log
 	{
 		using namespace libcli;
 		for ( it = buf->begin(); it != buf->end(); it++ )
-		{
 			m_client << *it << cli_client::endl;
-		}
 	}
 	catch ( libcli::pager_wants_quit )
 	{
@@ -1375,9 +1152,7 @@ fgls_cli::show_settings
 {
 	libcli::RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	strvec noargs;
 	m_client << libcli::cli_client::endl;
 	show_version ( command, args, first_arg );
@@ -1385,13 +1160,8 @@ fgls_cli::show_settings
 	m_client << "current settings:" << libcli::cli_client::endl;
 	show_daemon         ( "", noargs, 0 );
 	show_bind_addr      ( "", noargs, 0 );
-	show_admin_user     ( "", noargs, 0 );
-	show_admin_pass     ( "", noargs, 0 );
-	show_admin_enable   ( "", noargs, 0 );
 	show_data_port      ( "", noargs, 0 );
 	show_query_port     ( "", noargs, 0 );
-	show_admin_port     ( "", noargs, 0 );
-	show_admin_cli      ( "", noargs, 0 );
 	show_logfile_name   ( "", noargs, 0 );
 	show_debug_level    ( "", noargs, 0 );
 	show_check_interval ( "", noargs, 0 );
@@ -1414,9 +1184,7 @@ fgls_cli::cmd_die
 {
 	libcli::RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_fgls->m_want_exit = true;
 	return libcli::RESULT::OK;
 } // fgls_cli::cmd_die
@@ -1437,13 +1205,12 @@ fgls_cli::show_uptime
 {
 	libcli::RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	using namespace libcli;
-	m_client << "UP since " << fgmp::timestamp_to_datestr ( m_fgls->m_uptime )
-		 << "(" << fgmp::timestamp_to_days ( m_fgls->m_uptime ) << ")"
-		 << cli_client::endl;
+	m_client << "UP since "
+		<< fgmp::timestamp_to_datestr ( m_fgls->m_uptime )
+		<< "(" << fgmp::timestamp_to_days ( m_fgls->m_uptime ) << ")"
+		<< cli_client::endl;
 	return RESULT::OK;
 } // fgls_cli::show_uptime
 
@@ -1462,9 +1229,7 @@ fgls_cli::show_version
 {
 	libcli::RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	using namespace libcli;
 	m_client << "This is " << m_fgls->m_hostname << cli_client::endl;
 	m_client << "FlightGear List Server version "

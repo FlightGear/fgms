@@ -106,10 +106,11 @@ public:
 	void  set_updatetracker ( time_t freq );
 	void  add_relay ( const std::string& server, int port );
 	void  add_crossfeed ( const std::string& server, int port );
-	bool  add_tracker ( const std::string& server, int port, bool is_tracked );
+	bool  add_tracker ( const std::string& server,
+			int port, bool is_tracked );
 	void  add_whitelist  ( const std::string& ip );
 	void  add_blacklist  ( const std::string& ip, const std::string& reason,
-			       time_t timeout = 10 );
+			time_t timeout = 10 );
 	void  close_tracker ();
 	int   check_files();
 	void  show_stats ();
@@ -128,9 +129,9 @@ public:
 
 protected:
 
-#ifndef _MSC_VER
+	#ifndef _MSC_VER
 	daemon m_myself;
-#endif
+	#endif
 	using ip2relay_t  = std::map<netaddr,std::string>;
 	using ip2relay_it = ip2relay_t::iterator;
 	//////////////////////////////////////////////////
@@ -144,35 +145,27 @@ protected:
 	bool		m_reinit_log		= true;
 	bool		m_listening		= false;
 	bool		m_is_parent		= false;
-	bool		m_is_tracked		= false;
 	bool		m_have_config		= false;
-	bool		m_admin_cli		= true;
+	bool		m_cli_enabled		= true;
 	bool		m_run_as_daemon		= false;
-	bool		m_me_is_hub		= false;
+	bool		m_hub_mode		= false;
 	bool		m_want_exit		= false;
 	int		m_data_port		= 5000;
 	int		m_query_port		= m_data_port + 1;
-	int		m_admin_port		= m_data_port + 2;
 	int		m_player_expires	= 10;
 	int		m_out_of_reach		= 100;
 	int		m_max_radar_range	= 2000;
 	fglog::prio	m_debug_level		= fglog::prio::MEDIUM;
-	std::string	m_admin_user		= "";
-	std::string	m_admin_pass		= "";
-	std::string	m_admin_enable		= "";
-	std::string	m_config_name		= "fgms.conf";
 	std::string	m_logfile_name		= "fgms.log";
 	std::string	m_exit_filename		= "fgms_exit";
 	std::string	m_reset_filename	= "fgms_reset";
 	std::string	m_stats_filename	= "fgms_stats";
-	std::string	m_tracker_logname	= "tracker.log";
 	std::string	m_bind_addr		= "";
 	std::string	m_FQDN			= "local";
 	std::string	m_hostname		= "fgms";
 	size_t		m_num_max_clients	= 0;
 	size_t		m_local_clients		= 0;
 	size_t		m_remote_clients	= 0;
-	time_t		m_update_tracker_freq	= 10;
 	int16_t		m_proto_minor_version	= 1;
 	int16_t		m_proto_major_version	= 1;
 	ip2relay_t      m_relay_map;
@@ -180,12 +173,24 @@ protected:
 	fglist		m_white_list;
 	fglist		m_black_list;
 	fglist		m_relay_list;
-	std::ofstream	m_tracker_log;
 	netsocket*	m_data_channel  = nullptr;
 	netsocket*	m_query_channel = nullptr;
 	netsocket*	m_admin_channel = nullptr;
-	tracker*	m_tracker       = nullptr;
 	pilot_list	m_player_list;
+
+	// for the cli
+	uint16_t	m_cli_port;
+
+	// for the tracker module
+	tracker*	m_tracker		= nullptr;
+	std::ofstream	m_tracker_log;
+	bool		m_tracker_enabled	= false;
+	std::string	m_tracker_logname	= "tracker.log";
+	time_t		m_tracker_freq		= 10;
+	std::string	m_tracker_server	= "localhost";
+	int		m_tracker_port		= 8000;
+	bool		m_tracker_reinit	= false;
+
 
 	//////////////////////////////////////////////////
 	// 20150619:0.11.9: be able to disable these functions
@@ -246,24 +251,25 @@ protected:
 	void  set_bind_addr ( const std::string& addr );
 	void  add_client ( const netaddr& sender, char* msg );
 	void  add_bad_client ( const netaddr& sender, std::string& err_msg,
-			       bool is_local, int bytes );
+			bool is_local, int bytes );
 	bool  is_known_relay ( const netaddr& sender, size_t bytes );
 	bool  packet_is_valid ( int bytes, msg_hdr_t* msg_hdr,
-				const netaddr& sender );
+			const netaddr& sender );
 	void  handle_data ( char* msg, int bytes,
-			    const netaddr& sender );
-	int   update_tracker ( const std::string& callsign, const std::string& passwd,
-			       const std::string& modelname, const time_t time,
-			       const int type );
+			const netaddr& sender );
+	int   update_tracker ( const std::string& callsign,
+			const std::string& passwd,
+			const std::string& modelname, const time_t time,
+			const int type );
 	void  drop_client ( pilot_it& player );
 	bool  receiver_wants_data ( const pilot_it& sender,
-				    const pilot& receiver );
+			const pilot& receiver );
 	bool  receiver_wants_chat ( const pilot_it& sender,
-				    const pilot& receiver );
+			const pilot& receiver );
 	bool  is_in_range ( const list_item& relay,
-			    const pilot_it& sender, MSG_ID msg_id );
+			const pilot_it& sender, MSG_ID msg_id );
 	void  send_to_cross ( char* msg, int bytes,
-			      const netaddr& sender );
+			const netaddr& sender );
 	void  send_to_relays ( char* msg, int bytes, pilot_it& sender );
 	void  want_exit ();
 	void  print_version ();

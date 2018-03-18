@@ -55,132 +55,150 @@ private:
 	// show commands
 	//////////////////////////////////////////////////
 	RESULT show_daemon ( const std::string& command,
-			     const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_bind_addr ( const std::string& command,
-				const strvec& args, size_t first_arg );
-	RESULT show_admin_user ( const std::string& command,
-				 const strvec& args, size_t first_arg );
-	RESULT show_admin_pass ( const std::string& command,
-				 const strvec& args, size_t first_arg );
-	RESULT show_admin_enable ( const std::string& command,
-				   const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_data_port ( const std::string& command,
-				const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_query_port ( const std::string& command,
-				 const strvec& args, size_t first_arg );
-	RESULT show_admin_port ( const std::string& command,
-				 const strvec& args, size_t first_arg );
-	RESULT show_admin_cli ( const std::string& command,
-				const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
+	RESULT show_cli_port ( const std::string& command,
+			const strvec& args, size_t first_arg );
 	RESULT show_logfile_name ( const std::string& command,
-				   const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_debug_level ( const std::string& command,
-				  const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_hostname ( const std::string& command,
-			       const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_stats ( const std::string& command,
-			    const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_settings ( const std::string& command,
-			       const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_version ( const std::string& command,
-			      const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_uptime ( const std::string& command,
-			     const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_player_expires ( const std::string& command,
-				     const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_max_radar_range ( const std::string& command,
-				      const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_fqdn ( const std::string& command,
-			   const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_out_of_reach ( const std::string& command,
-				   const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_pilots ( const std::string& command,
-			   const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_log ( const std::string& command,
-			  const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_whitelist ( const std::string& command,
-				const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_blacklist ( const std::string& command,
-				const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_crossfeed ( const std::string& command,
-				const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_relay ( const std::string& command,
-			    const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT show_tracker ( const std::string& command,
-			      const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 
 	//////////////////////////////////////////////////
 	// configure fgms commands
 	//////////////////////////////////////////////////
 	RESULT cfg_fgms ( const std::string& command,
-			  const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT cfg_daemon ( const std::string& command,
-			    const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT cfg_bind_addr ( const std::string& command,
-			       const strvec& args, size_t first_arg );
-	RESULT cfg_admin_user ( const std::string& command,
-				const strvec& args, size_t first_arg );
-	RESULT cfg_admin_pass ( const std::string& command,
-				const strvec& args, size_t first_arg );
-	RESULT cfg_admin_enable ( const std::string& command,
-				  const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT cfg_data_port ( const std::string& command,
-			       const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT cfg_query_port ( const std::string& command,
-				const strvec& args, size_t first_arg );
-	RESULT cfg_admin_port ( const std::string& command,
-				const strvec& args, size_t first_arg );
-	RESULT cfg_admin_cli ( const std::string& command,
-			       const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT cfg_logfile_name ( const std::string& command,
-				  const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT cfg_debug_level ( const std::string& command,
-				 const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT cfg_hostname ( const std::string& command,
-			      const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT cfg_player_expires ( const std::string& command,
-				    const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT cfg_max_radar_range ( const std::string& command,
-				     const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT cfg_fqdn ( const std::string& command,
-			  const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	RESULT cfg_out_of_reach ( const std::string& command,
-				  const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
+	RESULT cfg_hub_mode ( const std::string& command,
+			const strvec& args, size_t first_arg );
+
+	//////////////////////////////////////////////////
+	// configure tracker commands
+	//////////////////////////////////////////////////
+	RESULT cfg_tracker ( const std::string& command,
+			const strvec& args, size_t first_arg );
+	RESULT cfg_tracker_enable  ( const std::string& command,
+			const strvec& args, size_t first_arg );
+	RESULT cfg_tracker_log  ( const std::string& command,
+			const strvec& args, size_t first_arg );
+	RESULT cfg_tracker_server  ( const std::string& command,
+			const strvec& args, size_t first_arg );
+	RESULT cfg_tracker_port  ( const std::string& command,
+			const strvec& args, size_t first_arg );
+	RESULT cfg_tracker_freq  ( const std::string& command,
+			const strvec& args, size_t first_arg );
+
+	//////////////////////////////////////////////////
+	// configure cli commands
+	//////////////////////////////////////////////////
+	RESULT cfg_cli ( const std::string& command,
+			const strvec& args, size_t first_arg );
+	RESULT cfg_cli_enable ( const std::string& command,
+			const strvec& args, size_t first_arg );
+	RESULT cfg_cli_port ( const std::string& command,
+			const strvec& args, size_t first_arg );
 
 	//////////////////////////////////////////////////
 	// show/modify whitelist
 	//////////////////////////////////////////////////
-	RESULT cmd_whitelist_add    ( const std::string& command,
-				      const strvec& args, size_t first_arg );
+	RESULT cfg_whitelist ( const std::string& command,
+			const strvec& args, size_t first_arg );
+	RESULT cmd_whitelist_add ( const std::string& command,
+			const strvec& args, size_t first_arg );
 	RESULT cmd_whitelist_delete ( const std::string& command,
-				      const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	//////////////////////////////////////////////////
 	// show/modify blacklist
 	//////////////////////////////////////////////////
-	RESULT cmd_blacklist_add    ( const std::string& command,
-				      const strvec& args, size_t first_arg );
+	RESULT cfg_blacklist ( const std::string& command,
+			const strvec& args, size_t first_arg );
+	RESULT cmd_blacklist_add ( const std::string& command,
+			const strvec& args, size_t first_arg );
 	RESULT cmd_blacklist_delete ( const std::string& command,
-				      const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	//////////////////////////////////////////////////
 	// show/modify list of crossfeeds
 	//////////////////////////////////////////////////
-	RESULT cmd_crossfeed_add    ( const std::string& command,
-				      const strvec& args, size_t first_arg );
+	RESULT cfg_crossfeed ( const std::string& command,
+			  const strvec& args, size_t first_arg );
+	RESULT cmd_crossfeed_add ( const std::string& command,
+			const strvec& args, size_t first_arg );
 	RESULT cmd_crossfeed_delete ( const std::string& command,
-				      const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 	//////////////////////////////////////////////////
 	// show/modify list of relays
 	//////////////////////////////////////////////////
-	RESULT cmd_relay_add    ( const std::string& command,
-				  const strvec& args, size_t first_arg );
+	RESULT cfg_relay ( const std::string& command,
+			const strvec& args, size_t first_arg );
+	RESULT cmd_relay_add ( const std::string& command,
+			const strvec& args, size_t first_arg );
 	RESULT cmd_relay_delete ( const std::string& command,
-				  const strvec& args, size_t first_arg );
+			const strvec& args, size_t first_arg );
 
 	//////////////////////////////////////////////////
 	// general  commands
 	//////////////////////////////////////////////////
-	RESULT cmd_die           ( const std::string& command,
-				   const strvec& args, size_t first_arg );
+	RESULT cmd_die ( const std::string& command,
+			const strvec& args, size_t first_arg );
 	// TODO: change the size of the logbuffer
 private:
 	fgmp::fgms* m_fgms;

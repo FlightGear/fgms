@@ -32,14 +32,14 @@
 namespace libcli
 {
 
-// Don't use some obscure #defines from stdlib.
-// Use a local definition
+/// Don't use some obscure #defines from stdlib.
+/// Use a local definition
 constexpr int ctrl ( int c )
 {
 	return c & 0x1f;
 }
 
-// using names instead of cryptic characters
+/// using names instead of cryptic characters
 namespace KEY
 {
 enum
@@ -69,8 +69,9 @@ enum
  *
  * @brief a simple line editor
  *
- * @TODO: can not handle UTF-X characters
- * @TODO: movement: jump_back_word, jump_fwd_word
+ * @todo: can not handle UTF-X characters
+ * @todo: movement: jump_back_word, jump_fwd_word
+ * @todo: The handling of ESC-sequences crummy.
  */
 class line_editor
 {
@@ -215,9 +216,7 @@ line_editor::char_before_cursor
 () const
 {
 	if ( m_cursor == 0 )
-	{
 		return 0;
-	}
 	return m_line[m_cursor - 1];
 }
 

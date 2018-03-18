@@ -42,12 +42,6 @@
 namespace libcli
 {
 
-struct cli_users
-{
-	std::string password;
-	cmd_priv    privlevel;
-}; // struct cli_users
-
 /** @defgroup libcli The CLI Library */
 /** @{ */
 
@@ -59,8 +53,8 @@ class cli
 {
 public:
 	using string = std::string;
-	using userlist = std::map < string, cli_users >;
-	using auth_func = std::function <cmd_priv ( const string&, const string& ) >;
+	using auth_func = std::function
+	  <cmd_priv ( const string&, const string& ) >;
 	using enable_func = std::function< int ( const string& ) >;
 	using regular_callback = std::function< int () >;
 	using filterlist  = std::vector<filter>;
@@ -81,7 +75,7 @@ public:
 		const string& password,
 		const cmd_priv privlevel
 	);
-	void deny_user ( const string& username );
+	RESULT deny_user ( const string& username );
 	void regular ( line_editor::std_callback callback );
 	void show_help ( const string& arg, const string& desc );
 	cmd_priv set_privilege ( const cmd_priv privilege );
@@ -93,20 +87,8 @@ public:
 	inline void set_hostname ( const string& hostname );
 	inline void set_modestr  ( const string& modestring );
 	inline void set_auth_callback ( auth_func callback );
-	inline void set_enable_callback ( enable_func callback );
-	inline void set_enable_password ( const string& password );
 	inline void set_banner ( const string& banner );
 	inline void set_compare_case ( bool cmpcase );
-	RESULT internal_enable (
-		const string& command,
-		const strvec& args,
-		size_t first_arg
-		);
-	RESULT internal_disable (
-		const string& command,
-		const strvec& args,
-		size_t first_arg
-		);
 	RESULT internal_help (
 		const string& command,
 		const strvec& args,
@@ -147,7 +129,12 @@ public:
 		const strvec& args,
 		size_t first_arg
 		);
-	RESULT internal_add_users (
+	RESULT internal_add_user (
+		const string& command,
+		const strvec& args,
+		size_t first_arg
+		);
+	RESULT internal_del_user (
 		const string& command,
 		const strvec& args,
 		size_t first_arg
@@ -212,7 +199,6 @@ protected:
 		const size_t first_arg
 		) const;
 
-	int  check_enable ( const string& pass ) const;
 	int  check_user_auth (
 		const string& username,
 		const string& password
@@ -243,7 +229,7 @@ protected:
 		const strvec& filters,
 		const size_t start );
 	line_editor m_editor;		///< internal line editor
-	std::string m_username;		///< login name of user
+	std::string m_username = "tty-user";	///< login name of user
 	bool m_compare_case  = false;
 	std::string m_prompt;		///< current prompt
 	std::string m_hostname;		///< part of the prompt
@@ -253,7 +239,6 @@ protected:
 	int m_privilege = -1;		///< current privilege level of the user
 	int m_mode  = -1;		///< current 'mode' of the cli
 	CLI_STATE   m_state;		///< current state of the cli
-	userlist    m_users;		///< internally known users
 	auth_func   m_auth_callback   = nullptr;
 	enable_func m_enable_callback = nullptr;
 	command::cmdlist m_commands;	///< list of known commands
@@ -329,33 +314,6 @@ cli::set_auth_callback
 {
 	m_auth_callback = callback;
 } // cli::set_auth_callback ()
-
-//////////////////////////////////////////////////////////////////////
-
-/**
- * Set an authentication callback for the enable password.
- * Can be used to authenticate via RADIUS or TACACS.
- */
-void
-cli::set_enable_callback
-(
-	enable_func callback
-)
-{
-	m_enable_callback = callback;
-} // cli::set_enable_callback ()
-
-
-//////////////////////////////////////////////////////////////////////
-
-void
-cli::set_enable_password
-(
-	const std::string& password
-)
-{
-	m_enable_password = password;
-} // cli::set_enable_password ()
 
 //////////////////////////////////////////////////////////////////////
 

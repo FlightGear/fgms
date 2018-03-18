@@ -53,9 +53,7 @@ match_filter::operator ()
 {
 	bool r = ( line.find ( m_match_this ) != std::string::npos );
 	if ( m_invert )
-	{
 		r = ( r == false );
-	}
 	return r;
 } // match_filter::operator () ()
 
@@ -76,13 +74,9 @@ begin_filter::operator ()
 )
 {
 	if ( m_have_match )
-	{
 		return true;
-	}
 	if ( line.find ( m_match_this ) != std::string::npos )
-	{
 		m_have_match = true;
-	}
 	return m_have_match;
 } // begin_filter::operator () ()
 
@@ -106,15 +100,11 @@ between_filter::operator ()
 	if ( ! m_have_match )
 	{
 		if ( line.find ( m_start_match ) != std::string::npos )
-		{
 			m_have_match = true;
-		}
 		return m_have_match;
 	}
 	if ( line.find ( m_end_match ) != std::string::npos )
-	{
 		m_have_match = false;
-	}
 	return m_have_match;
 } // between_filter::operator () ()
 
@@ -134,7 +124,6 @@ count_filter::count_filter
 count_filter::~count_filter
 ()
 {
-	// *m_client << UNFILTERED << m_counter << endl;        !! segfaults
 	m_client->operator << ( m_counter );
 	m_client->operator << ( "\r\n" );
 } // count_filter::count_filter
@@ -148,9 +137,7 @@ count_filter::operator ()
 )
 {
 	if ( line.find_first_not_of ( " " ) != std::string::npos )
-	{
 		m_counter++;
-	}
 	return false; // no output
 } // count_filter::operator () ()
 
@@ -194,17 +181,11 @@ file_filter::file_filter
 )
 {
 	if ( append )
-	{
 		file.open ( filename, std::ofstream::out | std::ofstream::app );
-	}
 	else
-	{
 		file.open ( filename, std::ofstream::out );
-	}
 	if ( ! file )
-	{
-		throw std::runtime_error ( "could not open '" + filename + "'" );
-	}
+		throw std::runtime_error( "could not open '" + filename + "'" );
 } // file_filter::file_filter ()
 
 //////////////////////////////////////////////////////////////////////
@@ -213,9 +194,7 @@ file_filter::~file_filter
 ()
 {
 	if ( file )
-	{
 		file.close ();
-	}
 } // file_filter::~file_filter ()
 
 //////////////////////////////////////////////////////////////////////
@@ -231,7 +210,6 @@ file_filter::operator ()
 } // file_filter::operator () ()
 
 //////////////////////////////////////////////////////////////////////
-
 
 } // namespace libcli
 

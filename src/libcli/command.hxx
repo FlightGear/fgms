@@ -90,7 +90,7 @@ public:
 		const std::string& word,
 		const bool compare_case = false
 	);
-private:
+protected:
 	/// the command name
 	std::string m_name;
 	/// a brief desciption what the command does
@@ -193,7 +193,6 @@ command::has_children
 } // command::has_children ()
 
 //////////////////////////////////////////////////////////////////////
-
 
 } // namespace libcli
 

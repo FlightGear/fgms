@@ -72,10 +72,7 @@ std::vector<filter_cmds_t> filter_cmds
 
 namespace
 {
-
-	//////////////////////////////////////////////////
-
-	// little helper for parse_line()
+	/// little helper for parse_line()
 	inline bool
 	is_quote
 	(
@@ -87,6 +84,13 @@ namespace
 
 	//////////////////////////////////////////////////
 
+	/// internally known users
+	struct cli_users
+	{
+		std::string password;
+		cmd_priv    privlevel;
+	}; // struct cli_users
+	std::map < std::string, cli_users > m_users;
 } // anonymous namespace
 
 //////////////////////////////////////////////////////////////////////
@@ -120,22 +124,21 @@ cli::allow_user
  * Remove a user from the internal list of known users.
  * @param username The name of the user to remove.
  */
-void
+RESULT
 cli::deny_user
 (
 	const std::string& username
 )
 {
-	if ( m_users.empty() )
-	{
-		return;
-	}
 	auto u = m_users.find ( username );
 	if ( u == m_users.end() )
 	{
-		return;
+		m_client << "user '" << username << "' not found!"
+			<< libcli::cli_client::endl;
+		return RESULT::ERROR_ANY;
 	}
 	m_users.erase ( u );
+	return RESULT::OK;
 } // cli::deny_user ()
 
 //////////////////////////////////////////////////////////////////////
@@ -166,38 +169,28 @@ cli::build_shortest
 	command::cmdlist& commands
 )
 {
-for ( const auto& c : commands )
+	for ( const auto& c : commands )
 	{
-for ( const auto& p : commands )
+		for ( const auto& p : commands )
 		{
 			if ( c == p )
-			{
 				continue;
-			}
 			if ( c->m_privilege < p->m_privilege )
-			{
 				continue;
-			}
 			if ( ( c->m_mode != p->m_mode )
-					&&   ( c->m_mode != CLI_MODE::ANY ) )
-			{
+			&&   ( c->m_mode != CLI_MODE::ANY ) )
 				continue;
-			}
 			size_t len = c->compare_len (
 			  p->name(), m_compare_case );
 			if ( len > c->unique_len() )
 			{
 				if ( len == p->name().size() )
-				{
 					++len;
-				}
 				c->unique_len ( len );
 			}
 		}
 		if ( c->has_children () )
-		{
 			build_shortest ( c->m_children );
-		}
 	}
 } // cli::build_shortest ()
 
@@ -217,17 +210,11 @@ cli::build_prompt
 {
 	std::string prompt;
 	if ( m_hostname != "" )
-	{
 		prompt += m_hostname;
-	}
 	if ( m_modestr != "" )
-	{
 		prompt += m_modestr;
-	}
 	if ( m_prompt != "" )
-	{
 		prompt += m_prompt;
-	}
 	m_editor.set_prompt ( prompt );
 } // cli::build_prompt ()
 
@@ -289,9 +276,7 @@ cli::register_command
 )
 {
 	if ( ! cmd )
-	{
 		return;
-	}
 	if ( parent )
 	{
 		for ( const auto c : parent->m_children )
@@ -425,78 +410,6 @@ cli::need_n_args
 //////////////////////////////////////////////////////////////////////
 
 RESULT
-cli::internal_enable
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	RESULT r = no_more_args ( args, first_arg );
-	if ( r != RESULT::OK )
-	{
-		return r;
-	}
-	if ( m_privilege == PRIVLEVEL::PRIVILEGED )
-	{
-		// already enabled
-		return RESULT::OK;
-	}
-	if ( ( m_enable_password == "" ) && ( m_enable_callback == nullptr ) )
-	{
-		// no password needed
-		m_client << "-ok-" << cli_client::endl;
-		m_state = CLI_STATE::NORMAL;
-		set_privilege ( PRIVLEVEL::PRIVILEGED );
-		return RESULT::OK;
-	}
-	std::string password;
-	int c;
-	m_editor.do_echo ( false );
-	m_editor.do_prompt ( false );
-	m_client << "Password: " << cli_client::flush;
-	c = m_editor.read_line ();
-	password = m_editor.get_line ();
-	m_editor.do_echo ( true );
-	m_editor.do_prompt ( true );
-	int priv = check_enable ( password );
-	if ( priv != -1 )
-	{
-		m_client << "-ok-" << cli_client::endl;
-		m_state = CLI_STATE::NORMAL;
-		set_privilege ( priv );
-	}
-	else
-	{
-		m_client << cli_client::endl << "Access denied"
-			 << cli_client::endl << cli_client::endl;
-	}
-	return RESULT::OK;
-} // cli::internal_enable ()
-
-//////////////////////////////////////////////////////////////////////
-
-RESULT
-cli::internal_disable
-(
-	const std::string& command,
-	const strvec& args,
-	size_t first_arg
-)
-{
-	RESULT r = no_more_args ( args, first_arg );
-	if ( r != RESULT::OK )
-	{
-		return r;
-	}
-	set_privilege ( PRIVLEVEL::UNPRIVILEGED );
-	set_configmode ( CLI_MODE::EXEC, "" );
-	return RESULT::OK;
-} //  cli::internal_disable ()
-
-//////////////////////////////////////////////////////////////////////
-
-RESULT
 cli::internal_help
 (
 	const std::string& command,
@@ -506,25 +419,23 @@ cli::internal_help
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_client << cli_client::endl;
 	m_client <<
-		 "Help may be requested at any point in a command by entering\r\n"
-		 "a question mark '?'.  If nothing matches, the help list will\r\n"
-		 "be empty and you must backup until entering a '?' shows the\r\n"
-		 "available options.\r\n"
-		 "Two styles of help are provided:\r\n"
-		 "1. Full help is available when you are ready to enter a\r\n"
-		 "   command argument and press the <TAB> key, or enter a\r\n"
-		 "   question mark.\r\n"
-		 "   argument.\r\n"
-		 "2. Partial help is provided when an abbreviated argument is entered"
-		 "\r\n"
-		 "   and you want to know what arguments match the input\r\n"
-		 "   (e.g. 'show pr?'.)\r\n"
-		 << cli_client::endl;
+	 "Help may be requested at any point in a command by entering\r\n"
+	 "a question mark '?'.  If nothing matches, the help list will\r\n"
+	 "be empty and you must backup until entering a '?' shows the\r\n"
+	 "available options.\r\n"
+	 "Two styles of help are provided:\r\n"
+	 "1. Full help is available when you are ready to enter a\r\n"
+	 "   command argument and press the <TAB> key, or enter a\r\n"
+	 "   question mark.\r\n"
+	 "   argument.\r\n"
+	 "2. Partial help is provided when an abbreviated argument is entered"
+	 "\r\n"
+	 "   and you want to know what arguments match the input\r\n"
+	 "   (e.g. 'show pr?'.)\r\n"
+	 << cli_client::endl;
 	return RESULT::OK;
 } // cli::internal_help ()
 
@@ -540,9 +451,7 @@ cli::internal_whoami
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_client << cli_client::endl;
 	m_client << "You are '" << m_username << "'" << cli_client::endl;
 	return RESULT::OK;
@@ -560,9 +469,7 @@ cli::internal_history
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	m_client << cli_client::endl;
 	m_editor.show_history ();
 	return RESULT::OK;
@@ -580,9 +487,7 @@ cli::internal_quit
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	set_privilege ( PRIVLEVEL::UNPRIVILEGED );
 	set_configmode ( CLI_MODE::EXEC, "" );
 	m_state = CLI_STATE::QUIT;
@@ -605,9 +510,7 @@ cli::internal_exit
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	set_configmode ( CLI_MODE::EXEC, "" );
 	return RESULT::OK;
 } // cli::internal_exit ()
@@ -628,14 +531,13 @@ cli::internal_end
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	if ( m_mode == CLI_MODE::EXEC )
-	{
 		return internal_quit ( command, args, first_arg );
-	}
-	set_configmode ( m_mode - 1, "" );
+	if ( m_mode == CLI_MODE::CONFIG )
+		set_configmode ( CLI_MODE::EXEC, "" );
+	else	// mode > CLI_MODE::CONFIG
+		set_configmode ( CLI_MODE::CONFIG, "" );
 	return RESULT::OK;
 } // cli::internal_end ()
 
@@ -654,9 +556,7 @@ cli::internal_pager
 	if ( num_args == 0 )
 	{
 		if ( m_client.max_screen_lines() == 0 )
-		{
 			m_client  << "pager is disabled!" << cli_client::endl;
-		}
 		m_client  << "show " << m_client.max_screen_lines()
 			  << " lines without pausing" << cli_client::endl;
 		return RESULT::OK;
@@ -675,19 +575,13 @@ cli::internal_pager
 		int invalid { -1 };
 		lines = fgmp::str_to_num<size_t> ( args[first_arg], invalid );
 		if ( invalid )
-		{
 			return RESULT::INVALID_ARG;
-		}
 	}
 	else
-	{
 		return no_more_args ( args, first_arg + 1 );
-	}
 	m_client.max_screen_lines ( lines );
 	if ( lines == 0 )
-	{
 		m_client  << "pager disabled!" << cli_client::endl;
-	}
 	else
 		m_client  << "show " << m_client.max_screen_lines()
 			  << " lines without pausing" << cli_client::endl;
@@ -713,9 +607,7 @@ cli::internal_configure
 {
 	RESULT r = no_more_args ( args, first_arg );
 	if ( r != RESULT::OK )
-	{
 		return r;
-	}
 	set_configmode ( CLI_MODE::CONFIG, "" );
 	return RESULT::OK;
 } // cli::internal_configure ()
@@ -723,7 +615,7 @@ cli::internal_configure
 //////////////////////////////////////////////////////////////////////
 
 RESULT
-cli::internal_add_users
+cli::internal_add_user
 (
 	const std::string& command,
 	const strvec& args,
@@ -777,7 +669,29 @@ cli::internal_add_users
 		return RESULT::MISSING_ARG;
 	allow_user ( username, password, privlevel );
 	return RESULT::OK;
-} // cli::internal_users ()
+} // cli::internal_add_user ()
+
+//////////////////////////////////////////////////////////////////////
+
+RESULT
+cli::internal_del_user
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT n { need_n_args ( 1, args, first_arg ) };
+	if ( RESULT::OK != n )
+		return n;
+	if ( wants_help ( args[first_arg] ) )
+	{
+		show_help ( "NAME", "delete user NAME" );
+		return RESULT::ERROR_ANY;
+	}
+	deny_user ( args[first_arg] );
+	return RESULT::OK;
+} // cli::internal_del_user ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -836,7 +750,7 @@ cli::cli
 	set_privilege ( PRIVLEVEL::UNPRIVILEGED );
 	set_configmode ( CLI_MODE::EXEC, "" );
 	using namespace std::placeholders;
-#define _ptr(X) (std::bind (& X, this, _1, _2, _3))
+	#define _ptr(X) (std::bind (& X, this, _1, _2, _3))
 	register_command ( new command (
 		"help",
 		_ptr ( cli::internal_help ),
@@ -872,21 +786,7 @@ cli::cli
 		CLI_MODE::ANY,
 		"Set number of lines on a screen"
 	) );
-	register_command ( new command (
-		"enable",
-		_ptr ( cli::internal_enable ),
-		PRIVLEVEL::UNPRIVILEGED,
-		CLI_MODE::EXEC,
-		"Turn on privileged commands"
-	) );
-	register_command ( new command (
-		"disable",
-		_ptr ( cli::internal_disable ),
-		PRIVLEVEL::PRIVILEGED,
-		CLI_MODE::EXEC,
-		"Turn off privileged commands"
-	) );
-#undef _ptr
+	#undef _ptr
 } // cli::cli ()
 
 //////////////////////////////////////////////////////////////////////
@@ -894,16 +794,8 @@ cli::cli
 cli::~cli
 ()
 {
-	m_users.clear();
 	m_commands.clear();
 } // cli::~cli ()
-
-//////////////////////////////////////////////////////////////////////
-
-namespace
-{
-
-} // namespace
 
 //////////////////////////////////////////////////////////////////////
 
@@ -926,26 +818,18 @@ cli::parse_line
 		size_t start = line.find_first_not_of ( " \t\f\n\r\v", pos );
 		size_t end;
 		if ( start == std::string::npos )
-		{
 			return RESULT::OK;
-		}
 		if ( line[start] == '|' )
 		{
 			if ( in_filter )
-			{
 				filters.push_back ( "|" );
-			}
 			else
-			{
 				in_filter = true;
-			}
 			pos = start + 1;
 			continue;
 		}
 		if ( '#' ==  line[start] )
-		{
 			return RESULT::OK;
-		}
 		if ( is_quote ( line[start] ) )
 		{
 			char q = line[start];
@@ -959,33 +843,23 @@ cli::parse_line
 				return RESULT::INVALID_ARG;
 			}
 			if ( in_filter )
-			{
 				filters.push_back (
 					line.substr ( start, end - start ) );
-			}
 			else
-			{
 				commands.push_back (
 					line.substr ( start, end - start ) );
-			}
 			pos = end + 1;
 			continue;
 		}
 		end = line.find_first_of ( " \t\f\n\r\v|#\"'", start );
 		if ( in_filter )
-		{
 			filters.push_back (
 				line.substr ( start, end - start ) );
-		}
 		else
-		{
 			commands.push_back (
 				line.substr ( start, end - start ) );
-		}
 		if ( start == end )
-		{
 			return RESULT::OK;
-		}
 		pos = end;
 	}
 	return RESULT::OK;
@@ -1004,13 +878,9 @@ cli::command_available
 ) const
 {
 	if ( m_privilege < cmd->m_privilege )
-	{
 		return false;
-	}
 	if ( ( m_mode != cmd->m_mode ) && ( cmd->m_mode != CLI_MODE::ANY ) )
-	{
 		return false;
-	}
 	return true;
 } // cli::command_available ()
 
@@ -1029,9 +899,7 @@ cli::get_filter_completions
 )
 {
 	if ( start_word > filters.size() )
-	{
 		return;
-	}
 	size_t current  { start_word };
 	size_t word_num;
 	bool   complete; // filter has all needed arguments?
@@ -1049,9 +917,7 @@ cli::get_filter_completions
 		{
 			complete = false;
 			if ( ! fgmp::compare ( word, f.name, m_compare_case ) )
-			{
 				continue;
-			}
 			found = true;
 			if ( word.size () < f.unique_len )
 			{
@@ -1061,9 +927,7 @@ cli::get_filter_completions
 			// found a unique filter name
 			if ( current != filters.size() - 1 )
 				// only expand at end of line
-			{
 				continue;
-			}
 			if ( ( f.name != word ) || ( last_char != ' ' ) )
 			{
 				// needs expansion
@@ -1076,14 +940,10 @@ cli::get_filter_completions
 			{
 				++current;
 				if ( filters [ current ] == "|" )
-				{
 					break;
-				}
 				++num_args;
 				if ( num_args == f.num_args )
-				{
 					break;
-				}
 			}
 			if ( num_args < f.num_args )
 			{
@@ -1097,9 +957,7 @@ cli::get_filter_completions
 			break;
 		}
 		if ( ! found )
-		{
 			break;
-		}
 		++current;
 	}
 	if ( ! found )
@@ -1130,9 +988,7 @@ cli::get_completions
 		for ( auto c : cmds )
 		{
 			if ( ! command_available ( c ) )
-			{
 				continue;
-			}
 			show_help ( c->name(), c->help() );
 		}
 		return;
@@ -1141,13 +997,9 @@ cli::get_completions
 	for ( auto c : cmds )
 	{
 		if ( ! command_available ( c ) )
-		{
 			continue;
-		}
 		if ( ! c->compare ( word, m_compare_case ) )
-		{
 			continue;
-		}
 		// found a valid completion
 		if ( word.size () < c->unique_len() )
 		{
@@ -1210,9 +1062,7 @@ cli::install_begin_filter
 	if ( RESULT::TOO_MANY_ARGS == r )
 	{
 		if ( "|" != filters[start + 1] )
-		{
 			return r;
-		}
 	}
 	if ( wants_help ( filters[start] ) )
 	{
@@ -1288,14 +1138,10 @@ cli::install_count_filter
 	if ( RESULT::TOO_MANY_ARGS == r )
 	{
 		if ( "|" != filters[start] )
-		{
 			return r;
-		}
 	}
 	if ( RESULT::SHOW_HELP == r )
-	{
 		return r;
-	}
 	m_client.register_filter ( new count_filter ( & m_client ) );
 	return RESULT::OK;
 } // cli::install_count_filter ()
@@ -1318,9 +1164,7 @@ cli::install_exclude_filter
 	if ( RESULT::TOO_MANY_ARGS == r )
 	{
 		if ( "|" != filters[start + 1] )
-		{
 			return r;
-		}
 	}
 	if ( wants_help ( filters[start] ) )
 	{
@@ -1349,9 +1193,7 @@ cli::install_include_filter
 	if ( RESULT::TOO_MANY_ARGS == r )
 	{
 		if ( "|" != filters[start + 1] )
-		{
 			return r;
-		}
 	}
 	if ( wants_help ( filters[start] ) )
 	{
@@ -1380,9 +1222,7 @@ cli::install_pager_filter
 	if ( RESULT::TOO_MANY_ARGS == r )
 	{
 		if ( "|" != filters[start + 1] )
-		{
 			return r;
-		}
 	}
 	if ( wants_help ( filters[start] ) )
 	{
@@ -1392,9 +1232,7 @@ cli::install_pager_filter
 	int e;
 	size_t v { fgmp::str_to_num<size_t> ( filters[start], e ) };
 	if ( e )
-	{
 		return RESULT::INVALID_ARG;
-	}
 	m_client.register_filter ( new pager_filter (  & m_client, v ) );
 	return RESULT::OK;
 } // cli::install_pager_filter ()
@@ -1424,18 +1262,12 @@ cli::install_file_filter
 			}
 			if ( fgmp::compare ( filters[i],
 				"append", m_compare_case ) )
-			{
 				append = true;
-			}
 			else if ( fgmp::compare ( filters[i],
 				"replace", m_compare_case ) )
-			{
 				append = false;
-			}
 			else
-			{
 				return RESULT::INVALID_ARG;
-			}
 			break;
 		case 1: // filename
 			if ( wants_help ( filters[i] ) )
@@ -1457,9 +1289,7 @@ cli::install_file_filter
 		++arg_num;
 	}
 	if ( arg_num < 2 )
-	{
 		return RESULT::MISSING_ARG;
-	}
 	try
 	{
 		m_client.register_filter (
@@ -1492,9 +1322,7 @@ cli::install_filter
 	{
 		// nothing but a '?' => list all possible filters
 		for ( auto f : filter_cmds )
-		{
 			show_help ( f.name, f.help );
-		}
 		return make_pair ( RESULT::ERROR_ANY, "" );
 	}
 	size_t num { 1 };
@@ -1513,9 +1341,7 @@ cli::install_filter
 			{
 				if ( ! fgmp::compare ( word, t.name,
 					m_compare_case ) )
-				{
 					continue;
-				}
 				show_help ( t.name, t.help );
 			}
 			return make_pair ( RESULT::ERROR_ANY, "" );
@@ -1524,9 +1350,7 @@ cli::install_filter
 		{
 			RESULT r = install_begin_filter ( filters, num );
 			if ( RESULT::OK != r )
-			{
 				return make_pair ( r, "begin" );
-			}
 			f   += 2; // 'begin'  + 'arg1'
 			num += 2;
 			continue;
@@ -1535,9 +1359,7 @@ cli::install_filter
 		{
 			RESULT r = install_between_filter ( filters, num );
 			if ( RESULT::OK != r )
-			{
 				return make_pair ( r, "between" );
-			}
 			f   += 3; // 'between'  + 'arg1' + 'arg2'
 			num += 3;
 			continue;
@@ -1546,9 +1368,7 @@ cli::install_filter
 		{
 			RESULT r = install_count_filter ( filters, num );
 			if ( RESULT::OK != r )
-			{
 				return make_pair ( r, "count" );
-			}
 			f   += 1; // 'count'
 			num += 1;
 			continue;
@@ -1557,9 +1377,7 @@ cli::install_filter
 		{
 			RESULT r = install_include_filter ( filters, num );
 			if ( RESULT::OK != r )
-			{
 				return make_pair ( r, "include" );
-			}
 			f   += 2; // 'include' + 'arg1'
 			num += 2;
 			continue;
@@ -1568,9 +1386,7 @@ cli::install_filter
 		{
 			RESULT r = install_exclude_filter ( filters, num );
 			if ( RESULT::OK != r )
-			{
 				return make_pair ( r, "exclude" );
-			}
 			f   += 2; // 'exclude' + 'arg1'
 			num += 2;
 			continue;
@@ -1579,9 +1395,7 @@ cli::install_filter
 		{
 			RESULT r = install_pager_filter ( filters, num );
 			if ( RESULT::OK != r )
-			{
 				return make_pair ( r, "pager" );
-			}
 			f   += 2; // 'pager' + 'arg1'
 			num += 2;
 			continue;
@@ -1590,9 +1404,7 @@ cli::install_filter
 		{
 			RESULT r = install_file_filter ( filters, num );
 			if ( RESULT::OK != r )
-			{
 				return make_pair ( r, "file" );
-			}
 			f   += 3; // 'file' + 'arg1' + 'arg2'
 			num += 3;
 			continue;
@@ -1625,9 +1437,7 @@ cli::exec_command
 	using std::make_pair;
 	using std::string;
 	if ( start_word >= words.size() )
-	{
 		return make_pair ( RESULT::ERROR_ANY, "" );
-	}
 	std::string word { words [ start_word ] };
 	size_t num_words = words.size() - 1;
 	// deal with ? for help
@@ -1636,9 +1446,7 @@ cli::exec_command
 		for ( auto c : cmds )
 		{
 			if ( ! command_available ( c ) )
-			{
 				continue;
-			}
 			show_help ( c->name(), c->help() );
 		}
 		return make_pair ( RESULT::OK, "" );
@@ -1647,15 +1455,11 @@ cli::exec_command
 	for ( auto c : cmds )
 	{
 		if ( ! command_available ( c ) )
-		{
 			continue;
-		}
 		if ( wants_help ( word ) )
 		{
 			if ( ! c->compare( word,m_compare_case,word.size()-1 ) )
-			{
 				continue;
-			}
 			show_help ( c->name(), c->help() );
 			if ( word.size () - 1 < c->unique_len() )
 			{
@@ -1665,18 +1469,14 @@ cli::exec_command
 			return make_pair ( RESULT::OK, "" );
 		}
 		if ( ! c->compare ( word, m_compare_case ) )
-		{
 			continue;
-		}
 		if ( word.size () < c->unique_len() )
 		{
 			++num_commands;
 			continue;
 		}
 		if ( ! c->compare ( word, m_compare_case, c->unique_len() ) )
-		{
 			continue;
-		}
 		// found the command
 		if ( start_word < num_words )
 		{
@@ -1694,9 +1494,7 @@ cli::exec_command
 			// on the command line
 			RESULT r = (*c) ( c->name(), words, start_word );
 			if ( r == RESULT::SHOW_HELP )
-			{
 				show_help ( "<cr>", c->help() );
-			}
 			return make_pair ( r, c->name() );
 		}
 		if ( ( c->has_children() ) && ( start_word == num_words ) )
@@ -1736,13 +1534,9 @@ cli::list_completions
 	strvec filters;
 	RESULT r { parse_line ( s, commands, filters ) };
 	if ( RESULT::OK != r )
-	{
 		return;
-	}
 	if ( commands.size() == 0 ) // command line is empty
-	{
 		return;
-	}
 	m_client << cli_client::endl;
 	if ( m_editor.cursor_pos() != m_editor.size() )
 	{
@@ -1774,19 +1568,13 @@ cli::run_command
 	strvec filters;
 	RESULT r { parse_line ( s, commands, filters ) };
 	if ( RESULT::OK != r )
-	{
 		return r;
-	}
 	if ( commands.size() == 0 ) // command line is empty
-	{
 		return r;
-	}
 	std::pair <RESULT, std::string> res;
 	res = std::make_pair ( RESULT::OK, "" );
 	if ( filters.size() > 0 )
-	{
 		res = install_filter ( filters );
-	}
 	if ( RESULT::OK == res.first )
 	{
 		size_t arg_ptr { 0 };
@@ -1830,8 +1618,6 @@ cli::run_command
 //////////////////////////////////////////////////////////////////////
 
 /**
- * TODO: read in a file and execute the commands
- *
  * Can be used as a configuration parser
  */
 RESULT
@@ -1844,9 +1630,7 @@ cli::file
 {
 	std::ifstream infile { filename };
 	if ( ! infile )
-	{
 		return RESULT::INVALID_ARG;
-	}
 	cmd_priv oldpriv = set_privilege ( privilege );
 	cmd_mode oldmode = set_configmode ( mode, "" );
 	std::string line;
@@ -1878,13 +1662,9 @@ cli::wants_help
 {
 	size_t l { arg.size() };
 	if ( l == 0 )
-	{
 		return false;
-	}
 	if ( arg[l-1] == '?' )
-	{
 		return true;
-	}
 	return false;
 } // cli::wants_help ()
 
@@ -1913,9 +1693,7 @@ cli::pass_matches
 	int idx = 0;
 	des = ! pass.compare ( 0, DES_PREFIX.size(), DES_PREFIX );
 	if ( des )
-	{
 		idx = sizeof ( DES_PREFIX )-1;
-	}
 	std::string trial;
 	if ( des || ( ! pass.compare ( 0, MD5_PREFIX.size(), MD5_PREFIX ) ) )
 	{
@@ -1923,42 +1701,9 @@ cli::pass_matches
 		  ( char* ) tried_pass.c_str(), ( char* ) pass.c_str() );
 	}
 	else
-	{
 		trial = tried_pass;
-	}
 	return ( pass.compare ( idx, pass.size(), trial ) == 0 );
 } // cli::pass_matches ()
-
-//////////////////////////////////////////////////////////////////////
-
-/**
- * Check the enable password against the internal enable password or
- * an authentication callback.
- * @return -1 if the password was wrong.
- * @return >= 0 the privilege level granted to the user.
- */
-cmd_priv
-cli::check_enable
-(
-	const std::string& pass
-) const
-{
-	if ( m_enable_password != "" )
-	{
-		// check stored static enable password
-		if ( pass_matches ( m_enable_password, pass ) )
-		{
-			return PRIVLEVEL::PRIVILEGED;
-		}
-		return PRIVLEVEL::DENIED;
-	}
-	// check callback
-	if ( m_enable_callback )
-	{
-		return m_enable_callback ( pass );
-	}
-	return PRIVLEVEL::PRIVILEGED;
-} // cli::check_enable ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -1978,17 +1723,13 @@ cli::check_user_auth
 {
 	// check callback
 	if ( m_auth_callback )
-	{
 		return m_auth_callback ( username, password );
-	}
 	// check internal userlist
 	auto u = m_users.find ( username );
 	if ( u != m_users.end() )
 	{
 		if ( pass_matches ( u->second.password, password ) )
-		{
 			return u->second.privlevel;
-		}
 	}
 	return PRIVLEVEL::DENIED;
 } // cli::check_user_auth ()
@@ -2016,23 +1757,21 @@ cli::get_bool
 {
 	if ( wants_help ( arg ) )
 	{
-		show_help ( "enable|disable|on|off", "set boolean value" );
-		return std::make_pair<RESULT,bool>
-		       ( RESULT::ERROR_ANY, false );
+		show_help ( "enable|disable|on|off|true|false",
+		  "set boolean value" );
+		return std::make_pair<RESULT,bool> ( RESULT::ERROR_ANY, false );
 	}
 	if ( arg == "" )
-		return std::make_pair<RESULT, bool>
-		       ( RESULT::MISSING_ARG, false );
+		return std::make_pair<RESULT,bool>(RESULT::MISSING_ARG,false);
 	if ( fgmp::compare ( arg, "enable", m_compare_case )
+	||   fgmp::compare ( arg, "true", m_compare_case )
 	||   fgmp::compare ( arg, "on", m_compare_case ) )
-		return std::make_pair<RESULT, bool>
-		       ( RESULT::OK, true );
+		return std::make_pair<RESULT, bool> ( RESULT::OK, true );
 	if ( fgmp::compare ( arg, "disable", m_compare_case )
+	||   fgmp::compare ( arg, "false", m_compare_case )
 	||   fgmp::compare ( arg, "off", m_compare_case ) )
-		return std::make_pair<RESULT, bool>
-		       ( RESULT::OK, false );
-	return std::make_pair<RESULT, bool>
-	       ( RESULT::INVALID_ARG, false );
+		return std::make_pair<RESULT, bool> ( RESULT::OK, false );
+	return std::make_pair<RESULT, bool> ( RESULT::INVALID_ARG, false );
 } // cli::get_bool ()
 
 //////////////////////////////////////////////////////////////////////
@@ -2078,9 +1817,7 @@ cli::authenticate_user
 			m_state = CLI_STATE::LOGIN;
 			++counter;
 			if ( counter == 3 )
-			{
 				return false;
-			}
 		}
 	}
 	return true;
@@ -2097,24 +1834,17 @@ cli::loop
 {
 	build_shortest ( m_commands );
 	if ( m_banner.size() > 0 )
-	{
 		m_client << m_banner << cli_client::endl;
-	}
 	// authentication required ?
 	if ( ( ! m_users.empty() ) || ( m_auth_callback != nullptr ) )
 	{
 		m_editor.do_prompt ( false );
 		if ( ! authenticate_user () )
-		{
 			return;
-		}
 		m_editor.do_prompt ( true );
 	}
-	else
-	{
-		// start off in unprivileged mode
-		set_privilege  ( PRIVLEVEL::UNPRIVILEGED );
-	}
+	else	// start off in privileged mode
+		set_privilege  ( PRIVLEVEL::PRIVILEGED );
 	set_configmode ( CLI_MODE::EXEC, "" );
 	m_state = CLI_STATE::NORMAL;
 	m_client << "type '?' or 'help' for help."

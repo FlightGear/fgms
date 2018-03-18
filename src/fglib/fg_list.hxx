@@ -106,11 +106,11 @@ public:
         void update_sent ( size_t bytes );
         void update_rcvd ( size_t bytes );
         T operator []   ( const size_t& Index );
-        size_t          max_id;
-        uint64_t        pkts_rcvd;
-        uint64_t        pkts_sent;
-        uint64_t        bytes_rcvd;
-        uint64_t        bytes_sent;
+        size_t          max_id		= 0;
+        uint64_t        pkts_rcvd		= 0;
+        uint64_t        pkts_sent		= 0;
+        uint64_t        bytes_rcvd		= 0;
+        uint64_t        bytes_sent		= 0;
         std::string     name;
 private:
         list ();
@@ -130,13 +130,8 @@ template <class T>
 list<T>::list
 (
         const std::string& name
-)
+) : name { name }
 {
-        this->name      = name;
-        pkts_sent       = 0;
-        bytes_sent      = 0;
-        pkts_rcvd       = 0;
-        bytes_rcvd      = 0;
 } // list<T>::list ()
 
 //////////////////////////////////////////////////////////////////////

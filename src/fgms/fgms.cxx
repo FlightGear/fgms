@@ -58,7 +58,6 @@
 #include <fglib/fg_util.hxx>
 #include <fglib/fg_log.hxx>
 #include <fglib/fg_util.hxx>
-#include <fglib/fg_config.hxx>
 #include <fglib/fg_version.hxx>
 #include <fglib/fg_log.hxx>
 #include "fg_cli.hxx"
@@ -187,13 +186,9 @@ fgms::init_data_channel
 ()
 {
 	if ( ! m_reinit_data )
-	{
 		return true;
-	}
 	if ( m_data_channel != nullptr )
-	{
 		delete m_data_channel;
-	}
 	m_reinit_data = false;
 	m_data_channel = new fgmp::netsocket();
 	try
@@ -273,14 +268,14 @@ fgms::init_admin_channel
 	}
 	m_admin_channel = nullptr;
 	m_reinit_admin = false;
-	if ( ( m_admin_port == 0 ) || ( m_admin_cli == false ) )
+	if ( ( m_cli_port == 0 ) || ( m_cli_enabled == false ) )
 	{
 		return true;        // admin channel disabled
 	}
 	m_admin_channel = new fgmp::netsocket;
 	try
 	{
-		m_admin_channel->listen_to ( m_bind_addr, m_admin_port,
+		m_admin_channel->listen_to ( m_bind_addr, m_cli_port,
 					     fgmp::netsocket::TCP );
 	}
 	catch ( std::runtime_error& e )
@@ -326,32 +321,21 @@ fgms::init
 ()
 {
 	if ( m_logfile_name != "" )
-	{
 		open_logfile ();
-	}
 	logger.priority ( m_debug_level );
 	logger.set_flags ( fglog::flags::WITH_DATE );
 	LOG ( prio::EMIT, "# FlightGear Multiplayer Server v"
 	      << m_version.str() << " started" );
 	if ( m_listening )
-	{
 		shutdown ();
-	}
 	m_listening       = false;
-	m_data_channel    = 0;
 	m_num_max_clients = 0;
 	if ( ! init_data_channel () )
-	{
 		return false;
-	}
 	if ( ! init_query_channel () )
-	{
 		return false;
-	}
 	if ( ! init_admin_channel () )
-	{
 		return false;
-	}
 	LOG ( prio::EMIT, "# This is " << m_hostname << " (" << m_FQDN << ")" );
 	LOG ( prio::EMIT, "# using protocol version v"
 	      << m_proto_major_version << "." << m_proto_minor_version
@@ -367,7 +351,7 @@ fgms::init
 	}
 	if ( m_admin_channel )
 	{
-		LOG ( prio::EMIT, "# admin port " << m_admin_port );
+		LOG ( prio::EMIT, "# admin port " << m_cli_port );
 	}
 	else
 	{
@@ -377,11 +361,11 @@ fgms::init
 	{
 		LOG ( prio::EMIT, "# listening on " << m_bind_addr );
 	}
-	if ( m_me_is_hub )
+	if ( m_hub_mode )
 	{
 		LOG ( prio::EMIT, "# I am a HUB Server" );
 	}
-	if ( ( m_is_tracked ) && ( m_tracker != nullptr ) )
+	if ( ( m_tracker_enabled ) && ( m_tracker != nullptr ) )
 	{
 		pthread_t th;
 		pthread_create ( &th, NULL, &detach_tracker, m_tracker );
@@ -406,9 +390,7 @@ fgms::init
 	{
 		entry = m_relay_list[i];
 		if ( entry.id == list_item::NONE_EXISTANT )
-		{
 			continue;
-		}
 		LOG ( prio::EMIT, "# relay " << entry.name
 		      << ":" << entry.address.port()
 		      << " (" << entry.address << ")" );
@@ -422,9 +404,7 @@ fgms::init
 	{
 		entry = m_cross_list[i];
 		if ( entry.id == list_item::NONE_EXISTANT )
-		{
 			continue;
-		}
 		LOG ( prio::EMIT, "# crossfeed " << entry.name
 		      << ":" << entry.address.port()
 		    );
@@ -440,13 +420,13 @@ fgms::init
 		    );
 	}
 	m_listening = true;
-#ifndef _MSC_VER
+	#ifndef _MSC_VER
 	if ( m_run_as_daemon )
 	{
 		m_myself.daemonize ();
 		LOG ( prio::URGENT, "# My PID is " << m_myself.get_pid() );
 	}
-#endif
+	#endif
 	return true;
 } // fgms::init()
 
@@ -511,7 +491,7 @@ fgms::mk_client_list
 	message += " (LazyRelay enabled)";
 	message += "\n";
 	m_clients.push_back ( message );
-	if ( m_is_tracked )
+	if ( m_tracker_enabled )
 	{
 		message  = "# This server is tracked: ";
 		message += m_tracker->get_server();
@@ -732,7 +712,7 @@ fgms::add_client
 	new_player.model_name = pos_msg->model;
 	using fgmp::ATC_TYPE;
 	if ( ( new_player.model_name == "OpenRadar" )
-			||   ( new_player.model_name.find ( "ATC" ) != std::string::npos ) )
+	||   ( new_player.model_name.find ( "ATC" ) != std::string::npos ) )
 	{
 		// client is an ATC
 		if ( str_ends_with ( new_player.name, "_DL" ) )
@@ -795,8 +775,13 @@ fgms::add_client
 	{
 		message = "New LOCAL Client: ";
 		m_local_clients++;
-		update_tracker ( new_player.name, new_player.passwd,
-				 new_player.model_name, new_player.last_seen, tracker::CONNECT );
+		update_tracker (
+			new_player.name,
+			new_player.passwd,
+			new_player.model_name,
+			new_player.last_seen,
+			tracker::CONNECT
+		);
 	}
 	else
 	{
@@ -808,8 +793,13 @@ fgms::add_client
 			origin = Relay->second;
 		}
 #ifdef TRACK_ALL
-		update_tracker ( new_player.name, new_player.passwd,
-				 new_player.model_name, new_player.last_seen, tracker::CONNECT );
+		update_tracker (
+			new_player.name,
+			new_player.passwd,
+			new_player.model_name,
+			new_player.last_seen,
+			tracker::CONNECT
+		);
 #endif
 	}
 	LOG ( prio::MEDIUM, message
@@ -886,12 +876,12 @@ fgms::add_crossfeed
 )
 {
 	std::string s = server;
-#ifdef _MSC_VER
+	#ifdef _MSC_VER
 	if ( s == "localhost" )
 	{
 		s = "127.0.0.1";
 	}
-#endif // _MSC_VER
+	#endif // _MSC_VER
 	list_item B ( s );
 	B.address.assign ( ( char* ) s.c_str(), port );
 	m_cross_list.lock ();
@@ -917,11 +907,11 @@ fgms::add_tracker
 (
 	const std::string& server,
 	int  port,
-	bool is_tracked
+	bool tracker_enabled
 )
 {
 	close_tracker();
-	m_is_tracked = is_tracked;
+	m_tracker_enabled = tracker_enabled;
 	m_tracker = new tracker ( port, server, m_hostname,
 				  m_FQDN, m_version.str() );
 	return true;
@@ -1092,9 +1082,11 @@ fgms::packet_is_valid
 			error_msg += " Client sends insufficient position ";
 			error_msg += "data, should be ";
 			error_msg += num_to_str (
-					     sizeof ( msg_hdr_t ) +sizeof ( pos_msg_t ) );
+				sizeof ( msg_hdr_t )
+				+ sizeof ( pos_msg_t )
+			);
 			error_msg += " is: " + num_to_str ( msg_hdr->msg_len );
-			add_bad_client ( sender_address, error_msg, true, bytes );
+			add_bad_client (sender_address,error_msg,true,bytes);
 			return ( false );
 		}
 	}
@@ -1151,7 +1143,7 @@ fgms::send_to_relays
 	MSG_ID          msg_id;
 	unsigned int    pkts_forwarded = 0;
 	fglistit                current_relay;
-	if ( ( ! sender->is_local ) && ( ! m_me_is_hub ) )
+	if ( ( ! sender->is_local ) && ( ! m_hub_mode ) )
 	{
 		return;
 	}
@@ -1165,17 +1157,21 @@ fgms::send_to_relays
 	{
 		if ( current_relay->address != sender->address )
 		{
-			if ( sender->do_update || is_in_range ( *current_relay, sender, msg_id ) )
+			if ( sender->do_update
+			||   is_in_range ( *current_relay, sender, msg_id ) )
 			{
-				m_data_channel->send_to ( msg, bytes, current_relay->address );
-				m_relay_list.update_sent ( current_relay, bytes );
+				m_data_channel->send_to ( msg,
+					bytes, current_relay->address );
+				m_relay_list.update_sent (
+					current_relay, bytes );
 				pkts_forwarded++;
 			}
 		}
 		current_relay++;
 	}
 	m_relay_list.unlock ();
-	msg_hdr->magic = XDR_encode_uint32 ( msg_magic ); // restore the magic value
+	// restore the magic value
+	msg_hdr->magic = XDR_encode_uint32 ( msg_magic );
 } // fgms::send_toRelays ()
 //////////////////////////////////////////////////////////////////////
 
@@ -1188,14 +1184,14 @@ fgms::drop_client
 )
 {
 	std::string origin;
-#ifdef TRACK_ALL
+	#ifdef TRACK_ALL
 	update_tracker (
 		player->name,
 		player->passwd,
 		player->model_name,
 		player->last_seen,
 		tracker::DISCONNECT );
-#else
+	#else
 	if ( ( player->is_local ) && ( player->has_errors == false ) )
 	{
 		update_tracker (
@@ -1205,7 +1201,7 @@ fgms::drop_client
 			player->last_seen,
 			tracker::DISCONNECT );
 	}
-#endif
+	#endif
 	if ( player->is_local )
 	{
 		m_local_clients--;
@@ -1325,7 +1321,7 @@ fgms::handle_data
 			// send packet verbatim back to sender
 			m_ping_received++;
 			msg_hdr->msg_id = XDR_encode_uint32 (
-						  static_cast<int> ( MSG_ID::PONG ) );
+				static_cast<int> ( MSG_ID::PONG ) );
 			m_data_channel->send_to ( msg, bytes, sender_address );
 			return;
 		}
@@ -1655,8 +1651,8 @@ fgms::check_files
 		}
 		show_stats();
 	}
-#ifdef _MSC_VER
-	if ( !m_admin_cli && _kbhit() )
+	#ifdef _MSC_VER
+	if ( !m_cli_enabled && _kbhit() )
 	{
 		int ch = _getch ();
 		if ( ch == 0x1b )
@@ -1669,7 +1665,7 @@ fgms::check_files
 			printf ( "Got UNKNOWN keyboard! %#X - Only ESC, to exit\n", ch );
 		}
 	}
-#endif // _MSC_VER
+	#endif // _MSC_VER
 	return 0;
 } // fgms::check_files ()
 //////////////////////////////////////////////////////////////////////
@@ -1708,7 +1704,7 @@ fgms::loop
 		      << "not listening on any socket!" );
 		return false;
 	}
-	if ( ( m_admin_user == "" ) || ( m_admin_pass == "" ) )
+	if ( ! m_cli_enabled )
 	{
 		if ( m_admin_channel )
 		{
@@ -1721,12 +1717,12 @@ fgms::loop
 		}
 	}
 	LOG ( prio::EMIT, "# Main server started!" );
-#ifdef _MSC_VER
+	#ifdef _MSC_VER
 	LOG ( prio::URGENT,
 	      "ESC key to EXIT (after select "
 	      << m_player_expires << " sec timeout)." );
-#endif
-	if ( ! m_run_as_daemon && m_admin_cli )
+	#endif
+	if ( ! m_run_as_daemon && m_cli_enabled )
 	{
 		// Run admin cli in foreground reading from stdin
 		st_telnet* t = new st_telnet;
@@ -1748,7 +1744,7 @@ fgms::loop
 			LOG ( prio::EMIT, "bummer 1!" );
 			return false;;
 		}
-		if ( m_data_channel == 0 )
+		if ( m_data_channel == nullptr )
 		{
 			LOG ( prio::EMIT, "bummer 2!" );
 			return false;
@@ -1759,8 +1755,8 @@ fgms::loop
 		for ( size_t i = 0; i < m_player_list.size(); i++ )
 		{
 			if ( !m_player_list.check_ttl ( i )
-					|| ( ( ( current_time - player->last_seen ) > player->timeout )
-					     &&   ( ( current_time - player->join_time ) > 30 ) ) )
+			|| ( ( ( current_time - player->last_seen ) > player->timeout )
+			   &&   ( ( current_time - player->join_time ) > 30 ) ) )
 			{
 				drop_client ( player );
 			}
@@ -1774,7 +1770,7 @@ fgms::loop
 			}
 		}
 		// Update some things every (default) 10 secondes
-		if ( ( ( current_time - last_tracker_update ) >= m_update_tracker_freq )
+		if ( ( ( current_time - last_tracker_update ) >= m_tracker_freq )
 				|| ( ( current_time - last_tracker_update ) < 0 ) )
 		{
 			last_tracker_update = time ( 0 );
@@ -1808,8 +1804,11 @@ fgms::loop
 		if ( listen_sockets[0] > 0 )
 		{
 			// something on the wire (clients)
-			bytes = m_data_channel->recv_from ( msg,
-							    MAX_PACKET_SIZE, sender_address );
+			bytes = m_data_channel->recv_from (
+				msg,
+				MAX_PACKET_SIZE,
+				sender_address
+			);
 			if ( bytes <= 0 )
 			{
 				continue;
@@ -1888,7 +1887,7 @@ fgms::set_data_port
 		m_reinit_data   = true;
 		m_query_port = m_data_port+1;
 		m_reinit_query = true;
-		m_admin_port  = m_data_port+2;
+		m_cli_port  = m_data_port+2;
 		m_reinit_admin  = true;
 	}
 } // fgms::SetPort ( unsigned int iPort )
@@ -1920,9 +1919,9 @@ fgms::set_admin_port
 	int port
 )
 {
-	if ( m_admin_port != port )
+	if ( m_cli_port != port )
 	{
-		m_admin_port = port;
+		m_cli_port = port;
 		m_reinit_admin = true;
 	}
 } // fgms::set_admin_port ( unsigned int iPort )
@@ -2005,7 +2004,7 @@ fgms::set_updatetracker
 	time_t freq
 )
 {
-	m_update_tracker_freq = freq;
+	m_tracker_freq = freq;
 } // fgms::set_updatetracker ()
 //////////////////////////////////////////////////////////////////////
 
@@ -2023,7 +2022,10 @@ fgms::tracker_log
 	}
 	if ( ! m_tracker_log.is_open() )
 	{
-		m_tracker_log.open ( m_tracker_logname, std::ios::out|std::ios::app );;
+		m_tracker_log.open (
+			m_tracker_logname,
+			std::ios::out | std::ios::app
+		);;
 		if ( ! m_tracker_log.is_open() )
 		{
 			LOG ( prio::EMIT,
@@ -2061,15 +2063,11 @@ fgms::shutdown
 ()
 {
 	if ( ! m_is_parent )
-	{
 		return;
-	}
 	LOG ( prio::URGENT, "fgms::shutdown () - exiting" );
 	show_stats ();   // 20150619:0.11.9: add stats to the LOG on exit
 	if ( m_listening == false )
-	{
 		return;
-	}
 	if ( m_query_channel != nullptr )
 	{
 		m_query_channel->close();
@@ -2122,7 +2120,7 @@ fgms::update_tracker
 	std::string     aircraft;
 	std::string     message;
 	tm*             tm;
-	if ( ! m_is_tracked || ( name == "mpdummy" ) )
+	if ( ! m_tracker_enabled || ( name == "mpdummy" ) )
 	{
 		return ( 1 );
 	}
@@ -2166,9 +2164,9 @@ fgms::update_tracker
 		message += time_str;
 		// queue the message
 		m_tracker->add_message ( message );
-#ifdef ADD_TRACKER_LOG
+		#ifdef ADD_TRACKER_LOG
 		tracker_log ( message, "IN: " ); // write message log
-#endif // #ifdef ADD_TRACKER_LOG
+		#endif // #ifdef ADD_TRACKER_LOG
 		m_tracker_connect++; // count a CONNECT message queued
 		return ( 0 );
 	}
@@ -2184,9 +2182,9 @@ fgms::update_tracker
 		message += time_str;
 		// queue the message
 		m_tracker->add_message ( message );
-#ifdef ADD_TRACKER_LOG
+		#ifdef ADD_TRACKER_LOG
 		tracker_log ( message, "IN: " ); // write message log
-#endif // #ifdef ADD_TRACKER_LOG
+		#endif // #ifdef ADD_TRACKER_LOG
 		m_tracker_disconnect++; // count a DISCONNECT message queued
 		return ( 0 );
 	}
@@ -2221,7 +2219,7 @@ fgms::update_tracker
 			// queue the message
 			j++;
 		}
-#ifdef TRACK_ALL
+		#ifdef TRACK_ALL
 		if ( !player.is_local )
 		{
 			if ( j!=0 )
@@ -2242,7 +2240,7 @@ fgms::update_tracker
 			// queue the message
 			j++;
 		}
-#endif
+		#endif
 	} // while
 	if ( message!= "" )
 	{
@@ -2262,7 +2260,7 @@ void
 fgms::close_tracker
 ()
 {
-	if ( m_is_tracked )
+	if ( m_tracker_enabled )
 	{
 		if ( m_tracker != nullptr )
 		{
@@ -2271,7 +2269,7 @@ fgms::close_tracker
 			pthread_join ( m_tracker->get_thread_id(), 0 );
 		}
 		m_tracker = nullptr;
-		m_is_tracked = false;
+		m_tracker_enabled = false;
 	}
 } // close_tracker ( )
 //////////////////////////////////////////////////////////////////////
@@ -2585,345 +2583,20 @@ fgms::process_config
 	const std::string& config_name
 )
 {
-	fgmp::config    config;
-	std::string     val;
-	int         e;
-	if ( m_have_config )    // we already have a config, so ignore
-	{
-		return ( true );
-	}
-	if ( config.read ( config_name ) )
-	{
-		LOG ( prio::URGENT,
-		      "Could not read config file '" << config_name
-		      << "' => using defaults" );
-		return ( false );
-	}
+	if ( m_have_config )
+		return true;
 	LOG ( prio::EMIT, "processing " << config_name );
-	val = config.get ( "server.name" );
-	if ( val != "" )
+	using namespace libcli;
+	RESULT r;
+	fgcli cli ( this, 0 );
+	r = cli.file ( config_name, PRIVLEVEL::PRIVILEGED,CLI_MODE::CONFIG );
+	if ( RESULT::INVALID_ARG == r )
 	{
-		m_hostname = val;
+		LOG ( prio::EMIT, "failed to read " << config_name );
+		return false;
 	}
-	val = config.get ( "server.address" );
-	if ( val != "" )
-	{
-		m_bind_addr = val;
-	}
-	val = config.get ( "server.FQDN" );
-	if ( val != "" )
-	{
-		m_FQDN = val;
-	}
-	val = config.get ( "server.port" );
-	if ( val != "" )
-	{
-		set_data_port ( str_to_num<int> ( val, e ) );
-		if ( e )
-		{
-			LOG ( prio::URGENT,
-			      "invalid value for DataPort: '" << val << "'"
-			    );
-			exit ( 1 );
-		}
-	}
-	val = config.get ( "server.telnet_port" );
-	if ( val != "" )
-	{
-		set_query_port ( str_to_num<int> ( val, e ) );
-		if ( e )
-		{
-			LOG ( prio::URGENT,
-			      "invalid value for TelnetPort: '" << val << "'"
-			    );
-			exit ( 1 );
-		}
-	}
-	val = config.get ( "server.admin_cli" );
-	if ( val != "" )
-	{
-		if ( ( val == "on" ) || ( val == "true" ) )
-		{
-			m_admin_cli = true;
-		}
-		else if ( ( val == "off" ) || ( val == "false" ) )
-		{
-			m_admin_cli = false;
-		}
-		else
-		{
-			LOG ( prio::URGENT,
-			      "unknown value for 'server.admin_cli'!"
-			      << " in file " << config_name
-			    );
-		}
-	}
-	val = config.get ( "server.admin_port" );
-	if ( val != "" )
-	{
-		set_admin_port ( str_to_num<int> ( val, e ) );
-		if ( e )
-		{
-			LOG ( prio::URGENT,
-			      "invalid value for AdminPort: '" << val << "'"
-			    );
-			exit ( 1 );
-		}
-	}
-	val = config.get ( "server.admin_user" );
-	if ( val != "" )
-	{
-		m_admin_user = val;
-	}
-	val = config.get ( "server.admin_pass" );
-	if ( val != "" )
-	{
-		m_admin_pass = val;
-	}
-	val = config.get ( "server.admin_enable" );
-	if ( val != "" )
-	{
-		m_admin_enable = val;
-	}
-	val = config.get ( "server.out_of_reach" );
-	if ( val != "" )
-	{
-		m_out_of_reach = str_to_num<int> ( val, e );
-		if ( e )
-		{
-			LOG ( prio::URGENT,
-			      "invalid value for out_of_reach: '" << val << "'"
-			    );
-			exit ( 1 );
-		}
-	}
-	val = config.get ( "server.max_radar_range" );
-	if ( val != "" )
-	{
-		m_max_radar_range = str_to_num<int> ( val, e );
-		if ( e )
-		{
-			LOG ( prio::URGENT,
-			      "invalid value for max_radar_range: '" << val
-			      << "'"
-			    );
-			exit ( 1 );
-		}
-	}
-	val = config.get ( "server.playerexpires" );
-	if ( val != "" )
-	{
-		m_player_expires = str_to_num<int> ( val, e );
-		if ( e )
-		{
-			LOG ( prio::URGENT,
-			      "invalid value for Expire: '" << val << "'"
-			    );
-			exit ( 1 );
-		}
-	}
-	val = config.get ( "server.logfile" );
-	if ( val != "" )
-	{
-		m_logfile_name = val;
-	}
-	val = config.get ( "server.daemon" );
-	if ( val != "" )
-	{
-		if ( ( val == "on" ) || ( val == "true" ) )
-		{
-			m_run_as_daemon = true;
-		}
-		else if ( ( val == "off" ) || ( val == "false" ) )
-		{
-			m_run_as_daemon = false;
-		}
-		else
-		{
-			LOG ( prio::URGENT,
-			      "unknown value for 'server.daemon'!"
-			      << " in file " << config_name
-			    );
-		}
-	}
-	val = config.get ( "server.tracked" );
-	if ( val != "" )
-	{
-		std::string  server;
-		int     port;
-		bool    tracked = false;
-		if ( val == "true" )
-		{
-			tracked = true;
-			server = config.get ( "server.tracking_server" );
-			val = config.get ( "server.tracking_port" );
-			port = str_to_num<int> ( val, e );
-			if ( e )
-			{
-				LOG ( prio::URGENT,
-				      "invalid value for tracking_port: '"
-				      << val << "'"
-				    );
-				exit ( 1 );
-			}
-			if ( tracked
-					&& ( ! add_tracker ( server, port, tracked ) ) ) // set master m_is_tracked
-			{
-				LOG ( prio::URGENT,
-				      "Failed to get IPC msg queue ID! error "
-				      << errno );
-				exit ( 1 ); // do NOT continue if a requested 'tracker' FAILED
-			}
-		}
-	}
-	val = config.get ( "server.is_hub" );
-	if ( val != "" )
-	{
-		if ( val == "true" )
-		{
-			m_me_is_hub = true;
-		}
-		else
-		{
-			m_me_is_hub = false;
-		}
-	}
-	//////////////////////////////////////////////////
-	//      read the list of relays
-	//////////////////////////////////////////////////
-	bool    more_to_read  = true;
-	std::string  var;
-	std::string  server = "";
-	int     port   = 0;
-	if ( ! config.set_section ( "relay" ) )
-	{
-		more_to_read = false;
-	}
-	while ( more_to_read )
-	{
-		var = config.get_name ();
-		val = config.get_value();
-		if ( var == "relay.host" )
-		{
-			server = val;
-		}
-		if ( var == "relay.port" )
-		{
-			port = str_to_num<int> ( val, e );
-			if ( e )
-			{
-				LOG ( prio::URGENT,
-				      "invalid value for RelayPort: '"
-				      << val << "'"
-				    );
-				exit ( 1 );
-			}
-		}
-		if ( ( server != "" ) && ( port != 0 ) )
-		{
-			add_relay ( server, port );
-			server = "";
-			port   = 0;
-		}
-		if ( config.sec_next () == 0 )
-		{
-			more_to_read = false;
-		}
-	}
-	//////////////////////////////////////////////////
-	//      read the list of crossfeeds
-	//////////////////////////////////////////////////
-	more_to_read  = true;
-	var    = "";
-	server = "";
-	port   = 0;
-	if ( ! config.set_section ( "crossfeed" ) )
-	{
-		more_to_read = false;
-	}
-	while ( more_to_read )
-	{
-		var = config.get_name ();
-		val = config.get_value();
-		if ( var == "crossfeed.host" )
-		{
-			server = val;
-		}
-		if ( var == "crossfeed.port" )
-		{
-			port = str_to_num<int> ( val, e );
-			if ( e )
-			{
-				LOG ( prio::URGENT,
-				      "invalid value for crossfeed.port: '"
-				      << val << "'"
-				    );
-				exit ( 1 );
-			}
-		}
-		if ( ( server != "" ) && ( port != 0 ) )
-		{
-			add_crossfeed ( server, port );
-			server = "";
-			port   = 0;
-		}
-		if ( config.sec_next () == 0 )
-		{
-			more_to_read = false;
-		}
-	}
-	//////////////////////////////////////////////////
-	//      read the list of whitelisted IPs
-	//      (a crossfeed might list the sender here
-	//      to avoid blacklisting without defining the
-	//      sender as a relay)
-	//////////////////////////////////////////////////
-	more_to_read  = true;
-	var    = "";
-	val    = "";
-	if ( ! config.set_section ( "whitelist" ) )
-	{
-		more_to_read = false;
-	}
-	while ( more_to_read )
-	{
-		var = config.get_name ();
-		val = config.get_value();
-		if ( var == "whitelist" )
-		{
-			add_whitelist ( val.c_str() );
-		}
-		if ( config.sec_next () == 0 )
-		{
-			more_to_read = false;
-		}
-	}
-	//////////////////////////////////////////////////
-	//      read the list of blacklisted IPs
-	//////////////////////////////////////////////////
-	more_to_read  = true;
-	var    = "";
-	val    = "";
-	if ( ! config.set_section ( "blacklist" ) )
-	{
-		more_to_read = false;
-	}
-	while ( more_to_read )
-	{
-		var = config.get_name ();
-		val = config.get_value();
-		if ( var == "blacklist" )
-		{
-			add_blacklist ( val.c_str(),
-					"static config entry", 0 );
-		}
-		if ( config.sec_next () == 0 )
-		{
-			more_to_read = false;
-		}
-	}
-	//////////////////////////////////////////////////
-	return ( true );
+	m_have_config = true;
+	return true;
 } // fgms::process_config ( const std::string& config_name )
 
 //////////////////////////////////////////////////////////////////////
@@ -2952,18 +2625,18 @@ fgms::print_help
 	print_version ();
 	std::cout << "syntax: " << m_argv[0] << " options" << std::endl;
 	std::cout << "\n"
-		  "options are:\n"
-		  "-h            print this help screen\n"
-		  "-a PORT       listen to PORT for telnet\n"
-		  "-c config     read 'config' as configuration file\n"
-		  "-p PORT       listen to PORT\n"
-		  "-t TTL        Time a client is active while not sending packets\n"
-		  "-o OOR        nautical miles two players must be apart to be out of reach\n"
-		  "-l LOGFILE    Log to LOGFILE\n"
-		  "-v LEVEL      verbosity (loglevel) in range 0 (few) and 3 (much). 5 to disable. (def=" << logger.priority() << ")\n"
-		  "-d            do _not_ run as a daemon (stay in foreground)\n"
-		  "-D            do run as a daemon (default)\n"
-		  "\n";
+	  "options are:\n"
+	  "-h            print this help screen\n"
+	  "-a PORT       listen to PORT for telnet\n"
+	  "-c config     read 'config' as configuration file\n"
+	  "-p PORT       listen to PORT\n"
+	  "-t TTL        Time a client is active while not sending packets\n"
+	  "-o OOR        nautical miles two players must be apart to be out of reach\n"
+	  "-l LOGFILE    Log to LOGFILE\n"
+	  "-v LEVEL      verbosity (loglevel) in range 0 (few) and 3 (much). 5 to disable. (def=" << logger.priority() << ")\n"
+	  "-d            do _not_ run as a daemon (stay in foreground)\n"
+	  "-D            do run as a daemon (default)\n"
+	  "\n";
 	exit ( 0 );
 } // fgms::print_help ()
 //////////////////////////////////////////////////////////////////////
@@ -3087,47 +2760,38 @@ fgms::read_configs
 ()
 {
 	std::string path;
-#ifndef _MSC_VER
+	const char* config_name = "fgms.conf";
+	#ifndef _MSC_VER
 	// try /etc/fgms.conf (or whatever SYSCONFDIR is)
 	path = SYSCONFDIR;
 	path += "/";
-	path += m_config_name;
+	path += config_name;
 	if ( process_config ( path ) == true )
-	{
 		return true;
-	}
 	// try users home directory
 	path = getenv ( "HOME" );
-#else
+	#else
 	// windows version
 	char* cp = getenv ( "HOME" );
 	if ( cp )
-	{
 		path = cp;
-	}
 	else
 	{
 		cp = getenv ( "USERPROFILE" );
 		if ( cp )
-		{
 			path = cp;
-		}
 	}
-#endif
+	#endif
 	if ( path != "" )
 	{
 		path += "/";
-		path += m_config_name;
+		path += config_name;
 		if ( process_config ( path ) )
-		{
 			return true;
-		}
 	}
 	// failed, try current directory
-	if ( process_config ( m_config_name ) )
-	{
+	if ( process_config ( config_name ) )
 		return true;
-	}
 	LOG ( prio::EMIT,
 	      "Could not find a config file => using defaults" );
 	return false;
@@ -3176,13 +2840,9 @@ main
 	fgms.parse_params ( argc, argv );
 	fgms.read_configs ();
 	if ( ! fgms.check_config () )
-	{
 		exit ( 1 );
-	}
 	if ( ! fgms.init () )
-	{
 		return 1;
-	}
 	fgms.loop ();
 	fgms.shutdown ();
 	return ( 0 );

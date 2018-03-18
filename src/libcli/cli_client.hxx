@@ -40,7 +40,6 @@
 namespace libcli
 {
 
-
 /**
  * This class is thrown as an exception by the pager
  * when the user presses 'q' to exit from a longer
@@ -53,6 +52,12 @@ class pager_wants_quit
 /** @ingroup libcli 
  *
  * @brief A stream like class for cli input/output operations
+ *
+ * This class implements communication methods to cli users. The output
+ * is normally buffered (through cli_client::operator <<). Buffered
+ * output is subject to filters (libcli::filter) depending on
+ * cli_client::m_print_mode.
+ * Methods for unbuffered output are also provided.
  */
 class cli_client
 {
@@ -80,14 +85,14 @@ public:
 private:
 	enum class PRINT_MODE
 	{
-		PLAIN     = 0x00,
-		FILTERED  = 0x01
+		PLAIN     = 0x00, ///< print output without filters
+		FILTERED  = 0x01  ///< apply filters (if present)
 	};
-	/// Number of lines written to the client.
+	/// Number of lines already written to the client.
 	size_t m_lines_out = 0;
 	/// Maximum number of lines to write to the client
-	/// before presenting the pager ('more')
-	/// disabled by default
+	/// before presenting the pager ('more').
+	/// The pager is disabled by default.
 	size_t m_max_screen_lines = 0;
 	/// Current output mode. If set to PRINT_MODE::FILTERED
 	/// all lines are processed by active filters and the
@@ -119,6 +124,9 @@ private:
 
 //////////////////////////////////////////////////////////////////////
 
+/** 
+ * @brief A little helper class to align output
+ */
 class align_left
 {
 public:
@@ -133,6 +141,10 @@ private:
 
 cli_client& operator << ( cli_client& out, align_left align );
 
+//////////////////////////////////////////////////////////////////////
+//
+//	inline methods
+//
 //////////////////////////////////////////////////////////////////////
 
 /**
@@ -170,7 +182,6 @@ cli_client::write_direct
 /**
  * Write a string directly to the client. No filters are applied.
  */
-
 void
 cli_client::write_direct
 (
@@ -182,6 +193,10 @@ cli_client::write_direct
 
 //////////////////////////////////////////////////////////////////////
 
+/**
+ * @brief put a cli_client object on the stream. Kind of
+ * c++ black magic.
+ */
 cli_client&
 cli_client::operator <<
 (
@@ -194,7 +209,7 @@ cli_client::operator <<
 //////////////////////////////////////////////////////////////////////
 
 /**
- * Write m_output to the client.
+ * Write the internal buffer m_output to the client.
  */
 void
 cli_client::flush
@@ -220,7 +235,7 @@ cli_client::flush
 
 /**
  * Register a \ref filter
- * you can register as many filters as you want. All filters are
+ * You can register as many filters as you want. All filters are
  * applied in the order they are registerd.
  * Filters are registered automatically by the \ref cli when entered
  * on the command line.
@@ -265,7 +280,8 @@ cli_client::max_screen_lines
 //////////////////////////////////////////////////////////////////////
 
 /**
- * Set m_print_mode to PRINT_MODE::FILTERED
+ * Set m_print_mode to PRINT_MODE::FILTERED thus activating
+ * filters (if present).
  */
 void
 cli_client::enable_filters
@@ -278,7 +294,8 @@ cli_client::enable_filters
 //////////////////////////////////////////////////////////////////////
 
 /**
- * Set m_print_mode to PRINT_MODE::PLAIN
+ * Set m_print_mode to PRINT_MODE::PLAIN, thus deactivating filters
+ * and deleting the list of filters.
  */
 void
 cli_client::disable_filters

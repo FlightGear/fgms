@@ -62,29 +62,30 @@ public:
 	void    shutdown ();
 	friend class fgls_cli;
 protected:
+#ifndef _MSC_VER
+	daemon m_myself;
+#endif
 	//////////////////////////////////////////////////
 	// configurable via cli
 	//////////////////////////////////////////////////
 	bool            m_run_as_daemon = false;
 	std::string     m_bind_addr     = "";
-	std::string     m_admin_user    = "";
-	std::string     m_admin_pass    = "";
-	std::string     m_admin_enable  = "";
 	uint16_t        m_data_port     = 5004;
 	uint16_t        m_query_port    = m_data_port + 1;
-	uint16_t        m_admin_port    = m_data_port + 2;
-	bool            m_admin_cli     = true;
 	std::string     m_logfile_name  = "";
 	fglog::prio     m_debug_level   = fglog::prio::MEDIUM;
 	int             m_check_interval = 5;
-	std::string     m_hostname       = "fgls";
+	std::string     m_hostname      = "fgls";
+
+	uint16_t        m_cli_port      = m_data_port + 2;
+	bool            m_cli_enabled   = true;
 
 	serverlist      m_server_list;
 	server_it       m_cur_hub;
 	server_it       m_cur_fgms;
 	bool            m_reinit_data   = true;
 	bool            m_reinit_query  = true;
-	bool            m_reinit_admin  = true;
+	bool            m_reinit_cli    = true;
 	bool            m_reinit_log    = true;
 	bool            m_is_parent     = false;
 	bool            m_have_config   = false;
