@@ -39,7 +39,6 @@
 #include <time.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <pthread.h>
 #include <fglib/netsocket.hxx>
 #include <fglib/encoding.hxx>
 #include <fglib/mpmessages.hxx>
@@ -279,12 +278,6 @@ protected:
 	int     m_argc = 0;
 	char**  m_argv;
 }; // fgms
-
-struct st_telnet
-{
-	fgms* instance;
-	int   fd;
-};
 
 } // namespace fgmp
 

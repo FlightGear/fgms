@@ -27,13 +27,13 @@
  * @author (c) 2006 Julien Pierru
  * @author (c) 2012 Rob Dosogne ( FreeBSD friendly )
  * @author (c) 2015 Hazuki Amamiya
- * @author	Oliver Schroeder <fgms@o-schroeder.de>
- * @date	2006
+ * @author 2006-2018 Oliver Schroeder <fgms@o-schroeder.de>
+ *
  * @todo Pete To make a links here to the config and explain a bit
  */
 
 #ifdef HAVE_CONFIG_H
-#include "config.h" // for MSVC, always first
+	#include "config.h" // for MSVC, always first
 #endif
 
 #include <iostream>
@@ -42,28 +42,25 @@
 #include <string>
 #include <sstream>
 #include <string.h>
-#include <pthread.h>
 #ifdef _MSC_VER
-#include <sys/timeb.h>
-#include <libmsc/msc_unistd.hxx>
+	#include <sys/timeb.h>
+	#include <libmsc/msc_unistd.hxx>
 #else
-#include <errno.h>
-#include <time.h>
-#include <stdint.h>
-#include <unistd.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <sys/types.h>
-#include <signal.h>
-#include <sys/time.h>
+	#include <errno.h>
+	#include <time.h>
+	#include <stdint.h>
+	#include <unistd.h>
+	#include <sys/ipc.h>
+	#include <sys/msg.h>
+	#include <sys/types.h>
+	#include <signal.h>
+	#include <sys/time.h>
+	#include <fglib/daemon.hxx>
 #endif
 #include <unistd.h>
 #include <stdio.h>
 #include <fglib/fg_util.hxx>
 #include <fglib/debug.hxx>
-#ifndef _MSC_VER
-#include <fglib/daemon.hxx>
-#endif
 #include <fglib/fg_log.hxx>
 #include "fg_tracker.hxx"
 
@@ -86,7 +83,8 @@ gettimeofday
 )
 {
 	struct __timeb64 tm;
-	_ftime64_s ( &tm ); // Time since Epoch, midnight (00:00:00), January 1, 1970, UTC.
+	// Time since Epoch, midnight (00:00:00), January 1, 1970, UTC.
+	_ftime64_s ( &tm );
 	tp->tv_sec = tm.time;
 	tp->tv_usec = 1000000 * tm.millitm; // milliseconds to nanoseconds
 	return 0;
@@ -100,9 +98,12 @@ namespace fgmp
 //////////////////////////////////////////////////////////////////////
 /**
  * @brief Initialize to standard values
- * @param port
- * @param server ip or domain
- * @param fgms name
+ *
+ * @param port		Port of the tracking server
+ * @param server	the tracking server to use
+ * @param server_name	hostname of this fgms instance
+ * @param domain	FQDN of this fgms
+ * @param version	version of this fgms
  */
 tracker::tracker
 (
@@ -112,30 +113,17 @@ tracker::tracker
 	std::string domain,
 	std::string version
 )
+: m_tracker_port { port }
+, m_tracker_server { server }
+, m_fgms_name { server_name }
+, m_domain { domain }
+, m_version { version }
 {
-	m_version	= version;
-	m_tracker_port	= port;
-	m_tracker_server= server;
-	m_fgms_name	= server_name;
-	m_domain	= domain;
-	m_proto_version = "20151207";
-	m_tracker_socket = 0;
+	m_proto_version	= "20151207";
+	m_identified	= false;
 	LOG ( fglog::prio::DEBUG, "# tracker::tracker:"
 	      << m_tracker_server << ", Port: " << m_tracker_port
-	    );
-	last_seen	= 0;
-	last_sent	= 0;
-	bytes_sent	= 0;
-	bytes_rcvd	= 0;
-	pkts_sent	= 0;
-	pkts_rcvd	= 0;
-	lost_connections = 0;
-	last_connected	= 0;
-	want_exit	= false;
-	m_identified	= false;
-	m_ping_interval	= 55;
-	m_timeout_stage	= 0;
-	m_connected = false;
+	);
 } // tracker()
 
 //////////////////////////////////////////////////////////////////////
@@ -144,8 +132,8 @@ tracker::tracker
 tracker::~tracker
 ()
 {
-	pthread_mutex_unlock ( &msg_mutex ); // give up the lock
-	pthread_mutex_unlock ( &msg_sent_mutex ); // give up the lock
+	msg_mutex.unlock (); // give up the lock
+	msg_sent_mutex.unlock (); // give up the lock
 	write_queue ();
 	msg_queue.clear ();
 	msg_sent_queue.clear ();
@@ -157,15 +145,6 @@ tracker::~tracker
 		m_tracker_socket = 0;
 	}
 } // ~tracker()
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-pthread_t
-tracker::get_thread_id
-()
-{
-	return m_thread_id;
-}
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -189,9 +168,9 @@ tracker::read_queue
 	{
 		if ( line_cnt==25 )
 		{
-			pthread_mutex_lock ( &msg_sent_mutex );	 // set the lock
+			msg_sent_mutex.lock ();	 // set the lock
 			msg_sent_queue.push_back ( Msg ); // queue the message
-			pthread_mutex_unlock ( &msg_sent_mutex );	 // give up the lock
+			msg_sent_mutex.unlock ();	 // give up the lock
 			Msg="";
 			line_cnt=0;
 		}
@@ -200,9 +179,9 @@ tracker::read_queue
 		line_cnt++;
 	}
 	/*fire remaining message to msg_queue*/
-	pthread_mutex_lock ( &msg_sent_mutex );	 // set the lock
+	msg_sent_mutex.lock ();	 // set the lock
 	msg_sent_queue.push_back ( Msg ); // queue the message
-	pthread_mutex_unlock ( &msg_sent_mutex );	 // give up the lock
+	msg_sent_mutex.unlock ();	 // set the lock
 	requeue_msg ();
 	queue_file.close();
 	remove ( "queue_file" );
@@ -219,10 +198,9 @@ tracker::write_queue
 {
 	VI CurrentMessage;
 	std::ofstream queue_file;
-	pthread_mutex_lock ( &msg_mutex ); // set the lock
+	lockguard g { msg_mutex };
 	if ( msg_queue.size() == 0 )
 	{
-		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
 		return;
 	}
 	queue_file.open ( "queue_file", std::ios::out|std::ios::app );
@@ -230,7 +208,6 @@ tracker::write_queue
 	{
 		LOG ( fglog::prio::HIGH, "# tracker::write_queue: "
 		      << "could not open queuefile!" );
-		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
 		return;
 	}
 	CurrentMessage = msg_queue.begin(); // get first message
@@ -239,7 +216,6 @@ tracker::write_queue
 		queue_file << ( *CurrentMessage ) << std::endl;
 		CurrentMessage++;
 	}
-	pthread_mutex_unlock ( &msg_mutex ); // give up the lock
 	queue_file.close ();
 }
 //////////////////////////////////////////////////////////////////////
@@ -252,16 +228,17 @@ void
 tracker::requeue_msg
 ()
 {
-	pthread_mutex_lock ( &msg_mutex );
-	pthread_mutex_lock ( &msg_sent_mutex );
+	msg_mutex.lock ();
+	msg_sent_mutex.lock ();
 	while ( msg_sent_queue.begin() !=msg_sent_queue.end() )
 	{
-		msg_queue.insert ( msg_queue.begin() , msg_sent_queue.back() );// requeue message at the beginning of queue
+		// requeue message at the beginning of queue
+		msg_queue.insert ( msg_queue.begin() , msg_sent_queue.back() );
 		msg_sent_queue.pop_back();
 	}
-	pthread_cond_signal ( &condition_var );  // wake up the worker
-	pthread_mutex_unlock ( &msg_sent_mutex );
-	pthread_mutex_unlock ( &msg_mutex );
+	msg_mutex.unlock (),
+	msg_sent_mutex.unlock ();
+	condition_var.notify_all (); // wake up the worker
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -274,10 +251,10 @@ tracker::add_message
 	const std::string& message
 )
 {
-	pthread_mutex_lock ( &msg_mutex ); // acquire the lock
+	msg_mutex.lock ();
 	msg_queue.push_back ( message ); // queue the message at the end of queue
-	pthread_cond_signal ( &condition_var );  // wake up the worker
-	pthread_mutex_unlock ( &msg_mutex );	 // give up the lock
+	msg_mutex.unlock ();
+	condition_var.notify_all (); // wake up the worker
 } // tracker::add_message()
 //////////////////////////////////////////////////////////////////////
 
@@ -350,10 +327,9 @@ tracker::tracker_read
 	buffsock_t* bs
 )
 {
-	char	res[MAX_MSG_LINE];	/*Msg from/to server*/
+	char  res[MAX_MSG_LINE];	// Msg from/to server
 	char* pch;
 	errno = 0;
-	//int bytes = m_tracker_socket->recv ( res, MAX_MSG_LINE, MSG_NOSIGNAL );
 	/* -1 below is used to retain last byte of 0x23*/
 	int bytes = m_tracker_socket->recv ( bs->buf + bs->curlen, bs->maxlen - bs->curlen -1, MSG_NOSIGNAL );
 	if ( bytes <= 0 )
@@ -362,7 +338,9 @@ tracker::tracker_read
 		EAGAIN (No data on non blocking socket)
 		EWOULDBLOCK (non-blocking socket and there is not enough space in the kernel's outgoing-data-buffer)
 		EINTR (sth hard to explain - Linux only)*/
-		if ( ( errno != EAGAIN ) && ( errno != EWOULDBLOCK ) && ( errno != EINTR ) )
+		if ( ( errno != EAGAIN )
+		&&   ( errno != EWOULDBLOCK )
+		&&   ( errno != EINTR ) )
 		{
 			m_connected = false;
 			lost_connections++;
@@ -446,9 +424,9 @@ tracker::tracker_write
 		{}
 	else
 	{
-		pthread_mutex_lock ( &msg_sent_mutex );
+		msg_sent_mutex.lock ();
 		msg_sent_queue.push_back ( str );
-		pthread_mutex_unlock ( &msg_sent_mutex );
+		msg_sent_mutex.unlock ();
 	}
 	std::stringstream debug;
 	debug <<"DEBUG last_msg.size="
@@ -477,17 +455,13 @@ tracker::reply_from_server
 		size_t pos_ident = str.find ( "IDENTIFIED" );
 		size_t pos_err = str.find ( "ERROR" );
 		if ( pos_ident == 0 )
-		{
 			m_identified=true;
-		}
 		else if ( str == "OK" )
 		{
-			pthread_mutex_lock ( &msg_sent_mutex ); // acquire the lock
+			msg_sent_mutex.lock ();
 			if ( msg_sent_queue.begin() != msg_sent_queue.end() )
-			{
 				msg_sent_queue.erase ( msg_sent_queue.begin() );
-			}
-			pthread_mutex_unlock ( &msg_sent_mutex );	 // give up the lock
+			msg_sent_mutex.unlock ();
 		}
 		else if ( str == "PING" )
 		{
@@ -555,25 +529,12 @@ tracker::loop
 ()
 {
 	std::string	Msg;
-	pthread_mutex_init ( &msg_mutex, 0 );
-	pthread_mutex_init ( &msg_sent_mutex, 0 );
-	pthread_mutex_init ( &msg_recv_mutex, 0 );
-	pthread_cond_init  ( &condition_var, 0 );
-	m_thread_id = pthread_self();
 	/*Initialize socket read buffer*/
 	buffsock_t bs;
 	bs.buf = ( char* ) malloc ( MAX_MSG_LINE );
 	bs.maxlen = MAX_MSG_LINE;
 	bs.curlen = 0;
-#ifdef WIN32
-	LOG ( fglog::prio::HIGH, "# tracker::loop: "
-	      << "started, thread ID " << m_thread_id.p
-	    );
-#else
-	LOG ( fglog::prio::HIGH, "# tracker::loop: "
-	      << "started, thread ID " << m_thread_id
-	    );
-#endif
+	LOG ( fglog::prio::HIGH, "# tracker::loop started" );
 	/*Infinite loop*/
 	while ( ! want_exit )
 	{
@@ -595,14 +556,13 @@ tracker::loop
 				      << "not connected, will sleep for "
 				      << RECONNECT_WAIT << " seconds"
 				    );
-				struct timeval now;
-				struct timespec timeout;
-				gettimeofday ( &now, 0 );
-				timeout.tv_sec  = now.tv_sec + RECONNECT_WAIT;
-				timeout.tv_nsec = now.tv_usec * 1000;
-				pthread_mutex_lock ( &msg_mutex );
-				pthread_cond_timedwait ( &condition_var, &msg_mutex, &timeout );
-				pthread_mutex_unlock ( &msg_mutex );
+				std::unique_lock<std::mutex> lock { msg_mutex };
+				condition_var.wait_for (
+					lock,
+					std::chrono::seconds ( RECONNECT_WAIT )
+				);
+
+
 				continue;
 			}
 			m_timeout_stage = 0;
@@ -611,47 +571,39 @@ tracker::loop
 		if ( !msg_queue.size () )
 		{
 			// wait for data (1 sec at most)
-			struct timeval now;
-			struct timespec timeout;
-			gettimeofday ( &now, 0 );
-			timeout.tv_sec  = now.tv_sec + 1;
-			timeout.tv_nsec = now.tv_usec * 1000;
-			pthread_mutex_lock ( &msg_mutex );
-			pthread_cond_timedwait ( &condition_var,
-						 &msg_mutex, &timeout );
-			pthread_mutex_unlock ( &msg_mutex );
+			std::unique_lock<std::mutex> lock { msg_mutex };
+			condition_var.wait_for (
+				lock,
+				std::chrono::seconds ( 1 )
+			);
 		}
 		else
 		{
 			usleep ( 10000 );
 		}
 		while ( msg_queue.size ()
-				&& is_connected()
-				&& m_identified
-				&& msg_sent_queue.size() < 25 )
+		&& is_connected()
+		&& m_identified
+		&& msg_sent_queue.size() < 25 )
 		{
 			/*Get message from msg_queue*/
 			Msg = "";
-			pthread_mutex_lock ( &msg_mutex );
+			msg_mutex.lock ();
 			Msg = msg_queue.front();
 			msg_queue.erase ( msg_queue.begin() );
-			pthread_mutex_unlock ( &msg_mutex );
+			msg_mutex.unlock ();
 #ifdef ADD_TRACKER_LOG
 			write_msg_log ( Msg.c_str(), Msg.size(),
 					( char* ) "OUT: "
 				      );
 #endif // #ifdef ADD_TRACKER_LOG
 			LOG ( fglog::prio::DEBUG, "# tracker::loop: "
-			      << "sending msg " << Msg.size() << "  bytes: " << Msg
-			    );
+				<< "sending msg "
+				<< Msg.size() << "  bytes: " << Msg
+			);
 			if ( tracker_write ( Msg ) < 0 )
 			{
-				pthread_mutex_lock ( &msg_mutex );
-				// requeue message at the beginning of queue
-				msg_queue.insert ( msg_queue.begin() , Msg );
-				// wake up the worker
-				pthread_cond_signal ( &condition_var );
-				pthread_mutex_unlock ( &msg_mutex );
+				condition_var.notify_all ();
 				break;
 			}
 			tracker_read ( &bs );

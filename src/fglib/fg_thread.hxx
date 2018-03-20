@@ -36,7 +36,6 @@
 namespace fgmp
 {
 
-//using mutex_t = pthread_mutex_t;
 using mutex_t = std::mutex;
 
 /**@ingroup fglib

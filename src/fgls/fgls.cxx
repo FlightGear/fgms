@@ -31,10 +31,10 @@
 #include <iostream>
 #include <thread>
 #ifndef _MSC_VER
-#include <fglib/daemon.hxx>
-#include <unistd.h>     // getopt
+	#include <fglib/daemon.hxx>
+	#include <unistd.h>     // getopt
 #else
-#include <libmsc/msc_getopt.hxx>
+	#include <libmsc/msc_getopt.hxx>
 #endif
 #include <fglib/fg_log.hxx>
 #include <fglib/fg_util.hxx>
@@ -121,7 +121,10 @@ fgls::init
 	{
 		// Run admin cli in foreground reading from stdin
 		using namespace std::placeholders;
-		std::thread th { std::bind ( &fgls::handle_admin, this, _1 ), 0 };
+		std::thread th
+		{
+			std::bind ( &fgls::handle_admin, this, _1 ), 0
+		};
 		th.detach ();
 	}
 #ifndef _MSC_VER

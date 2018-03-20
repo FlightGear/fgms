@@ -141,53 +141,6 @@ endif ( ENABLE_DEBUG_TRACE )
 
 ##################################################
 #
-# find the threads library
-#
-##################################################
-find_package ( Threads REQUIRED )
-if ( Threads_FOUND )
-        if ( WIN32 )
-                list ( APPEND add_LIBS winmm.lib ws2_32.lib )
-                ###message( STATUS "*** ENV INCLUDE $ENV{INCLUDE}")
-                message ( STATUS
-                  "*** Finding pthread.h HINTS [${CMAKE_PREFIX_PATH}] PATHS [${CMAKE_INCLUDE_PATH}] PATH_SUFFIXES include"
-                )
-                ###find_file( thread_INC pthread.h
-                find_path ( thread_INC pthread.h
-                        HINTS ${CMAKE_PREFIX_PATH} $ENV{INCLUDE}
-                        PATHS ${CMAKE_INCLUDE_PATH} $ENV{INCLUDE}
-                        PATH_SUFFIXES include
-                )
-                if ( thread_INC )
-                        include_directories ( SYSTEM ${thread_INC} )
-                        message (STATUS "*** thread_INC: ${thread_INC}" )
-                else ( thread_INC )
-                        message ( FATAL_ERROR
-                          "*** thread_INC: ${thread_INC} pthread.h NOT FOUND!"
-                        )
-                endif ( thread_INC )
-                find_library ( thread_LIB pthreadVC2.lib
-                        HINTS ${CMAKE_PREFIX_PATH} $ENV{LIB}
-                        PATHS ${CMAKE_INCLUDE_PATH} $ENV{LIB}
-                        PATH_SUFFIXES lib
-                )
-                if ( thread_LIB )
-                        list ( APPEND add_LIBS ${thread_LIB} )
-                        message ( STATUS "*** Found ${thread_LIB})" )
-                else ( thread_LIB )
-                        message ( FATAL_ERROR
-                          "*** NOT FOUND target_link_libraries(pthread1 ${thread_LIB})"
-                        )
-                endif ( thread_LIB )
-        else ( WIN32 )
-                list ( APPEND add_LIBS ${CMAKE_THREAD_LIBS_INIT} )
-        endif ( WIN32 )
-else ( Threads_FOUND )
-        message ( FATAL_ERROR "*** THREADS NOT FOUND!" )
-endif ( Threads_FOUND )
-
-##################################################
-#
 # build all modules
 #
 ##################################################
@@ -204,6 +157,8 @@ set ( libcli_SRCS
         src/libcli/common.hxx
         src/libcli/command.hxx
         src/libcli/command.cxx
+        src/libcli/pre_command.hxx
+        src/libcli/pre_command.cxx
         src/libcli/cli_line.hxx
         src/libcli/cli_line.cxx
         src/libcli/filter.hxx

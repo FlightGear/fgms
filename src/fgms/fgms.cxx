@@ -34,17 +34,17 @@
 #endif
 
 #ifndef _MSC_VER
-#include <sys/wait.h>
-#ifndef __FreeBSD__
-#include <endian.h>
-#endif
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <netinet/in.h>
-#include <fglib/daemon.hxx>
+	#include <sys/wait.h>
+	#ifndef __FreeBSD__
+		#include <endian.h>
+	#endif
+	#include <sys/ipc.h>
+	#include <sys/msg.h>
+	#include <netinet/in.h>
+	#include <fglib/daemon.hxx>
 #else
-#include <libmsc/msc_getopt.hxx>
-#include <conio.h> // for _kbhit(), _getch
+	#include <libmsc/msc_getopt.hxx>
+	#include <conio.h> // for _kbhit(), _getch
 #endif
 
 #include <sys/types.h>
@@ -55,6 +55,7 @@
 #include <cstdlib>
 #include <string>
 #include <iomanip>
+#include <thread>
 #include <fglib/fg_util.hxx>
 #include <fglib/fg_log.hxx>
 #include <fglib/fg_util.hxx>
@@ -113,66 +114,6 @@ fgms::~fgms
 {
 	shutdown ();
 } // fgms::~fgms()
-
-//////////////////////////////////////////////////////////////////////
-
-/** Detach a telnet session
- *
- * Someone queried us via telnet, so start a new thread
- * handling the request.
- */
-static void*
-detach_telnet
-(
-	void* context
-)
-{
-	pthread_detach ( pthread_self() );
-	st_telnet* t = reinterpret_cast<st_telnet*> ( context );
-	fgms* tmp_server = t->instance;
-	tmp_server->handle_query ( t->fd );
-	delete t;
-	return 0;
-} // detach_telnet ()
-
-//////////////////////////////////////////////////////////////////////
-
-/** Detach an admin session
- *
- * Someone started an admin session, so start a new thread
- * handling the request.
- */
-void*
-detach_admin
-(
-	void* context
-)
-{
-	st_telnet* t = reinterpret_cast<st_telnet*> ( context );
-	fgms* tmp_server = t->instance;
-	pthread_detach ( pthread_self() );
-	tmp_server->handle_admin ( t->fd );
-	delete t;
-	return 0;
-} // detach_admin()
-
-//////////////////////////////////////////////////////////////////////
-
-/** Detach the tracker module
- *
- * Only one tracker is allowed.
- */
-void*
-detach_tracker
-(
-	void* vp
-)
-{
-	tracker* pt = reinterpret_cast<tracker*> ( vp );
-	pt->loop();
-	delete pt;
-	return ( ( void* ) 0xdead );
-} // detach_tracker ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -367,8 +308,12 @@ fgms::init
 	}
 	if ( ( m_tracker_enabled ) && ( m_tracker != nullptr ) )
 	{
-		pthread_t th;
-		pthread_create ( &th, NULL, &detach_tracker, m_tracker );
+		using namespace std::placeholders;
+		std::thread th
+		{
+			std::bind ( &tracker::loop, m_tracker )
+		};
+		th.detach ();
 		LOG ( prio::EMIT, "# tracked to "
 		      << m_tracker->get_server ()
 		      << ":" << m_tracker->get_port ()
@@ -1636,7 +1581,6 @@ fgms::check_files
 		m_reinit_data   = true; // init the data port
 		m_reinit_query  = true; // init the telnet port
 		m_reinit_admin  = true; // init the admin port
-		//FIXME: SigHUPHandler ( 0 );
 	}
 	else if ( m_use_stat_file && ( stat ( m_stats_filename.c_str(), &buf ) == 0 ) )
 	{
@@ -1724,12 +1668,12 @@ fgms::loop
 	#endif
 	if ( ! m_run_as_daemon && m_cli_enabled )
 	{
-		// Run admin cli in foreground reading from stdin
-		st_telnet* t = new st_telnet;
-		t->instance = this;
-		t->fd       = 0;
-		pthread_t th;
-		pthread_create ( &th, NULL, &detach_admin, t );
+		using namespace std::placeholders;
+		std::thread th
+		{
+			std::bind ( &fgms::handle_admin, this, _1 ), 0
+		};
+		th.detach ();
 	}
 	m_is_parent = true;
 	//////////////////////////////////////////////////
@@ -1820,8 +1764,8 @@ fgms::loop
 		{
 			// something on the wire (telnet)
 			m_queries_received++;
-			int Fd = m_query_channel->accept ( 0 );
-			if ( Fd < 0 )
+			int fd = m_query_channel->accept ( 0 );
+			if ( fd < 0 )
 			{
 				if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 				{
@@ -1830,19 +1774,20 @@ fgms::loop
 				}
 				continue;
 			}
-			st_telnet* t = new st_telnet;
-			t->instance = this;
-			t->fd       = Fd;
-			pthread_t th;
-			pthread_create ( &th, NULL, & detach_telnet, t );
+			using namespace std::placeholders;
+			std::thread th
+			{
+				std::bind ( &fgms::handle_query, this, _1 ), fd
+			};
+			th.detach ();
 		} // TelnetSocket
 		else if ( listen_sockets[2] > 0 )
 		{
 			// something on the wire (admin port)
 			fgmp::netaddr admin_address;
 			m_admin_received++;
-			int Fd = m_admin_channel->accept ( & admin_address );
-			if ( Fd < 0 )
+			int fd = m_admin_channel->accept ( & admin_address );
+			if ( fd < 0 )
 			{
 				if ( ( errno != EAGAIN ) && ( errno != EPIPE ) )
 				{
@@ -1854,11 +1799,12 @@ fgms::loop
 			LOG ( prio::URGENT,
 			      "fgms::loop() - new Admin connection from "
 			      << admin_address.to_string () );
-			st_telnet* t = new st_telnet;
-			t->instance = this;
-			t->fd       = Fd;
-			pthread_t th;
-			pthread_create ( &th, NULL, &detach_admin, t );
+			using namespace std::placeholders;
+			std::thread th
+			{
+				std::bind ( &fgms::handle_admin, this, _1 ), fd
+			};
+			th.detach ();
 		} // AdminSocket
 		//
 		// regenrate the client list?
@@ -2114,12 +2060,12 @@ fgms::update_tracker
 	const int type
 )
 {
-	char            time_str[100];
-	pilot   player;
-	point3d         playerpos_geod;
-	std::string     aircraft;
-	std::string     message;
-	tm*             tm;
+	char        time_str[100];
+	pilot       player;
+	point3d     playerpos_geod;
+	std::string aircraft;
+	std::string message;
+	tm*         tm;
 	if ( ! m_tracker_enabled || ( name == "mpdummy" ) )
 	{
 		return ( 1 );
@@ -2265,8 +2211,7 @@ fgms::close_tracker
 		if ( m_tracker != nullptr )
 		{
 			m_tracker->set_want_exit ();
-			pthread_cond_signal ( m_tracker->get_cond_var() );  // wake up the worker
-			pthread_join ( m_tracker->get_thread_id(), 0 );
+			m_tracker->get_cond_var().notify_all ();
 		}
 		m_tracker = nullptr;
 		m_tracker_enabled = false;
@@ -2292,7 +2237,7 @@ fgms::receiver_wants_data
 	// TODO:
 	float   out_of_reach;
 	if ( ( sender->is_ATC == ATC_TYPE::NONE )
-			&&   ( receiver.is_ATC == ATC_TYPE::NONE ) )
+	&&   ( receiver.is_ATC == ATC_TYPE::NONE ) )
 	{
 		// sender and Receiver are normal pilots, so m_out_of_reach applies
 		if ( distance ( sender->last_pos, receiver.last_pos ) < receiver.radar_range )
