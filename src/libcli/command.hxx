@@ -73,7 +73,7 @@ public:
 		const std::string& name,
 		const strvec& args,
 		size_t& first_arg );
-	inline bool has_callback () const;
+	virtual inline bool has_callback () const;
 	inline bool has_children () const;
 	inline const std::string& name () const;
 	inline const std::string& help () const;
@@ -107,6 +107,8 @@ protected:
 	/// every command can have a callback funtion.
 	cli_callback_func m_cli_callback = nullptr;
 }; // class command
+
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 //

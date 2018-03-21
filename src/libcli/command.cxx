@@ -43,9 +43,8 @@ command::command
 	const cmd_mode mode,
 	const std::string& help
 ) : m_name { std::move ( name ) }, m_help { std::move ( help ) }
+  , m_privilege { level }, m_mode { mode }
 {
-	m_privilege     = level;
-	m_mode          = mode;
 } // command::command ()
 
 //////////////////////////////////////////////////////////////////////

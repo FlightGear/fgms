@@ -88,7 +88,8 @@ public:
 	inline void set_modestr  ( const string& modestring );
 	inline void set_auth_callback ( auth_func callback );
 	inline void set_banner ( const string& banner );
-	inline void set_compare_case ( bool cmpcase );
+	inline void compare_case ( bool cmpcase );
+	inline bool compare_case ();
 	RESULT internal_help (
 		const string& command,
 		const strvec& args,
@@ -145,8 +146,19 @@ public:
 		size_t first_arg
 		);
 
-protected:
+	RESULT no_more_args (
+		const strvec& args,
+		const size_t first_arg
+		);
+	RESULT need_n_args (
+		const size_t needed_args,
+		const strvec& args,
+		const size_t first_arg
+		) const;
+	bool wants_help ( const string& arg );
 	std::pair <libcli::RESULT,bool> get_bool ( const std::string& arg );
+
+protected:
 	/// The different states of the cli
 	enum class CLI_STATE
 	{
@@ -189,23 +201,12 @@ protected:
 		) const;
 	void show_prompt ();
 
-	RESULT no_more_args (
-		const strvec& args,
-		const size_t first_arg
-		);
-	RESULT need_n_args (
-		const size_t needed_args,
-		const strvec& args,
-		const size_t first_arg
-		) const;
-
 	int  check_user_auth (
 		const string& username,
 		const string& password
 		) const;
 	void leave_config_mode ();
 	void list_completions ();
-	bool wants_help ( const string& arg );
 	bool authenticate_user ();
 	RESULT install_begin_filter (
 		const strvec& filters,
@@ -337,12 +338,23 @@ cli::set_banner
  * When set to 'true' commands are case sensitive.
  */
 void
-cli::set_compare_case
+cli::compare_case
 (
 	bool cmpcase
 )
 {
 	m_compare_case = cmpcase;
+} // cli::set_compare_case ()
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ */
+bool
+cli::compare_case
+()
+{
+	return m_compare_case;
 } // cli::set_compare_case ()
 
 //////////////////////////////////////////////////////////////////////

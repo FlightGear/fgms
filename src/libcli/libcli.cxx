@@ -1757,8 +1757,8 @@ cli::get_bool
 {
 	if ( wants_help ( arg ) )
 	{
-		show_help ( "enable|disable|on|off|true|false",
-		  "set boolean value" );
+		show_help ( "enable|on|true", "enable this feature");
+		show_help ( "disable|off|false", "disable this feature");
 		return std::make_pair<RESULT,bool> ( RESULT::ERROR_ANY, false );
 	}
 	if ( arg == "" )
