@@ -1,4 +1,19 @@
 1.0.0
+        [NEW]   !!! Changed the file interface !!!
+                The file interface is now handled by a single file.
+                This file is parsed by the cli, so all cli commands
+                (in PRIVILEGED mode) are available. The functionality
+                of the previous interface can be emulated by the following
+                commands:
+                echo die > fgms_command         # exit_file
+                echo log_stats > fgms_command   # stats_file
+                echo reset > fgms_command       # reset_file
+        [NEW]   The cli uses its own bind address, so we can let the
+                cli listen on 127.0.0.1 only while data and telnet is
+                listening on a public IP.
+        [NEW]   Removed all pthread_* calls in the code. The pthread
+                library ist still needed for linking (at least under
+                *nix, I guess it is not needed any more under windows)
         [NEW]   fgms uses the cli to read its configuration
                 !!! the format of the configuration file has changed !!!
                 See etc/fgms_skel.conf

@@ -12,15 +12,15 @@ libcli
   class setter : public command
   {
   public:
-  	setter (
-		const std::string& name,
-		const cmd_priv level,
-		const cmd_mode mode,
-		type & variable,
-		const std::string& help
-	);
+        setter (
+                const std::string& name,
+                const cmd_priv level,
+                const cmd_mode mode,
+                type & variable,
+                const std::string& help
+        );
   private:
-  	type & m_variable;
+        type & m_variable;
   };
 
 - Store user passwords encrypted (needs crypt)
@@ -33,9 +33,13 @@ libcli
 
 fgms
 ----
-- create an IRC like chat protocoll
-- implement server to server communication
-  special messages for server internal purposes
+- The lists (list of players, list of relays etc) contain objects of 
+  their respective types. Iterating through them is an expensive task,
+  because every element must be copied before usage. Now we can use
+  std::shared_ptr in the list which point to the elements. This speeds
+  up a lot since only the shared_ptr needs to be copied instead of the whole
+  object. As an additional benefit we can then use range based for loops which
+  makes the code much more readable.
 - rate limit clients
   clients sents X pakets per second, but we only forward Y pakets per
   second

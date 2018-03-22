@@ -58,6 +58,8 @@ private:
 			const strvec& args, size_t first_arg );
 	RESULT show_bind_addr ( const std::string& command,
 			const strvec& args, size_t first_arg );
+	RESULT show_cli_bind_addr ( const std::string& command,
+			const strvec& args, size_t first_arg );
 	RESULT show_data_port ( const std::string& command,
 			const strvec& args, size_t first_arg );
 	RESULT show_query_port ( const std::string& command,
@@ -69,6 +71,10 @@ private:
 	RESULT show_debug_level ( const std::string& command,
 			const strvec& args, size_t first_arg );
 	RESULT show_hostname ( const std::string& command,
+			const strvec& args, size_t first_arg );
+	RESULT show_commandfile_enable ( const std::string& command,
+			const strvec& args, size_t first_arg );
+	RESULT show_commandfile_name ( const std::string& command,
 			const strvec& args, size_t first_arg );
 	RESULT show_stats ( const std::string& command,
 			const strvec& args, size_t first_arg );
@@ -130,6 +136,10 @@ private:
 			const strvec& args, size_t first_arg );
 	RESULT cfg_hub_mode ( const std::string& command,
 			const strvec& args, size_t first_arg );
+	RESULT cfg_command_filename ( const std::string& command,
+			const strvec& args, size_t first_arg );
+	RESULT cfg_commandfile_enable ( const std::string& command,
+			const strvec& args, size_t first_arg );
 
 	//////////////////////////////////////////////////
 	// configure tracker commands
@@ -155,6 +165,8 @@ private:
 	RESULT cfg_cli_enable ( const std::string& command,
 			const strvec& args, size_t first_arg );
 	RESULT cfg_cli_port ( const std::string& command,
+			const strvec& args, size_t first_arg );
+	RESULT cfg_cli_bind_addr ( const std::string& command,
 			const strvec& args, size_t first_arg );
 
 	//////////////////////////////////////////////////
@@ -197,6 +209,10 @@ private:
 	//////////////////////////////////////////////////
 	// general  commands
 	//////////////////////////////////////////////////
+	RESULT cmd_log_stats ( const std::string& command,
+			const strvec& args, size_t first_arg );
+	RESULT cmd_reset ( const std::string& command,
+			const strvec& args, size_t first_arg );
 	RESULT cmd_die ( const std::string& command,
 			const strvec& args, size_t first_arg );
 	// TODO: change the size of the logbuffer

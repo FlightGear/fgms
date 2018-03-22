@@ -34,13 +34,13 @@ namespace libcli
 	{
 		enum
 		{
-			CONFIG_FGMS = CLI_MODE::EXTENSION,
-			CONFIG_CLI,
-			CONFIG_TRACKER,
-			CONFIG_WHITELIST,
-			CONFIG_BLACKLIST,
-			CONFIG_CROSSFEED,
-			CONFIG_RELAY
+			CONFIG_FGMS = CLI_MODE::EXTENSION, ///< configure fgms
+			CONFIG_CLI,		///< configure the cli
+			CONFIG_TRACKER,		///< configure tracker module
+			CONFIG_WHITELIST,	///< configure whitelist
+			CONFIG_BLACKLIST,	///< configure blacklist
+			CONFIG_CROSSFEED,	///< configure crossfeeds
+			CONFIG_RELAY		///< configure relays
 		};
 	}
 }
@@ -54,9 +54,8 @@ fgcli::fgcli
 (
 	fgmp::fgms* fgms,
 	int fd
-) : cli ( fd )
+) : cli { fd }, m_fgms { fgms }
 {
-	m_fgms = fgms;
 	setup ();
 } // fgcli::fgcli ()
 
@@ -290,6 +289,22 @@ fgcli::setup
 		libcli::CLI_MODE::ANY,
 		"Show out of reach"
 	), c2 );
+	// 'show fgms commandfile_enable'
+	register_command ( new command (
+		"commandfile_enable",
+		_ptr ( fgcli::show_commandfile_enable ),
+		libcli::PRIVLEVEL::UNPRIVILEGED,
+		libcli::CLI_MODE::ANY,
+		"Show if command file interface is enabled"
+	), c2 );
+	// 'show fgms commandfile_name'
+	register_command ( new command (
+		"commandfile_name",
+		_ptr ( fgcli::show_commandfile_name ),
+		libcli::PRIVLEVEL::UNPRIVILEGED,
+		libcli::CLI_MODE::ANY,
+		"Show name of the command file interface"
+	), c2 );
 
 	//////////////////////////////////////////////////
 	// 'show cli' command
@@ -302,12 +317,21 @@ fgcli::setup
 		"show cli information"
 	);
 	register_command ( c2, c );
+	// 'show cli port'
 	register_command ( new command (
 		"port",
 		_ptr ( fgcli::show_cli_port ),
 		PRIVLEVEL::UNPRIVILEGED,
 		CLI_MODE::ANY,
 		"Show admin port"
+	), c2 );
+	// 'show cli bind_addr'
+	register_command ( new command (
+		"bind_addr",
+		_ptr ( fgcli::show_cli_bind_addr ),
+		PRIVLEVEL::UNPRIVILEGED,
+		CLI_MODE::ANY,
+		"Show bind address"
 	), c2 );
 	// 'show cli users'
 	register_command ( new command (
@@ -555,6 +579,27 @@ fgcli::setup
 		CLI_MODE::CONFIG_FGMS,
 		"enable/disable hub mode"
 	) );
+	c = new command (
+		"command",
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::CONFIG_FGMS,
+		"show system information"
+	);
+	register_command ( c );
+	register_command ( new command (
+		"filename",
+		_ptr ( fgcli::cfg_command_filename ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_FGMS,
+		"set name of command file"
+	), c );
+	register_command ( new command (
+		"enable",
+		_ptr ( fgcli::cfg_commandfile_enable ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_FGMS,
+		"enable/disable commandfile interface"
+	), c );
 	// enable 'exit' command
 	register_command ( new command (
 		"exit",
@@ -590,6 +635,14 @@ fgcli::setup
 		PRIVLEVEL::PRIVILEGED,
 		CLI_MODE::CONFIG_CLI,
 		"Set port of admin cli"
+	) );
+	// 'bind_addr IP|HOSTNAME'
+	register_command ( new command (
+		"bind_address",
+		_ptr ( fgcli::cfg_cli_bind_addr ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_CLI,
+		"Set bind address (only listen to this address)"
 	) );
 	// 'user NAME PASSWORD LEVEL'
 	register_command ( new command (
@@ -868,6 +921,20 @@ fgcli::setup
 	//
 	//////////////////////////////////////////////////
 	register_command ( new command (
+		"log_stats",
+		_ptr ( fgcli::cmd_log_stats ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::EXEC,
+		"reset all connections"
+	) );
+	register_command ( new command (
+		"reset",
+		_ptr ( fgcli::cmd_reset ),
+		libcli::PRIVLEVEL::PRIVILEGED,
+		libcli::CLI_MODE::EXEC,
+		"reset all connections"
+	) );
+	register_command ( new command (
 		"die",
 		_ptr ( fgcli::cmd_die ),
 		libcli::PRIVLEVEL::PRIVILEGED,
@@ -878,7 +945,6 @@ fgcli::setup
 } // fgcli::setup ()
 
 //////////////////////////////////////////////////////////////////////
-
 
 libcli::RESULT
 fgcli::show_daemon
@@ -896,6 +962,46 @@ fgcli::show_daemon
 		 << libcli::cli_client::endl;
 	return RESULT::OK;
 } // fgcli::show_daemon ()
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::show_commandfile_enable
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT r = no_more_args ( args, first_arg );
+	if ( r != RESULT::OK )
+		return r;
+	m_client << libcli::align_left ( 22 )
+		 << "commandfile enabled" << ": "
+		 << m_fgms->m_enable_commandfile
+		 << libcli::cli_client::endl;
+	return RESULT::OK;
+} // fgcli::show_commandfile_enable ()
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::show_commandfile_name
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT r = no_more_args ( args, first_arg );
+	if ( r != RESULT::OK )
+		return r;
+	m_client << libcli::align_left ( 22 )
+		 << "commandfile name" << ": "
+		 << m_fgms->m_commandfile_name
+		 << libcli::cli_client::endl;
+	return RESULT::OK;
+} // fgcli::show_commandfile_name ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -920,6 +1026,30 @@ fgcli::show_bind_addr
 		 << libcli::cli_client::endl;
 	return RESULT::OK;
 } // fgcli::show_bind_addr ()
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::show_cli_bind_addr
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	libcli::RESULT r = no_more_args ( args, first_arg );
+	if ( r != RESULT::OK )
+		return r;
+	std::string bind_addr;
+	if ( m_fgms->m_bind_addr == "" )
+		bind_addr = "*";
+	else
+		bind_addr = m_fgms->m_cli_bind_addr;
+	m_client << libcli::align_left ( 22 )
+		 << "bind address"<< ": " << bind_addr
+		 << libcli::cli_client::endl;
+	return RESULT::OK;
+} // fgcli::show_cli_bind_addr ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -2252,6 +2382,23 @@ fgcli::show_pilots
 //////////////////////////////////////////////////////////////////////
 
 libcli::RESULT
+fgcli::cmd_log_stats
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT r { no_more_args ( args, first_arg ) };
+	if ( RESULT::OK != r )
+		return r;
+	m_fgms->log_stats ();
+	return RESULT::OK;
+} // fgcli::cmd_log_stats ()
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
 fgcli::cfg_fgms
 (
 	const std::string& command,
@@ -2279,7 +2426,7 @@ fgcli::cfg_daemon
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
 		return n;
-	std::pair <libcli::RESULT, bool> r { get_bool ( args[first_arg] ) };
+	std::pair <RESULT, bool> r { get_bool ( args[first_arg] ) };
 	if ( r.first == RESULT::OK )
 	{
 		// if set from false to true a restart is needed
@@ -2290,6 +2437,12 @@ fgcli::cfg_daemon
 
 //////////////////////////////////////////////////////////////////////
 
+/**
+ * @note	This only works on startup. To make it work during
+ * 		runtime it would be necessary to watch m_reinit_data
+ * 		and m_reinit_query in the main loop. But who wants
+ * 		to change the ports after start?
+ */
 libcli::RESULT
 fgcli::cfg_bind_addr
 (
@@ -2303,7 +2456,8 @@ fgcli::cfg_bind_addr
 		return n;
 	if ( wants_help ( args[first_arg] ) )
 	{
-		show_help ( "IP", "only listen on IP" );
+		show_help ( "IP|HOSTNAME", "only listen on IP" );
+		show_help ( "any", "listen on all IPs" );
 		return RESULT::ERROR_ANY;
 	}
 	fgmp::netaddr address;
@@ -2318,12 +2472,62 @@ fgcli::cfg_bind_addr
 		m_client << command << " : ";
 		return RESULT::INVALID_ARG;
 	}
-	m_fgms->set_bind_addr ( args[first_arg] );
+	m_fgms->m_bind_addr = args[first_arg];
+	m_fgms->m_reinit_data = true;
+	m_fgms->m_reinit_query = true;
 	return RESULT::OK;
 } // fgcli::cfg_bind_addr ()
 
 //////////////////////////////////////////////////////////////////////
 
+/**
+ * @note	This only works on startup. To make it work during
+ * 		runtime it would be necessary to watch m_reinit_admin
+ * 		in the main loop. But who wants to change the ports
+ * 		after start?
+ */
+libcli::RESULT
+fgcli::cfg_cli_bind_addr
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT n { need_n_args ( 1, args, first_arg ) };
+	if ( RESULT::OK != n )
+		return n;
+	if ( wants_help ( args[first_arg] ) )
+	{
+		show_help ( "IP|HOSTNAME", "only listen on IP" );
+		show_help ( "any", "listen on all IPs" );
+		return RESULT::ERROR_ANY;
+	}
+	fgmp::netaddr address;
+	address.assign ( args[first_arg]  );
+	if ( ! address.is_valid () )
+	{
+		if ( compare ( "any", args[first_arg], m_compare_case ) )
+		{
+			m_fgms->set_cli_bind_addr ( "" );
+			return RESULT::OK;
+		}
+		m_client << command << " : ";
+		return RESULT::INVALID_ARG;
+	}
+	m_fgms->m_cli_bind_addr = args[first_arg];
+	m_fgms->m_reinit_admin  = true;
+	return RESULT::OK;
+} // fgcli::cfg_cli_bind_addr ()
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * @note	This only works on startup. To make it work during
+ * 		runtime it would be necessary to watch m_reinit_data
+ * 		in the main loop. But who wants to change the ports
+ * 		after start?
+ */
 libcli::RESULT
 fgcli::cfg_data_port
 (
@@ -2348,12 +2552,17 @@ fgcli::cfg_data_port
 		return RESULT::OK;
 	m_fgms->m_data_port = p;
 	m_fgms->m_reinit_data = true;
-	m_fgms->init_data_channel ();
 	return RESULT::OK;
 }  // fgcli::cfg_data_port ()
 
 //////////////////////////////////////////////////////////////////////
 
+/**
+ * @note	This only works on startup. To make it work during
+ * 		runtime it would be necessary to watch m_reinit_query
+ * 		in the main loop. But who wants to change the ports
+ * 		after start?
+ */
 libcli::RESULT
 fgcli::cfg_query_port
 (
@@ -2378,7 +2587,6 @@ fgcli::cfg_query_port
 		return RESULT::OK;
 	m_fgms->m_query_port = p;
 	m_fgms->m_reinit_query = true;
-	m_fgms->init_query_channel ();
 	return RESULT::OK;
 } // fgcli::cfg_query_port ()
 
@@ -2412,7 +2620,7 @@ fgcli::cfg_cli_enable
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
 		return n;
-	std::pair <libcli::RESULT, bool> r { get_bool ( args[first_arg] ) };
+	std::pair <RESULT, bool> r { get_bool ( args[first_arg] ) };
 	if ( r.first == RESULT::OK )
 		m_fgms->m_cli_enabled = r.second;
 	return r.first;
@@ -2420,6 +2628,12 @@ fgcli::cfg_cli_enable
 
 //////////////////////////////////////////////////////////////////////
 
+/**
+ * @note	This only works on startup. To make it work during
+ * 		runtime it would be necessary to watch m_reinit_admin
+ * 		in the main loop. But who wants to change the ports
+ * 		after start?
+ */
 libcli::RESULT
 fgcli::cfg_cli_port
 (
@@ -2444,7 +2658,6 @@ fgcli::cfg_cli_port
 		return RESULT::OK;
 	m_fgms->m_cli_port = p;
 	m_fgms->m_reinit_admin = true;
-	m_fgms->init_admin_channel ();
 	return RESULT::OK;
 } // fgcli::cfg_cli_port
 
@@ -2636,11 +2849,52 @@ fgcli::cfg_hub_mode
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
 		return n;
-	std::pair <libcli::RESULT, bool> r { get_bool ( args[first_arg] ) };
+	std::pair <RESULT, bool> r { get_bool ( args[first_arg] ) };
 	if ( r.first == RESULT::OK )
 		m_fgms->m_hub_mode = r.second;
 	return r.first;
 } // fgcli::cfg_hub_mode
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::cfg_command_filename
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT n { need_n_args ( 1, args, first_arg ) };
+	if ( RESULT::OK != n )
+		return n;
+	if ( wants_help ( args[first_arg] ) )
+	{
+		show_help ( "NAME", "set NAME as command filename" );
+		return RESULT::ERROR_ANY;
+	}
+	m_fgms->m_commandfile_name = args[first_arg];
+	return RESULT::OK;
+} // fgcli::cfg_command_filename
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::cfg_commandfile_enable
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT n { need_n_args ( 1, args, first_arg ) };
+	if ( RESULT::OK != n )
+		return n;
+	std::pair <RESULT, bool> r { get_bool ( args[first_arg] ) };
+	if ( r.first == RESULT::OK )
+		m_fgms->m_enable_commandfile = r.second;
+	return r.first;
+} // fgcli::cfg_commandfile_enable
 
 //////////////////////////////////////////////////////////////////////
 
@@ -2672,7 +2926,7 @@ fgcli::cfg_tracker_enable
 	RESULT n { need_n_args ( 1, args, first_arg ) };
 	if ( RESULT::OK != n )
 		return n;
-	std::pair <libcli::RESULT, bool> r { get_bool ( args[first_arg] ) };
+	std::pair <RESULT, bool> r { get_bool ( args[first_arg] ) };
 	if ( r.first == RESULT::OK )
 	{
 		m_fgms->m_tracker_enabled = r.second;
@@ -3486,7 +3740,30 @@ fgcli::cmd_relay_add
 //////////////////////////////////////////////////////////////////////
 
 /**
+ * @brief reset all connections
+ */
+libcli::RESULT
+fgcli::cmd_reset
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT r = no_more_args ( args, first_arg );
+	if ( r != RESULT::OK )
+		return r;
+	m_fgms->m_reinit_data  = true;
+	m_fgms->m_reinit_query = true;
+	m_fgms->m_reinit_admin = true;
+	return RESULT::OK;
+} // fgcli::cmd_reset
+
+//////////////////////////////////////////////////////////////////////
+
+/**
  *  @brief Shutdown the server
+ *  @todo  add a reason and sent this to fgls and relays.
  */
 libcli::RESULT
 fgcli::cmd_die

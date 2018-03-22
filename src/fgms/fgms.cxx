@@ -94,13 +94,6 @@ fgms::fgms
 	m_proto_minor_version   = converter[0]; // ->High;
 	m_proto_major_version   = converter[1]; // ->Low;
 	m_relay_map             = ip2relay_t ();
-	// Be able to enable/disable file interface
-	// On start-up if the file already exists, disable
-	struct stat buf;
-	m_use_exit_file  = ( stat ( m_exit_filename.c_str(), &buf ) ) ? true : false;
-	// caution: this has failed in the past
-	m_use_reset_file = ( stat ( m_reset_filename.c_str(), &buf ) ) ? true : false;
-	m_use_stat_file  = ( stat ( m_stats_filename.c_str(), &buf ) ) ? true : false;
 	m_uptime = time ( 0 );
 } // fgms::fgms()
 
@@ -216,7 +209,7 @@ fgms::init_admin_channel
 	m_admin_channel = new fgmp::netsocket;
 	try
 	{
-		m_admin_channel->listen_to ( m_bind_addr, m_cli_port,
+		m_admin_channel->listen_to ( m_cli_bind_addr, m_cli_port,
 					     fgmp::netsocket::TCP );
 	}
 	catch ( std::runtime_error& e )
@@ -237,15 +230,26 @@ fgms::set_bind_addr
 )
 {
 	if ( m_bind_addr == addr )
-	{
 		return;
-	}
 	m_bind_addr = addr;
 	m_reinit_data = true;
 	m_reinit_query = true;
-	m_reinit_admin = true;
 	init_data_channel ();
 	init_query_channel ();
+} // fgms::set_bind_addr ()
+
+//////////////////////////////////////////////////////////////////////
+
+void
+fgms::set_cli_bind_addr
+(
+	const std::string& addr
+)
+{
+	if ( m_cli_bind_addr == addr )
+		return;
+	m_cli_bind_addr = addr;
+	m_reinit_admin = true;
 	init_admin_channel ();
 } // fgms::set_bind_addr ()
 
@@ -357,12 +361,9 @@ fgms::init
 	LOG ( prio::EMIT, "# I have " << m_black_list.size()
 	      << " blacklisted IPs"
 	    );
-	if ( m_use_exit_file && m_use_stat_file )
+	if ( m_enable_commandfile )
 	{
-		// only show this IFF both are enabled
-		LOG ( prio::EMIT, "# Files: exit=[" << m_exit_filename
-		      << "] stat=[" << m_stats_filename << "]"
-		    );
+		LOG (prio::EMIT, "# using commandfile: " << m_commandfile_name);
 	}
 	m_listening = true;
 	#ifndef _MSC_VER
@@ -1472,7 +1473,7 @@ fgms::handle_data
 /**
  * @brief Show Stats
  */
-void fgms::show_stats
+void fgms::log_stats
 ()
 {
 	int pilot_cnt, local_cnt;
@@ -1529,7 +1530,7 @@ void fgms::show_stats
 	m_packets_received = m_black_rejected = m_packets_invalid = 0;
 	m_unknown_relay = m_pos_data = m_queries_received = 0; // reset
 	m_relay_magic = m_unknown_data = 0; // reset
-} // fgms::show_stats ()
+} // fgms::log_stats ()
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
@@ -1548,69 +1549,58 @@ void fgms::show_stats
  * file interface actions.
  *
  */
-int
+void
 fgms::check_files
 ()
 {
+	// Check if command file exists.
+	// using posix stat() for now, hopefully C++17 will allow
+	// std::filesystem::exists ( m_commandfile_name ); ...
 	struct stat buf;
-	if ( m_use_exit_file && ( stat ( m_exit_filename.c_str(), &buf ) == 0 ) )
+	if ( stat ( m_commandfile_name.c_str(), &buf ) != 0 )
+		return;
+	LOG ( prio::URGENT, "## Got COMMAND file " << m_commandfile_name );
+
+	// Fire up a cli and let it process the command file
+	using namespace libcli;
+	RESULT r;
+	fgcli cli ( this, 0 );
+	r = cli.file (m_commandfile_name,PRIVLEVEL::PRIVILEGED,CLI_MODE::EXEC);
+	if ( RESULT::INVALID_ARG == r )
 	{
-		LOG ( prio::URGENT, "## Got EXIT file : " << m_exit_filename );
-		unlink ( m_exit_filename.c_str() );
-		if ( stat ( m_exit_filename.c_str(), &buf ) == 0 )
-		{
-			LOG ( prio::URGENT,
-			      "WARNING: Unable to delete exit file "
-			      << m_exit_filename << "! Disabled interface..." );
-			m_use_exit_file = false;
-		}
-		return 1;
+		LOG ( prio::EMIT, "failed to read " << m_commandfile_name );
+		return;
 	}
-	else if ( m_use_reset_file && ( stat ( m_reset_filename.c_str(), &buf ) == 0 ) )
+
+	// delete the command file
+	unlink ( m_commandfile_name.c_str() );
+	if ( stat ( m_commandfile_name.c_str(), &buf ) == 0 )
 	{
-		LOG ( prio::URGENT, "## Got RESET file "
-		      << m_reset_filename );
-		unlink ( m_reset_filename.c_str() );
-		if ( stat ( m_reset_filename.c_str(), &buf ) == 0 )
-		{
-			LOG ( prio::URGENT,
-			      "WARNING: Unable to delete reset file "
-			      << m_reset_filename << "! Disabled interface..." );
-			m_use_reset_file = false;
-		}
-		m_reinit_data   = true; // init the data port
-		m_reinit_query  = true; // init the telnet port
-		m_reinit_admin  = true; // init the admin port
+		LOG ( prio::URGENT,
+		      "WARNING: Unable to delete command file "
+		      << m_commandfile_name << "! Disable interface..." );
+		m_enable_commandfile = false;
 	}
-	else if ( m_use_stat_file && ( stat ( m_stats_filename.c_str(), &buf ) == 0 ) )
-	{
-		LOG ( prio::URGENT, "## Got STAT file " << m_stats_filename );
-		unlink ( m_stats_filename.c_str() );
-		if ( stat ( m_stats_filename.c_str(), &buf ) == 0 )
-		{
-			LOG ( prio::URGENT,
-			      "WARNING: Unable to delete stat file "
-			      << m_stats_filename << "! Disabled interface..." );
-			m_use_stat_file = false;
-		}
-		show_stats();
-	}
-	#ifdef _MSC_VER
+#ifdef _MSC_VER
 	if ( !m_cli_enabled && _kbhit() )
 	{
 		int ch = _getch ();
 		if ( ch == 0x1b )
 		{
-			printf ( "Got ESC key to exit...\n" );
-			return 1;
+			td::cout << "Got ESC key to exit..." << std::endl;
+			m_want_exit = true;
+			return;
 		}
 		else
 		{
-			printf ( "Got UNKNOWN keyboard! %#X - Only ESC, to exit\n", ch );
+			std::cout << "Got UNKNOWN keyboard! "
+				<< std::hex << ch
+				<< " - Only ESC, to exit"
+				<< std::endl;
 		}
 	}
-	#endif // _MSC_VER
-	return 0;
+#endif // _MSC_VER
+	return;
 } // fgms::check_files ()
 //////////////////////////////////////////////////////////////////////
 
@@ -1715,7 +1705,7 @@ fgms::loop
 		}
 		// Update some things every (default) 10 secondes
 		if ( ( ( current_time - last_tracker_update ) >= m_tracker_freq )
-				|| ( ( current_time - last_tracker_update ) < 0 ) )
+		|| ( ( current_time - last_tracker_update ) < 0 ) )
 		{
 			last_tracker_update = time ( 0 );
 			if ( m_player_list.size() >0 )
@@ -1724,10 +1714,8 @@ fgms::loop
 				// regularly (tracker)
 				update_tracker ( "" , "", "", last_tracker_update, tracker::UPDATE );
 			}
-			if ( check_files() )
-			{
-				break;
-			}
+			if ( m_enable_commandfile )
+				check_files();
 		} // position (tracker)
 		errno = 0;
 		listen_sockets[0] = m_data_channel;
@@ -1754,9 +1742,7 @@ fgms::loop
 				sender_address
 			);
 			if ( bytes <= 0 )
-			{
 				continue;
-			}
 			m_packets_received++;
 			handle_data ( ( char* ) &msg, bytes, sender_address );
 		} // DataSocket
@@ -1901,50 +1887,6 @@ fgms::open_logfile
 
 //////////////////////////////////////////////////////////////////////
 void
-fgms::set_exitfile
-(
-	const std::string& name
-)
-{
-	m_exit_filename = name;
-} // fgms::set_exitfile ()
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-void
-fgms::set_resetfile
-(
-	const std::string& name
-)
-{
-	m_reset_filename = name;
-} // fgms::set_resetfile ()
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-void
-fgms::set_statsfile
-(
-	const std::string& name
-)
-{
-	m_stats_filename = name;
-} // fgms::set_statsfile ()
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-void
-fgms::set_msglogfile
-(
-	const std::string& name
-)
-{
-	m_tracker_logname = name;
-} // fgms::set_msglogfile ()
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-void
 fgms::set_updatetracker
 (
 	time_t freq
@@ -2011,7 +1953,7 @@ fgms::shutdown
 	if ( ! m_is_parent )
 		return;
 	LOG ( prio::URGENT, "fgms::shutdown () - exiting" );
-	show_stats ();   // 20150619:0.11.9: add stats to the LOG on exit
+	log_stats ();   // 20150619:0.11.9: add stats to the LOG on exit
 	if ( m_listening == false )
 		return;
 	if ( m_query_channel != nullptr )

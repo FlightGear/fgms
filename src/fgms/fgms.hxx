@@ -98,10 +98,7 @@ public:
 	void  set_query_port ( int port );
 	void  set_admin_port ( int port );
 	void  open_logfile ();
-	void  set_exitfile ( const std::string& name );
-	void  set_resetfile ( const std::string& name );
-	void  set_statsfile ( const std::string& name );
-	void  set_msglogfile ( const std::string& name );
+
 	void  set_updatetracker ( time_t freq );
 	void  add_relay ( const std::string& server, int port );
 	void  add_crossfeed ( const std::string& server, int port );
@@ -111,8 +108,8 @@ public:
 	void  add_blacklist  ( const std::string& ip, const std::string& reason,
 			time_t timeout = 10 );
 	void  close_tracker ();
-	int   check_files();
-	void  show_stats ();
+	void  check_files();
+	void  log_stats ();
 	void* handle_query  ( int fd );
 	void* handle_admin  ( int fd );
 	void  parse_params ( int argc, char* argv[] );
@@ -156,10 +153,8 @@ protected:
 	int		m_max_radar_range	= 2000;
 	fglog::prio	m_debug_level		= fglog::prio::MEDIUM;
 	std::string	m_logfile_name		= "fgms.log";
-	std::string	m_exit_filename		= "fgms_exit";
-	std::string	m_reset_filename	= "fgms_reset";
-	std::string	m_stats_filename	= "fgms_stats";
 	std::string	m_bind_addr		= "";
+	std::string	m_cli_bind_addr		= "localhost";
 	std::string	m_FQDN			= "local";
 	std::string	m_hostname		= "fgms";
 	size_t		m_num_max_clients	= 0;
@@ -178,7 +173,11 @@ protected:
 	pilot_list	m_player_list;
 
 	// for the cli
-	uint16_t	m_cli_port;
+	uint16_t	m_cli_port		= m_data_port + 2;
+
+	// for the command file interface
+	std::string	m_commandfile_name	= "fgms_command";
+	bool		m_enable_commandfile	= false;
 
 	// for the tracker module
 	tracker*	m_tracker		= nullptr;
@@ -190,12 +189,6 @@ protected:
 	int		m_tracker_port		= 8000;
 	bool		m_tracker_reinit	= false;
 
-
-	//////////////////////////////////////////////////
-	// 20150619:0.11.9: be able to disable these functions
-	bool    m_use_exit_file;
-	bool    m_use_reset_file;
-	bool    m_use_stat_file;
 	//////////////////////////////////////////////////
 	//
 	//  statistics
@@ -248,6 +241,7 @@ protected:
 	bool  init_query_channel ();
 	bool  init_admin_channel ();
 	void  set_bind_addr ( const std::string& addr );
+	void  set_cli_bind_addr ( const std::string& addr );
 	void  add_client ( const netaddr& sender, char* msg );
 	void  add_bad_client ( const netaddr& sender, std::string& err_msg,
 			bool is_local, int bytes );
