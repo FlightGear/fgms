@@ -245,7 +245,7 @@ cDaemon::cDaemon()
 	signal (SIGHUP,SigHandler);
 	signal (SIGTERM,SigHandler);
 	signal (SIGCHLD,SigHandler);
-	signal (SIGPIPE,SigHandler);
+	signal (SIGPIPE,SIG_IGN);
 	PidOfDaemon = getpid(); 
 }
 

@@ -394,7 +394,7 @@ int netSocket::read_char ( unsigned char& c )
 	int n;
 	while (1)
 	{
-		n = ::recv (handle, (char *)&c, 1, 0 );
+		n = ::recv (handle, (char *)&c, 1, MSG_NOSIGNAL );
 		if (n == SOCKET_ERROR)
 		{
 			if (RECOVERABLE_ERROR)

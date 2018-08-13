@@ -303,15 +303,15 @@ FG_SERVER::Init()
 		m_LogFile.open ( m_LogFileName.c_str(), ios::out|ios::app );
 		sglog().setLogLevels ( SG_FGMS, SG_INFO );
 		sglog().enable_with_date ( true );
-        if (m_LogFile.is_open()) 
-        {
-    		sglog().set_output ( m_LogFile );
-        }
-        else
-        {
+	if (m_LogFile.is_open()) 
+	{
+		sglog().set_output ( m_LogFile );
+	}
+	else
+	{
 			SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
-			           << "Failed to open log file "
-                       << m_LogFileName );
+				<< "Failed to open log file "
+				<< m_LogFileName );
         }
 	}
 	if ( m_Initialized == false )
@@ -1776,7 +1776,7 @@ FG_SERVER::Loop()
 			continue;
 		}
 		
-		if ( ListenSockets[0] > 0 )
+		if ( ListenSockets[0] != nullptr )
 		{
 			// something on the wire (clients)
 			Bytes = m_DataSocket->recvfrom ( Msg,MAX_PACKET_SIZE, 0, &SenderAddress );
@@ -1787,7 +1787,7 @@ FG_SERVER::Loop()
 			m_PacketsReceived++;
 			HandlePacket ( ( char* ) &Msg, Bytes, SenderAddress );
 		} // DataSocket
-		else if ( ListenSockets[1] > 0 )
+		else if ( ListenSockets[1] != nullptr )
 		{
 			// something on the wire (telnet)
 			netAddress TelnetAddress;
@@ -1807,7 +1807,7 @@ FG_SERVER::Loop()
 			pthread_t th;
 			pthread_create ( &th, NULL, &telnet_helper, t );
 		} // TelnetSocket
-		else if ( ListenSockets[2] > 0 )
+		else if ( ListenSockets[2] != nullptr )
 		{
 			// something on the wire (admin port)
 			netAddress AdminAddress;
