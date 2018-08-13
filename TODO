@@ -40,6 +40,9 @@ fgms
   up a lot since only the shared_ptr needs to be copied instead of the whole
   object. As an additional benefit we can then use range based for loops which
   makes the code much more readable.
+- We run much too often through the list of players (and others). This
+  can be approved a lot! We run through all players when we sent packets. Make
+  everything happen in this loop.
 - rate limit clients
   clients sents X pakets per second, but we only forward Y pakets per
   second

@@ -388,7 +388,7 @@ netsocket::listen_all
 		memset ( &sin6, 0, sizeof(sin6) );
 		sin6.sin6_family = AF_INET6;
 		sin6.sin6_addr = in6addr_any;
-		sin6.sin6_port = NET_encode_uint16 ( port );
+		sin6.sin6_port = net_encode_uint16 ( port );
 		break;
 	case AF_INET:
 		struct sockaddr_in sin4;
@@ -397,7 +397,7 @@ netsocket::listen_all
 		memset ( &sin4, 0, sizeof(sin4) );
 		sin4.sin_family = AF_INET;
 		sin4.sin_addr.s_addr = 0;
-		sin4.sin_port = NET_encode_uint16 ( port );
+		sin4.sin_port = net_encode_uint16 ( port );
 		break;
 	}
 	if ( ::bind ( m_handle, sa, len ) < 0 )
@@ -839,8 +839,8 @@ netsocket::recv
 )
 {
 	int read_bytes = ::recv ( m_handle,
-	  ( char* ) buffer.Buffer(), buffer.Capacity(), flags );
-	buffer.SetUsed ( read_bytes );
+	  ( char* ) buffer.buffer(), buffer.capacity(), flags );
+	buffer.set_used ( read_bytes );
 	return ( read_bytes );
 } // netsocket::recv ()
 
@@ -895,9 +895,9 @@ netsocket::recv_from
 {
 	socklen_t addr_size = from.size();
 
-	int read_bytes = ::recvfrom ( m_handle, ( char* ) buffer.Buffer(),
-	  buffer.Capacity(), flags, from.sock_addr(), & addr_size );
-	buffer.SetUsed ( read_bytes );
+	int read_bytes = ::recvfrom ( m_handle, ( char* ) buffer.buffer(),
+	  buffer.capacity(), flags, from.sock_addr(), & addr_size );
+	buffer.set_used ( read_bytes );
 	return ( read_bytes );
 } // netsocket::recv_from ()
 

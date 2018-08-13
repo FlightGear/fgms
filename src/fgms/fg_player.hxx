@@ -105,8 +105,9 @@ private:
 	void assign ( const pilot& p );
 }; // pilot
 
-using pilot_list = list<pilot>;
-using pilot_it   = std::vector<pilot>::iterator;
+using pilot_list = fgmp::list<pilot>;
+using pilot_it   = fgmp::list<pilot>::list_it;
+//using pilot_it   = std::vector<pilot>::iterator;
 
 } // namepsace fgmp
 

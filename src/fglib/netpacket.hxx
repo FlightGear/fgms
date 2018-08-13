@@ -2,7 +2,7 @@
 //
 // This file is part of fgms
 //
-// Copyright (C) 2006  Oliver Schroeder
+// copyright (C) 2006  Oliver Schroeder
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -37,18 +37,18 @@
 class netpacket
 {
 	/// the internal buffer
-	char* m_Buffer;
+	char* m_buffer;
 	/// the capacity of the buffer
-	uint32_t m_Capacity;
+	uint32_t m_capacity;
 	/// already used bytes in the buffer
-	uint32_t m_BytesInUse;
+	uint32_t m_bytes_in_use;
 	/// we read at this position in the buffer
-	uint32_t m_CurrentIndex;
+	uint32_t m_current_index;
 	/// true if we allocated the space of this buffer
-	bool m_SelfAllocated;
+	bool m_self_allocated;
 public:
 	/// buffer encoding styles
-	enum BUFFER_ENCODING_TYPE
+	enum class ENCODING_TYPE
 	{
 		/// use xdr encoding
 		XDR,
@@ -57,383 +57,183 @@ public:
 		/// no encoding, just raw values
 		NONE
 	};
-	/**
-	 * Create a buffer
-	 * @param Size
-	 *   number of bytes reserved by this buffer
-	 */
-	netpacket ( const uint32_t Size );
-	/**
-	 * destroy the allocated buffer
-	 */
-	~netpacket();
-	/**
-	 * explicitly clear the buffer, all bytes are set to zero
-	 */
-	void Clear();
-	/**
-	 * Set the (internal) index to the start of the buffer.
-	 * Call this before reading from the buffer.
-	 */
-	void Start();
-	/**
-	 * Set the (internal) index to the start of the buffer.
-	 * Assume that there are no bytes used yet.
-	 */
-	void Reset();
-	/**
-	 * make *this a copy of @Packet
-	 */
-	void Copy ( const netpacket& Packet );
-	/**
-	 * Set the (internal) index to the specified index. Use this method
-	 * to start reading from the buffer at the specified index.
-	 * @param Index
-	 *  Set internal index to this.
-	 * @return true
-	 *   Index was successfully set
-	 * @return false
-	 *   Index was out of range
-	 * @see Skip
-	 */
-	bool SetIndex ( const uint32_t Index );
-	/**
-	 * set which type of encoding this buffer uses
-	 * @see BUFFER_ENCODING_TYPE
-	 */
-	void SetEncoding ( const BUFFER_ENCODING_TYPE encoding );
-	/**
-	 * return type of encoding this buffer uses
-	 * @see BUFFER_ENCODING_TYPE
-	 */
-	BUFFER_ENCODING_TYPE GetEncoding() const;
-	/**
-	 * Use this method to skip the given number of bytes. You can
-	 * spare out some bytes, and write/read them later.
-	 * @return >0
-	 *   Current index, success
-	 * @return 0
-	 *   Unable to reserve requested number of bytes.
-	 * @see SetIndex
-	 */
-	uint32_t Skip ( const uint32_t NumberofBytes );
-	/**
-	 * @return the remaining free storage space in bytes
-	 */
-	uint32_t Available () const;
-	/** API method:
-	 * @return the overall capacity of this buffer
-	 */
-	uint32_t Capacity () const;
-	/** API method:
-	 *  @return the number of bytes used in this buffer
-	 */
-	uint32_t BytesUsed () const;
-	/** API method:
-	 * check if the buffer has a specified amount left
-	 * free for storage
-	 * @param Size
-	 *   the number of bytes, which should be free
-	 * @return true
-	 *   the number of bytes are free for storage
-	 * @return false
-	 *   not enough bytes left for storage
-	 */
-	bool isAvailable  ( const uint32_t Size ) const;
-	/** API method:
-	 * check if there is still data to read
-	 * @return
-	 *   the number of bytes left for reading
-	 */
-	uint32_t RemainingData () const;
-	/** API method
-	 * @return
-	 *   the current index
-	 */
-	inline uint32_t CurrentIndex () const
-	{
-		return ( m_CurrentIndex );
-	};
-	/** API method
-	 * @return
-	 *   a pointer to the internal buffer
-	 */
-	const char* Buffer() const
-	{
-		return m_Buffer;
-	};
-	/** API method
-	 * use the specified buffer
-	 * @param Buffer
-	 *   Pointer to the buffer to use.
-	 * @param Size
-	 *   The number of (used) bytes in the buffer
-	 */
-	void SetBuffer ( const char* Buffer, const uint32_t Size );
-	/** API method:
-	 * Set number of used bytes of this netpacket. Needed if
-	 * the content is set from outside
-	 * @param UsedBytes
-	 *   the number of bytes already used by this buffer
-	 */
-	void SetUsed ( const uint32_t UsedBytes );
-	/* Write data to the buffer
-	 *
-	 * Be aware that: \n
-	 *   long myvar = 1; \n
-	 *   Buffer->Write<long> (myvar); \n
-	 * isn't portable, as the type 'long' (as others) may vary in size. \n
-	 * Always use uintXX_t! \n
-	 * @usage Buffer->Write<uint32_t> (MyVar);
-	 */
-	/// write a signed 8 bit value to the buffer
-	bool Write_int8   ( const int8_t&    Data );
-	/// write an unsigned 8 bit value to the buffer
-	bool Write_uint8  ( const uint8_t&   Data );
-	/// write a signed 16 bit value to the buffer
-	bool Write_int16  ( const int16_t&   Data );
-	/// write an unsigned 16 bit value to the buffer
-	bool Write_uint16 ( const uint16_t& Data );
-	/// write a signed 32 bit value to the buffer
-	bool Write_int32  ( const int32_t&   Data );
-	/// write an unsigned 32 bit value to the buffer
-	bool Write_uint32 ( const uint32_t& Data );
-	/// write a signed 64 bit value to the buffer
-	bool Write_int64  ( const int64_t&   Data );
-	/// write an unsigned 64 bit value to the buffer
-	bool Write_uint64 ( const uint64_t& Data );
-	/// write a float value to the buffer
-	bool Write_float  ( const float&     Data );
-	/// write a double value to the buffer
-	bool Write_double ( const double&    Data );
-	/**
-	 * copy arbitrary data to the buffer \n
-	 * Opaque data has the form |length|data \n
-	 * !!! Remember: if you want to store a c-str, write strlen+1 bytes \n
-	 * !!! in order to write the \0 character at the end \n
-	 * @param Data
-	 *   pointer to the data. The data is supposed to be raw, no
-	 *   byte ordering is applied to it.
-	 * @param Size
-	 *   number of bytes to copy
-	 * @param AlignBytes
-	 *   align data multiples of this
-	 */
-	bool WriteOpaque ( const void* Data, const uint32_t Size );
-	/// Write a string
-	bool WriteString ( const std::string& Str );
-	/** compatabilty routine
-	 *
-	 * write a raw c-string to the buffer. if Size!=0
-	 * write only Size characters
-	 */
-	bool WriteCStr ( const char* Str, uint32_t Size=0 );
-	/*
-	 * Read_methods Read data from the buffer
-	 */
-	/// Read a signed 8 bit value from the buffer
-	int8_t   Read_int8   ();
-	/// Read an unsigned 8 bit value from the buffer
-	uint8_t  Read_uint8  ();
-	/// Read a signed 16 bit value from the buffer
-	int16_t  Read_int16  ();
-	/// Read an unsigned 8 bit value from the buffer
-	uint16_t Read_uint16 ();
-	/// Read a signed 32 bit value from the buffer
-	int32_t  Read_int32  ();
-	/// Read an unsigned 32 bit value from the buffer
-	uint32_t Read_uint32 ();
-	/// Read a signed 64 bit value from the buffer
-	int64_t  Read_int64  ();
-	/// Read an unsigned 64 bit value from the buffer
-	uint64_t Read_uint64 ();
-	/// Read a float value from the buffer
-	float    Read_float  ();
-	/// Read a double value from the buffer
-	double   Read_double ();
-	/**
-	 * Return a pointer to arbitrary data,
-	 * increase internal pointer by 'Size' bytes. \n
-	 * Opaque data has the form |length|data
-	 * @param Size
-	 *   modified by this method. The number of bytes.
-	 * @return a pointer to the data.
-	 *   The data is supposed to be raw, no byte ordering is
-	 *   applied to it.
-	 */
-	void ReadOpaque ( void* Buffer, uint32_t& Size  );
-	/// Read a string from the buffer. \n
-	/// Like ReadOpaque(), but automatically inserts the length of the string
-	std::string ReadString ();
-	/** compatabilty routine
-	 *
-	 * read a raw c-string from the buffer.
-	 */
-	std::string ReadCStr ();
-	/// Get byte at index
-	inline int8_t Peek ( const int Index ) const
-	{
-		return m_Buffer[Index];
-	};
-	/// Get byte at current index
-	inline int8_t Peek () const
-	{
-		return m_Buffer[m_CurrentIndex];
-	};
-	/// en-/decrypt packet with password
-	void Encrypt ( const uint32_t Key[4], const uint32_t Offset=0 );
-	void Decrypt ( const uint32_t Key[4], const uint32_t Offset=0 );
+	netpacket () = delete;
+	netpacket ( const netpacket& ) = delete;
+	netpacket ( const uint32_t size );
+	~netpacket ();
+	void clear ();
+	void start ();
+	void reset ();
+	void copy ( const netpacket& packet );
+	bool set_index ( const uint32_t index );
+	void set_encoding ( const ENCODING_TYPE encoding );
+	ENCODING_TYPE get_encoding() const;
+	uint32_t skip ( const uint32_t num_bytes );
+	uint32_t available () const;
+	uint32_t capacity () const;
+	uint32_t bytes_used () const;
+	bool is_available  ( const uint32_t size ) const;
+	uint32_t remaining_data () const;
+	inline uint32_t current_index () const;
+	inline const char* buffer() const;
+	void set_buffer ( const char* buffer, const uint32_t size );
+	void set_used ( const uint32_t UsedBytes );
+	bool write_int8   ( const int8_t&   data );
+	bool write_uint8  ( const uint8_t&  data );
+	bool write_int16  ( const int16_t&  data );
+	bool write_uint16 ( const uint16_t& data );
+	bool write_int32  ( const int32_t&  data );
+	bool write_uint32 ( const uint32_t& data );
+	bool write_int64  ( const int64_t&  data );
+	bool write_uint64 ( const uint64_t& data );
+	bool write_float  ( const float&    data );
+	bool write_double ( const double&   data );
+	bool write_opaque ( const void* data, const uint32_t size );
+	bool write_string ( const std::string& str );
+	bool write_c_string ( const char* str, uint32_t size=0 );
+	int8_t   read_int8   ();
+	uint8_t  read_uint8  ();
+	int16_t  read_int16  ();
+	uint16_t read_uint16 ();
+	int32_t  read_int32  ();
+	uint32_t read_uint32 ();
+	int64_t  read_int64  ();
+	uint64_t read_uint64 ();
+	float    read_float  ();
+	double   read_double ();
+	void read_opaque ( void* buffer, uint32_t& size  );
+	std::string read_string ();
+	std::string read_c_string ();
+	inline int8_t peek ( const int index ) const;
+	inline int8_t peek () const;
+	void encrypt ( const uint32_t key[4], const uint32_t offset=0 );
+	void decrypt ( const uint32_t key[4], const uint32_t offset=0 );
 private:
-	BUFFER_ENCODING_TYPE m_EncodingType;
-	///  disallow standard constructor
-	netpacket();
-	///  disallow copy constructor
-	netpacket ( const netpacket& Buffer );
+	ENCODING_TYPE m_encoding_type;
 	/* read xdr encoded data */
-	///
-	int8_t   Read_XDR_int8   ();
-	///
-	uint8_t  Read_XDR_uint8  ();
-	///
-	int16_t  Read_XDR_int16  ();
-	///
-	uint16_t Read_XDR_uint16 ();
-	///
-	int32_t  Read_XDR_int32  ();
-	///
-	uint32_t Read_XDR_uint32 ();
-	///
-	int64_t  Read_XDR_int64  ();
-	///
-	uint64_t Read_XDR_uint64 ();
-	///
-	float    Read_XDR_float  ();
-	///
-	double   Read_XDR_double ();
+	int8_t   read_xdr_int8   ();
+	uint8_t  read_xdr_uint8  ();
+	int16_t  read_xdr_int16  ();
+	uint16_t read_xdr_uint16 ();
+	int32_t  read_xdr_int32  ();
+	uint32_t read_xdr_uint32 ();
+	int64_t  read_xdr_int64  ();
+	uint64_t read_xdr_uint64 ();
+	float    read_xdr_float  ();
+	double   read_xdr_double ();
 
 	/* read NET encoded data */
-	///
-	int8_t   Read_NET_int8   ();
-	///
-	uint8_t  Read_NET_uint8  ();
-	///
-	int16_t  Read_NET_int16  ();
-	///
-	uint16_t Read_NET_uint16 ();
-	///
-	int32_t  Read_NET_int32  ();
-	///
-	uint32_t Read_NET_uint32 ();
-	///
-	int64_t  Read_NET_int64  ();
-	///
-	uint64_t Read_NET_uint64 ();
-	///
-	float    Read_NET_float  ();
-	///
-	double   Read_NET_double ();
+	int8_t   read_net_int8   ();
+	uint8_t  read_net_uint8  ();
+	int16_t  read_net_int16  ();
+	uint16_t read_net_uint16 ();
+	int32_t  read_net_int32  ();
+	uint32_t read_net_uint32 ();
+	int64_t  read_net_int64  ();
+	uint64_t read_net_uint64 ();
+	float    read_net_float  ();
+	double   read_net_double ();
 
-	/* read unecoded data */
-	///
-	int8_t   Read_NONE_int8   ();
-	///
-	uint8_t  Read_NONE_uint8  ();
-	///
-	int16_t  Read_NONE_int16  ();
-	///
-	uint16_t Read_NONE_uint16 ();
-	///
-	int32_t  Read_NONE_int32  ();
-	///
-	uint32_t Read_NONE_uint32 ();
-	///
-	int64_t  Read_NONE_int64  ();
-	///
-	uint64_t Read_NONE_uint64 ();
-	///
-	float    Read_NONE_float  ();
-	///
-	double   Read_NONE_double ();
+	/* read unencoded data */
+	int8_t   read_raw_int8   ();
+	uint8_t  read_raw_uint8  ();
+	int16_t  read_raw_int16  ();
+	uint16_t read_raw_uint16 ();
+	int32_t  read_raw_int32  ();
+	uint32_t read_raw_uint32 ();
+	int64_t  read_raw_int64  ();
+	uint64_t read_raw_uint64 ();
+	float    read_raw_float  ();
+	double   read_raw_double ();
 
 	/* write XDR encoded data */
-	///
-	bool Write_XDR_int8   ( const int8_t&    Data );
-	///
-	bool Write_XDR_uint8  ( const uint8_t&   Data );
-	///
-	bool Write_XDR_int16  ( const int16_t&   Data );
-	///
-	bool Write_XDR_uint16 ( const uint16_t& Data );
-	///
-	bool Write_XDR_int32  ( const int32_t&   Data );
-	///
-	bool Write_XDR_uint32 ( const uint32_t& Data );
-	///
-	bool Write_XDR_int64  ( const int64_t&   Data );
-	///
-	bool Write_XDR_uint64 ( const uint64_t& Data );
-	///
-	bool Write_XDR_float  ( const float&     Data );
-	///
-	bool Write_XDR_double ( const double&    Data );
+	bool wite_xdr_int8   ( const int8_t&   data );
+	bool wite_xdr_uint8  ( const uint8_t&  data );
+	bool wite_xdr_int16  ( const int16_t&  data );
+	bool wite_xdr_uint16 ( const uint16_t& data );
+	bool wite_xdr_int32  ( const int32_t&  data );
+	bool wite_xdr_uint32 ( const uint32_t& data );
+	bool wite_xdr_int64  ( const int64_t&  data );
+	bool wite_xdr_uint64 ( const uint64_t& data );
+	bool wite_xdr_float  ( const float&    data );
+	bool wite_xdr_double ( const double&   data );
 
 	/* write NET encoded data */
-	///
-	bool Write_NET_int8   ( const int8_t&    Data );
-	///
-	bool Write_NET_uint8  ( const uint8_t&   Data );
-	///
-	bool Write_NET_int16  ( const int16_t&   Data );
-	///
-	bool Write_NET_uint16 ( const uint16_t& Data );
-	///
-	bool Write_NET_int32  ( const int32_t&   Data );
-	///
-	bool Write_NET_uint32 ( const uint32_t& Data );
-	///
-	bool Write_NET_int64  ( const int64_t&   Data );
-	///
-	bool Write_NET_uint64 ( const uint64_t& Data );
-	///
-	bool Write_NET_float  ( const float&     Data );
-	///
-	bool Write_NET_double ( const double&    Data );
+	bool write_net_int8   ( const int8_t&   data );
+	bool write_net_uint8  ( const uint8_t&  data );
+	bool write_net_int16  ( const int16_t&  data );
+	bool write_net_uint16 ( const uint16_t& data );
+	bool write_net_int32  ( const int32_t&  data );
+	bool write_net_uint32 ( const uint32_t& data );
+	bool write_net_int64  ( const int64_t&  data );
+	bool write_net_uint64 ( const uint64_t& data );
+	bool write_net_float  ( const float&    data );
+	bool write_net_double ( const double&   data );
 
 	/* write unencoded data */
-	///
-	bool Write_NONE_int8   ( const int8_t&    Data );
-	///
-	bool Write_NONE_uint8  ( const uint8_t&   Data );
-	///
-	bool Write_NONE_int16  ( const int16_t&   Data );
-	///
-	bool Write_NONE_uint16 ( const uint16_t& Data );
-	///
-	bool Write_NONE_int32  ( const int32_t&   Data );
-	///
-	bool Write_NONE_uint32 ( const uint32_t& Data );
-	///
-	bool Write_NONE_int64  ( const int64_t&   Data );
-	///
-	bool Write_NONE_uint64 ( const uint64_t& Data );
-	///
-	bool Write_NONE_float  ( const float&     Data );
-	///
-	bool Write_NONE_double ( const double&    Data );
-	///
-	enum { XTEA_BLOCK_SIZE = 8 };
+	bool write_raw_int8   ( const int8_t&   data );
+	bool write_raw_uint8  ( const uint8_t&  data );
+	bool write_raw_int16  ( const int16_t&  data );
+	bool write_raw_uint16 ( const uint16_t& data );
+	bool write_raw_int32  ( const int32_t&  data );
+	bool write_raw_uint32 ( const uint32_t& data );
+	bool write_raw_int64  ( const int64_t&  data );
+	bool write_raw_uint64 ( const uint64_t& data );
+	bool write_raw_float  ( const float&    data );
+	bool write_raw_double ( const double&   data );
 
-	/// eXtended Tiny Encryption Algorithm
+	enum { XTEA_BLOCK_SIZE = 8 };
+	/// eXtended Tiny encryption Algorithm
 	/// encode 64 data bits (v) with 128 bit key (k)
 	void xtea_encipher ( unsigned int num_cycles, uint32_t v[2],
 			     uint32_t const k[4]
 			   );
-	/// eXtended Tiny Encryption Algorithm
+	/// eXtended Tiny encryption Algorithm
 	/// decode 64 data bits (v) with 128 bit key (k)
 	void xtea_decipher ( unsigned int num_cycles, uint32_t v[2],
 			     uint32_t const k[4]
 			   );
 }; // netpacket
+
+/** API method
+ * @return
+ *   the current index
+ */
+uint32_t
+netpacket::current_index
+() const
+{
+	return ( m_current_index );
+} // netpacket::current_index ()
+
+/** API method
+ * @return
+ *   a pointer to the internal buffer
+ */
+const char*
+netpacket::buffer
+() const
+{
+	return m_buffer;
+} // netpacket::buffer ()
+
+/// Get byte at index
+int8_t
+netpacket::peek
+(
+	const int index
+) const
+{
+	return m_buffer[index];
+}
+
+/// Get byte at current index
+int8_t
+netpacket::peek
+() const
+{
+	return m_buffer[m_current_index];
+}
 
 #endif
 

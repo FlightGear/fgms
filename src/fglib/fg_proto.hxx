@@ -34,13 +34,13 @@ namespace fgmp
 {
 
 /// client types
-enum class SENDER_TYPE
+enum SENDER_TYPE
 {
         UNSET,       // unset
-        FGFS    = 0x46474653,           // a normal client
-        FGMS    = 0x53464746,           // FlightGear Multiplayer Server
-        FGAS,           // FlightGear Authentication Service
-        FGLS,           // FlightGear List Server
+        FGFS	= 0x46474653,	// 'FGFS' - a normal client
+        FGMS	= 0x53464746,	// 'SFGF' - FlightGear Multiplayer Server
+        FGLS	= 0x530a4647,	// 'FGLS' - FlightGear List Server
+        FGAS	= 0x4c530a46,	// 'FGAS' - FlightGear Authentication Service
         OBSERVER        // an observer
 };
 

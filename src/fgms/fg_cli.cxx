@@ -289,6 +289,14 @@ fgcli::setup
 		libcli::CLI_MODE::ANY,
 		"Show out of reach"
 	), c2 );
+	// 'show fgms check_interval'
+	register_command ( new command (
+		"check_interval",
+		_ptr ( fgcli::show_check_interval ),
+		libcli::PRIVLEVEL::UNPRIVILEGED,
+		libcli::CLI_MODE::ANY,
+		"Show check check interval"
+	), c2 );
 	// 'show fgms commandfile_enable'
 	register_command ( new command (
 		"commandfile_enable",
@@ -579,6 +587,14 @@ fgcli::setup
 		CLI_MODE::CONFIG_FGMS,
 		"enable/disable hub mode"
 	) );
+	register_command ( new command (
+		"check_interval",
+		_ptr ( fgcli::cfg_check_interval ),
+		PRIVLEVEL::PRIVILEGED,
+		CLI_MODE::CONFIG_FGMS,
+		"set check interval"
+	) );
+	// 'configure command'
 	c = new command (
 		"command",
 		libcli::PRIVLEVEL::PRIVILEGED,
@@ -586,6 +602,7 @@ fgcli::setup
 		"show system information"
 	);
 	register_command ( c );
+	// 'configure command filename'
 	register_command ( new command (
 		"filename",
 		_ptr ( fgcli::cfg_command_filename ),
@@ -593,6 +610,7 @@ fgcli::setup
 		CLI_MODE::CONFIG_FGMS,
 		"set name of command file"
 	), c );
+	// 'configure command enable'
 	register_command ( new command (
 		"enable",
 		_ptr ( fgcli::cfg_commandfile_enable ),
@@ -1449,6 +1467,29 @@ fgcli::show_out_of_reach
 		 << libcli::cli_client::endl;
 	return RESULT::OK;
 } // fgcli::show_out_of_reach ()
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ *  @brief Show check_interval
+ */
+libcli::RESULT
+fgcli::show_check_interval
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT r = no_more_args ( args, first_arg );
+	if ( r != RESULT::OK )
+		return r;
+	m_client << libcli::align_left ( 22 )
+		 << "check interval" << ": "
+		 << m_fgms->m_check_interval
+		 << libcli::cli_client::endl;
+	return RESULT::OK;
+} // fgcli::show_check_interval ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -2895,6 +2936,28 @@ fgcli::cfg_commandfile_enable
 		m_fgms->m_enable_commandfile = r.second;
 	return r.first;
 } // fgcli::cfg_commandfile_enable
+
+//////////////////////////////////////////////////////////////////////
+
+libcli::RESULT
+fgcli::cfg_check_interval
+(
+	const std::string& command,
+	const strvec& args,
+	size_t first_arg
+)
+{
+	RESULT r { need_n_args ( 1, args, first_arg ) };
+	if ( RESULT::OK != r )
+		return r;
+
+	int e;
+	int p { str_to_num<uint16_t> ( args[first_arg], e ) };
+	if ( e )
+		return RESULT::INVALID_ARG;
+	m_fgms->m_check_interval = p;
+	return RESULT::OK;
+} // fgcli::cfg_check_interval
 
 //////////////////////////////////////////////////////////////////////
 

@@ -736,7 +736,7 @@ ipaddr::is_loopback
 	{
 		uint64_t* ip = (uint64_t*) & m_addr[0];
 		if ((  ip[0] == 0 )
-		&& ( ip[1] == NET_encode_uint64 ( 1 ) ) )
+		&& ( ip[1] == net_encode_uint64 ( 1 ) ) )
 			return true;
 	}
 	return false;
@@ -754,7 +754,7 @@ ipaddr::is_mapped_v4
 	uint32_t* ip = (uint32_t*) & m_addr[0];
 	if ( ( ip[0] == 0 )
 	&&   ( ip[1] == 0 )
-	&&   ( ip[2] == NET_encode_uint32 ( 0xffff ) ) )
+	&&   ( ip[2] == net_encode_uint32 ( 0xffff ) ) )
 		return true;
 	return false;
 } // ipaddr::is_mapped_v4 ()
@@ -800,7 +800,7 @@ ipaddr::is_link_local
 	if ( m_type == ipaddr::IPv4 )
 		return false;
 	uint16_t* ip = (uint16_t*) & m_addr[0];
-	return ( ip[0] == NET_encode_uint16 (0xfe80) );
+	return ( ip[0] == net_encode_uint16 (0xfe80) );
 } // ipaddr::is_link_local()
 
 //////////////////////////////////////////////////////////////////////
@@ -816,7 +816,7 @@ ipaddr::is_site_local
 	if ( m_type == ipaddr::IPv4 )
 		return false;
 	uint16_t* ip = (uint16_t*) & m_addr[0];
-	return ( ip[0] == NET_encode_uint16 (0xfec0) );
+	return ( ip[0] == net_encode_uint16 (0xfec0) );
 } // ipaddr::is_site_local ()
 
 //////////////////////////////////////////////////////////////////////

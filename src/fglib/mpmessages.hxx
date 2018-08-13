@@ -69,7 +69,6 @@ enum class MSG_ID
 /** @brief The `Magic` value for message (currently FGFS). The magic is at
  * the start of every packet and is used for packet validation.
  */
-constexpr uint32_t MSG_MAGIC { 0x46474653 };  // "FGFS"
 /** @brief  The MP protocol version that is send with each packet
  * (currently 1.1).
  */

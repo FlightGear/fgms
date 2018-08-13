@@ -279,13 +279,13 @@ netaddr::assign
 	{
 		assign ( *rp->ai_addr );
 		sys_sock4* s = (sys_sock4*) m_addr;
-		s->sin_port  = NET_encode_uint16 ( port );
+		s->sin_port  = net_encode_uint16 ( port );
 	}
 	else if ( rp->ai_family == AF_INET6 )
 	{
 		assign ( *rp->ai_addr );
 		sys_sock6* s = (sys_sock6*) m_addr;
-		s->sin6_port = NET_encode_uint16 ( port );
+		s->sin6_port = net_encode_uint16 ( port );
 	}
 	else
 	{
@@ -376,7 +376,7 @@ netaddr::port
 	DEBUG_TRACE
 	assert ( m_addr != 0 );
 	sys_sock6* s = (sys_sock6*) m_addr;
-	s->sin6_port = NET_encode_uint16 ( port );
+	s->sin6_port = net_encode_uint16 ( port );
 } // netaddr::port(port)
 
 //////////////////////////////////////////////////////////////////////
@@ -390,7 +390,7 @@ netaddr::port
 	DEBUG_TRACE
 	assert ( m_addr != 0 );
 	sys_sock6* s = (sys_sock6*) m_addr;
-	return NET_decode_uint16 ( s->sin6_port );
+	return net_decode_uint16 ( s->sin6_port );
 } // netaddr::port()
 
 //////////////////////////////////////////////////////////////////////
@@ -492,7 +492,7 @@ netaddr::is_mapped_v4
 	uint32_t* ip = (uint32_t*) & s->sin6_addr;
 	if ( ( ip[0] == 0 )
 	&&   ( ip[1] == 0 )
-	&&   ( ip[2] == NET_encode_uint32 ( 0xffff ) ) )
+	&&   ( ip[2] == net_encode_uint32 ( 0xffff ) ) )
 		return true;
 	return false;
 } // netaddr::is_mapped_v4()
@@ -702,8 +702,8 @@ netaddr::operator <
 	if ( sl->sin6_family == AF_INET )
 	{
 		// sin_addr = sin6_flowinfo
-		uint32_t l = XDR_decode_uint32 (sl->sin6_flowinfo);
-		uint32_t r = XDR_decode_uint32 (sr->sin6_flowinfo);
+		uint32_t l = xdr_decode_uint32 (sl->sin6_flowinfo);
+		uint32_t r = xdr_decode_uint32 (sr->sin6_flowinfo);
 		if ( l < r )
 		{
 			return true;
@@ -713,15 +713,15 @@ netaddr::operator <
 	{
 		uint64_t* l = (uint64_t*) &sl->sin6_addr;
 		uint64_t* r = (uint64_t*) &sr->sin6_addr;
-		uint64_t left  = XDR_decode_uint64 (l[0]);
-		uint64_t right = XDR_decode_uint64 (r[0]);
+		uint64_t left  = xdr_decode_uint64 (l[0]);
+		uint64_t right = xdr_decode_uint64 (r[0]);
 		if ( left < right ) 
 		{
 			return true;
 		}
 		if ( left == right ) // the upper part is equal
 		{	// so compare the lower part too
-			if ( XDR_decode_uint64(l[1]) < XDR_decode_uint64(r[1]) )
+			if ( xdr_decode_uint64(l[1]) < xdr_decode_uint64(r[1]) )
 				return true;
 		}
 	}
@@ -762,8 +762,8 @@ netaddr::operator >
 	if ( sl->sin6_family == AF_INET )
 	{
 		// sin_addr = sin6_flowinfo
-		uint32_t l = XDR_decode_uint32 (sl->sin6_flowinfo);
-		uint32_t r = XDR_decode_uint32 (sr->sin6_flowinfo);
+		uint32_t l = xdr_decode_uint32 (sl->sin6_flowinfo);
+		uint32_t r = xdr_decode_uint32 (sr->sin6_flowinfo);
 		if ( l > r )
 		{
 			return true;
@@ -773,15 +773,15 @@ netaddr::operator >
 	{
 		uint64_t* l = (uint64_t*) &sl->sin6_addr;
 		uint64_t* r = (uint64_t*) &sr->sin6_addr;
-		uint64_t left  = XDR_decode_uint64 (l[0]);
-		uint64_t right = XDR_decode_uint64 (r[0]);
+		uint64_t left  = xdr_decode_uint64 (l[0]);
+		uint64_t right = xdr_decode_uint64 (r[0]);
 		if ( left > right ) 
 		{
 			return true;
 		}
 		if ( left == right ) // the upper part is equal
 		{	// so compare the lower part too
-			if ( XDR_decode_uint64(l[1]) > XDR_decode_uint64(r[1]) )
+			if ( xdr_decode_uint64(l[1]) > xdr_decode_uint64(r[1]) )
 				return true;
 		}
 	}
@@ -849,7 +849,7 @@ operator <<
 	||   ( addr.m_addr->sa_family == AF_INET6 ) )
 	{
 		sys_sock6* a = (sys_sock6*) addr.m_addr;
-		o << ":" << NET_decode_uint16 ( a->sin6_port );
+		o << ":" << net_decode_uint16 ( a->sin6_port );
 	}
 	return o;
 } // operator ostream << netaddr

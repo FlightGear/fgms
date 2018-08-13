@@ -92,6 +92,8 @@ private:
 			const strvec& args, size_t first_arg );
 	RESULT show_out_of_reach ( const std::string& command,
 			const strvec& args, size_t first_arg );
+	RESULT show_check_interval ( const std::string& command,
+			const strvec& args, size_t first_arg );
 	RESULT show_pilots ( const std::string& command,
 			const strvec& args, size_t first_arg );
 	RESULT show_log ( const std::string& command,
@@ -139,6 +141,8 @@ private:
 	RESULT cfg_command_filename ( const std::string& command,
 			const strvec& args, size_t first_arg );
 	RESULT cfg_commandfile_enable ( const std::string& command,
+			const strvec& args, size_t first_arg );
+	RESULT cfg_check_interval ( const std::string& command,
 			const strvec& args, size_t first_arg );
 
 	//////////////////////////////////////////////////

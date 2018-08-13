@@ -52,49 +52,49 @@ using xdr_data2_t = uint64_t;	///< 8 bytes
  * encoding routines for 8-bit values
  */
 /// XDR encode a signed 8 bit value
-xdr_data_t  XDR_encode_int8   ( const int8_t&   Val );
+xdr_data_t  xdr_encode_int8   ( const int8_t&   val );
 /// XDR decode a signed 8 bit value
-int8_t      XDR_decode_int8   ( const xdr_data_t& Val );
+int8_t      xdr_decode_int8   ( const xdr_data_t& val );
 /// XDR encode an unsigned 8 bit value
-xdr_data_t  XDR_encode_uint8  ( const uint8_t& Val );
+xdr_data_t  xdr_encode_uint8  ( const uint8_t& val );
 /// XDR decode an unsigned 8 bit value
-uint8_t     XDR_decode_uint8  ( const xdr_data_t& Val );
+uint8_t     xdr_decode_uint8  ( const xdr_data_t& val );
 
 /*
  * encoding routines for 16-bit values
  */
 /// XDR encode a signed 16 bit value
-xdr_data_t  XDR_encode_int16  ( const int16_t& Val );
+xdr_data_t  xdr_encode_int16  ( const int16_t& val );
 /// XDR decode a signed 16 bit value
-int16_t     XDR_decode_int16  ( const xdr_data_t& Val );
+int16_t     xdr_decode_int16  ( const xdr_data_t& val );
 /// XDR encode an unsigned 16 bit value
-xdr_data_t  XDR_encode_uint16 ( const uint16_t& Val );
+xdr_data_t  xdr_encode_uint16 ( const uint16_t& val );
 /// XDR decode an unsigned 16 bit value
-uint16_t    XDR_decode_uint16 ( const xdr_data_t& Val );
+uint16_t    xdr_decode_uint16 ( const xdr_data_t& val );
 
 /*
  * encoding routines for 32-bit values
  */
 /// XDR encode a signed 32 bit value
-xdr_data_t  XDR_encode_int32  ( const int32_t& Val );
+xdr_data_t  xdr_encode_int32  ( const int32_t& val );
 /// XDR decode a signed 32 bit value
-int32_t     XDR_decode_int32  ( const xdr_data_t& Val );
+int32_t     xdr_decode_int32  ( const xdr_data_t& val );
 /// XDR encode an unsigned 32 bit value
-xdr_data_t  XDR_encode_uint32 ( const uint32_t& Val );
+xdr_data_t  xdr_encode_uint32 ( const uint32_t& val );
 /// XDR decode an unsigned 32 bit value
-uint32_t    XDR_decode_uint32 ( const xdr_data_t& Val );
+uint32_t    xdr_decode_uint32 ( const xdr_data_t& val );
 
 /*
  * encoding routines for 64-bit values
  */
 /// XDR encode a signed 64 bit value
-xdr_data2_t XDR_encode_int64  ( const int64_t& Val );
+xdr_data2_t xdr_encode_int64  ( const int64_t& val );
 /// XDR decode a signed 64 bit value
-int64_t     XDR_decode_int64  ( const xdr_data2_t& Val );
+int64_t     xdr_decode_int64  ( const xdr_data2_t& val );
 /// XDR encode an unsigned 64 bit value
-xdr_data2_t XDR_encode_uint64 ( const uint64_t& Val );
+xdr_data2_t xdr_encode_uint64 ( const uint64_t& val );
 /// XDR decode an unsigned 64 bit value
-uint64_t    XDR_decode_uint64 ( const xdr_data2_t& Val );
+uint64_t    xdr_decode_uint64 ( const xdr_data2_t& val );
 
 /*
  * encoding routines for floating point values
@@ -110,13 +110,13 @@ uint64_t    XDR_decode_uint64 ( const xdr_data2_t& Val );
  *         different endianess for floats!
  */
 /// XDR encode a float value
-xdr_data_t  XDR_encode_float  ( const float& Val );
+xdr_data_t  xdr_encode_float  ( const float& val );
 /// XDR decode a float value
-float       XDR_decode_float  ( const xdr_data_t& Val );
+float       xdr_decode_float  ( const xdr_data_t& val );
 /// XDR encode a double value
-xdr_data2_t XDR_encode_double ( const double& Val );
+xdr_data2_t xdr_encode_double ( const double& val );
 /// XDR decode a double value
-double      XDR_decode_double ( const xdr_data2_t& Val );
+double      xdr_decode_double ( const xdr_data2_t& val );
 
 /*
  * encode to/from network byte order
@@ -127,61 +127,61 @@ double      XDR_decode_double ( const xdr_data2_t& Val );
  * encoding routines for 8-bit values
  */
 /// NET encode a signed 8 bit value
-int8_t    NET_encode_int8   ( const int8_t& Val );
+int8_t    net_encode_int8   ( const int8_t& val );
 /// NET decode a signed 8 bit value
-int8_t    NET_decode_int8   ( const int8_t& Val );
+int8_t    net_decode_int8   ( const int8_t& val );
 /// NET encode an unsigned 8 bit value
-uint8_t   NET_encode_uint8  ( const uint8_t& Val );
+uint8_t   net_encode_uint8  ( const uint8_t& val );
 /// NET decode an unsigned 8 bit value
-uint8_t   NET_decode_uint8  ( const uint8_t& Val );
+uint8_t   net_decode_uint8  ( const uint8_t& val );
 
 /*
  * encoding routines for 16-bit values
  */
 /// NET encode a signed 16 bit value
-int16_t   NET_encode_int16  ( const int16_t& Val );
+int16_t   net_encode_int16  ( const int16_t& val );
 /// NET decode a signed 16 bit value
-int16_t   NET_decode_int16  ( const int16_t& Val );
+int16_t   net_decode_int16  ( const int16_t& val );
 /// NET encode an unsigned 16 bit value
-uint16_t  NET_encode_uint16 ( const uint16_t& Val );
+uint16_t  net_encode_uint16 ( const uint16_t& val );
 /// NET decode an unsigned 16 bit value
-uint16_t  NET_decode_uint16 ( const uint16_t& Val );
+uint16_t  net_decode_uint16 ( const uint16_t& val );
 
 /*
- * NET_encode_32bit encoding routines for 32-bit values
+ * net_encode_32bit encoding routines for 32-bit values
  */
 /// NET encode a signed 32 bit value
-int32_t   NET_encode_int32  ( const int32_t& Val );
+int32_t   net_encode_int32  ( const int32_t& val );
 /// NET decode a signed 32 bit value
-int32_t   NET_decode_int32  ( const int32_t& Val );
+int32_t   net_decode_int32  ( const int32_t& val );
 /// NET encode an unsigned 32 bit value
-uint32_t  NET_encode_uint32 ( const uint32_t& Val );
+uint32_t  net_encode_uint32 ( const uint32_t& val );
 /// NET decode an unsigned 32 bit value
-uint32_t  NET_decode_uint32 ( const uint32_t& Val );
+uint32_t  net_decode_uint32 ( const uint32_t& val );
 
 /*
  * encoding routines for 64-bit values
  */
 /// NET encode a signed 64 bit value
-int64_t   NET_encode_int64  ( const int64_t& Val );
+int64_t   net_encode_int64  ( const int64_t& val );
 /// NET decode a signed 64 bit value
-int64_t   NET_decode_int64  ( const int64_t& Val );
+int64_t   net_decode_int64  ( const int64_t& val );
 /// NET encode an unsigned 64 bit value
-uint64_t  NET_encode_uint64 ( const uint64_t& Val );
+uint64_t  net_encode_uint64 ( const uint64_t& val );
 /// NET decode an unsigned 64 bit value
-uint64_t  NET_decode_uint64 ( const uint64_t& Val );
+uint64_t  net_decode_uint64 ( const uint64_t& val );
 
 /*
  * encoding routines for floating point values
  */
 /// NET encode a float value
-uint32_t  NET_encode_float  ( const float& Val );
+uint32_t  net_encode_float  ( const float& val );
 /// NET decode a float value
-float     NET_decode_float  ( const uint32_t& Val );
+float     net_decode_float  ( const uint32_t& val );
 /// NET encode a double value
-uint64_t  NET_encode_double ( const double& Val );
+uint64_t  net_encode_double ( const double& val );
 /// NET decode a double value
-double    NET_decode_double ( const uint64_t& Val );
+double    net_decode_double ( const uint64_t& val );
 
 } // namespace fgmp
 

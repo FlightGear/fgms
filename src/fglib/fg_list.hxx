@@ -86,7 +86,7 @@ class list : public lockable
 {
 public:
         using list_items = std::vector<T>;
-        using list_it       = typename std::vector<T>::iterator;
+        using list_it    = typename std::vector<T>::iterator;
         list   ( const std::string& name );
         ~list  ();
         size_t  size  ();

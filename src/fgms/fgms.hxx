@@ -72,10 +72,11 @@ public:
 	enum
 	{
 		// other constants
-		MAX_PACKET_SIZE		= 1200, // to agree with FG multiplayermgr.cxx (since before  2008)
+		MAX_PACKET_SIZE		= 1200, // to agree with FG
+						// multiplayermgr.cxxs
+						// (since before  2008)
 		UPDATE_INACTIVE_PERIOD	= 1,
-		MAX_TELNETS		= 5,
-		RELAY_MAGIC		= 0x53464746    // GSGF
+		MAX_TELNETS		= 5
 	};
 	//////////////////////////////////////////////////
 	//
@@ -110,8 +111,8 @@ public:
 	void  close_tracker ();
 	void  check_files();
 	void  log_stats ();
-	void* handle_query  ( int fd );
-	void* handle_admin  ( int fd );
+	void  handle_query  ( int fd );
+	void  handle_admin  ( int fd );
 	void  parse_params ( int argc, char* argv[] );
 	bool  read_configs ();
 	bool  check_config ();
@@ -125,9 +126,9 @@ public:
 
 protected:
 
-	#ifndef _MSC_VER
+#ifndef _MSC_VER
 	daemon m_myself;
-	#endif
+#endif
 	using ip2relay_t  = std::map<netaddr,std::string>;
 	using ip2relay_it = ip2relay_t::iterator;
 	//////////////////////////////////////////////////
@@ -135,6 +136,12 @@ protected:
 	//  private variables
 	//
 	//////////////////////////////////////////////////
+	enum class STATE
+	{
+		REGISTER,
+		RUNNING
+	};
+	STATE m_state = STATE::REGISTER;
 	bool		m_reinit_data		= true;
 	bool		m_reinit_query		= true;
 	bool		m_reinit_admin		= true;
@@ -227,8 +234,8 @@ protected:
 	// gets updated periodically
 	//////////////////////////////////////////////////
 	// time in seconds to regenerate the client list
-	time_t  m_client_freq = 5;
-	time_t  m_client_last = 0;
+	time_t m_check_interval { 10 };
+	time_t m_client_freq { 5 };
 	void mk_client_list ();
 	str_list m_clients;
 
@@ -248,8 +255,7 @@ protected:
 	bool  is_known_relay ( const netaddr& sender, size_t bytes );
 	bool  packet_is_valid ( int bytes, msg_hdr_t* msg_hdr,
 			const netaddr& sender );
-	void  handle_data ( char* msg, int bytes,
-			const netaddr& sender );
+	void  handle_data ();
 	int   update_tracker ( const std::string& callsign,
 			const std::string& passwd,
 			const std::string& modelname, const time_t time,
@@ -264,10 +270,15 @@ protected:
 	void  send_to_cross ( char* msg, int bytes,
 			const netaddr& sender );
 	void  send_to_relays ( char* msg, int bytes, pilot_it& sender );
+	void  send_to_clients ( char* msg, int bytes, pilot_it& sender );
 	void  want_exit ();
 	void  print_version ();
 	void  print_help ();
 	void  tracker_log ( const std::string& msg, const char* src );
+	void register_fgls ();
+	void periodic ( time_t now );
+	void spawn_admin ();
+	void spawn_query ();
 
 	int     m_argc = 0;
 	char**  m_argv;

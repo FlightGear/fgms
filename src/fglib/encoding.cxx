@@ -117,7 +117,7 @@ namespace fgmp
 //////////////////////////////////////////////////////////////////////
 
 xdr_data_t
-XDR_encode_int8
+xdr_encode_int8
 (
 	const int8_t& val
 )
@@ -130,12 +130,12 @@ XDR_encode_int8
 	tmp.raw = val;
 	tmp.encoded = SWAP32 ( tmp.encoded );
 	return ( tmp.encoded );
-} // XDR_encode_int8 ()
+} // xdr_encode_int8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 int8_t
-XDR_decode_int8
+xdr_decode_int8
 (
 	const xdr_data_t& val
 )
@@ -147,12 +147,12 @@ XDR_decode_int8
 	} tmp;
 	tmp.encoded = SWAP32 ( val );
 	return ( tmp.raw );
-} // XDR_decode_int8 ()
+} // xdr_decode_int8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 xdr_data_t
-XDR_encode_uint8
+xdr_encode_uint8
 (
 	const uint8_t& val
 )
@@ -165,12 +165,12 @@ XDR_encode_uint8
 	tmp.raw = val;
 	tmp.encoded = SWAP32 ( tmp.encoded );
 	return ( tmp.encoded );
-} // XDR_encode_uint8 ()
+} // xdr_encode_uint8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint8_t
-XDR_decode_uint8
+xdr_decode_uint8
 (
 	const xdr_data_t& val
 )
@@ -182,12 +182,12 @@ XDR_decode_uint8
 	} tmp;
 	tmp.encoded = SWAP32 ( val );
 	return ( tmp.raw );
-} // XDR_decode_uint8 ()
+} // xdr_decode_uint8 ()
 
 //////////////////////////////////////////////////////////////////////
 
 xdr_data_t
-XDR_encode_int16
+xdr_encode_int16
 (
 	const int16_t& val
 )
@@ -200,12 +200,12 @@ XDR_encode_int16
 	tmp.raw = val;
 	tmp.encoded = SWAP32 ( tmp.encoded );
 	return ( tmp.encoded );
-} // XDR_encode_int16 ()
+} // xdr_encode_int16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 int16_t
-XDR_decode_int16
+xdr_decode_int16
 (
 	const xdr_data_t& val
 )
@@ -217,12 +217,12 @@ XDR_decode_int16
 	} tmp;
 	tmp.encoded = SWAP32 ( val );
 	return ( tmp.raw );
-} // XDR_decode_int16 ()
+} // xdr_decode_int16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 xdr_data_t
-XDR_encode_uint16
+xdr_encode_uint16
 (
 	const uint16_t& val
 )
@@ -235,12 +235,12 @@ XDR_encode_uint16
 	tmp.raw = val;
 	tmp.encoded = SWAP32 ( tmp.encoded );
 	return ( tmp.encoded );
-} // XDR_encode_uint16 ()
+} // xdr_encode_uint16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint16_t
-XDR_decode_uint16
+xdr_decode_uint16
 (
 	const xdr_data_t& val
 )
@@ -252,12 +252,12 @@ XDR_decode_uint16
 	} tmp;
 	tmp.encoded = SWAP32 ( val );
 	return ( tmp.raw );
-} // XDR_decode_uint16 ()
+} // xdr_decode_uint16 ()
 
 //////////////////////////////////////////////////////////////////////
 
 xdr_data_t
-XDR_encode_int32
+xdr_encode_int32
 (
 	const int32_t& val
 )
@@ -270,12 +270,12 @@ XDR_encode_int32
 	tmp.raw = val;
 	tmp.encoded = SWAP32 ( tmp.encoded );
 	return ( tmp.encoded );
-} // XDR_encode_int32 ()
+} // xdr_encode_int32 ()
 
 //////////////////////////////////////////////////////////////////////
 
 int32_t
-XDR_decode_int32
+xdr_decode_int32
 (
 	const xdr_data_t& val
 )
@@ -287,12 +287,12 @@ XDR_decode_int32
 	} tmp;
 	tmp.encoded = SWAP32 ( val );
 	return ( tmp.raw );
-} // XDR_decode_int32 ()
+} // xdr_decode_int32 ()
 
 //////////////////////////////////////////////////////////////////////
 
 xdr_data_t
-XDR_encode_uint32
+xdr_encode_uint32
 (
 	const uint32_t& val
 )
@@ -305,12 +305,12 @@ XDR_encode_uint32
 	tmp.raw = val;
 	tmp.encoded = SWAP32 ( tmp.encoded );
 	return ( tmp.encoded );
-} // XDR_encode_uint32 ()
+} // xdr_encode_uint32 ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint32_t
-XDR_decode_uint32
+xdr_decode_uint32
 (
 	const xdr_data_t& val
 )
@@ -322,12 +322,12 @@ XDR_decode_uint32
 	} tmp;
 	tmp.encoded = SWAP32 ( val );
 	return ( tmp.raw );
-} // XDR_decode_uint32 ()
+} // xdr_decode_uint32 ()
 
 //////////////////////////////////////////////////////////////////////
 
 xdr_data2_t
-XDR_encode_int64
+xdr_encode_int64
 (
 	const int64_t& val
 )
@@ -340,12 +340,12 @@ XDR_encode_int64
 	tmp.raw = val;
 	tmp.encoded = SWAP64 ( tmp.encoded );
 	return ( tmp.encoded );
-} // XDR_encode_int64 ()
+} // xdr_encode_int64 ()
 
 //////////////////////////////////////////////////////////////////////
 
 int64_t
-XDR_decode_int64
+xdr_decode_int64
 (
 	const xdr_data2_t& val
 )
@@ -357,12 +357,12 @@ XDR_decode_int64
 	} tmp;
 	tmp.encoded = SWAP64 ( val );
 	return ( tmp.raw );
-} // XDR_decode_int64 ()
+} // xdr_decode_int64 ()
 
 //////////////////////////////////////////////////////////////////////
 
 xdr_data2_t
-XDR_encode_uint64
+xdr_encode_uint64
 (
 	const uint64_t& val
 )
@@ -375,12 +375,12 @@ XDR_encode_uint64
 	tmp.raw = val;
 	tmp.encoded = SWAP64 ( tmp.encoded );
 	return ( tmp.encoded );
-} // XDR_encode_uint64 ()
+} // xdr_encode_uint64 ()
 
 //////////////////////////////////////////////////////////////////////
 
 uint64_t
-XDR_decode_uint64
+xdr_decode_uint64
 (
 	const xdr_data2_t& val
 )
@@ -392,13 +392,13 @@ XDR_decode_uint64
 	} tmp;
 	tmp.encoded = SWAP64 ( val );
 	return ( tmp.raw );
-} // XDR_decode_uint64 ()
+} // xdr_decode_uint64 ()
 
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 xdr_data_t
-XDR_encode_float
+xdr_encode_float
 (
 	const float& val
 )
@@ -410,18 +410,18 @@ XDR_encode_float
 	} tmp;
 	if ( sizeof ( float ) != sizeof ( xdr_data_t ) )
 	{
-		LOG ( fglog::prio::DEBUG,  "XDR_encode_float: "
+		LOG ( fglog::prio::DEBUG,  "xdr_encode_float: "
 		  << "sizeof (float) != sizeof (xdr_data_t) !!!" );
 	}
 	tmp.raw = val;
 	tmp.encoded = SWAP32 ( tmp.encoded );
 	return ( tmp.encoded );
-} // XDR_encode_float ()
+} // xdr_encode_float ()
 
 //////////////////////////////////////////////////////////////////////
 
 float
-XDR_decode_float
+xdr_decode_float
 (
 	const xdr_data_t& val
 )
@@ -433,17 +433,17 @@ XDR_decode_float
 	} tmp;
 	if ( sizeof ( float ) != sizeof ( xdr_data_t ) )
 	{
-		LOG ( fglog::prio::DEBUG, "XDR_decode_float: "
+		LOG ( fglog::prio::DEBUG, "xdr_decode_float: "
 		  << "sizeof (float) != sizeof (xdr_data_t) !!!" );
 	}
 	tmp.encoded = SWAP32 ( val );
 	return ( tmp.raw );
-} // XDR_decode_float ()
+} // xdr_decode_float ()
 
 //////////////////////////////////////////////////////////////////////
 
 xdr_data2_t
-XDR_encode_double
+xdr_encode_double
 (
 	const double& val
 )
@@ -455,19 +455,19 @@ XDR_encode_double
 	} tmp;
 	if ( sizeof ( double ) != sizeof ( xdr_data2_t ) )
 	{
-		LOG ( fglog::prio::DEBUG, "XDR_encode_double: "
+		LOG ( fglog::prio::DEBUG, "xdr_encode_double: "
 		  << "sizeof (double) != sizeof (xdr_data2_t) !!!" );
 	}
 	tmp.raw = val;
 	tmp.encoded = SWAP64 ( tmp.encoded );
 	return ( tmp.encoded );
-} // XDR_encode_double ()
+} // xdr_encode_double ()
 
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 double
-XDR_decode_double
+xdr_decode_double
 (
 	const xdr_data2_t& val
 )
@@ -479,12 +479,12 @@ XDR_decode_double
 	} tmp;
 	if ( sizeof ( double ) != sizeof ( xdr_data2_t ) )
 	{
-		LOG ( fglog::prio::DEBUG, "XDR_decode_double: "
+		LOG ( fglog::prio::DEBUG, "xdr_decode_double: "
 		  << "sizeof (double) != sizeof (xdr_data2_t) !!!" );
 	}
 	tmp.encoded = SWAP64 ( val );
 	return ( tmp.raw );
-} // XDR_decode_double ()
+} // xdr_decode_double ()
 
 //////////////////////////////////////////////////////////////////////
 
@@ -497,51 +497,51 @@ XDR_decode_double
 /////////////////////////////////////////////////////////////////////
 
 int8_t
-NET_encode_int8
+net_encode_int8
 (
 	const int8_t& val
 )
 {
 	return ( val );
-} // NET_encode_int8 ()
+} // net_encode_int8 ()
 
 /////////////////////////////////////////////////////////////////////
 
 int8_t
-NET_decode_int8
+net_decode_int8
 (
 	const int8_t& val
 )
 {
 	return ( val );
-} // NET_decode_int8 ()
+} // net_decode_int8 ()
 
 /////////////////////////////////////////////////////////////////////
 
 uint8_t
-NET_encode_uint8
+net_encode_uint8
 (
 	const uint8_t& val
 )
 {
 	return ( val );
-} // NET_encode_uint8 ()
+} // net_encode_uint8 ()
 
 /////////////////////////////////////////////////////////////////////
 
 uint8_t
-NET_decode_uint8
+net_decode_uint8
 (
 	const uint8_t& val
 )
 {
 	return ( val );
-} // NET_decode_uint8 ()
+} // net_decode_uint8 ()
 
 /////////////////////////////////////////////////////////////////////
 
 int16_t
-NET_encode_int16
+net_encode_int16
 (
 	const int16_t& val
 )
@@ -554,12 +554,12 @@ NET_encode_int16
 	tmp.raw = val;
 	tmp.net = SWAP16 ( tmp.net );
 	return ( tmp.net );
-} // NET_encode_int16 ()
+} // net_encode_int16 ()
 
 /////////////////////////////////////////////////////////////////////
 
 int16_t
-NET_decode_int16
+net_decode_int16
 (
 	const int16_t& val
 )
@@ -571,12 +571,12 @@ NET_decode_int16
 	} tmp;
 	tmp.net = SWAP16 ( val );
 	return ( tmp.raw );
-} // NET_decode_int16 ()
+} // net_decode_int16 ()
 
 /////////////////////////////////////////////////////////////////////
 
 uint16_t
-NET_encode_uint16
+net_encode_uint16
 (
 	const uint16_t& val
 )
@@ -589,12 +589,12 @@ NET_encode_uint16
 	tmp.raw = val;
 	tmp.net = SWAP16 ( tmp.net );
 	return ( tmp.net );
-} // NET_encode_uint16 ()
+} // net_encode_uint16 ()
 
 /////////////////////////////////////////////////////////////////////
 
 uint16_t
-NET_decode_uint16
+net_decode_uint16
 (
 	const uint16_t& val
 )
@@ -606,12 +606,12 @@ NET_decode_uint16
 	} tmp;
 	tmp.net = SWAP16 ( val );
 	return ( tmp.raw );
-} // NET_decode_uint16 ()
+} // net_decode_uint16 ()
 
 /////////////////////////////////////////////////////////////////////
 
 int32_t
-NET_encode_int32
+net_encode_int32
 (
 	const int32_t& val
 )
@@ -624,12 +624,12 @@ NET_encode_int32
 	tmp.raw = val;
 	tmp.net = SWAP32 ( tmp.net );
 	return ( tmp.net );
-} // NET_encode_int32 ()
+} // net_encode_int32 ()
 
 /////////////////////////////////////////////////////////////////////
 
 int32_t
-NET_decode_int32
+net_decode_int32
 (
 	const int32_t& val
 )
@@ -641,12 +641,12 @@ NET_decode_int32
 	} tmp;
 	tmp.net = SWAP32 ( val );
 	return ( tmp.raw );
-} // NET_decode_int32 ()
+} // net_decode_int32 ()
 
 /////////////////////////////////////////////////////////////////////
 
 uint32_t
-NET_encode_uint32
+net_encode_uint32
 (
 	const uint32_t& val
 )
@@ -659,12 +659,12 @@ NET_encode_uint32
 	tmp.raw = val;
 	tmp.net = SWAP32 ( tmp.net );
 	return ( tmp.net );
-} // NET_encode_uint32 ()
+} // net_encode_uint32 ()
 
 /////////////////////////////////////////////////////////////////////
 
 uint32_t
-NET_decode_uint32
+net_decode_uint32
 (
 	const uint32_t& val
 )
@@ -676,12 +676,12 @@ NET_decode_uint32
 	} tmp;
 	tmp.net = SWAP32 ( val );
 	return ( tmp.raw );
-} // NET_decode_uint32 ()
+} // net_decode_uint32 ()
 
 /////////////////////////////////////////////////////////////////////
 
 int64_t
-NET_encode_int64
+net_encode_int64
 (
 	const int64_t& val
 )
@@ -694,12 +694,12 @@ NET_encode_int64
 	tmp.raw = val;
 	tmp.net = SWAP64 ( tmp.net );
 	return ( tmp.net );
-} // NET_encode_int64 ()
+} // net_encode_int64 ()
 
 /////////////////////////////////////////////////////////////////////
 
 int64_t
-NET_decode_int64
+net_decode_int64
 (
 	const int64_t& val
 )
@@ -711,12 +711,12 @@ NET_decode_int64
 	} tmp;
 	tmp.net = SWAP64 ( val );
 	return ( tmp.raw );
-} // NET_decode_int64 ()
+} // net_decode_int64 ()
 
 /////////////////////////////////////////////////////////////////////
 
 uint64_t
-NET_encode_uint64
+net_encode_uint64
 (
 	const uint64_t& val
 )
@@ -729,12 +729,12 @@ NET_encode_uint64
 	tmp.raw = val;
 	tmp.net = SWAP64 ( tmp.net );
 	return ( tmp.net );
-} // NET_encode_uint64 ()
+} // net_encode_uint64 ()
 
 /////////////////////////////////////////////////////////////////////
 
 uint64_t
-NET_decode_uint64
+net_decode_uint64
 (
 	const uint64_t& val
 )
@@ -746,12 +746,12 @@ NET_decode_uint64
 	} tmp;
 	tmp.net = SWAP64 ( val );
 	return ( tmp.raw );
-} // NET_decode_uint64 ()
+} // net_decode_uint64 ()
 
 /////////////////////////////////////////////////////////////////////
 
 uint32_t
-NET_encode_float
+net_encode_float
 (
 	const float& val
 )
@@ -763,18 +763,18 @@ NET_encode_float
 	} tmp;
 	if ( sizeof ( float ) != sizeof ( uint32_t ) )
 	{
-		LOG ( fglog::prio::DEBUG, "NET_encode_float: "
+		LOG ( fglog::prio::DEBUG, "net_encode_float: "
 		  << "sizeof (float) != 4 !!!" );
 	}
 	tmp.raw = val;
 	tmp.net = SWAP32 ( tmp.net );
 	return ( tmp.net );
-} // NET_encode_float ()
+} // net_encode_float ()
 
 /////////////////////////////////////////////////////////////////////
 
 float
-NET_decode_float
+net_decode_float
 (
 	const uint32_t& val
 )
@@ -786,17 +786,17 @@ NET_decode_float
 	} tmp;
 	if ( sizeof ( float ) != sizeof ( uint32_t ) )
 	{
-		LOG ( fglog::prio::DEBUG, "NET_decode_float: "
+		LOG ( fglog::prio::DEBUG, "net_decode_float: "
 		  << "sizeof (float) != 4 !!!" );
 	}
 	tmp.net = SWAP32 ( val );
 	return ( tmp.raw );
-} // NET_decode_float ()
+} // net_decode_float ()
 
 /////////////////////////////////////////////////////////////////////
 
 uint64_t
-NET_encode_double
+net_encode_double
 (
 	const double& val
 )
@@ -808,18 +808,18 @@ NET_encode_double
 	} tmp;
 	if ( sizeof ( double ) != sizeof ( uint64_t ) )
 	{
-		LOG ( fglog::prio::DEBUG, "NET_encode_double: "
+		LOG ( fglog::prio::DEBUG, "net_encode_double: "
 		  << "sizeof (double) != sizeof (uint64_t) !!!" );
 	}
 	tmp.raw = val;
 	tmp.net = SWAP64 ( tmp.net );
 	return ( tmp.net );
-} // NET_encode_double ()
+} // net_encode_double ()
 
 /////////////////////////////////////////////////////////////////////
 
 double
-NET_decode_double
+net_decode_double
 (
 	const uint64_t& val
 )
@@ -831,12 +831,12 @@ NET_decode_double
 	} tmp;
 	if ( sizeof ( double ) != sizeof ( uint64_t ) )
 	{
-		LOG ( fglog::prio::DEBUG, "NET_decode_double: "
+		LOG ( fglog::prio::DEBUG, "net_decode_double: "
 		  << "sizeof (double) != sizeof (uint64_t) !!!" );
 	}
 	tmp.net = SWAP64 ( val );
 	return ( tmp.raw );
-} // NET_decode_double ()
+} // net_decode_double ()
 
 /////////////////////////////////////////////////////////////////////
 
