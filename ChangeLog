@@ -1,3 +1,9 @@
+0.13.3
+	[FIX]	ignore SIGPIPE on *nix and do not expect signals on sockets
+		(fixes problems with the tracker)
+	[FIX]	using "-std=c++11" so nullptr can be used
+		(fixes compile issue with clang)
+
 0.13.2
 	[FIX]	fixed a major bug which prevented packet forwarding
 		at all.
