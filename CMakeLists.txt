@@ -192,48 +192,43 @@ endif(WIN32)
 
 #### add_subdirectory( src/libcli )
 # Project [libcli] [Static Library] [noinst_LIBRARIES], with 1 sources. 1 hdrs.
-set( libcli_SRCS
-    src/libcli/debug.cxx
-    src/libcli/filter.cxx
-    src/libcli/cli_client.cxx
-    src/libcli/libcli.cxx
+set( name CLIlib )
+set( dir src/libcli )
+set( ${name}_SRCS
+    ${dir}/debug.cxx
+    ${dir}/filter.cxx
+    ${dir}/cli_client.cxx
+    ${dir}/libcli.cxx
     )
-set( libcli_HDRS
-    src/libcli/common.hxx
-    src/libcli/command.hxx
-    src/libcli/debug.hxx
-    src/libcli/filter.hxx
-    src/libcli/cli_client.hxx
-    src/libcli/libcli.hxx
+set( ${name}_HDRS
+    ${dir}/common.hxx
+    ${dir}/command.hxx
+    ${dir}/debug.hxx
+    ${dir}/filter.hxx
+    ${dir}/cli_client.hxx
+    ${dir}/libcli.hxx
     )
 if (WIN32)
-    list(APPEND libcli_SRCS src/libcli/crypt-win.c)
+    list(APPEND ${name}_SRCS ${dir}/crypt-win.c)
 endif ()
-add_library( LibCLI ${LIB_TYPE} ${libcli_SRCS} ${libcli_HDRS} )
-if(WIN32)
-    list(APPEND add_LIBS LibCLI)
-else(WIN32)
-    list(APPEND add_LIBS -lLibCLI -lcrypt)
-endif(WIN32)
+add_library( ${name} ${LIB_TYPE} ${${name}_SRCS} ${${name}_HDRS} )
+list(APPEND add_LIBS ${name})
+if (NOT WIN32)
+    list(APPEND add_LIBS crypt)
+endif ()
 
-#### add_subdirectory( src/libmsc ) Windows Only
-# Project [libmsc] [Static Library] [noinst_LIBRARIES], with 1 source. 1 hdr.
-set( libmsc_SRCS
-    src/libmsc/msc_unistd.cxx
-    )
-set( libmsc_HDRS
-	src/libmsc/msc_unistd.hxx
-    )
-if(MSVC)
-	add_library( LibMSC ${LIB_TYPE} ${libmsc_SRCS} ${libmsc_HDRS} )
-endif(MSVC)
-if(WIN32)
+if (WIN32)
+    #### add_subdirectory( src/libmsc ) Windows Only
+    # Project [libmsc] [Static Library] [noinst_LIBRARIES], with 1 source. 1 hdr.
+    set( libmsc_SRCS
+        src/libmsc/msc_unistd.cxx
+        )
+    set( libmsc_HDRS
+        src/libmsc/msc_unistd.hxx
+        )
+    add_library( LibMSC ${LIB_TYPE} ${libmsc_SRCS} ${libmsc_HDRS} )
     list(APPEND add_LIBS LibMSC)
-else(WIN32)
-	if(MSVC)
-		list(APPEND add_LIBS -lLibMSC)
-	endif(MSVC)
-endif(WIN32)
+endif ()
 
 # Project [SGUtils] [Static Library] [noinst_LIBRARIES], with 2 sources. 3 hdrs.
 set( name SGUtils )
