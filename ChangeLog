@@ -1,3 +1,7 @@
+0.13.4
+	[FIX]	fixed CMAKE_INSTALL_PREFIX in CMakeLists.txt
+	[FIX]	fixed CMakeLists.txt for cross-compile
+
 0.13.3
 	[FIX]	ignore SIGPIPE on *nix and do not expect signals on sockets
 		(fixes problems with the tracker)
