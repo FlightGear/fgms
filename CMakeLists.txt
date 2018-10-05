@@ -42,14 +42,6 @@ string(STRIP "${versionFile}" FGMS_VERSION)
 # change names if build server and tracker #2
 set( EXE_NAME fgms )
 
-# directories
-IF(NOT DEFINED USER_INSTALL_PREFIX)
-  SET(CMAKE_INSTALL_PREFIX "/usr")
-  message(STATUS "*** Set CMAKE_INSTALL_PREFIX to ${CMAKE_INSTALL_PREFIX}")
-ELSE(NOT DEFINED USER_INSTALL_PREFIX)
-  SET(CMAKE_INSTALL_PREFIX ${USER_INSTALL_PREFIX})
-  message(STATUS "*** Set CMAKE_INSTALL_PREFIX to user ${CMAKE_INSTALL_PREFIX}")
-ENDIF(NOT DEFINED USER_INSTALL_PREFIX)
 if (NOT DEFINED SYSCONFDIR)
     set ( SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/etc" )
 endif (NOT DEFINED SYSCONFDIR)
@@ -96,7 +88,6 @@ if(WIN32)
     configure_file( "${CMAKE_SOURCE_DIR}/config.h.msvc" "${CMAKE_BINARY_DIR}/config.h" COPYONLY)
     file(WRITE "${CMAKE_BINARY_DIR}/unistd.h" "/* dummy unistd.h for windows */") 
 else(WIN32)
-    set ( EXTRA_FLAGS "-std=c++11" )
     if(ENABLE_DEBUG_SYMBOLS)
         list(APPEND EXTRA_FLAGS "-g")
     endif(ENABLE_DEBUG_SYMBOLS)
@@ -112,6 +103,7 @@ if(BUILD_SERVER2)
     message(STATUS "*** Building server 2. File fg_server2.log fgms_exit2 fgms_reset2 fgms_stat2 fgms2.conf")
 endif(BUILD_SERVER2)
 
+set ( EXTRA_FLAGS "-std=c++11" )
 set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${EXTRA_FLAGS} -D_REENTRANT" )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS} ${EXTRA_FLAGS} -D_REENTRANT" )
 set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EXTRA_LD_FLAGS}" )
@@ -193,13 +185,13 @@ endif(WIN32)
 
 #### add_subdirectory( src/libcli )
 # Project [libcli] [Static Library] [noinst_LIBRARIES], with 1 sources. 1 hdrs.
-set( libcli_SRCS
+set( CLI_SRCS
     src/libcli/debug.cxx
     src/libcli/filter.cxx
     src/libcli/cli_client.cxx
     src/libcli/libcli.cxx
     )
-set( libcli_HDRS
+set( CLI_HDRS
     src/libcli/common.hxx
     src/libcli/command.hxx
     src/libcli/debug.hxx
@@ -208,48 +200,40 @@ set( libcli_HDRS
     src/libcli/libcli.hxx
     )
 if (WIN32)
-    list(APPEND libcli_SRCS src/libcli/crypt-win.c)
+    list(APPEND CLI_SRCS src/libcli/crypt-win.c)
 endif ()
-add_library( LibCLI ${LIB_TYPE} ${libcli_SRCS} ${libcli_HDRS} )
-if(WIN32)
-    list(APPEND add_LIBS LibCLI)
-else(WIN32)
-    list(APPEND add_LIBS -lLibCLI -lcrypt)
-endif(WIN32)
+add_library( CLI ${LIB_TYPE} ${CLI_SRCS} ${CLI_HDRS} )
+list(APPEND add_LIBS CLI)
+if (NOT WIN32)
+    list(APPEND add_LIBS crypt)
+endif ()
 
-#### add_subdirectory( src/libmsc ) Windows Only
-# Project [libmsc] [Static Library] [noinst_LIBRARIES], with 1 source. 1 hdr.
-set( libmsc_SRCS
-    src/libmsc/msc_unistd.cxx
-    )
-set( libmsc_HDRS
-	src/libmsc/msc_unistd.hxx
-    )
-if(MSVC)
-	add_library( LibMSC ${LIB_TYPE} ${libmsc_SRCS} ${libmsc_HDRS} )
-endif(MSVC)
-if(WIN32)
+if (WIN32)
+    #### add_subdirectory( src/libmsc ) Windows Only
+    # Project [libmsc] [Static Library] [noinst_LIBRARIES], with 1 source. 1 hdr.
+    set( libmsc_SRCS
+        src/libmsc/msc_unistd.cxx
+        )
+    set( libmsc_HDRS
+        src/libmsc/msc_unistd.hxx
+        )
+    add_library( LibMSC ${LIB_TYPE} ${libmsc_SRCS} ${libmsc_HDRS} )
     list(APPEND add_LIBS LibMSC)
-else(WIN32)
-	if(MSVC)
-		list(APPEND add_LIBS -lLibMSC)
-	endif(MSVC)
-endif(WIN32)
+endif ()
 
 # Project [SGUtils] [Static Library] [noinst_LIBRARIES], with 2 sources. 3 hdrs.
-set( name SGUtils )
-set( ${name}_SRCS
+set( SGUtils_SRCS
     src/simgear/debug/logstream.cxx 
     src/simgear/math/SGEuler.cxx 
     )
-set( ${name}_HDRS
+set( SGUtils_HDRS
     src/simgear/debug/debug_types.h 
     src/simgear/debug/logstream.hxx 
     src/simgear/math/SGEuler.hxx 
     )
-add_library( ${name} ${LIB_TYPE} ${${name}_SRCS} ${${name}_HDRS} )
+add_library( SGUtils ${LIB_TYPE} ${SGUtils_SRCS} ${SGUtils_HDRS} )
 # NO INSTALL [noinst_LIBRARIES]
-list(APPEND add_LIBS ${name})
+list(APPEND add_LIBS SGUtils)
 
 # find the threads library
 find_package(Threads REQUIRED)
