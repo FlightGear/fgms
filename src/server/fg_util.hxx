@@ -17,6 +17,7 @@ using namespace std;
 #include <cstdlib>
 #include <ctype.h>		// toupper()
 #include <stdint.h>
+#include <time.h>
 
 typedef long long t_longlong;
 
