@@ -73,6 +73,8 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") 
    set( WARNING_FLAGS "-Wall -Wno-overloaded-virtual" )
+else()
+   set( WARNING_FLAGS "-Wno-unused-but-set-variable" )
 endif() 
 
 if(WIN32)
@@ -100,7 +102,7 @@ else(WIN32)
     if(ENABLE_DEBUG_SYMBOLS)
         list(APPEND EXTRA_FLAGS "-g")
     endif(ENABLE_DEBUG_SYMBOLS)
-    set( WARNING_FLAGS "${WARNING_FLAGS} -Wno-unused-local-typedefs -Wno-unused-but-set-variable" )
+    set( WARNING_FLAGS "${WARNING_FLAGS} -Wno-unused-local-typedefs" )
 endif(WIN32)
 
 if(BUILD_SERVER2)
