@@ -100,7 +100,6 @@ else(WIN32)
     if(ENABLE_DEBUG_SYMBOLS)
         list(APPEND EXTRA_FLAGS "-g")
     endif(ENABLE_DEBUG_SYMBOLS)
-    list(APPEND EXTRA_LD_FLAGS -L.)
     set( WARNING_FLAGS "${WARNING_FLAGS} -Wno-unused-local-typedefs -Wno-unused-but-set-variable" )
 endif(WIN32)
 
@@ -159,11 +158,7 @@ set( fg_server_HDRS
     src/server/fg_common.hxx )
 add_library( fg_server ${LIB_TYPE} ${fg_server_SRCS} ${fg_server_HDRS} )
 # NO INSTALL [noinst_LIBRARIES]
-if(WIN32)
-    list( APPEND add_LIBS fg_server )
-else(WIN32)
-    list(APPEND add_LIBS -lfg_server)
-endif(WIN32)
+list( APPEND add_LIBS fg_server )
 
 #### add_subdirectory( src/flightgear/MultiPlayer )
 # Project [MultiPlayer] [Static Library] [noinst_LIBRARIES], with 1 sources. 7 hdrs.
@@ -172,11 +167,7 @@ set( MultiPlayer_HDRS src/flightgear/MultiPlayer/tiny_xdr.hxx
     src/flightgear/MultiPlayer/mpmessages.hxx )
 add_library( Multiplayer ${LIB_TYPE} ${MultiPlayer_SRCS} ${MultiPlayer_HDRS} )
 # NO INSTALL [noinst_LIBRARIES]
-if(WIN32)
-    list(APPEND add_LIBS Multiplayer)
-else(WIN32)
-    list(APPEND add_LIBS -lMultiplayer)
-endif(WIN32)
+list(APPEND add_LIBS Multiplayer)
 
 #### add_subdirectory( src/plib )
 # Project [plib] [Static Library] [noinst_LIBRARIES], with 1 sources. 1 hdrs.
@@ -184,11 +175,7 @@ set( plib_SRCS src/plib/netSocket.cxx )
 set( plib_HDRS src/plib/netSocket.h )
 add_library( Plib ${LIB_TYPE} ${plib_SRCS} ${plib_HDRS} )
 # NO INSTALL [noinst_LIBRARIES]
-if(WIN32)
-    list(APPEND add_LIBS Plib)
-else(WIN32)
-    list(APPEND add_LIBS -lPlib)
-endif(WIN32)
+list(APPEND add_LIBS Plib)
 
 #### add_subdirectory( src/libcli )
 # Project [libcli] [Static Library] [noinst_LIBRARIES], with 1 sources. 1 hdrs.
@@ -213,7 +200,7 @@ add_library( LibCLI ${LIB_TYPE} ${libcli_SRCS} ${libcli_HDRS} )
 if(WIN32)
     list(APPEND add_LIBS LibCLI)
 else(WIN32)
-    list(APPEND add_LIBS -lLibCLI -lcrypt)
+    list(APPEND add_LIBS LibCLI -lcrypt)
 endif(WIN32)
 
 #### add_subdirectory( src/libmsc ) Windows Only
