@@ -6,6 +6,5 @@ over a network inside fgfs.
 
 - Website: http://fgms.freeflightsim.org/ 
 
-- Project: https://gitlab.com/fgms/fgms-0-x
+- Project: https://sourceforge.net/p/fgms
 
-; eof
