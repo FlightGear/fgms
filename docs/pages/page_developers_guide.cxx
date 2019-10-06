@@ -5,12 +5,12 @@
  * 
  * \section the_code Source Code
  * * The source for the project is versioned using git
- * * The repository is hosted at gitlab.com
- * 	- https://gitlab.com/fgms/fgms-0-x
+ * * The repository is hosted at sourceforge.net
+ * 	- https://git.code.sf.net/p/fgms
  * 
  * To checkout the source code run
  * \code 
- * 		git clone https://gitlab.com/fgms/fgms-0-x.git
+ * 		git clone https://git.code.sf.net/p/fgms/src fgms-src
  * \endcode
  * 
  * 

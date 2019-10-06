@@ -31,14 +31,14 @@
  * \endcode
  * - Now clone the source code with git
  * \code 
- *  git clone https://gitlab.com/fgms/fgms-0-x.git
+ *  git clone https://git.code.sf.net/p/fgms/src fgms-src
  *  \endcode
  * - Create and enter a temp directory (this is where all the compilers working files will be written to) and 
  *   configure using cmake
  * \code
  *  mkdir build_fgms
  *  cd build_fgms
- *  cmake ../fgms-0-x
+ *  cmake ../fgms-src
  *  \endcode
  * - At this point you should have a working \b fgms binary in the build_fgms/ directory.
  * 
