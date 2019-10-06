@@ -12,5 +12,4 @@ VER=`cat version`
 
 ( cat  docs/doxy.conf; \
   echo "PROJECT_NUMBER=$VER" \
-  #echo "OUTPUT_DIRECTORY=$OUT" \
   ) | doxygen -

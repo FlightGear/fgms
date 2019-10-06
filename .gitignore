@@ -1,8 +1,10 @@
 *.tar.gz
 build/
 build_docs/
+public/
 *.bak
 temp*
 *~
 build*/*
 
+.idea/
