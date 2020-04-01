@@ -13,7 +13,7 @@
 
 cmake_minimum_required( VERSION 2.8.8 )
 
-project( fgms )
+project( fgms C CXX )
 
 ##################################################
 #####       the version of the program
