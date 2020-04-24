@@ -31,6 +31,7 @@
 
 /* Now REQUIRED <pthread.h>, and the pthreadVC2.lib and dll */
 #define HAVE_PTHREAD_H 1
+#define HAVE_STRUCT_TIMESPEC 1
 
 #endif // #ifndef _FGMS_CONFIG_H_
 // eof - config.h
