@@ -1461,7 +1461,7 @@ FG_SERVER::HandlePacket
 		// with 'obs', do not send the packet to other
 		// clients. Useful for test connections.
 		//////////////////////////////////////////////////
-		if ( CurrentPlayer->Name.compare (0, 3, "obs", 3) == 0 )
+		if ( std::string (MsgHdr->Name).compare (0, 3, "obs", 3) == 0 )
 		{
 			CurrentPlayer++;
 			continue;
