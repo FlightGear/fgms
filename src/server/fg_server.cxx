@@ -1389,12 +1389,14 @@ FG_SERVER::HandlePacket
 		{	// client is 'new' and transmit radar range
 			if ( tmp->High != SendingPlayer->RadarRange )
 			{
+				/* causes too many logs
 				SG_LOG ( SG_FGMS, SG_INFO, SendingPlayer->Name
 					<< " changes radar range from "
 					<< SendingPlayer->RadarRange
 					<< " to "
 					<< tmp->High
 				);
+				*/
 				if ( tmp->High <= m_MaxRadarRange )
 					SendingPlayer->RadarRange = tmp->High;
 				else
