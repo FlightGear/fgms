@@ -751,7 +751,8 @@ FG_CLI::cmd_whitelist_show
 			<< CRLF; if (check_pager()) return 0;
 	}
 	if (EntriesFound)
-		client << CRLF; if (check_pager()) return 0;
+		client << CRLF;
+	if (check_pager()) return 0;
 	client << EntriesFound << " entries found" << CRLF; if (check_pager()) return 0;
 	if (EntriesFound)
 	{
