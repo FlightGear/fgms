@@ -73,9 +73,9 @@ protected:
 	int     match_filter_init ( int argc, char** argv, filter_t* filt );
 	int     range_filter_init ( int argc, char** argv, filter_t* filt );
 	int     count_filter_init ( int argc, char** argv, filter_t* filt );                                                 
-	int     match_filter ( char* cmd, void* data );
-	int     range_filter ( char* cmd, void* data );
-	int     count_filter ( char* cmd, void* data );
+	int     match_filter ( const char* cmd, void* data );
+	int     range_filter ( const char* cmd, void* data );
+	int     count_filter ( const char* cmd, void* data );
 	PRINT_MODE		m_print_mode;
 	netSocket*		m_socket;
 	std::ostringstream	m_output;

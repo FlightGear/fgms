@@ -721,7 +721,6 @@ FG_CLI::cmd_whitelist_show
 	time_t  difftime;
 	time_t  now;
 	now = time(0);
-	difftime = now - fgms->m_Uptime;
 	client << fgms->m_WhiteList.Name << ":" << CRLF;
 	client << CRLF;
 	for (int i = 0; i < Count; i++)
@@ -738,6 +737,7 @@ FG_CLI::cmd_whitelist_show
 				continue;
 		}
 		EntriesFound++;
+		difftime = now - Entry.JoinTime;
 		client << "ID " << Entry.ID << ": "
 			<< Entry.Address.getHost() << " : " << Entry.Name
 			<< CRLF; if (check_pager()) return 0;
@@ -746,8 +746,10 @@ FG_CLI::cmd_whitelist_show
 		client << "  last seen    : " << timestamp_to_days (Entry.LastSeen)
 			<< CRLF; if (check_pager()) return 0;
 		client << "  rcvd packets : " << Entry.PktsRcvd
+			<< " (" << Entry.PktsRcvd / difftime << "/s)"
 			<< CRLF; if (check_pager()) return 0;
 		client << "  rcvd bytes   : " << byte_counter (Entry.BytesRcvd)
+			<< " (" << Entry.BytesRcvd / difftime << "/s)"
 			<< CRLF; if (check_pager()) return 0;
 	}
 	if (EntriesFound)
@@ -756,6 +758,7 @@ FG_CLI::cmd_whitelist_show
 	client << EntriesFound << " entries found" << CRLF; if (check_pager()) return 0;
 	if (EntriesFound)
 	{
+		difftime = now - fgms->m_Uptime;
 		client << "Total rcvd: "
 			<< fgms->m_WhiteList.PktsRcvd << " packets"
 			<< " (" << fgms->m_WhiteList.PktsRcvd / difftime << "/s)"
@@ -1046,7 +1049,6 @@ FG_CLI::cmd_blacklist_show
 	time_t  difftime;
 	time_t  now;
 	now = time(0);
-	difftime = now - fgms->m_Uptime;
 	client << fgms->m_BlackList.Name << ":" << CRLF;
 	client << CRLF;
 	for (int i = 0; i < Count; i++)
@@ -1071,6 +1073,7 @@ FG_CLI::cmd_blacklist_show
 			continue;
 		}
 		string expire = "NEVER";
+		difftime = now - Entry.JoinTime;
 		if (Entry.Timeout != 0)
 		{
 			expire = NumToStr (Entry.Timeout, 0) + " seconds";
@@ -1080,8 +1083,10 @@ FG_CLI::cmd_blacklist_show
 		client << "  last seen    : " << timestamp_to_days (Entry.LastSeen)
 			<< CRLF; if (check_pager()) return 0;
 		client << "  rcvd packets : " << Entry.PktsRcvd
+			<< " (" << Entry.PktsRcvd / difftime << "/s)"
 			<< CRLF; if (check_pager()) return 0;
 		client << "  rcvd bytes   : " << byte_counter (Entry.BytesRcvd)
+			<< " (" << Entry.BytesRcvd / difftime << "/s)"
 			<< CRLF; if (check_pager()) return 0;
 		client << "  expire in    : " << expire
 			<< CRLF; if (check_pager()) return 0;
@@ -1093,6 +1098,7 @@ FG_CLI::cmd_blacklist_show
 	client << EntriesFound << " entries found" << CRLF; if (check_pager()) return 0;
 	if (EntriesFound)
 	{
+		difftime = now - fgms->m_Uptime;
 		client << "Total rcvd: "
 			<< fgms->m_BlackList.PktsRcvd << " packets"
 			<< " (" << fgms->m_BlackList.PktsRcvd / difftime << "/s)"
@@ -1573,7 +1579,6 @@ FG_CLI::cmd_crossfeed_show
 	time_t  difftime;
 	time_t  now;
 	now = time(0);
-	difftime = now - fgms->m_Uptime;
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_CrossfeedList[i];
@@ -1588,6 +1593,7 @@ FG_CLI::cmd_crossfeed_show
 				continue;
 		}
 		EntriesFound++;
+		difftime = now - Entry.JoinTime;
 		client << "ID " << Entry.ID << ": "
 			<< Entry.Address.getHost() << ":" << Entry.Address.getPort()
 			<< " : " << Entry.Name
@@ -1614,6 +1620,7 @@ FG_CLI::cmd_crossfeed_show
 	client << EntriesFound << " entries found" << CRLF; if (check_pager()) return 0;
 	if (EntriesFound)
 	{
+		difftime = now - fgms->m_Uptime;
 		client << "Total sent: "
 			<< fgms->m_CrossfeedList.PktsSent << " packets"
 			<< "(" << fgms->m_CrossfeedList.PktsSent / difftime << "/s)"
@@ -1717,7 +1724,6 @@ FG_CLI::cmd_relay_show
 	time_t  difftime;
 	time_t  now;
 	now = time(0);
-	difftime = now - fgms->m_Uptime;
 	for (int i = 0; i < Count; i++)
 	{
 		Entry = fgms->m_RelayList[i];
@@ -1737,6 +1743,7 @@ FG_CLI::cmd_relay_show
 				continue;
 		}
 		EntriesFound++;
+		difftime = now - Entry.JoinTime;
 		client << "ID " << Entry.ID << ": "
 			<< Entry.Address.getHost() << ":" << Entry.Address.getPort()
 			<< " : " << Entry.Name
@@ -1769,6 +1776,7 @@ FG_CLI::cmd_relay_show
 	{
 		return 0;
 	}
+	difftime = now - fgms->m_Uptime;
 	client << "Totals:" << CRLF; if (check_pager()) return 0;
 	client << "  sent      : "
 		<< fgms->m_RelayList.PktsSent << " packets"
@@ -2180,7 +2188,6 @@ FG_CLI::cmd_user_show
 	for (int i = 0; i < Count; i++)
 	{
 		now = time(0);
-		difftime = now - fgms->m_Uptime;
 		Player = fgms->m_PlayerList[i];
 		if ( (ID == 0) && (Address.getIP() != 0) )
 		{	// only list matching entries
@@ -2251,6 +2258,7 @@ FG_CLI::cmd_user_show
 				<< "ERROR" << Player.Error
 				<< CRLF; if (check_pager()) return 0;
 		}
+		difftime = now - Player.JoinTime;
 		client << "         " << left << setfill(' ') << setw(15)
 			<< "protocoll" << Player.ProtoMajor << "." << Player.ProtoMinor
 			<< CRLF; if (check_pager()) return 0;

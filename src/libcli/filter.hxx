@@ -31,7 +31,7 @@ struct filter_cmds_t
 
 class CLI;
 class Client;
-typedef int (Client::*filter_callback_func) (char *cmd, void *data);
+typedef int (Client::*filter_callback_func) (const char *cmd, void *data);
 
 class filter_t
 {
@@ -39,8 +39,8 @@ public:
 	filter_callback_func filter;
 	void *data;
 	filter_t *next;
-	int exec (Client& Instance, char *cmd);
-	int exec (Client& Instance, char *cmd, void *data);
+	int exec (Client& Instance, const char *cmd);
+	int exec (Client& Instance, const char *cmd, void *data);
 };
 
 }; // namespace LIBCLI

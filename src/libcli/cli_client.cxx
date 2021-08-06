@@ -333,7 +333,7 @@ Client::count_filter_init
 int
 Client::match_filter
 (
-	char* cmd,
+	const char* cmd,
 	void* data
 )
 {
@@ -348,6 +348,7 @@ Client::match_filter
 	}
 	if ( strstr ( cmd, state->str ) )
 	{
+
 		r = LIBCLI::OK;
 	}
 	if ( state->flags & MATCH_INVERT )
@@ -361,13 +362,14 @@ Client::match_filter
 			r = LIBCLI::OK;
 		}
 	}
+	std::cout << "match: '" << state->str << "' in " << cmd << std::endl;
 	return r;
 }
 
 int
 Client::range_filter
 (
-	char* cmd,
+	const char* cmd,
 	void* data
 )
 {
@@ -399,7 +401,7 @@ Client::range_filter
 int     
 Client::count_filter
 (
-	char* cmd,
+	const char* cmd,
 	void* data
 )
 {
@@ -410,7 +412,7 @@ Client::count_filter
 		// print count
 		*this << UNFILTERED << NumToStr (*count, 0) << CRLF;
 		free ( count ); 
-	return LIBCLI::OK; 
+		return LIBCLI::OK; 
 	}
 	while ( isspace ( *cmd ) )
 	{
@@ -434,9 +436,12 @@ Client& commit
 	filter_t* f = (out.m_print_mode & PRINT_FILTERED) ? out.filters : 0;
 	bool print = true;
 
-	char* p = (char*) out.m_output.str().c_str();
+	const char* p = static_cast<const char*> (out.m_output.str().c_str());
 	while (print && f)
 	{
+		std::cout << "commit p: '" << out.m_output.str() << "' data: '"
+			  << p << "'" << std::endl;
+			  // << (char*) f->data << "'" << std::endl;
 		print = ( f->exec ( out, p, f->data ) == LIBCLI::OK );
 		f = f->next;
 	}

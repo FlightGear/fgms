@@ -32,10 +32,12 @@ int
 filter_t::exec
 (
 	Client& Instance,
-	char *cmd
+	const char *cmd
 )
 {
 	DEBUG d (__FUNCTION__,__FILE__,__LINE__);
+	std::cout << "fe1 cmd: '" << cmd
+		  << "' data: '" << (char*) this->data << "'" << std::endl;
 	return (CALL_MEMBER_FN (Instance, this->filter)(cmd, this->data));
 }
 
@@ -43,11 +45,13 @@ int
 filter_t::exec
 (
 	Client& Instance,
-	char *cmd,
+	const char *cmd,
 	void *data
 )
 {
 	DEBUG d (__FUNCTION__,__FILE__,__LINE__);
+	std::cout << "fe2 cmd: '" << cmd
+		  << "' data: '" << (char*) data << "'" << std::endl;
 	return (CALL_MEMBER_FN (Instance, this->filter)(cmd, data));
 }
 
