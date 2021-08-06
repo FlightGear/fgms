@@ -1,5 +1,8 @@
 #
 # single CMakeLists.txt for fgms-0-x - hand crafted - commenced 2012/07/03
+# 20210711 - removed preset of CMAKE_INSTALL_PREFIX as it does not work
+#            It seems impossible to determin if CMAKE_INSTALL_PREFIX was user provided or
+#            initialised to default
 # 20161121 - Remove ability to compile FGTracker which is obsolete
 # 20130411 - Change to use external version file
 # 20121130 - Add link_directories ( ${PostgreSQL_LIBRARY_DIR} ) at least for WIN32 - AGE 26
@@ -9,7 +12,7 @@
 #            Bump AGE to 20, since a number of other commits done.
 # 20120808 - Change the IPCKEY value if building mp_server2 - bumped AGE to 19
 # 20120723 - Add ENABLE_DEBUG_OUTPUT, which defines DEF_DEBUG_OUTPUT in fg_tracker.cxx
-# and add USE_PTHREAD_IN_TRACKER server, replacing fork()
+#            and add USE_PTHREAD_IN_TRACKER server, replacing fork()
 
 cmake_minimum_required( VERSION 2.8.8 )
 
@@ -38,18 +41,11 @@ if (NOT versionFile)
 endif()
 string(STRIP "${versionFile}" FGMS_VERSION)
 
-
 # change names if build server and tracker #2
 set( EXE_NAME fgms )
 
 # directories
-IF(NOT DEFINED USER_INSTALL_PREFIX)
-  SET(CMAKE_INSTALL_PREFIX "/usr")
-  message(STATUS "*** Set CMAKE_INSTALL_PREFIX to ${CMAKE_INSTALL_PREFIX}")
-ELSE(NOT DEFINED USER_INSTALL_PREFIX)
-  SET(CMAKE_INSTALL_PREFIX ${USER_INSTALL_PREFIX})
-  message(STATUS "*** Set CMAKE_INSTALL_PREFIX to user ${CMAKE_INSTALL_PREFIX}")
-ENDIF(NOT DEFINED USER_INSTALL_PREFIX)
+message(STATUS "*** Set CMAKE_INSTALL_PREFIX to user ${CMAKE_INSTALL_PREFIX}")
 if (NOT DEFINED SYSCONFDIR)
     set ( SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/etc" )
 endif (NOT DEFINED SYSCONFDIR)
