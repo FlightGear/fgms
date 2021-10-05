@@ -48,7 +48,7 @@ class FG_ListElement
 {
 public:
 	/** every element has a a name */
-	FG_ListElement ( const string& Name );
+	FG_ListElement ( const std::string& Name );
 	FG_ListElement ( const FG_ListElement& P );
 	~FG_ListElement ();
 	/** mark a nonexisting element */
@@ -144,7 +144,7 @@ public:
 	/** \b true if we need to send updates to inactive relays */
 	bool	DoUpdate;
 	FG_Player ();
-	FG_Player ( const string& Name );
+	FG_Player ( const std::string& Name );
 	FG_Player ( const FG_Player& P);
 	~FG_Player ();
 	void operator =  ( const FG_Player& P );
@@ -162,10 +162,10 @@ template <class T>
 class mT_FG_List
 {
 public:
-	typedef vector<T> ListElements;
-	typedef typename vector<T>::iterator ListIterator;
+	typedef std::vector<T> ListElements;
+	typedef typename std::vector<T>::iterator ListIterator;
 	/** constructor, must supply a Name */
-	mT_FG_List   ( const string& Name );
+	mT_FG_List   ( const std::string& Name );
 	~mT_FG_List  ();
 	/** return the number of elements in this list */
 	size_t Size  ();
@@ -180,9 +180,9 @@ public:
 	/** delete an element of this list */
 	ListIterator Delete	( const ListIterator& Element );
 	/** find an element by its IP address */
-	ListIterator Find	( const netAddress& Address, const string& Name = "" );
+	ListIterator Find	( const netAddress& Address, const std::string& Name = "" );
 	/** find an element by its Name */
-	ListIterator FindByName	( const string& Name = "" );
+	ListIterator FindByName	( const std::string& Name = "" );
 	/** find an element by its ID */
 	ListIterator FindByID	( size_t ID );
 	/** return an iterator of the first element */
@@ -230,8 +230,8 @@ private:
 
 typedef mT_FG_List<FG_ListElement>		FG_List;
 typedef mT_FG_List<FG_Player>			PlayerList;
-typedef vector<FG_ListElement>::iterator	ItList;
-typedef vector<FG_Player>::iterator		PlayerIt;
+typedef std::vector<FG_ListElement>::iterator	ItList;
+typedef std::vector<FG_Player>::iterator		PlayerIt;
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -241,7 +241,7 @@ typedef vector<FG_Player>::iterator		PlayerIt;
 template <class T>
 mT_FG_List<T>::mT_FG_List
 (
-	const string& Name
+	const std::string& Name
 )
 {
 	pthread_mutex_init ( &m_ListMutex, 0 );
@@ -321,7 +321,7 @@ mT_FG_List<T>::DeleteByPosition (int position)
  * @param Element iterator pointing to the element to delete
  */
 template <class T>
-typename vector<T>::iterator
+typename std::vector<T>::iterator
 mT_FG_List<T>::Delete( const ListIterator& Element)
 {
 	ListIterator E;
@@ -344,8 +344,8 @@ mT_FG_List<T>::Delete( const ListIterator& Element)
  *         could not be found
  */
 template <class T>
-typename vector<T>::iterator
-mT_FG_List<T>::Find( const netAddress& Address, const string& Name)
+typename std::vector<T>::iterator
+mT_FG_List<T>::Find( const netAddress& Address, const std::string& Name)
 {
 	ListIterator Element;
 	ListIterator RetElem;
@@ -405,8 +405,8 @@ mT_FG_List<T>::Find( const netAddress& Address, const string& Name)
  *         could not be found
  */
 template <class T>
-typename vector<T>::iterator
-mT_FG_List<T>::FindByName( const string& Name)
+typename std::vector<T>::iterator
+mT_FG_List<T>::FindByName( const std::string& Name)
 {
 	ListIterator Element;
 	ListIterator RetElem;
@@ -436,7 +436,7 @@ mT_FG_List<T>::FindByName( const string& Name)
  *         could not be found
  */
 template <class T>
-typename vector<T>::iterator
+typename std::vector<T>::iterator
 mT_FG_List<T>::FindByID
 ( size_t ID )
 {
@@ -468,7 +468,7 @@ mT_FG_List<T>::FindByID
  *         equals End()
  */
 template <class T>
-typename vector<T>::iterator
+typename std::vector<T>::iterator
 mT_FG_List<T>::Begin()
 {
 	return Elements.begin ();
@@ -485,7 +485,7 @@ mT_FG_List<T>::Begin()
  *         equals End()
  */
 template <class T>
-typename vector<T>::iterator
+typename std::vector<T>::iterator
 mT_FG_List<T>::Last()
 {
 	ListIterator RetElem = Elements.end ();
@@ -500,7 +500,7 @@ mT_FG_List<T>::Last()
  * @return the end of the list (which is not a valid entry!) 
  */
 template <class T>
-typename vector<T>::iterator
+typename std::vector<T>::iterator
 mT_FG_List<T>::End()
 {
 	return Elements.end ();

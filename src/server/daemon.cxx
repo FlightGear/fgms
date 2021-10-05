@@ -39,7 +39,7 @@
 #include "daemon.hxx"
 
 pid_t cDaemon::PidOfDaemon; // remember who we are
-list <pid_t> cDaemon::Children; // keep track of our children
+std::list <pid_t> cDaemon::Children; // keep track of our children
 
 //////////////////////////////////////////////////////////////////////
 /**
@@ -195,7 +195,7 @@ int cDaemon::Daemonize () // make us a daemon
  */
 void cDaemon::KillAllChildren () 
 {
-	list <pid_t>::iterator aChild;
+	std::list <pid_t>::iterator aChild;
 
 	aChild = Children.begin ();
 	while ( aChild != Children.end () )

@@ -6,7 +6,7 @@
  * @brief convert a unix timestamp to a string
  * representation of a date
  */
-string
+std::string
 timestamp_to_datestr
 (
 	time_t date
@@ -22,7 +22,7 @@ timestamp_to_datestr
                 tmr->tm_hour,
                 tmr->tm_min,
                 tmr->tm_sec);
-        return (string)buf;
+        return (std::string)buf;
 } // timestamp_to_datestr()
 //////////////////////////////////////////////////////////////////////
 
@@ -31,7 +31,7 @@ timestamp_to_datestr
  * @brief calculate the difference of a timestamp to now and convert
  * the difference to a string representation of the form "3 days 2 hours"
  */
-string
+std::string
 timestamp_to_days
 (
 	time_t Date
@@ -47,7 +47,7 @@ timestamp_to_days
  * @brief convert a time duration expressed in seconds to a string
  * representation of the form "3 days 2 hours"
  */
-string
+std::string
 diff_to_days
 (
 	time_t Date
@@ -55,7 +55,7 @@ diff_to_days
 {
         time_t Diff = Date;
         unsigned int temp = 0;
-        string Result;
+        std::string Result;
 
         if (Diff > 31536000)	// years
         {
@@ -95,14 +95,14 @@ diff_to_days
  * The units conform to IEC,
  * see http://physics.nist.gov/cuu/Units/binary.html
  */
-string
+std::string
 byte_counter
 (
 	double bytes
 )
 {
         double ret_val;
-        string ret_str;
+        std::string ret_str;
 
         if (bytes > 1099511627776.)
         {

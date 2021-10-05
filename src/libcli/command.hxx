@@ -10,276 +10,97 @@
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
+// along with this program; if not, see http://www.gnu.org/licenses/
 //
 // derived from libcli by David Parrish (david@dparrish.com)
-// Copyright (C) 2011  Oliver Schroeder
+// Copyright (C) 2011-2021  Oliver Schroeder
 //
 
 #ifndef CLI_COMMAND_H
 #define CLI_COMMAND_H
 
+#include <string>
+#include <vector>
+#include <functional>
 #include "common.hxx"
 
-namespace LIBCLI
+namespace libcli
 {
 
-using namespace std;
+class cli;
 
-class CLI;
-
-class CommandBase
+using command_callback_c = RESULT ( * ) ( const std::string& name, const libcli::tokens& args );
+using command_callback_cpp = RESULT ( cli::* ) ( const std::string& name, const libcli::tokens& args );
+/**
+ * @brief a callback function of a command
+ * 
+ * @note C++ is a pile of bullshit regarding callback functions. I want to store
+ * a pointer to a callback function and I do not care if it is a member of
+ * some class or a static c function.
+ * Using a std::function<> does not help. It would just make this class considerably
+ * more complex.
+ * You can try to find a solution for this. Let me know if you have a
+ * better approach.
+ */
+struct command_callback
 {
+	union
+	{
+		command_callback_cpp	member;	///< pointer to a class member
+		command_callback_c		c_func;	///< pointer to c- or static function
+	};
+	command_callback ();
+	command_callback ( command_callback_c callback );
+	command_callback ( command_callback_cpp callback, cli* instance );
+	RESULT operator () ( const std::string& name, const libcli::tokens& args );
+	cli* m_instance;	///< pointer to a @ref cli derived class (when using member methods)
 };
 
-template <class C>
-class Command : public CommandBase
+/**
+ * @brief a command of the cli
+ *
+ * A @a command connects a name with a @ref command_callback
+ */
+class command
 {
 public:
-	friend class CLI;
-	typedef int ( *c_callback_func ) ( C& obj, char* command, char** argv, int argc );
-	typedef int ( C::*cpp_callback_func ) ( char* command, char** argv, int argc );
-	Command ();
-	Command (
-	        C*              obj,
-	        const char*     command,
-	        PRIVLEVEL       level,
-	        MODE            mode,
-	        const char*     help
+	using cmd_list = std::vector<command>;
+	friend class cli;
+
+	command (
+		const std::string		name,
+		int						level,
+		int						mode,
+		const std::string		help
 	);
-	Command (
-	        C*              obj,
-	        const char*     command,
-	        c_callback_func callback,
-	        PRIVLEVEL       level,
-	        MODE            mode,
-	        const char*     help
+	command (
+		const std::string		name,
+		command_callback_c		callback,
+		int						level,
+		int						mode,
+		const std::string		help
 	);
-	Command (
-	        C*              obj,
-	        const char*     command,
-	        cpp_callback_func callback,
-	        PRIVLEVEL       level,
-	        MODE            mode,
-	        const char*     help
+	command (
+		cli* instance,
+		const std::string		name,
+		command_callback_cpp	callback,
+		int						level,
+		int						mode,
+		const std::string		help
 	);
-	~Command ();
-	int  exec ( char* command, char** argv, int argc );
-	int  exec ( C& Instance, char* command, char** argv, int argc );
+	RESULT	operator () ( const std::string& name, const libcli::tokens& args );
+
 private:
-	char*           command;
-	char*           help;
-	PRIVLEVEL       privilege;
-	MODE            mode;
-	unsigned int    unique_len;
-	Command*        next;
-	Command*        children;
-	Command*        parent;
-	C*              _obj;
-	bool            have_callback;
-	c_callback_func     c_callback;
-	cpp_callback_func   cpp_callback;
-	Command ( const C& obj );
-}; // class Command
+	std::string		m_name;			///< The name of this command
+	std::string		m_help;			///< A brief description what this command does
+	int				m_privilege;	///< Privilege level needed to execute this command
+	int				m_mode;			///< In which mode this command can be executed
+	size_t			m_unique_len;	///< In a list of commands, this is the unique number of characters to distinguish this command from others
+	cmd_list		m_children;		///< A list of child commands
+	command_callback m_callback;	///< A command_callback for this command (might be empty)
+	command () = delete;
+}; // class command
 
-template <class C>
-Command<C>::Command
-()
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	this->parent    = 0;
-	this->command   = 0;
-	this->help      = 0;
-	this->next      = 0;
-	this->children  = 0;
-	this->privilege = UNPRIVILEGED;
-	this->mode      = MODE_ANY;
-	this->_obj      = 0;
-	this->c_callback    = 0;
-	this->cpp_callback  = 0;
-	this->have_callback = false;
-}
-
-template <class C>
-Command<C>::Command
-(
-        C*              obj,
-        const char*     command,
-        PRIVLEVEL       level,
-        MODE            mode,
-        const char*     help
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if ( ( command == 0 ) || ( strlen ( command ) == 0 ) )
-	{
-		throw arg_error ( "C1: bad argument" );
-	}
-	if ( command )
-	{
-		this->command   = strdup ( command );
-	}
-	if ( help )
-	{
-		this->help      = strdup ( help );
-	}
-	this->parent    = 0;
-	this->privilege = level;
-	this->mode      = mode;
-	this->next      = 0;
-	this->children  = 0;
-	this->_obj      = obj;
-	this->c_callback    = 0;
-	this->cpp_callback  = 0;
-	this->have_callback = false;
-}
-
-template <class C>
-Command<C>::Command
-(
-        C*              obj,
-        const char*     command,
-        c_callback_func callback,
-        PRIVLEVEL       level,
-        MODE            mode,
-        const char*     help
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if ( ( command == 0 ) || ( strlen ( command ) == 0 ) )
-	{
-		throw arg_error ( "C2: bad argument" );
-	}
-	if ( command )
-	{
-		this->command   = strdup ( command );
-	}
-	if ( help )
-	{
-		this->help      = strdup ( help );
-	}
-	this->parent    = 0;
-	this->privilege = level;
-	this->mode      = mode;
-	this->next      = 0;
-	this->children  = 0;
-	this->_obj      = obj;
-	this->c_callback    = callback;
-	this->cpp_callback  = 0;
-	if ( this->c_callback )
-	{
-		this->have_callback = true;
-	}
-	else
-	{
-		this->have_callback = false;
-	}
-}
-
-template <class C>
-Command<C>::Command
-(
-        C*              obj,
-        const char*     command,
-        cpp_callback_func callback,
-        PRIVLEVEL       level,
-        MODE            mode,
-        const char*     help
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if ( ( command == 0 ) || ( strlen ( command ) == 0 ) )
-	{
-		throw arg_error ( "C2: bad argument" );
-	}
-	if ( command )
-	{
-		this->command   = strdup ( command );
-	}
-	if ( help )
-	{
-		this->help      = strdup ( help );
-	}
-	this->parent    = 0;
-	this->privilege = level;
-	this->mode      = mode;
-	this->next      = 0;
-	this->children  = 0;
-	this->_obj      = obj;
-	this->c_callback    = 0;
-	this->cpp_callback= callback;
-	if ( this->cpp_callback )
-	{
-		this->have_callback = true;
-	}
-	else
-	{
-		this->have_callback = false;
-	}
-}
-
-template <class C>
-Command<C>::~Command
-()
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	parent = 0;
-	if ( command )
-	{
-		free_z ( command );
-	}
-	if ( help )
-	{
-		free_z ( help );
-	}
-	c_callback =  0;
-	cpp_callback =  0;
-}
-
-template <class C>
-int
-Command<C>::exec
-(
-        char*   command,
-        char**  argv,
-        int     argc
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if ( ! have_callback )
-	{
-		throw arg_error ( "Command::exec: no callback!" );
-	}
-	if ( c_callback )
-	{
-		return ( this->c_callback ( *_obj, command, argv, argc ) );
-	}
-	else if ( cpp_callback )
-	{
-		return this->exec ( *_obj, command, argv, argc );
-	}
-	throw arg_error ( "BAD: Command::exec: no callback!" );
-}
-
-template <class C>
-int
-Command<C>::exec
-(
-        C& Instance,
-        char*   command,
-        char**  argv,
-        int     argc
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if ( ! this->cpp_callback )
-	{
-		throw arg_error ( "Command::exec: no cpp_callback" );
-	}
-	return ( CALL_MEMBER_FN ( Instance, this->cpp_callback ) ( command, argv, argc ) );
-}
-
-}; // namespace LIBCLI
+}; // namespace libcli
 
 #endif

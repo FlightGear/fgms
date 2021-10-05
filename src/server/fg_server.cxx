@@ -188,14 +188,14 @@ FG_SERVER::FG_SERVER
 	m_PlayerIsOutOfReach	= 100;	// standard 100 nm
 	m_MaxRadarRange		= 2000;	// standard 2000 nm
 	m_IsParent		= false;
-	m_ServerName		= "* Server *";
+	m_ServerName		= "fgms";
 	m_BindAddress		= "";
 	m_FQDN			= "";
 	tmp			= ( converter* ) ( & PROTO_VER );
 	m_ProtoMinorVersion	= tmp->High;
 	m_ProtoMajorVersion	= tmp->Low;
 	m_LogFileName		= DEF_SERVER_LOG; // "fg_server.log";
-	m_RelayMap		= map<uint32_t, string>();
+	m_RelayMap		= std::map<uint32_t, std::string>();
 	m_IsTracked		= false; // off until config file read
 	m_Tracker		= 0; // no tracker yet
 	m_UpdateTrackerFreq	= DEF_UPDATE_SECS;
@@ -300,7 +300,7 @@ FG_SERVER::Init()
 	//////////////////////////////////////////////////
 	if ( !m_LogFile.is_open() )
 	{
-		m_LogFile.open ( m_LogFileName.c_str(), ios::out|ios::app );
+		m_LogFile.open ( m_LogFileName.c_str(), std::ios::out|std::ios::app );
 		sglog().setLogLevels ( SG_FGMS, SG_INFO );
 		sglog().enable_with_date ( true );
 	if (m_LogFile.is_open()) 
@@ -867,7 +867,7 @@ FG_SERVER::AddRelay( const string& Relay, int Port )
 	FG_ListElement  B (Relay);
 
 	B.Address.set ( ( char* ) Relay.c_str(), Port );
-	stringstream Portss;
+	std::stringstream Portss;
 	Portss << Relay << ":" << Port;
 	B.Name = Portss.str();
 	if (B.Address.getIP() == 0)
@@ -1971,7 +1971,7 @@ FG_SERVER::SetLogfile( const std::string& LogfileName )
 	{
 		m_LogFile.close ();
 	}
-	m_LogFile.open ( m_LogFileName.c_str(), ios::out|ios::app );
+	m_LogFile.open ( m_LogFileName.c_str(), std::ios::out|std::ios::app );
 	sglog().enable_with_date ( true );
 	sglog().set_output ( m_LogFile );
 } // FG_SERVER::SetLogfile ( const std::string &LogfileName )

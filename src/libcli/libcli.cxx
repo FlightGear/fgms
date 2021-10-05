@@ -9,16 +9,18 @@
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
+// along with this program; if not, see http://www.gnu.org/licenses/
 //
 // derived from libcli by David Parrish (david@dparrish.com)
-// Copyright (C) 2011  Oliver Schroeder
+// Copyright (C) 2011-2021  Oliver Schroeder
 //
 #ifdef HAVE_CONFIG_H
-	#include "config.h"
+#include "config.h"
 #endif
 
+#include <exception>
+#include <algorithm>
+#include <fstream>
 #include <exception>
 #include <stdio.h>
 #include <errno.h>
@@ -34,429 +36,962 @@
 #if defined(_MSC_VER) || defined(__CYGWIN__)
 	// some windows quick fixes
 #ifndef __CYGWIN__	
-	#define CTRL(a)  ( a & 037 )
+#define CTRL(a)  ( a & 037 )
 #endif	
-	#ifdef __cplusplus
-		extern "C" {
-	#endif
-		extern char *crypt(const char *key, const char *salt);
-	#ifdef __cplusplus
-		}
-	#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
+	extern char* crypt ( const char* key, const char* salt );
+#ifdef __cplusplus
+}
+#endif
 #endif
 
-namespace LIBCLI
+namespace
 {
-
-using namespace std;
-
-#ifndef CALL_MEMBER_FN
-	CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
-#endif
-
-filter_cmds_t filter_cmds[] =
-{
-	{ "begin",   "Begin with lines that match" },
-	{ "between", "Between lines that match" },
-	{ "count",   "Count of lines"   },
-	{ "exclude", "Exclude lines that match" },
-	{ "include", "Include lines that match" },
-	{ NULL, NULL}
-};
-
-void
-CLI::set_auth_callback
-(
-        c_auth_func callback
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	this->auth_callback = callback;
-	this->cpp_auth_callback = 0;
+const size_t NOT_IN_HISTORY { -1UL };
 }
 
-void
-CLI::set_auth_callback
-(
-        cpp_auth_func callback
-)
+namespace libcli
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	this->auth_callback = 0;
-	this->cpp_auth_callback = callback;
-}
 
-void
-CLI::set_enable_callback
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Construct a new cli::cli object
+ *
+ * Initialise the cli, set default values and set up all internal commands.
+ *
+ * @param fd Either stdout or a socket-fd
+ */
+cli::cli
 (
-        c_enable_func callback
+	int fd
 )
+	: m_client { fd }
+	, m_edit { fd }
+	, m_max_history { 256 }
+	, m_in_history { NOT_IN_HISTORY }
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	this->enable_callback = callback;
-	this->cpp_enable_callback = 0;
-}
+	register_command ( command (
+		this,
+		"help",
+		&cli::internal_help,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::ANY,
+		"Description of the interactive help system"
+	) );
+	register_command ( command (
+		this,
+		"whoami",
+		&cli::internal_whoami,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::STANDARD,
+		"Show who you are"
+	) );
+	register_command ( command (
+		this,
+		"quit",
+		&cli::internal_quit,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::STANDARD,
+		"Disconnect"
+	) );
+	register_command ( command (
+		this,
+		"configure",
+		&cli::internal_configure,
+		PRIVLEVEL::PRIVILEGED,
+		MODE::STANDARD,
+		"Enter configuration mode"
+	) );
+	register_command ( command (
+		this,
+		"exit",
+		&cli::internal_exit,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::ANY,
+		"Exit from current mode"
+	) );
+	register_command ( command (
+		this,
+		"pager",
+		&cli::internal_pager,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::CONFIGURE,
+		"Set number of lines printed on a screen without a more prompt"
+	) );
+	register_command ( command (
+		this,
+		"hostname",
+		&cli::internal_hostname,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::CONFIGURE,
+		"Set the name of this host"
+	) );
+	register_command ( command (
+		this,
+		"history",
+		&cli::internal_history,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::ANY,
+		"Show a list of previously run commands"
+	) );
+	register_command ( command (
+		this,
+		"set-history",	// FIXME: needs better name
+		&cli::internal_set_history,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::CONFIGURE,
+		"Set number of lines stored in history"
+	) );
+	register_command ( command (
+		this,
+		"!",
+		&cli::internal_invoke_history,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::ANY,
+		"invoke previously run commands"
+	) );
+	register_command ( command (
+		this,
+		"enable",
+		&cli::internal_enable,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::STANDARD,
+		"Turn on privileged commands"
+	) );
+	register_command ( command (
+		this,
+		"disable",
+		&cli::internal_disable,
+		PRIVLEVEL::PRIVILEGED,
+		MODE::STANDARD,
+		"Turn off privileged commands"
+	) );
 
-void
-CLI::set_enable_callback
-(
-        cpp_enable_func callback
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	this->enable_callback = 0;
-	this->cpp_enable_callback = callback;
-}
+	register_filter ( command (
+		this,
+		"grab",
+		&cli::filter_grab,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::ANY,
+		"only print lines which match <WORD>"
+	) );
+	register_filter ( command (
+		this,
+		"exclude",
+		&cli::filter_exclude,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::ANY,
+		"only print lines which do not match <WORD>"
+	) );
+	register_filter ( command (
+		this,
+		"begin",
+		&cli::filter_begin,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::ANY,
+		"start output with a line containing <WORD>"
+	) );
+	register_filter ( command (
+		this,
+		"between",
+		&cli::filter_between,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::ANY,
+		"start output with a line containing <START> and stop output with a line containing <END>"
+	) );
+	register_filter ( command (
+		this,
+		"limit",
+		&cli::filter_limit,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::ANY,
+		"print only <NUM> lines of output"
+	) );
+	register_filter ( command (
+		this,
+		"last",
+		&cli::filter_last,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::ANY,
+		"print only the last <NUM> lines of output"
+	) );
+	register_filter ( command (
+		this,
+		"count",
+		&cli::filter_count,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::ANY,
+		"count number of lines"
+	) );
+	register_filter ( command (
+		this,
+		"no-more",
+		&cli::filter_nomore,
+		PRIVLEVEL::UNPRIVILEGED,
+		MODE::ANY,
+		"temporarily disable the more prompt"
+	) );
+	build_shortest ( m_filters );
+	m_mode = MODE::ANY;
+	set_privilege ( PRIVLEVEL::UNPRIVILEGED );
+	set_mode ( MODE::STANDARD, "" );
+} // cli::CLI ()
+//////////////////////////////////////////////////////////////////////
 
-void
-CLI::allow_user
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Destroy the cli::cli object
+ *
+ * delete internal lists.
+ */
+cli::~cli
+()
+{
+	clear_active_filters ();
+	m_users.clear ();
+} // cli::~CLI()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Little helper function
+ *
+ * @param arg    The argument list to check.
+ * @return true  If the last argument ends with a '?'
+ * @return false In all other cases.
+ */
+bool
+cli::arg_wants_help
 (
-        const string& username,
-        const string& password
+	const std::string& arg
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	unp_it u = users.find (username);
-	if (u != users.end())
+	if ( arg[arg.size () - 1] == '?' )
 	{
-		cerr << "user '" << username << "' already exists!" << endl;
+		return true;
+	}
+	return false;
+} // cli::arg_wants_help ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Check if last arg is a '?'
+ *
+ * @param arg 		The argument to check
+ * @return true		If arg matches exactly "?"
+ * @return false 	User supplied an additional argument
+ */
+bool
+cli::wants_help_last_arg
+(
+	const std::string& arg
+)
+{
+	if ( arg == "?" )
+	{
+		return true;
+	}
+	return false;
+} // cli::wants_help_last_arg ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Convinient function. Handle arguments when none are needed.
+ *
+ * @param args		The list of arguments.
+ *
+ * @return libcli::OK there were no arguments
+ * @return libcli::ERROR_ANY if the only argument was a '?'
+ * @return libcli::ERROR_ARG if there was any other argument
+ */
+RESULT
+cli::have_unwanted_args
+(
+	const tokens& args
+)
+{
+	int i { 0 };
+	for ( auto a : args )
+	{
+		switch ( i )
+		{
+		case 0:
+			if ( a == "?" )
+			{
+				m_client << "<cr>" << crlf;
+				m_client << "|" << crlf;
+				return libcli::ERROR_ANY;
+			}
+		default:
+			return libcli::TOO_MANY_ARGS;
+		}
+	}
+	return libcli::OK;
+} // cli::have_unwanted_args ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set a callback function.
+ *
+ * Usefull if you want to implement your own authentication scheme.
+ *
+ * This is for a C-like authentication function.
+ *
+ * @param callback The authentication function to call.
+ */
+void
+cli::set_auth_callback
+(
+	std::function <int ( const std::string&, const std::string& )> callback
+)
+{
+	m_auth_callback.c_func = callback;
+} // cli::set_auth_callback ( c_func )
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set a callback method.
+ *
+ * Usefull if you want to implement your own authentication scheme.
+ *
+ * This is for a class member authentication method.
+ *
+ * @param callback The authentication method to call.
+ */
+void
+cli::set_auth_callback
+(
+	std::function <int ( cli&, const std::string&, const std::string& )> callback
+)
+{
+	m_auth_callback.member = callback;
+} // cli::set_auth_callback ( cpp_func )
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set a callback function to authenticate enable-mode.
+ *
+ * Usefull to implement your own authentication scheme for the enable
+ * mode.
+ *
+ * This is for a C-like authentication function.
+ *
+ * @param callback The authentication function to call.
+ */
+void
+cli::set_enable_callback
+(
+	std::function <int ( const std::string& )> callback
+)
+{
+	m_enable_callback.c_func = callback;
+} // cli::set_enable_callback ( c_func )
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set a callback method to authenticate enable-mode.
+ *
+ * Usefull to implement your own authentication scheme for the enable
+ * mode.
+ *
+ * This is for a class member authentication method.
+ *
+ * @param callback The authentication method to call.
+ */
+void
+cli::set_enable_callback
+(
+	std::function <int ( cli&, const std::string& )> callback
+)
+{
+	m_enable_callback.member = callback;
+} // cli::set_enable_func ( cpp_func )
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set a regular callback function.
+ *
+ * The regular function is called once per second. Usefull if you need
+ * to do something on a regular basis.
+ *
+ * This is for a C-like authentication function.
+ *
+ * @param callback
+ */
+void
+cli::set_regular_callback
+(
+	std::function <int ()> callback
+)
+{
+	m_edit.set_regular_callback ( callback );
+} // cli::regular ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set a regular callback method.
+ *
+ * The regular function is called once per second. Usefull if you need
+ * to do something on a regular basis.
+ *
+ * This is for a class member authentication method.
+ *
+ * @param callback
+ */
+void
+cli::set_regular_callback
+(
+	std::function <int ( cli& )> callback
+)
+{
+	m_edit.set_regular_callback ( callback );
+} // cli::regular ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief	Allow a user to login to the cli
+ *
+ * @param username	The name of the user
+ * @param password	The password of the user
+ *
+ * @todo	privilege level
+ */
+void
+cli::allow_user
+(
+	const std::string& username,
+	const std::string& password
+)
+{
+	auto u = m_users.find ( username );
+	if ( u != m_users.end () )
+	{
+		m_client << unfiltered
+			<< "user '" << username << "' already exists!" << crlf;
 		return;
 	}
-	users[username] = password;
-}
+	m_users[username] = password;
+} // cli::allow_user ()
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set a password for the 'enable' command
+ *
+ * @param password The password to use
+ *
+ * @todo 	privilege level
+ */
 void
-CLI::allow_enable
+cli::allow_enable
 (
-	const string& password
+	const std::string& password
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	enable_password = password;
-}
+	m_enable_password = password;
+} // cli::allow_enable ()
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Delete a user from the allowed user list
+ *
+ * @param username The user to delete
+ */
 void
-CLI::deny_user
+cli::deny_user
 (
-        const string& username
+	const std::string& username
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if (users.empty())
-		return;
-	unp_it u = users.find (username);
-	if (u == users.end())
-		return;
-	users.erase (u);
-}
-
-void
-CLI::set_banner
-(
-        const string& banner
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	this->banner = banner;
-}
-
-void
-CLI::set_hostname
-(
-        const string& hostname
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	this->hostname = hostname;
-}
-
-void
-CLI::set_prompt
-(
-        const string& prompt
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	this->prompt = prompt;
-}
-
-int
-CLI::build_shortest
-(
-        Command<CLI> *commands
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	Command<CLI> *c, *p;
-	char* cp, *pp;
-	unsigned int len;
-	for ( c = commands; c; c = c->next )
+	if ( m_users.empty () )
 	{
-		c->unique_len = strlen ( c->command );
-		if ( ( c->mode != MODE_ANY && c->mode != this->mode )
-		                ||  ( c->privilege > this->privilege ) )
-		{
+		return;
+	}
+	auto u = m_users.find ( username );
+	if ( u == m_users.end () )
+	{
+		return;
+	}
+	m_users.erase ( u );
+} // cli::deny_user ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set a banner.
+ *
+ * The banner is printed every time a user connects to the cli.
+ *
+ * @param banner The banner to be printed.
+ */
+void
+cli::set_banner
+(
+	const std::string& banner
+)
+{
+	m_banner = banner;
+} // cli::set_banner ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set the hostname of this cli.
+ *
+ * The hostname is part of the prompt of this cli.
+ *
+ * @param hostname The hostname to be used.
+ */
+void
+cli::set_hostname
+(
+	const std::string& hostname
+)
+{
+	m_hostname = hostname;
+} // cli::set_hostname ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief calculate the minimum unique length of a command
+ *
+ * @param commands list of commands
+ *
+ * Calculates the minimum unique length of a command name. Needed for
+ * the tab expansion and the completion list.
+ * Automatically called once in cli::loop() and every time the privilege
+ * level or operation mode changes.
+ * Keep in mind to call build_shortest() again if you later register new
+ * commands.
+ */
+void
+cli::build_shortest
+(
+	cmd_list& commands
+)
+{
+	for ( auto& c : commands )
+	{
+		if ( ( c.m_privilege > m_privilege )
+			|| ( ( c.m_mode != MODE::ANY ) && ( c.m_mode != m_mode ) ) )
+		{	// user has no access to this command
+			c.m_unique_len = c.m_name.length ();
 			continue;
 		}
-		c->unique_len = 1;
-		for ( p = commands; p; p = p->next )
+		c.m_unique_len = 1;
+		for ( auto& p : commands )
 		{
-			if ( c == p )
+			if ( c.m_name == p.m_name )
 			{
 				continue;
 			}
-			if ( ( p->mode != MODE_ANY && p->mode != this->mode )
-			                ||  ( p->privilege > this->privilege ) )
+			if ( ( p.m_mode != MODE::ANY ) && ( p.m_mode != m_mode ) )
 			{
 				continue;
 			}
-			cp = c->command;
-			pp = p->command;
-			len = 0;
-			while ( *cp && *pp && *cp++ == *pp++ )
+			if ( p.m_privilege > m_privilege )
 			{
-				len++;
+				continue;
 			}
-			if ( len > c->unique_len )
+			size_t len = 1;
+			auto cp = c.m_name.begin ();
+			auto pp = p.m_name.begin ();
+			while ( ( cp != c.m_name.end () ) && ( pp != p.m_name.end () ) )
 			{
-				c->unique_len = len;
+				if ( *cp != *pp )
+				{
+					break;
+				}
+				++cp;
+				++pp;
+				++len;
+			}
+			if ( len > c.m_unique_len )
+			{
+				c.m_unique_len = len;
 			}
 		}
-		if ( c->children )
+		if ( c.m_children.size () )
 		{
-			build_shortest ( c->children );
+			build_shortest ( c.m_children );
 		}
 	}
-	return LIBCLI::OK;
-}
+} // cli::build_shortest ()
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Change the privilege level.
+ *
+ * @param priv The privilege level to change to.
+ * @return int The previous privilege level.
+ *
+ * @see @ref libcli::PRIVLEVEL for predefined privileges.
+ */
 int
-CLI::set_privilege
+cli::set_privilege
 (
-        int priv
+	int priv
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	int old = this->privilege;
-	this->privilege = priv;
+	int old = m_privilege;
+	m_privilege = priv;
 	if ( priv != old )
 	{
-		set_prompt ( priv == LIBCLI::PRIVILEGED ? "# " : "> " );
-		build_shortest ( this->commands );
+		build_shortest ( m_commands );
 	}
 	return old;
-}
+} // cli::set_privilege ()
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set a description for the current mode.
+ *
+ * @param modestring The description to use.
+ *
+ * The \a modestring will be part of the prompt for this cli.
+ */
 void
-CLI::set_modestring
+cli::set_modestring
 (
-        const string& modestring
+	const std::string& modestring
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	this->modestring = modestring;
-}
+	m_modestring = modestring;
+} // cli::set_modestring ()
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Change the operation mode.
+ *
+ * The \a desc desription will be part of the new prompt.
+ *
+ * @param mode The mode to change to.
+ * @param desc A description of the mode.
+ * @return int The old mode,
+ *
+ * @see @ref libcli::MODE for predefined modes.
+ */
 int
-CLI::set_configmode
+cli::set_mode
 (
-        int mode,
-        const string& config_desc
+	int mode,
+	const std::string& desc
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	int old = this->mode;
-	this->mode = mode;
+	int old = m_mode;
+	m_mode = mode;
 	if ( mode != old )
 	{
-		if ( !this->mode )
+		m_modestring = "";
+		if ( desc != "" )
 		{
-			// Not config mode
-			set_modestring ("");
+			m_modestring = "(" + desc + ")";
 		}
-		else if ( config_desc != "" )
-		{
-			string s = "(config-" + config_desc + ")";
-			set_modestring (s);
-		}
-		else
-		{
-			set_modestring ( "(config)" );
-		}
-		build_shortest ( this->commands );
+		build_shortest ( m_commands );
 	}
 	return old;
-}
+} // cli::set_mode ()
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief register a command as a child of a command list
+ *
+ * @param parent	The parent command list
+ * @param cmd		The command to register
+ */
 void
-CLI::register_command
+cli::register_command
 (
-        Command<CLI>*   command,
-        Command<CLI>*   parent
+	command& parent,
+	const command& cmd
 )
 {
-	DEBUG d ( CLI_TRACE );
-	if ( ! command )
+	if ( cmd.m_name == "" )
 	{
+		m_client << "can not add empty command" << crlf;
 		return;
 	}
-	if ( parent )
+	for ( auto c : parent.m_children )
 	{
-		command->parent = parent;
-		if ( ! parent->children )
+		if ( ( cmd.m_name == c.m_name ) && ( cmd.m_mode == c.m_mode ) )
 		{
-			parent->children = command;
-			build_shortest ( command->parent );
+			m_client << "command '" << cmd.m_name << "' already known!" << crlf;
 			return;
 		}
-		Command<CLI>* c;
-		for ( c = parent->children; c && c->next; c = c->next )
-			/* intentionally empty */
-		{
-			;
-		}
-		if ( c )
-		{
-			c->next = command;
-			build_shortest ( parent );
-			return;
-		}
-		cout << "bummer!" << std::endl;
 	}
-	if ( ! this->commands )
-	{
-		this->commands = command;
-	}
-	else
-	{
-		Command<CLI>* c;
-		for ( c = this->commands; c && c->next; c = c->next )
-			/* intentionally empty */
-		{
-			;
-		}
-		if ( c )
-		{
-			c->next = command;
-		}
-		else
-		{
-			cout << "bummer 2" << std::endl;
-		}
-	}
-	build_shortest ( ( command->parent ) ? command->parent : this->commands );
-}
+	parent.m_children.push_back ( cmd );
+	return;
+} // cli::register_command ( parent, cmd )
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief register a command
+ *
+ * @param cmd The command to register
+ */
 void
-CLI::free_command
+cli::register_command
 (
-        Command<CLI> *cmd
+	const command& cmd
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	Command<CLI> *c,*p;
-	for ( c = cmd->children; c; )
+	if ( cmd.m_name == "" )
 	{
-		p = c->next;
-		free_command ( c );
-		c = p;
+		m_client << "can not add empty command" << crlf;
+		return;
 	}
-	free_z ( cmd->command );
-	if ( cmd->help )
-	{
-		free_z ( cmd->help );
-	}
-	free_z ( cmd );
-}
-
-int
-CLI::unregister_command
-(
-        char* command
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	Command<CLI> *c, *p = NULL;
-	if ( ! command )
-	{
-		return -1;
-	}
-	if ( !this->commands )
-	{
-		return LIBCLI::OK;
-	}
-	for ( c = this->commands; c; c = c->next )
-	{
-		if ( strcmp ( c->command, command ) == 0 )
+	for ( auto c : m_commands )
+	{	// check if we already have a command with this name
+		if ( ( cmd.m_name == c.m_name ) && ( cmd.m_mode == c.m_mode ) )
 		{
-			if ( p )
-			{
-				p->next = c->next;
-			}
-			else
-			{
-				this->commands = c->next;
-			}
-			free_command ( c );
-			return LIBCLI::OK;
+			m_client << "command '" << cmd.m_name << "' already known!" << crlf;
+			return;
 		}
-		p = c;
 	}
-	return LIBCLI::OK;
-}
+	m_commands.push_back ( cmd );
+} // cli::register_command ()
+//////////////////////////////////////////////////////////////////////
 
-int
-CLI::internal_enable
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Delete a command
+ *
+ * @param name Name of the command to delete
+ */
+void
+cli::unregister_command
 (
-        UNUSED ( char* command ),
-        UNUSED ( char* argv[] ),
-        UNUSED ( int argc )
+	const std::string& name
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if ( this->privilege == LIBCLI::PRIVILEGED )
+	for ( auto c = m_commands.begin (); c != m_commands.end (); ++c )
 	{
-		return LIBCLI::OK;
+		if ( name == c->m_name )
+		{
+			m_commands.erase ( c );
+			return;
+		}
 	}
-	if ( (enable_password == "") && !this->enable_callback && !this->cpp_enable_callback)
+	m_client << "could not unregister '" << name << "'" << crlf;
+	return;
+} // cli::unregsiter_command ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief register a filter command
+ *
+ * @param filter_cmd The filter to register
+ */
+void
+cli::register_filter
+(
+	const command& filter_cmd
+)
+{
+	if ( filter_cmd.m_name == "" )
+	{
+		m_client << "can not add empty filter command" << crlf;
+		return;
+	}
+	for ( auto c : m_filters )
+	{	// check if we already have a command with this name
+		if ( filter_cmd.m_name == c.m_name )
+		{
+			m_client << "filter '" << filter_cmd.m_name << "' already known!" << crlf;
+			return;
+		}
+	}
+	m_filters.push_back ( filter_cmd );
+} // cli::register_filter ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Return a reference to the command \a name
+ * 
+ * @param name      The name of the command
+ * @param commands  The list of defined commands
+ * @return command& A refenrence to the command
+ * 
+ * Useful to modify an already registered command
+ */
+command&
+cli::get_command
+(
+	const std::string& name,
+	cmd_list& commands
+)
+{
+	cmd_list::iterator c;
+	for ( c = commands.begin(); c != commands.end(); ++c )
+	{
+		if ( name == c->m_name )
+		{
+			return *c;
+		}		
+	}
+	std::string s = "'";
+	s += name + "': ";
+	s += "command not found";
+	throw std::runtime_error ( s );
+} // cli::get_command ()
+//////////////////////////////////////////////////////////////////////
+
+/** @name internal_commands
+ *
+ * These are the predefined commands, present in all incarnations of the
+ * cli.
+ */
+ ///@{
+ //////////////////////////////////////////////////////////////////////
+ /**
+  * @brief command 'enable', switch into @ref PRIVLEVEL::PRIVILEGED privilege level.
+  *
+  * @param name UNUSED
+  * @param args UNUSED
+  *
+  * @return libcli::OK when everything went fine
+  * @return libcli::ERROR_ARG if there was an argument
+  * @return libcli::ERROR_ANY if the only argument was a '?'
+  *
+  * @fixme parameter 'level'
+  * The only accepted argument is '?'
+  */
+RESULT
+cli::internal_enable
+(
+	UNUSED ( const std::string& name ),
+	const tokens& args
+)
+{
+	RESULT r = have_unwanted_args ( args );
+	if ( libcli::OK != r )
+	{
+		return r;
+	}
+	if ( PRIVLEVEL::PRIVILEGED == m_privilege )
+	{
+		return libcli::OK;
+	}
+	if ( ( "" == m_enable_password ) && ( nullptr == m_enable_callback.member ) )
 	{
 		/* no password required, set privilege immediately */
-		set_privilege ( LIBCLI::PRIVILEGED );
-		set_configmode ( LIBCLI::MODE_EXEC, "" );
+		set_privilege ( PRIVLEVEL::PRIVILEGED );
+		set_mode ( MODE::STANDARD, "" );
 	}
 	else
 	{
 		/* require password entry */
-		this->state = LIBCLI::STATE_ENABLE_PASSWORD;
+		m_state = STATE::ENABLE_PASSWORD;
 	}
-	return LIBCLI::OK;
-}
+	return libcli::OK;
+} // cli::internal_enable ()
+//////////////////////////////////////////////////////////////////////
 
-int
-CLI::internal_disable
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief command 'disable', switch back to normal state.
+ *
+ * @param name UNUSED
+ * @param args UNUSED
+ *
+ * @return libcli::OK when everything went fine
+ * @return libcli::ERROR_ARG when there was an argument
+ *
+ * The only accepted argument is '?'
+ */
+RESULT
+cli::internal_disable
 (
-        UNUSED ( char* command ),
-        UNUSED ( char* argv[] ),
-        UNUSED ( int argc )
+	UNUSED ( const std::string& name ),
+	const tokens& args
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	set_privilege ( LIBCLI::UNPRIVILEGED );
-	set_configmode ( LIBCLI::MODE_EXEC, "" );
-	return LIBCLI::OK;
-}
+	RESULT r = have_unwanted_args ( args );
+	if ( libcli::OK != r )
+	{
+		return libcli::ERROR_ARG;
+	}
+	set_privilege ( PRIVLEVEL::UNPRIVILEGED );
+	set_mode ( MODE::STANDARD, "" );
+	return libcli::OK;
+} // cli::internal_disable ()
+//////////////////////////////////////////////////////////////////////
 
-int
-CLI::internal_help
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Switch to configure mode
+ * 
+ * @param name UNUSED
+ * @param args UNSUSED
+ *
+ * @return libcli::OK when everything went fine
+ * @return libcli::ERROR_ARG when there was an argument
+ * @return libcli::ERROR_ANY if the only argument was a '?'
+ */
+RESULT
+cli::internal_configure
 (
-        UNUSED ( char* command ),
-        UNUSED ( char* argv[] ),
-        UNUSED ( int argc )
+	const std::string& name,
+	const tokens& args
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	client << CRLF;
-	client <<
+	RESULT r = have_unwanted_args ( args );
+	if ( libcli::OK != r )
+	{
+		return r;
+	}
+	set_mode ( MODE::CONFIGURE, "configure" );
+	return libcli::OK;
+} // cli::internal_configure ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief command 'help', print a general help message.
+ *
+ * @param name UNUSED
+ * @param args UNUSED
+ *
+ * @return libcli::OK when everything went fine
+ * @return libcli::ERROR_ARG when there was an argument
+ * @return libcli::ERROR_ANY if the only argument was a '?'
+ *
+ * The only accepted argument is '?'
+ */
+RESULT
+cli::internal_help
+(
+	UNUSED ( const std::string& name ),
+	const tokens& args
+)
+{
+	RESULT r = have_unwanted_args ( args );
+	if ( libcli::OK != r )
+	{
+		return r;
+	}
+	m_client << crlf;
+	m_client <<
 		"Help may be requested at any point in a command by entering\r\n"
 		"a question mark '?'.  If nothing matches, the help list will\r\n"
 		"be empty and you must backup until entering a '?' shows the\r\n"
@@ -468,945 +1003,1452 @@ CLI::internal_help
 		"2. Partial help is provided when an abbreviated argument is entered\r\n"
 		"   and you want to know what arguments match the input\r\n"
 		"   (e.g. 'show pr?'.)\r\n"
-		<< CRLF;
-	return LIBCLI::OK;
-}
+		<< crlf;
+	return libcli::OK;
+} // cli::internal_help
+//////////////////////////////////////////////////////////////////////
 
-int
-CLI::internal_whoami
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief command 'whoami', print the username of the currently connected user.
+ *
+ * @param name UNUSED
+ * @param args UNUSED
+ *
+ * @return libcli::OK when everything went fine
+ * @return libcli::ERROR_ARG when there was an argument
+ * @return libcli::ERROR_ANY if the only argument was a '?'
+ *
+ * The only valid argument is a '?', asking for help
+ */
+RESULT
+cli::internal_whoami
 (
-        UNUSED ( char* command ),
-        UNUSED ( char* argv[] ),
-        UNUSED ( int argc )
+	UNUSED ( const std::string& name ),
+	const tokens& args
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	client << "You are '" << username << "'" << CRLF;
-	return LIBCLI::OK;
-}
-
-int
-CLI::internal_history
-(
-        UNUSED ( char* command ),
-        UNUSED ( char* argv[] ),
-        UNUSED ( int argc )
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	int i;
-	client << CRLF << "Command history:" << CRLF;
-	for ( i = 0; i < LIBCLI::MAX_HISTORY; i++ )
-	{
-		if ( this->history[i] )
-		{
-			client << setw(3) << i << " " << this->history[i] << CRLF;
-		}
-	}
-	return LIBCLI::OK;
-}
-
-int
-CLI::internal_quit
-(
-        UNUSED ( char* command ),
-        UNUSED ( char* argv[] ),
-        UNUSED ( int argc )
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	set_privilege ( LIBCLI::UNPRIVILEGED );
-	set_configmode ( LIBCLI::MODE_EXEC, "" );
-	return LIBCLI::QUIT;
-}
-
-int
-CLI::internal_exit
-(
-        char* command,
-        char* argv[],
-        int argc
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if ( this->mode == MODE_EXEC )
-	{
-		return internal_quit ( command, argv, argc );
-	}
-	if ( this->mode > MODE_CONFIG )
-	{
-		set_configmode ( MODE_CONFIG, "" );
-	}
-	else
-	{
-		set_configmode ( MODE_EXEC, "" );
-	}
-	return LIBCLI::OK;
-}
-
-int
-CLI::int_configure_terminal
-(
-        UNUSED ( char* command ),
-        UNUSED ( char* argv[] ),
-        UNUSED ( int argc )
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if (argv[argc-1][0] == '?')
-	{
-		client << "  " << left << setfill(' ') << setw(22)
-			<< "<cr>" << "switch to configure mode" << CRLF;
-		return LIBCLI::OK;
-	}
-	set_configmode ( MODE_CONFIG, "" );
-	return LIBCLI::OK;
-}
-
-CLI::CLI
-(
-	int fd
-): client (fd)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	length	= 0;
-	cursor	= 0;
-	cmd	= 0;
-	in_history = 0;
-	this->commands		= 0;
-	this->auth_callback	= 0;
-	this->cpp_auth_callback	= 0;
-	this->regular_callback	= 0;
-	this->enable_callback	= 0;
-	this->cpp_enable_callback	= 0;
-	this->from_socket	= false;
-	int i;
-	for ( i = 0; i < MAX_HISTORY; i++ )
-	{
-		this->history[i] = 0;
-	}
-	register_command ( new Command<CLI> (
-				this,
-				"help",
-				& CLI::internal_help,
-				LIBCLI::UNPRIVILEGED,
-				LIBCLI::MODE_ANY,
-				"Description of the interactive help system"
-	) );
-	register_command ( new Command<CLI> (
-				this,
-				"whoami",
-				& CLI::internal_whoami,
-				LIBCLI::UNPRIVILEGED,
-				LIBCLI::MODE_EXEC,
-				"Show who you are"
-	) );
-	register_command ( new Command<CLI> (
-				this,
-				"quit",
-				& CLI::internal_quit,
-				LIBCLI::UNPRIVILEGED,
-				LIBCLI::MODE_EXEC,
-				"Disconnect"
-	) );
-	register_command ( new Command<CLI> (
-				this,
-				"exit",
-				& CLI::internal_exit,
-				LIBCLI::UNPRIVILEGED,
-				LIBCLI::MODE_ANY,
-				"Exit from current mode"
-	) );
-	register_command ( new Command<CLI> (
-				this,
-				"history",
-				& CLI::internal_history,
-				LIBCLI::UNPRIVILEGED,
-				LIBCLI::MODE_EXEC,
-				"Show a list of previously run commands"
-	) );
-	register_command ( new Command<CLI> (
-				this,
-				"enable",
-				& CLI::internal_enable,
-				LIBCLI::UNPRIVILEGED,
-				LIBCLI::MODE_EXEC,
-				"Turn on privileged commands"
-	) );
-	register_command ( new Command<CLI> (
-				this,
-				"disable",
-				& CLI::internal_disable,
-				LIBCLI::PRIVILEGED,
-				LIBCLI::MODE_EXEC,
-				"Turn off privileged commands"
-	) );
-	register_command ( new Command<CLI> (
-				this,
-				"configure",
-				& CLI::int_configure_terminal,
-				LIBCLI::PRIVILEGED,
-				LIBCLI::MODE_EXEC,
-				"Enter configuration mode"
-	) );
-	this->privilege = this->mode = -1;
-	set_privilege ( LIBCLI::UNPRIVILEGED );
-	set_configmode ( LIBCLI::MODE_EXEC, "" );
-}
-
-CLI::~CLI
-()
-{
-	users.clear();
-	free_history();
-	unregister_all ( 0 );
-}
-
-void
-CLI::destroy
-()
-{
-}
-
-void
-CLI::unregister_all
-(
-        Command<CLI> *command
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	Command<CLI> *c, *p = NULL;
-	if ( ! command )
-	{
-		command = this->commands;
-	}
-	if ( ! command )
-	{
-		return;
-	}
-	for ( c = command; c; )
-	{
-		p = c->next;
-		// Unregister all child commands
-		if ( c->children )
-		{
-			unregister_all ( c->children );
-		}
-		if ( c->command )
-		{
-			free_z ( c->command );
-		}
-		if ( c->help )
-		{
-			free_z ( c->help );
-		}
-		free_z ( c );
-		c = p;
-	}
-}
-
-int
-CLI::add_history
-(
-        char* cmd
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	int i;
-	for ( i = 0; i < MAX_HISTORY; i++ )
-	{
-		if ( !this->history[i] )
-		{
-			if ( i == 0 || strcasecmp ( this->history[i-1], cmd ) )
-			{
-				if ( ! ( this->history[i] = strdup ( cmd ) ) )
-				{
-					in_history = i + 1;
-					return LIBCLI::ERROR_ANY;
-				}
-			}
-			in_history = i + 1;
-			return LIBCLI::OK;
-		}
-	}
-	// No space found, drop one off the beginning of the list
-	free_z ( this->history[0] );
-	for ( i = 0; i < MAX_HISTORY-1; i++ )
-	{
-		this->history[i] = this->history[i+1];
-	}
-	if ( ! ( this->history[MAX_HISTORY - 1] = strdup ( cmd ) ) )
-	{
-		in_history = MAX_HISTORY;
-		return LIBCLI::ERROR_ANY;
-	}
-	return LIBCLI::OK;
-}
-
-void
-CLI::free_history
-()
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	int i;
-	for ( i = 0; i < MAX_HISTORY; i++ )
-	{
-		if ( this->history[i] )
-		{
-			free_z ( this->history[i] );
-		}
-	}
-}
-
-int
-CLI::parse_line
-(
-        char* line,
-        char* words[],
-        int max_words
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	int nwords = 0;
-	char* p = line;
-	char* word_start = 0;
-	int inquote = 0;
-	while ( *p )
-	{
-		if ( ! isspace ( *p ) )
-		{
-			word_start = p;
-			break;
-		}
-		p++;
-	}
-	while ( nwords < max_words - 1 )
-	{
-		if ( !*p || *p == inquote
-		                || ( word_start && !inquote && ( isspace ( *p ) || *p == '|' ) ) )
-		{
-			if ( word_start )
-			{
-				int len = p - word_start;
-				memcpy ( words[nwords] = ( char* ) malloc ( len + 1 ), word_start, len );
-				words[nwords++][len] = 0;
-			}
-			if ( !*p )
-			{
-				break;
-			}
-			if ( inquote )
-			{
-				p++;        /* skip over trailing quote */
-			}
-			inquote = 0;
-			word_start = 0;
-		}
-		else if ( *p == '"' || *p == '\'' )
-		{
-			inquote = *p++;
-			word_start = p;
-		}
-		else
-		{
-			if ( !word_start )
-			{
-				if ( *p == '|' )
-				{
-					if ( ! ( words[nwords++] = strdup ( "|" ) ) )
-					{
-						return 0;
-					}
-				}
-				else if ( !isspace ( *p ) )
-				{
-					word_start = p;
-				}
-			}
-			p++;
-		}
-	}
-	words[nwords] = 0;
-	return nwords;
-}
-
-int
-CLI::find_command
-(
-        Command<CLI> *commands,
-        int num_words,
-        char* words[],
-        int start_word,
-        int filters[]
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	Command<CLI> *c, *again = NULL;
-	int c_words = num_words;
-	if ( filters[0] )
-	{
-		c_words = filters[0];
-	}
-	// Deal with ? for help
-	if ( ! words[start_word] )
-	{
-		return LIBCLI::ERROR_ANY;
-	}
-	if ( words[start_word][strlen ( words[start_word] ) - 1] == '?' )
-	{
-		int l = strlen ( words[start_word] )-1;
-		for ( c = commands; c; c = c->next )
-		{
-			if ( strncasecmp ( c->command, words[start_word], l ) == 0
-			&& ( c->have_callback || c->children )
-			&& this->privilege >= c->privilege
-			&& ( c->mode == this->mode || c->mode == MODE_ANY ) )
-			{
-				
-				client << "  "
-				  << left << setfill(' ') << setw(20)
-				  << c->command
-				  << (c->help ? c->help : "") << CRLF;
-			}
-		}
-		if ( commands->parent && commands->parent->have_callback )
-		{
-			client << "  "
-			  << left << setfill(' ') << setw(20) << "<br>"
-			  << (commands->parent->help ? commands->parent->help : "")
-			  << CRLF;
-		}
-		return LIBCLI::OK;
-	}
-	for ( c = commands; c; c = c->next )
-	{
-		if ( this->privilege < c->privilege )
-		{
-			continue;
-		}
-		if ( strncasecmp ( c->command, words[start_word], c->unique_len ) )
-		{
-			continue;
-		}
-		if ( strncasecmp ( c->command, words[start_word], strlen ( words[start_word] ) ) )
-		{
-			continue;
-		}
-AGAIN:
-		if ( c->mode == this->mode || c->mode == MODE_ANY )
-		{
-			int rc = LIBCLI::OK;
-			int f;
-			filter_t** filt = &client.filters;
-			// Found a word!
-			if ( ! c->children )
-			{
-				// Last word
-				if ( ! c->have_callback )
-				{
-					client << UNFILTERED << "No callback for '" << c->command << "'" << CRLF;
-					return LIBCLI::ERROR_ANY;
-				}
-			}
-			else
-			{
-				if ( start_word == c_words - 1 )
-				{
-					if ( c->have_callback )
-					{
-						goto CORRECT_CHECKS;
-					}
-					client << UNFILTERED << "Incomplete command" << CRLF;
-					return LIBCLI::ERROR_ANY;
-				}
-				rc = find_command ( c->children, num_words, words, start_word + 1, filters );
-				if ( rc == LIBCLI::ERROR_ARG )
-				{
-					if ( c->have_callback )
-					{
-						rc = LIBCLI::OK;
-						goto CORRECT_CHECKS;
-					}
-					else
-					{
-						client << UNFILTERED << "Invalid argument '" << words[start_word + 1] << "'"
-						  << CRLF;
-					}
-				}
-				return rc;
-			}
-			if ( ! c->have_callback )
-			{
-				client << UNFILTERED << "Internal server error processing '" << c->command << "'"
-				  << CRLF;
-				return LIBCLI::ERROR_ANY;
-			}
-CORRECT_CHECKS:
-			for ( f = 0; rc == LIBCLI::OK && filters[f]; f++ )
-			{
-				int n = num_words;
-				char** argv;
-				int argc;
-				int len;
-				if ( filters[f+1] )
-				{
-					n = filters[f+1];
-				}
-				if ( filters[f] == n - 1 )
-				{
-					client << UNFILTERED << "Missing filter" << CRLF;
-					return LIBCLI::ERROR_ANY;
-				}
-				argv = words + filters[f] + 1;
-				argc = n - ( filters[f] + 1 );
-				len = strlen ( argv[0] );
-				if ( argv[argc - 1][strlen ( argv[argc - 1] ) - 1] == '?' )
-				{
-					if ( argc == 1 )
-					{
-						int i;
-						for ( i = 0; filter_cmds[i].cmd; i++ )
-						{
-							client << "  "
-							  << left << setfill(' ') << setw(20)
-							  << filter_cmds[i].cmd
-							  << filter_cmds[i].help << CRLF;
-						}
-					}
-					else
-					{
-						if ( argv[0][0] != 'c' ) // count
-						{
-							client << "  WORD" << CRLF;
-						}
-						if ( argc > 2 || argv[0][0] == 'c' ) // count
-						{
-							client << "  <cr>" << CRLF;
-						}
-					}
-					return LIBCLI::OK;
-				}
-				if ( argv[0][0] == 'b' && len < 3 ) // [beg]in, [bet]ween
-				{
-					client << UNFILTERED << "Ambiguous filter '" << argv[0] << "' (begin, between)" << CRLF;
-					return LIBCLI::ERROR_ANY;
-				}
-				*filt = ( filter_t* ) calloc ( sizeof ( filter_t ), 1 );
-				if ( !strncmp ( "include", argv[0], len )
-				||  !strncmp ( "exclude", argv[0], len ) )
-				{
-					rc = client.match_filter_init ( argc, argv, *filt );
-				}
-				else if ( !strncmp ( "begin", argv[0], len )
-				|| !strncmp ( "between", argv[0], len ) )
-				{
-					rc = client.range_filter_init ( argc, argv, *filt );
-				}
-				else if ( !strncmp ( "count", argv[0], len ) )
-				{
-					rc = client.count_filter_init ( argc, argv, *filt );
-				}
-				else
-				{
-					client << UNFILTERED << "Invalid filter '" << argv[0] << "'" << CRLF;
-					rc = LIBCLI::ERROR_ANY;
-				}
-				if ( rc == LIBCLI::OK )
-				{
-					filt = & ( *filt )->next;
-				}
-				else
-				{
-					free_z ( *filt );
-					*filt = 0;
-				}
-			}
-			if ( rc == LIBCLI::OK )
-			{
-				rc = c->exec ( c->command, words + start_word + 1, c_words - start_word - 1 );
-			}
-			while ( client.filters )
-			{
-				filter_t* filt = client.filters;
-				// call one last time to clean up
-				filt->exec ( client, NULL );
-				client.filters = filt->next;
-				free_z ( filt );
-			}
-			return rc;
-		}
-		else if ( this->mode > MODE_CONFIG && c->mode == MODE_CONFIG )
-		{
-			// command matched but from another mode,
-			// remember it if we fail to find correct command
-			again = c;
-		}
-	}
-	// drop out of config submode if we have matched command on MODE_CONFIG
-	if ( again )
-	{
-		c = again;
-		set_configmode ( MODE_CONFIG, "" );
-		goto AGAIN;
-	}
-	if ( start_word == 0 )
-	{
-		client << UNFILTERED << "Invalid " << (commands->parent ? "argument" : "command")
-		  << " '" << words[start_word] << "'" << CRLF;
-	}
-	return LIBCLI::ERROR_ARG;
-}
-
-int
-CLI::run_command
-(
-        char* command
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	int r;
-	unsigned int num_words, i, f;
-	char* words[128] = {0};
-	int filters[128] = {0};
-	if ( ! command )
-	{
-		return LIBCLI::ERROR_ANY;
-	}
-	while ( isspace ( *command ) )
-	{
-		command++;
-	}
-	if ( ! *command )
-	{
-		return LIBCLI::OK;
-	}
-	num_words = parse_line ( command, words, sizeof ( words ) / sizeof ( words[0] ) );
-	for ( i = f = 0; i < num_words && f < sizeof ( filters ) / sizeof ( filters[0] ) - 1; i++ )
-	{
-		if ( words[i][0] == '|' )
-		{
-			filters[f++] = i;
-		}
-	}
-	filters[f] = 0;
-	if ( num_words )
-	{
-		r = find_command ( this->commands, num_words, words, 0, filters );
-	}
-	else
-	{
-		r = LIBCLI::ERROR_ANY;
-	}
-	for ( i = 0; i < num_words; i++ )
-	{
-		free ( words[i] );
-	}
-	if ( r == LIBCLI::QUIT )
+	RESULT r = have_unwanted_args ( args );
+	if ( libcli::OK != r )
 	{
 		return r;
 	}
-	return LIBCLI::OK;
-}
+	m_client << "You are '" << m_username << "'" << crlf;
+	return libcli::OK;
+} // cli::internal_whoami ()
+//////////////////////////////////////////////////////////////////////
 
-int
-CLI::get_completions
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief command 'history', print the command history.
+ *
+ * @param name UNUSED
+ * @param args UNUSED
+ *
+ * @return libcli::OK when everything went fine
+ * @return libcli::ERROR_ARG when there was an argument
+ * @return libcli::ERROR_ANY if the only argument was a '?'
+ *
+ * The only valid argument is a '?', asking for help
+ */
+RESULT
+cli::internal_history
 (
-        char* command,
-        char** completions,
-        int max_completions
+	UNUSED ( const std::string& name ),
+	const tokens& args
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	Command<CLI> *c;
-	Command<CLI> *n;
-	Command<CLI> *p = 0;
-	int num_words, i, k=0, j;
-	int num_words_line;
-	char* words[128] = {0};
-	int filter = 0;
-	if ( ! command )
+	RESULT r = have_unwanted_args ( args );
+	if ( libcli::OK != r )
 	{
-		return 0;
+		return r;
 	}
-	while ( isspace ( *command ) )
+	m_client << "Command history:" << crlf;
+	size_t i = 0;
+	for ( auto a : m_history )
 	{
-		command++;
+		m_client << std::setfill ( ' ' ) << std::setw ( 3 ) << i << ": " << a << crlf;
+		++i;
 	}
-	num_words_line = parse_line ( command, words, sizeof ( words ) /sizeof ( words[0] ) );
-	num_words = num_words_line;
-	if ( !command[0] || command[strlen ( command )-1] == ' ' )
-	{
-		num_words++;
-	}
-	if ( ! num_words )
-	{
-		return 0;
-	}
-	for ( i = 0; i < num_words; i++ )
-	{
-		if ( words[i] && words[i][0] == '|' )
-		{
-			filter = i;
-		}
-	}
-	if ( filter ) // complete filters
-	{
-		unsigned len = 0;
-		if ( filter < num_words - 1 ) // filter already completed
-		{
-			return 0;
-		}
-		if ( filter == num_words - 1 )
-		{
-			len = strlen ( words[num_words-1] );
-		}
-		for ( i = 0; filter_cmds[i].cmd && k < max_completions; i++ )
-		{
-			if ( !len || ( len < strlen ( filter_cmds[i].cmd )
-			                && !strncmp ( filter_cmds[i].cmd, words[num_words - 1], len ) ) )
-			{
-				completions[k++] = ( char* ) filter_cmds[i].cmd;
-			}
-		}
-		completions[k] = NULL;
-		return k;
-	}
-	j = 0;
-	for ( c = this->commands, i = 0; c && i < num_words && k < max_completions; c = n )
-	{
-		n = c->next;
-		if ( this->privilege < c->privilege )
-		{
-			continue;
-		}
-		if ( c->mode != this->mode && c->mode != MODE_ANY )
-		{
-			continue;
-		}
-		if ( words[i] && strncasecmp ( c->command, words[i], strlen ( words[i] ) ) )
-		{
-			continue;
-		}
-		if ( i < num_words - 1 )
-		{
-			if ( strlen ( words[i] ) < c->unique_len )
-			{
-				continue;
-			}
-			j = 0;
-			p = c;
-			n = c->children;
-			i++;
-			continue;
-		}
-		if ( ( (j > 0)  || c->next ) || ( ( p != 0 ) && ( p->have_callback ) ) )
-		{	// more than one completion
-			if ( j == 0 )
-			{
-				client << CRLF;
-				j++;
-			}
-			client << "  " << left << setfill(' ') << setw(20)
-			  << c->command
-			  << (c->help ? c->help : "") << CRLF;
-		}
-		if (strncmp (command, c->command, strlen (c->command)) != 0)
-			completions[k++] = c->command;
-	}
-	if (completions[k-1])
-	if ( p != 0 )
-	if ( k != 0 )
-	if (strncmp (words[num_words_line - 1], completions[k-1], strlen (words[num_words_line - 1])) != 0)
-	{
-		if ( p->have_callback )
-		{
-			if ( j == 0 )
-			{
-				client << CRLF;
-			}
-			client << "  "
-			  << left << setfill(' ') << setw(20)
-			  << "<br>"
-			  << (p->help ? p->help : "") << CRLF;
-			k++;
-		}
-	}
-	return k;
-}
+	return libcli::OK;
+} // cli::internal_history ()
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set the size of the history
+ * 
+ * @param command UNUSED
+ * @param args    The number of lines stored in history
+ * 
+ * @return libcli::OK when everything went fine
+ * @return libcli::ERROR_ARG if there was an argument
+ * @return libcli::ERROR_ANY if the only argument was a '?'
+ */
+RESULT
+cli::internal_set_history
+(
+	const std::string& command,
+	const libcli::tokens& args
+)
+{
+	size_t lines { 0 };
+	int	   invalid { -1 };
+
+	int i { 0 };
+	for ( auto a : args )
+	{
+		switch ( i )
+		{
+		case 0: // argument 'number of lines'
+			if ( arg_wants_help ( a ) )
+			{
+				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					<< "<NUM>" << "Number of lines to hold in the history" << crlf;
+				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					<< "<cr>" << "show current number of lines" << crlf;
+				return ( libcli::OK );
+			}
+			lines = StrToNum<size_t> ( a, invalid );
+			if ( invalid )
+			{
+				return libcli::INVALID_ARG;
+			}
+			break;
+		default:
+			return libcli::INVALID_ARG;
+		}
+		++i;
+	}
+	if ( lines > 0 )
+	{
+		set_history_size ( lines );
+	}
+	m_client << "history size is " << m_max_history << " lines." << crlf;
+	return libcli::OK;
+} // cli::internal_set_history ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief command '!', invoke a command from the history
+ *
+ * @param name UNUSED
+ * @param args The history number of the command to be executed.
+ *
+ * @return int libcli::OK      when everything went well
+ * @return libcli::INVALID_ARG if the argument was not a number.
+ * @return libcli::END_OF_ARGS if the last argument was asking for help.
+ * @return libcli::ERROR_ARG   if the number was out of range
+ */
+RESULT
+cli::internal_invoke_history
+(
+	UNUSED ( const std::string& name ),
+	const tokens& args
+)
+{
+	size_t h { NOT_IN_HISTORY };
+	size_t i { 0 };
+	for ( auto a : args )
+	{
+		switch ( i )
+		{
+		case 0: // argument 'number of history entry'
+			if ( arg_wants_help ( a ) )
+			{
+				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					<< "<NUM>" << "Number of history entry to invoke" << crlf;
+				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					<< "<CR>" << "repeat last command" << crlf;
+				return ( libcli::OK );
+			}
+			int invalid;
+			h = StrToNum<size_t> ( a, invalid );
+			if ( invalid )
+			{
+				return libcli::INVALID_ARG;
+			}
+			break;
+		default:
+			if ( wants_help_last_arg ( a ) )
+			{	// user wanted help
+				return libcli::END_OF_ARGS;
+			}
+			return libcli::INVALID_ARG;
+		}
+		++i;
+	}
+	if ( m_history.size () == 0 )
+	{
+		m_client << unfiltered << "% no history yet!" << crlf;
+		return libcli::OK;
+	}
+	if ( h == NOT_IN_HISTORY )
+	{
+		h = m_history.size () - 1;
+	}
+	if ( h > m_history.size () - 1 )
+	{
+		m_client << unfiltered << "% number out f range!" << crlf;
+		return libcli::ERROR_ARG;
+	}
+	auto hist = m_history.begin () + h;
+	std::string line = *hist;
+	if ( run_command ( line ) == libcli::OK )
+	{
+		add_history ( line );
+	}
+	return libcli::OK;
+} // cli::internal_invoke_history ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief command 'quit', exit the cli.
+ *
+ * @param name UNUSED
+ * @param args the list of arguments
+ *
+ * @return libcli::OK when everything went fine
+ * @return libcli::ERROR_ARG when there was an argument
+ * @return libcli::ERROR_ANY if the only argument was a '?'
+ *
+ */
+RESULT
+cli::internal_quit
+(
+	UNUSED ( const std::string& name ),
+	const tokens& args
+)
+{
+	RESULT r = have_unwanted_args ( args );
+	if ( libcli::OK != r )
+	{
+		return r;
+	}
+	set_privilege ( PRIVLEVEL::UNPRIVILEGED );
+	set_mode ( MODE::STANDARD, "" );
+	std::vector<std::string> quit_message =
+	{
+		"Roger and out.",
+		"Roger, wilco!",
+		"Time is on my side...",
+		"This is the worst kind of discrimination. The kind against me.",
+		"Good news, everyone! I've taught the toaster to feel love.",
+		"Valentine's Day is coming? Oh crap - I forgot to get a girlfriend again.",
+		"There will be plenty of time to discuss your objections when and if you return.",
+		"I'm so embarrassed. I wish everybody else was dead.",
+		"You win again gravity.",
+		"Oh wait, you're serious. Let me laugh even harder.",
+		"We will meet again!"
+	};
+	srandom ( time ( 0 ) );
+	long i = random () % quit_message.size ();
+	m_client << unfiltered << quit_message[i] << crlf;
+	return libcli::QUIT;
+} // cli::internal_quit ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief command 'exit'
+ *
+ * Exit the current mode. If we are in @ref libcli::MODE::STANDARD
+ * exit the cli.
+ *
+ * @param name UNUSED
+ * @param args UNUSED
+ *
+ * @return libcli::OK when everything went fine
+ * @return libcli::ERROR_ARG if there was an argument
+ * @return libcli::ERROR_ANY if the only argument was a '?'
+ *
+ */
+RESULT
+cli::internal_exit
+(
+	UNUSED ( const std::string& name ),
+	const tokens& args
+)
+{
+	RESULT r = have_unwanted_args ( args );
+	if ( libcli::OK != r )
+	{
+		return r;
+	}
+	if ( m_mode == MODE::STANDARD )
+	{
+		return internal_quit ( name, args );
+	}
+	if ( m_mode > MODE::STANDARD )
+	{
+		set_mode ( MODE::STANDARD, "" );
+	}
+	return libcli::OK;
+} // cli::internal_exit ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set the number of lines printed in a row without a more prompt
+ * 
+ * @param command UNUSED
+ * @param args    The number of line to be printed
+ * 
+ * @return libcli::OK when everything went fine
+ * @return libcli::ERROR_ARG if there was an argument
+ * @return libcli::ERROR_ANY if the only argument was a '?'
+ */
+RESULT
+cli::internal_pager
+(
+	const std::string& command,
+	const libcli::tokens& args
+)
+{
+	int	lines { -1 };
+	int	invalid { -1 };
+
+	int i { 0 };
+	for ( auto a : args )
+	{
+		switch ( i )
+		{
+		case 0: // argument 'number of lines'
+			if ( arg_wants_help ( a ) )
+			{
+				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					<< "<0-512>" << "Number of lines on screen (0 for no pausing)" << crlf;
+				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					<< "<cr>" << "show current number of lines" << crlf;
+				return ( libcli::OK );
+			}
+			lines = StrToNum<size_t> ( a, invalid );
+			if ( invalid )
+			{
+				return libcli::INVALID_ARG;
+			}
+			break;
+		default:
+			return libcli::INVALID_ARG;
+		}
+		++i;
+	}
+	if ( lines > 0 )
+		m_client.max_screen_lines = lines;
+	if ( lines == 0 )
+		m_client << "disabled pausing" << crlf;
+	else
+		m_client << "show " << m_client.max_screen_lines << " lines without pausing" << crlf;
+	return libcli::OK;
+} // cli::internal_pager ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+RESULT
+cli::internal_hostname
+(
+	const std::string& command,
+	const libcli::tokens& args
+)
+{
+	int i { 0 };
+	for ( auto a : args )
+	{
+		switch ( i )
+		{
+		case 0: // argument 'number of lines'
+			if ( arg_wants_help ( a ) )
+			{
+				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					<< "<string>" << "a hostname" << crlf;
+				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					<< "<cr>" << "show current hostname" << crlf;
+				return ( libcli::OK );
+			}
+			set_hostname ( a );
+			return libcli::OK;
+		default:
+			return libcli::INVALID_ARG;
+		}
+		++i;
+	}
+	m_client << "hostname is '" << m_hostname << "'" << crlf;
+	return libcli::OK;
+} // cli::internal_hostname ()
+//////////////////////////////////////////////////////////////////////
+
+///@}
+
+/** @name filters
+ */
+///@{
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief filter 'grab'
+ *
+ * Instantiates a @ref match_filter in match_filter::MATCH_MODE::NORM mode.
+ * This filter only prints lines which contain a match string.
+ *
+ * @see @ref match_filter::match_filter
+ *
+ * @param name UNUSED
+ * @param args The string to be matched
+ *
+ * @return libcli::END_OF_ARGS if the arguments conaints a '?' (asking for help)
+ * @return libcli::OTHER       if the only argument was a '?'
+ * @return libcli::ERROR_ARG   if there was no argument
+ * @return libcli::OK          when everything went fine
+ */
+RESULT
+cli::filter_grab
+(
+	const std::string& name,
+	const tokens& args
+)
+{
+	std::string match_me;
+	size_t i { 0 };
+	for ( auto a : args )
+	{	// argument '<WORD>'
+		switch ( i )
+		{
+		case 0:
+			if ( arg_wants_help ( a ) )
+			{
+				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					<< "<WORD>" << "only display lines that match <WORD>" << crlf;
+				return ( libcli::OTHER );
+			}
+			match_me = a;
+			break;
+		default:
+			if ( wants_help_last_arg ( a ) )
+			{
+				return libcli::END_OF_ARGS;
+			}
+			match_me += " ";
+			match_me += a;
+		}
+		++i;
+	}
+	if ( match_me.length () == 0 )
+	{
+		m_client << unfiltered << "% missing argument!" << crlf;
+		return libcli::ERROR_ARG;
+	}
+	m_client.m_active_filters.push_back (
+		new match_filter {
+			match_filter::MATCH_MODE::NORM,
+			match_me
+		}
+	);
+	return libcli::OK;
+} // cli::filter_grap ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief filter 'exclude'
+ *
+ * Instantiates a @ref match_filter in match_filter::MATCH_MODE::INVERT mode.
+ * This filter only prints lines which do not contain a match string.
+ *
+ * @see @ref match_filter::match_filter
+ *
+ * @param name UNUSED
+ * @param args The string not to be matched
+ *
+ * @return libcli::END_OF_ARGS if the arguments conaints a '?' (asking for help)
+ * @return libcli::OTHER       if the only argument was a '?'
+ * @return libcli::ERROR_ARG   if there was no argument
+ * @return libcli::OK          when everything went fine
+ */
+RESULT
+cli::filter_exclude
+(
+	const std::string& name,
+	const tokens& args
+)
+{
+	std::string match_me;
+	size_t i { 0 };
+	for ( auto a : args )
+	{	// argument '<WORD>'
+		switch ( i )
+		{
+		case 0:
+			if ( arg_wants_help ( a ) )
+			{
+				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					<< "<WORD>" << "only display lines that do not match <WORD>" << crlf;
+				return ( libcli::OTHER );
+			}
+			match_me = a;
+			break;
+		default:
+			if ( wants_help_last_arg ( a ) )
+			{
+				return libcli::END_OF_ARGS;
+			}
+			match_me += " ";
+			match_me += a;
+		}
+		++i;
+	}
+	if ( match_me.length () == 0 )
+	{
+		m_client << unfiltered << "% missing argument!" << crlf;
+		return libcli::ERROR_ARG;
+	}
+	m_client.m_active_filters.push_back (
+		new match_filter {
+			match_filter::MATCH_MODE::INVERT,
+			match_me
+		}
+	);
+	return libcli::OK;
+} // cli::filter_exclude ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief filter 'begin'
+ *
+ * Instantiates a @ref begin_filter.
+ * This filter starts to print lines when a match string is found.
+ *
+ * @param name UNUSED
+ * @param args The string to match
+ *
+ * @return libcli::END_OF_ARGS if the arguments conaints a '?' (asking for help)
+ * @return libcli::OTHER       if the only argument was a '?'
+ * @return libcli::ERROR_ARG   if there was no argument
+ * @return libcli::OK          when everything went fine
+ *
+ * @see begin_filter::begin_filter
+ */
+RESULT
+cli::filter_begin
+(
+	const std::string& name,
+	const tokens& args
+)
+{
+	std::string match_me;
+	size_t i { 0 };
+	for ( auto a : args )
+	{	// argument '<WORD>'
+		switch ( i )
+		{
+		case 0:
+			if ( arg_wants_help ( a ) )
+			{
+				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					<< "<WORD>" << "start printing lines when <WORD> matches" << crlf;
+				return ( libcli::OTHER );
+			}
+			match_me = a;
+			break;
+		default:
+			if ( wants_help_last_arg ( a ) )
+			{
+				return libcli::END_OF_ARGS;
+			}
+			return libcli::ERROR_ARG;
+		}
+		++i;
+	}
+	if ( match_me.length () == 0 )
+	{
+		m_client << unfiltered << "% missing argument!" << crlf;
+		return libcli::ERROR_ARG;
+	}
+	m_client.m_active_filters.push_back (
+		new begin_filter { match_me }
+	);
+	return libcli::OK;
+} // cli::filter_begin ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief filter 'between'
+ *
+ * Instantiates a @ref between_filter.
+ * This filter starts to print lines when a match string is found and stops
+ * when another string matches.
+ *
+ * @param name UNUSED
+ * @param args A string 'match start' and a string "match end"
+ *
+ * @return libcli::END_OF_ARGS if the arguments conaints a '?' (asking for help)
+ * @return libcli::OTHER       if the only argument was a '?'
+ * @return libcli::ERROR_ARG   if there is an argument missing
+ * @return libcli::OK          when everything went fine
+ *
+ * @see begin_filter::begin_filter
+ */
+RESULT
+cli::filter_between
+(
+	const std::string& name,
+	const tokens& args
+)
+{
+	std::string start_with;
+	std::string end_with;
+	size_t i { 0 };
+	for ( auto a : args )
+	{	// argument '<WORD>'
+		switch ( i )
+		{
+		case 0:
+			if ( arg_wants_help ( a ) )
+			{
+				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					<< "<WORD>" << "start printing lines when <WORD> matches" << crlf;
+				return ( libcli::OTHER );
+			}
+			start_with = a;
+			break;
+		case 1:
+			if ( arg_wants_help ( a ) )
+			{
+				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					<< "<WORD>" << "stop printing lines when <WORD> matches" << crlf;
+				return ( libcli::OTHER );
+			}
+			end_with = a;
+			break;
+		default:
+			if ( wants_help_last_arg ( a ) )
+			{
+				return libcli::END_OF_ARGS;
+			}
+			return libcli::ERROR_ARG;
+		}
+		++i;
+	}
+	if ( start_with.length () == 0 )
+	{
+		m_client << unfiltered << "% missing argument!" << crlf;
+		return libcli::ERROR_ARG;
+	}
+	if ( end_with.length () == 0 )
+	{
+		m_client << unfiltered << "% missing argument!" << crlf;
+		return libcli::ERROR_ARG;
+	}
+	m_client.m_active_filters.push_back (
+		new between_filter { start_with, end_with }
+	);
+	return libcli::OK;
+} // cli::filter_between ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief filter 'count'
+ *
+ * Instantiates a @ref count_filter.
+ * This filter only counts the lines passed to it. Only none-empty lines
+ * are counted.
+ *
+ * @param name UNUSED
+ * @param args UNUSED
+ *
+ * @return libcli::ERROR_ANY   if the only argument was a '?'
+ * @return libcli::ERROR_ARG   if there was an argument
+ * @return libcli::OK          when everything went fine
+ *
+ * @see begin_filter::begin_filter
+ */
+RESULT
+cli::filter_count
+(
+	const std::string& name,
+	const tokens& args
+)
+{
+	RESULT r = have_unwanted_args ( args );
+	if ( libcli::OK != r )
+	{
+		return r;
+	}
+	m_client.m_active_filters.push_back (
+		new count_filter {}
+	);
+	return libcli::OK;
+} // cli::filter_count ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief filter 'limit'
+ *
+ * Instantiates a @ref limit_filter.
+ * This filter only prints <NUM> lines of output. Only
+ * none-empty lines are counted.
+ *
+ * @param name UNUSED
+ * @param args <NUM> The number of lines to print
+ *
+ * @return libcli::END_OF_ARGS if the arguments conaints a '?' (asking for help)
+ * @return libcli::OTHER       if the only argument was a '?'
+ * @return libcli::ERROR_ARG   if there is an argument missing
+ * @return libcli::OK          when everything went fine
+ *
+ * @see limit_filter::limit_filter
+ */
+RESULT
+cli::filter_limit
+(
+	const std::string& name,
+	const tokens& args
+)
+{
+	size_t limit { 10 };
+	size_t i { 0 };
+	for ( auto a : args )
+	{	// argument '<WORD>'
+		switch ( i )
+		{
+		case 0:
+			if ( arg_wants_help ( a ) )
+			{
+				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					<< "<NUM>" << "print only <NUM> lines of output" << crlf;
+				return ( libcli::OTHER );
+			}
+			int invalid;
+			limit = StrToNum<size_t> ( a, invalid );
+			if ( invalid )
+			{
+				return libcli::INVALID_ARG;
+			}
+			break;
+		default:
+			if ( wants_help_last_arg ( a ) )
+			{
+				return libcli::END_OF_ARGS;
+			}
+			return libcli::ERROR_ARG;
+		}
+		++i;
+	}
+	m_client.m_active_filters.push_back (
+		new limit_filter { limit }
+	);
+	return libcli::OK;
+} // cli::filter_limit ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief filter 'no-more'
+ *
+ * Temporarily disable the more prompt.
+ * Instantiates a @ref nomore_filter.
+ *
+ * @param name UNUSED
+ * @param args UNUSED
+ *
+ * @return libcli::OTHER       if the only argument was a '?'
+ * @return libcli::ERROR_ARG   if there was an argument
+ * @return libcli::OK          when everything went fine
+ *
+ * @see nomore_filter::nomore_filter
+ */
+RESULT
+cli::filter_nomore
+(
+	const std::string& name,
+	const tokens& args
+)
+{
+	RESULT r = have_unwanted_args ( args );
+	if ( libcli::OK != r )
+	{
+		return r;
+	}
+	m_client.m_active_filters.push_back (
+		new nomore_filter { m_client }
+	);
+	return libcli::OK;
+} // cli::filter_nomore ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief filter 'last'
+ *
+ * Instantiates a @ref last
+ * _filter.
+ * This filter only prints the last <NUM> lines of output. Only
+ * none-empty lines are counted.
+ *
+ * @param name UNUSED
+ * @param args <NUM> The number of lines to print
+ *
+ * @return libcli::END_OF_ARGS if the arguments conaints a '?' (asking for help)
+ * @return libcli::OTHER       if the only argument was a '?'
+ * @return libcli::ERROR_ARG   if there is an argument missing
+ * @return libcli::OK          when everything went fine
+ *
+ * @see last_filter::last_filter
+ */
+RESULT
+cli::filter_last
+(
+	const std::string& name,
+	const tokens& args
+)
+{
+	size_t limit { 10 };
+	size_t i { 0 };
+	for ( auto a : args )
+	{	// argument '<WORD>'
+		switch ( i )
+		{
+		case 0:
+			if ( arg_wants_help ( a ) )
+			{
+				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					<< "<NUM>" << "print the last <NUM> lines of output" << crlf;
+				return ( libcli::OTHER );
+			}
+			int invalid;
+			limit = StrToNum<size_t> ( a, invalid );
+			if ( invalid )
+			{
+				return libcli::INVALID_ARG;
+			}
+			break;
+		default:
+			if ( wants_help_last_arg ( a ) )
+			{
+				return libcli::END_OF_ARGS;
+			}
+			return libcli::ERROR_ARG;
+		}
+		++i;
+	}
+	m_client.m_active_filters.push_back (
+		new last_filter { limit }
+	);
+	return libcli::OK;
+} // cli::filter_last ()
+//////////////////////////////////////////////////////////////////////
+
+///@} filters
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief split a string into tokens
+ *
+ * Tokens are words seperated by whitespaces or character sequences
+ * enclosed in quotes. Quotes are either enclosed by ' or by "
+ *
+ * @param s     The string to split
+ * @param words A list of strings containing the tokens
+ *
+ * @return libcli::OK          Everything went fine
+ * @return libcli::ERROR_QUOTE If there is a missing quote
+ *
+ * @see libcli::WHITESPACE
+ */
+RESULT
+cli::split_line
+(
+	const std::string& s,
+	tokens& words
+)
+{
+	size_t		pos_start { 0 };
+	size_t		pos_end { 0 };
+	char		in_quotes { '\0' };
+	std::string	token;
+
+	while ( ( pos_start != std::string::npos ) && ( pos_end != std::string::npos ) )
+	{
+		pos_start = s.find_first_not_of ( WHITESPACE, pos_start );
+		if ( pos_start == std::string::npos )
+		{
+			return libcli::OK;
+		}
+		if ( ( s[pos_start] == '"' ) || ( s[pos_start] == '\'' ) )
+		{
+			in_quotes = s[pos_start];
+			++pos_start;
+			pos_end = s.find_first_of ( in_quotes, pos_start );
+			if ( pos_end == std::string::npos )
+			{
+				m_client << unfiltered << "missing closing quote" << crlf;
+				return libcli::MISSING_QUOTE;
+			}
+		}
+		else
+		{
+			pos_end = s.find_first_of ( WHITESPACE, pos_start );
+		}
+		token = s.substr ( pos_start, pos_end - pos_start );
+		pos_start = pos_end + 1;
+		if ( in_quotes != '\0' )
+		{
+			in_quotes = '\0';
+		}
+		words.push_back ( token );
+	}
+	return libcli::OK;
+} // cli::split_lines ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Print a standard message according to \a result
+ *
+ * @param result FIXME: enum class RESULT
+ */
 void
-CLI::clear_line
+cli::result_msg
 (
-        char* cmd,
-        int l,
-        int cursor
+	RESULT result
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	int i;
-	if ( cursor < l )
+	switch ( result )
 	{
-		for ( i = 0; i < ( l - cursor ); i++ )
-			client.put_char (' ');
+	case libcli::TOO_MANY_ARGS:
+		m_client << "% too many arguments" << crlf;
+		return;
+	case libcli::END_OF_ARGS:
+		m_client << "<cr>" << crlf;
+		m_client << "|" << crlf;
+		return;
+	case libcli::MISSING_ARG:
+		m_client << "% missing argument" << crlf;
+		return;
+	case ERROR_ARG:
+		m_client << "% errornous argument" << crlf;
+		return;
+	case MISSING_QUOTE:
+		m_client << "% missing quote" << crlf;
+		return;
+	case UNKNOWN_COMMAND:
+		m_client << "% unknown command" << crlf;
+		return;
+	case UNKNOWN_FILTER:
+		m_client << "% unknown filter" << crlf;
+		return;
+	case INVALID_ARG:
+		m_client << "% invalid argument" << crlf;
+		return;
+	case OK:
+	case ERROR_ANY:
+	case OTHER:
+	case QUIT:
+	case DEFAULT_MAX:
+		// keep the compiler happy but do nothing
+		break;
 	}
-	for ( i = 0; i < l; i++ )
-	{
-		cmd[i] = '\b';
-	}
-	for ( ; i < l * 2; i++ )
-	{
-		cmd[i] = ' ';
-	}
-	for ( ; i < l * 3; i++ )
-	{
-		cmd[i] = '\b';
-	}
-	client << cmd << commit;
-	memset ( cmd, 0, i );
-	l = cursor = 0;
-}
+} // cli::result_msg ()
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Find and execute a filter
+ *
+ * Executing a filter means to instantiate the corresponding filter
+ * and adding that to @ref client::m_active_filters.
+ *
+ * @param filters A @ref cmd_list of all defined filters
+ * @param words   A list of words. The first word is the name of the
+ *                filter to execute, all other words are arguments to
+ *                the filter
+ *
+ * @return libcli::OK        Everything went fine
+ * @return libcli::ERROR_ARG Found no matching filter
+ * @return libcli::OTHER     User wanted and got help
+ * @return libcli::ERROR_ANY The filter was found, bit it has no callback
+ */
+RESULT
+cli::find_filter
+(
+	const cmd_list& filters,
+	tokens& words
+)
+{
+	if ( ( filters.empty () ) || ( words.empty () ) )
+	{
+		return libcli::ERROR_ARG;
+	}
+	std::string word { words.front () };
+	words.erase ( words.begin () );
+	// deal with '?'
+	bool want_help { false };
+	size_t len = word.length () - 1;
+	if ( '?' == word[len] )
+	{
+		/////////////////////////////////////////////////
+		//
+		// Instead of a filtername we just got a '?' or 
+		// the beginning of a name ending with a '?'.
+		// So list all possible matching filters.
+		//
+		/////////////////////////////////////////////////
+		bool have_help { false };
+		want_help = true;
+		word.pop_back ();	// delete '?'
+		for ( auto c : filters )
+		{	// now find the filter command
+			if ( ( c.m_name.rfind ( word, 0 ) != std::string::npos )
+				&& ( ( nullptr != c.m_callback.member ) || ( !c.m_children.empty () ) )
+				)
+			{	// and print help
+				m_client << "  "
+					<< std::left << std::setfill ( ' ' ) << std::setw ( 20 )
+					<< c.m_name
+					<< c.m_help
+					<< crlf;
+				have_help = true;
+			}
+		}
+		if ( !have_help )
+		{
+			m_client << "'" << word << "' not found!" << crlf;
+			return libcli::ERROR_ARG;
+		}
+		return libcli::OTHER;	// user just wanted help
+	}
+	/////////////////////////////////////////////////
+	//
+	// Find and execute the filter
+	//
+	/////////////////////////////////////////////////
+	for ( auto f : filters )
+	{
+		if ( std::string::npos == f.m_name.rfind ( word, 0 ) )
+		{
+			continue;
+		}
+		if ( word.length () < f.m_unique_len )
+		{
+			m_client << unfiltered
+				<< "Ambiguous filter!" << crlf;
+			continue;
+		}
+		// found the filter
+		if ( nullptr == f.m_callback.member )
+		{
+			m_client << unfiltered
+				<< "% filter with no callback!" << crlf;
+			return libcli::ERROR_ANY;
+		}
+		if ( want_help )
+		{
+			m_client << "  "
+				<< std::left << std::setfill ( ' ' ) << std::setw ( 20 )
+				<< f.m_name
+				<< f.m_help
+				<< crlf;
+			return libcli::OTHER;
+		}
+		return f ( f.m_name, words );
+	}
+	return libcli::UNKNOWN_FILTER;
+} // cli::find_filter()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Split a string defining filters into tokens
+ *
+ * A string defining filters probably contains a list of filters
+ * seperated by a '|' character.
+ * For each filter cli::find_filter is executed.
+ *
+ * @param s     The string to split
+ *
+ * @return libcli::OK Everything went fine
+ * @return libcli::ERROR_ARG Found no matching filter
+ * @return libcli::OTHER User wanted and got help
+ * @return libcli::ERROR_ANY The filter was found, bit it has no callback
+ * @return libcli::MISSING_QUOTE Missing ' or "
+ */
+RESULT
+cli::split_filter
+(
+	const std::string& s
+)
+{
+	size_t		pos_start { 0 };
+	size_t		pos_end { 0 };
+	std::string	token;
+
+	while ( ( pos_start != std::string::npos ) && ( pos_end != std::string::npos ) )
+	{
+		pos_start = s.find ( '|', pos_start );
+		if ( std::string::npos == pos_start )
+		{
+			return libcli::OK;
+		}
+		++pos_start;
+		pos_end = s.find ( "|", pos_start );
+		token = s.substr ( pos_start, pos_end - pos_start );
+		tokens filter;
+		RESULT r = split_line ( token, filter );
+		if ( libcli::OK != r )
+		{
+			return r;
+		}
+		r = find_filter ( m_filters, filter );
+		if ( libcli::OK != r )
+		{
+			result_msg ( r );
+			return r;
+		}
+	}
+	return libcli::OK;
+} // cli::split_filter ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief Find and execute a command
+ *
+ * @param commands A @ref cmd_list of all defined commands.
+ * @param words    A list of words. The first word is the name of the
+ *                 command to execute, all other words are arguments to
+ *                 the command
+ *
+ * @return libcli::OK        Everything went fine
+ * @return libcli::ERROR_ARG Found no matching filter
+ * @return libcli::OTHER     User wanted and got help
+ * @return libcli::ERROR_ANY The filter was found, bit it has no callback
+ */
+RESULT
+cli::find_command
+(
+	const cmd_list& commands,
+	tokens& words
+)
+{
+	if ( words.empty () )
+	{
+		return libcli::ERROR_ANY;
+	}
+	std::string word { words.front () };
+	words.erase ( words.begin () );
+	// deal with '?'
+	size_t len = word.length () - 1;
+	if ( word[len] == '?' )
+	{
+		/////////////////////////////////////////////////
+		//
+		// Instead of a commandname we just got a '?' or 
+		// the beginning of a name ending with a '?'.
+		// So list all possible matching commands.
+		//
+		/////////////////////////////////////////////////
+		bool have_help { false };
+		word.pop_back ();	// delete '?'
+		for ( auto c : commands )
+		{	// now find the command
+			if ( ( c.m_name.rfind ( word, 0 ) != std::string::npos )
+				&& ( ( c.m_callback.member != nullptr ) || ( !c.m_children.empty () ) )
+				&& ( m_privilege >= c.m_privilege )
+				&& ( ( c.m_mode == m_mode ) || ( c.m_mode == MODE::ANY ) )
+				)
+			{	// and print help
+				m_client << "  "
+					<< std::left << std::setfill ( ' ' ) << std::setw ( 20 )
+					<< c.m_name
+					<< c.m_help
+					<< crlf;
+				have_help = true;
+			}
+		}
+		if ( !have_help )
+		{
+			m_client << "'" << word << "' not found!" << crlf;
+			return libcli::ERROR_ARG;
+		}
+		return libcli::OTHER;	// user just wanted help
+	}
+	/////////////////////////////////////////////////
+	//
+	// Find and execute the command
+	//
+	/////////////////////////////////////////////////
+	for ( auto c : commands )
+	{
+		if ( c.m_privilege > m_privilege )
+		{
+			continue;
+		}
+		if ( ( c.m_mode != MODE::ANY ) && ( c.m_mode != m_mode ) )
+		{	// user has no access to this command
+			continue;
+		}
+		if ( c.m_name.rfind ( word, 0 ) )
+		{
+			continue;
+		}
+		if ( word.length () < c.m_unique_len )
+		{
+			m_client << unfiltered
+				<< "Ambiguous command!" << crlf;
+			return libcli::ERROR_ANY;
+		}
+		if ( !c.m_children.empty () )
+		{	// command has children
+			if ( !words.empty () )
+			{
+				std::string word { words.front () };
+				RESULT r = find_command ( c.m_children, words );
+				if ( r == libcli::OTHER )
+				{	// user just wanted help
+					return libcli::OK;
+				}
+				return r;
+			}
+		}
+		// found the command
+		if ( c.m_callback.member == nullptr )
+		{
+			m_client << unfiltered
+				<< "% incomplete command!" << crlf;
+			return libcli::ERROR_ANY;
+		}
+		RESULT i = c ( c.m_name, words );
+		// call 'final' of all filters
+		if ( m_client.m_active_filters.size () > 0 )
+		{
+			for ( auto& f : m_client.m_active_filters )
+			{
+				f->final ( m_client );
+			}
+		}
+		return i;
+	}
+	return libcli::UNKNOWN_COMMAND;
+} // cli::find_command ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Clear the list of active filters
+ */
 void
-CLI::regular
+cli::clear_active_filters
+()
+{
+	while ( m_client.m_active_filters.size () > 0 )
+	{
+		auto f = m_client.m_active_filters.back ();
+		delete f;
+		m_client.m_active_filters.pop_back ();
+	}
+} // cli::clear_active_filters ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Do everything necessary to execute the command line
+ *
+ * @param cmd_line The command line to execute
+ *
+ * @return libcli::OK Everything went fine
+ * @return libcli::ERROR_ARG Found no matching filter
+ * @return libcli::OTHER User wanted and got help
+ * @return libcli::ERROR_ANY The filter was found, bit it has no callback
+ * @return libcli::MISSING_QUOTE Missing ' or "
+ */
+RESULT
+cli::run_command
 (
-        int ( *callback ) ()
+	const std::string& cmd_line
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	this->regular_callback = callback;
-}
+	if ( cmd_line == "" )
+	{
+		return libcli::OK;
+	}
+	RESULT r;
+	tokens words;
+	size_t pos = cmd_line.find ( '|' );
+	if ( pos != std::string::npos )
+	{	// if there are filters, initialise them first
+		r = split_filter ( cmd_line );
+		if ( r != libcli::OK )
+		{
+			return r;
+		}
+		// now split of the filters and execute the command
+		std::string c = cmd_line.substr ( 0, pos );
+		r = split_line ( cmd_line.substr ( 0, pos ), words );
+	}
+	else
+	{
+		r = split_line ( cmd_line, words );
+	}
+	if ( r != libcli::OK )
+	{
+		return r;
+	}
+	if ( words.size () == 0 )
+	{
+		return libcli::ERROR_ARG;
+	}
+	r = find_command ( m_commands, words );
+	if ( libcli::OK != r )
+	{
+		result_msg ( r );
+	}
+	return r;
+} // cli::run_command ()
+//////////////////////////////////////////////////////////////////////
 
-const string DES_PREFIX = "{crypt}";    /* to distinguish clear text from DES crypted */
-const string MD5_PREFIX = "$1$";
-
-int
-CLI::pass_matches
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief get possible completions
+ *
+ * If there are more than one completion, list them all and return
+ * an the original command line.
+ * 
+ * If there is only one completion return the complete command name.
+ *
+ * @param command The command line entered
+ * @return string If there is only one completion
+ */
+std::string
+cli::get_completions
 (
-	string pass,
-	string tried_pass
+	const cmd_list& commands,
+	tokens& words
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
+	std::string word;
+	if ( !words.empty () )
+	{
+		word = words.front ();
+		words.erase ( words.begin () );
+	}
+	bool is_ambiguous { false };
+	for ( auto c : commands )
+	{
+		if ( c.m_privilege > m_privilege )
+		{
+			continue;
+		}
+		if ( ( c.m_mode != MODE::ANY ) && ( c.m_mode != m_mode ) )
+		{	// user has no access to this command
+			continue;
+		}
+		if ( c.m_name.rfind ( word, 0 ) )
+		{
+			continue;
+		}
+		if ( word.length () < c.m_unique_len )
+		{
+			if ( !is_ambiguous )	// first command, not yet ambiguous
+			{
+				m_client << unfiltered << crlf;
+			}
+			// ambiguous command. print help for all possible completions
+			m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 20 )
+				<< c.m_name
+				<< c.m_help
+				<< crlf;
+			is_ambiguous = true;
+			continue;
+		}
+		if ( is_ambiguous )
+		{	// cmd is ambiguous
+			return "";
+		}
+		// single completion
+		std::string new_line = c.m_name + " ";
+		if ( !c.m_children.empty () )
+		{	// command has children
+			if ( words.size () )
+			{
+				new_line += get_completions ( c.m_children, words );
+			}
+		}
+		return new_line;
+	}
+	// command not found, return the original command line provided
+	m_client << unfiltered << crlf;
+	std::string new_line { word };
+	for ( auto w : words )
+	{
+		new_line += w + " ";
+	}
+	return new_line; // should never happen
+} // cli::get_completions ()
+//////////////////////////////////////////////////////////////////////
+
+const std::string DES_PREFIX = "{crypt}";	/* to distinguish clear text from DES crypted */
+const std::string MD5_PREFIX = "$1$";
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Compare two passwords
+ *
+ * @param pass       The password to match
+ * @param tried_pass The password entered by the user
+ * 
+ * @return true      The passwords do match
+ * @return false     The passwords do not match
+ * 
+ * @todo             other encryptions like SHA
+ */
+bool
+cli::pass_matches
+(
+	const std::string& pass,
+	const std::string& tried_pass
+)
+{
 	int des;
 	int idx = 0;
-	des = ! pass.compare (0, DES_PREFIX.size(), DES_PREFIX);
-	if (des)
+	des = !pass.compare ( 0, DES_PREFIX.size (), DES_PREFIX );
+	if ( des )
 	{
-		idx = sizeof ( DES_PREFIX )-1;
+		idx = sizeof ( DES_PREFIX ) - 1;
 	}
-	if ( des || (! pass.compare (0, MD5_PREFIX.size(), MD5_PREFIX)))
+	if ( des || ( !pass.compare ( 0, MD5_PREFIX.size (), MD5_PREFIX ) ) )
 	{
-		tried_pass = crypt ( (char*) tried_pass.c_str(), (char*) pass.c_str() );
+		return pass.compare ( idx, pass.size (),
+			crypt ( tried_pass.c_str (), pass.c_str () )
+		);
 	}
-	return ! pass.compare (idx, pass.size(), tried_pass);
-}
+	return !pass.compare ( idx, pass.size (), tried_pass );
+} // cli::pass_matches ()
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Check the enable password
+ * 
+ * @param pass The password entered by the user
+ * 
+ * If the password is correct, switch to enable state and set users
+ * privilege level to PRIVLEVEL::PRIVILEGED
+ */
 void
-CLI::show_prompt
-()
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-
-
-
-	if ( hostname != "" )
-	{
-		client << hostname << commit;
-	}
-	if ( modestring != "" )
-	{
-		client << modestring << commit;
-	}
-	client.lines_out = 0;
-	client << prompt << commit;
-}
-
-unsigned char
-CLI::map_esc
-()
-{
-	unsigned char c;
-	client.read_char (c);
-	client.read_char (c);
-	/* remap to readline control codes */
-	switch ( c )
-	{
-	case 'A': /* Up */
-		c = CTRL ( 'P' );
-		break;
-	case 'B': /* Down */
-		c = CTRL ( 'N' );
-		break;
-	case 'C': /* Right */
-		c = CTRL ( 'F' );
-		break;
-	case 'D': /* Left */
-		c = CTRL ( 'B' );
-		break;
-	default:
-		c = 0;
-	}
-	return c;
-}
-
-void
-CLI::handle_telnet_option ()
-{
-	unsigned char c;
-	client.read_char (c);
-	switch (c)
-	{
-		case 0xfb:	// WILL
-		case 0xfc:	// WON'T
-		case 0xfd:	// DO
-		case 0xfe:	// DON'T
-			client.read_char (c);
-			break;
-	}
-}
-
-int
-CLI::get_input
+cli::check_enable
 (
-	unsigned char& c
+	const std::string& pass
 )
 {
-	int ret = 0;
-	while (ret == 0)
-	{
-		ret = client.wait_for_input(1);
-		if (ret == SOCKET_ERROR)
-		{	// error
-			if ( RECOVERABLE_ERROR )
-				continue;
-			perror ("read");
-			return ret;
-		}
-		if ( ret == 0 )
-		{	/* timeout every second */
-			if ( this->regular_callback && this->regular_callback() != LIBCLI::OK )
-				break;
-			continue;
-		}
-		ret = client.read_char (c);
-		if (ret == SOCKET_ERROR)
-		{
-			if ( errno == EINTR )
-				continue;
-			return ret;
-		}
-		return ret;
-	}
-	return ret;
-}
-
-void
-CLI::check_enable ( const char* pass )
-{
 	int allowed = 0;
-	if ( enable_password != "" )
+	if ( m_enable_password != "" )
 	{	// check stored static enable password 
-		if ( pass_matches ( enable_password, pass ) )
+		if ( pass_matches ( m_enable_password, pass ) )
 		{
 			allowed++;
 		}
@@ -1414,16 +2456,9 @@ CLI::check_enable ( const char* pass )
 	if ( !allowed )
 	{
 		/* check callback */
-		if (this->enable_callback)
+		if ( m_enable_callback.member != nullptr )
 		{
-			if ( enable_callback ( pass ) )
-			{
-				allowed++;
-			}
-		}
-		else if (cpp_enable_callback)
-		{
-			if ( CALL_MEMBER_FN ((*this), cpp_enable_callback) ( pass ) )
+			if ( m_enable_callback.member ( *this, pass ) )
 			{
 				allowed++;
 			}
@@ -1431,779 +2466,496 @@ CLI::check_enable ( const char* pass )
 	}
 	if ( allowed )
 	{
-		client << "-ok-" << CRLF;
-		state = LIBCLI::STATE_ENABLE;
-		set_privilege ( LIBCLI::PRIVILEGED );
+		m_client << "-ok-" << crlf;
+		m_state = STATE::ENABLE;
+		set_privilege ( PRIVLEVEL::PRIVILEGED );
 	}
 	else
 	{
-		client << CRLF << CRLF << "Access denied" << CRLF;
-		state = LIBCLI::STATE_NORMAL;
+		m_client << crlf << crlf << "Access denied" << crlf;
+		m_state = STATE::NORMAL;
 	}
-}
+} // cli::check_enable ()
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Check authentication of username and password
+ * 
+ * @param username The username entered by the user
+ * @param password The password entered by the user
+ * 
+ * If authentication succeeds set m_state to STATE::NORMAL
+ * 
+ * The privilege level is already set to PRIVILEGE::UNPRIVILEGED
+ * by cli::cli ().
+ */
 void
-CLI::check_user_auth
+cli::check_user_auth
 (
-	const string& username,
-	const string& password
+	const std::string& username,
+	const std::string& password
 )
 {
 	/* require password */
 	int allowed = 0;
-	if ( this->auth_callback )
+	if ( m_auth_callback.member != nullptr )
 	{
-		if ( this->auth_callback ( username, password ) == LIBCLI::OK )
+		if ( m_auth_callback.member ( *this, username, password ) == libcli::OK )
 		{
 			allowed++;
 		}
 	}
-	else if ( this->cpp_auth_callback )
+	if ( !allowed )
 	{
-		if ( CALL_MEMBER_FN ((*this), cpp_auth_callback)  ( username, password ) == LIBCLI::OK )
+		auto u = m_users.find ( username );
+		if ( u != m_users.end () )
 		{
-			allowed++;
-		}
-	}
-	if ( ! allowed )
-	{
-		unp_it u = users.find (username);
-		if (u != users.end())
-		{
-			if (pass_matches (u->second, password))
+			if ( pass_matches ( u->second, password ) )
 				allowed++;
 		}
 	}
 	if ( allowed )
 	{
-		client << "-ok-" << CRLF;
-		this->state = STATE_NORMAL;
-		client << "type '?' or 'help' for help." << CRLF << CRLF;
+		m_client << "-ok-" << crlf;
+		m_client << "type '?' or 'help' for help." << crlf << crlf;
+		m_state = STATE::NORMAL;
 	}
 	else
 	{
-		client << CRLF << CRLF << "Access denied" << CRLF;
-		this->state = LIBCLI::STATE_LOGIN;
+		m_client << crlf << crlf << "Access denied" << crlf;
+		m_state = STATE::LOGIN;
 	}
-	showprompt = true;
-}
+} // cli::check_user_auth ()
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief return to standard mode
+ */
 void
-CLI::delete_backwards
+cli::leave_mode
+()
+{
+	if ( m_mode != MODE::STANDARD )
+	{
+		// m_client << crlf;
+		set_mode ( MODE::STANDARD, "" );
+	}
+} // cli::leave_mode ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Set the size of the history
+ * 
+ * @param size Number of lines to keep in history.
+ * 
+ * If the new size is larger then the old size, shrink the current
+ * history accordingly.
+ */
+void
+cli::set_history_size
 (
-	const unsigned char c
+	size_t size
 )
 {
-	int back = 0;
+	m_max_history = size;
+	while ( m_max_history > m_history.size () )
+	{
+		m_history.erase ( m_history.begin () );
+	}
+} // cli::echo_chars ()
+//////////////////////////////////////////////////////////////////////
 
-	if ( length == 0 || cursor == 0 )
-	{
-		client.put_char ('\a');
-		return;
-	}
-	if ( c == CTRL ( 'W' ) ) /* word */
-	{
-		int nc = cursor;
-		while ( nc && cmd[nc - 1] == ' ' )
-		{
-			nc--;
-			back++;
-		}
-		while ( nc && cmd[nc - 1] != ' ' )
-		{
-			nc--;
-			back++;
-		}
-	}
-	else /* char */
-	{
-		back = 1;
-	}
-	while ( back-- )
-	{
-		if ( length == cursor )
-		{
-			cmd[--cursor] = 0;
-			if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-			{
-				client << "\b \b" << commit;
-			}
-		}
-		else
-		{
-			int i;
-			cursor--;
-			if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-			{
-				for ( i = cursor; i <= length; i++ )
-				{
-					cmd[i] = cmd[i+1];
-				}
-				client.put_char ('\b');
-				client << (cmd + cursor) << commit;
-				client.put_char (' ');
-				for ( i = 0; i <= ( int ) strlen ( cmd + cursor ); i++ )
-				{
-					client.put_char ('\b');
-				}
-			}
-		}
-		length--;
-	}
-}
-
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Add a command line to the history
+ * 
+ * @param line The command line to add
+ * 
+ * If the history grows above the history size delete the oldest
+ * entry.
+ */
 void
-CLI::prompt_user ()
+cli::add_history
+(
+	const std::string& line
+)
 {
-	switch ( this->state )
+	if ( m_history.size () > m_max_history )
 	{
-	case STATE_LOGIN:
-		client << "Username: " << commit;
-		break;
-	case STATE_PASSWORD:
-		client << "Password: " << commit;
-		break;
-	case STATE_NORMAL:
-	case STATE_ENABLE:
-		show_prompt ();
-		client << cmd << commit;
-		if ( cursor < length )
-		{
-			int n = length - cursor;
-			while ( n-- )
-			{
-				client.put_char ('\b');
-			}
-		}
-		break;
-	case STATE_ENABLE_PASSWORD:
-		client << "Password: " << commit;
-		break;
+		m_history.erase ( m_history.begin () );
 	}
-	showprompt = false;
-}
+	m_history.push_back ( line );
+} // cli::add_history ()
+//////////////////////////////////////////////////////////////////////
 
-void
-CLI::redraw_line
-()
-{
-	if ( this->state == STATE_PASSWORD || this->state == STATE_ENABLE_PASSWORD )
-	{
-		return;
-	}
-	client << CRLF;
-	show_prompt ();
-	client << cmd << commit;
-	for ( int i = 0; i < (length - cursor); i++ )
-	{
-		client.put_char ('\b');
-	}
-}
-
-void
-CLI::clear_line
-()
-{
-	if ( this->state == STATE_PASSWORD || this->state == STATE_ENABLE_PASSWORD )
-	{
-		memset ( cmd, 0, length );
-	}
-	else
-	{
-		clear_line ( cmd, length, cursor );
-	}
-	length = cursor = 0;
-}
-
-void
-CLI::clear_to_eol
-()
-{
-	if ( cursor == length )
-	{
-		return;
-	}
-	if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-	{
-		int c;
-		for ( c = cursor; c < length; c++ )
-		{
-			client.put_char (' ');
-		}
-		for ( c = cursor; c < length; c++ )
-		{
-			client.put_char ('\b');
-		}
-	}
-	memset ( cmd + cursor, 0, length - cursor );
-	length = cursor;
-}
-
-bool
-CLI::try_logout
-()
-{
-	if ( length )
-	{
-		return false;
-	}
-	strcpy ( cmd, "quit" );
-	length = cursor = strlen ( cmd );
-	client << "quit" << CRLF;
-	return true;
-}
-
-void
-CLI::leave_config_mode
-()
-{
-	if ( this->mode != MODE_EXEC )
-	{
-		client << CRLF;
-		clear_line ( cmd, length, cursor );
-		set_configmode ( MODE_EXEC, "" );
-		showprompt = true;
-	}
-	else
-	{
-		client.put_char ('\a');
-	}
-}
-
-void
-CLI::list_completions
-()
-{
-	char* completions[128];
-	int num_completions = 0;
-	if ( this->state == STATE_PASSWORD || this->state == STATE_ENABLE_PASSWORD )
-	{
-		return;
-	}
-	if ( cursor != length )
-	{
-		return;
-	}
-	num_completions = get_completions ( cmd, completions, 128 );
-	showprompt = true;
-	if ( num_completions == 1 )
-	{	// Single completion
-		for ( ; length > 0; length--, cursor-- )
-		{
-			if ( cmd[length-1] == ' ' || cmd[length-1] == '|' )
-			{
-				break;
-			}
-			client.put_char ('\b');
-		}
-		strcpy ( ( cmd + length ), completions[0] );
-		length += strlen ( completions[0] );
-		cmd[length++] = ' ';
-		cursor = length;
-		client << CRLF;
-	}
-	if ( num_completions == 0 )
-	{
-		client << CRLF;
-		client << "  <br>" << CRLF;
-	}
-}
-
-void
-CLI::do_history
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Scroll through the hostory
+ * 
+ * @param c The arrow key pressed by the user (up or down)
+ * @return  The corresponding history entry
+ * 
+ * Scroll backwards through the history if the user pressed the 'UP' key.
+ * Scroll not beyond the first entry.
+ * 
+ * Scoll forward through the history if the user pressed the 'DOWN' key. If
+ * we are beyond the last entry return an empty line.
+ */
+std::string
+cli::do_history
 (
 	const unsigned char& c
 )
 {
-	int history_found = 0;
-	if ( this->state == STATE_PASSWORD || this->state == STATE_ENABLE_PASSWORD )
+	if ( m_history.empty () )
 	{
-		return;
+		return "";
 	}
 	if ( c == CTRL ( 'P' ) ) // Up
 	{
-		in_history--;
-		if ( in_history < 0 )
+		if ( m_in_history == NOT_IN_HISTORY )
 		{
-			for ( in_history = MAX_HISTORY-1; in_history >= 0; in_history-- )
-			{
-				if ( this->history[in_history] )
-				{
-					history_found = 1;
-					break;
-				}
-			}
+			m_in_history = m_history.size ();
 		}
+		if ( m_in_history > 0 )
+			--m_in_history;
+		auto h = m_history.begin () + m_in_history;
+		return *h;
+	}
+	// Down
+	if ( ( m_in_history == NOT_IN_HISTORY ) || ( m_in_history > m_history.size () - 1 ) )
+	{
+		m_in_history = m_history.size () - 1;
+	}
+	++m_in_history;
+	if ( m_in_history < m_history.size () )
+	{
+		auto h = m_history.begin () + m_in_history;
+		return *h;
+	}
+	return "";
+} // cli::do_history ()
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Generate a prompt string
+ * 
+ * @return The generated prompt string 
+ */
+std::string
+cli::make_prompt
+()
+{
+	std::string prompt;
+	switch ( m_state )
+	{
+	case STATE::NORMAL:
+	case STATE::ENABLE:
+		prompt = m_hostname;
+		if ( m_modestring != "" )
+			prompt += m_modestring;
+		if ( m_privilege == PRIVLEVEL::PRIVILEGED )
+			prompt += "# ";
 		else
-		{
-			if ( this->history[in_history] )
-			{
-				history_found = 1;
-			}
-		}
+			prompt += "> ";
+		break;
+	case STATE::LOGIN:
+		prompt = "Username: ";
+		break;
+	case STATE::PASSWORD:
+	case STATE::ENABLE_PASSWORD:
+		prompt = "Password: ";
+		break;
 	}
-	else // Down
-	{
-		in_history++;
-		if ( in_history >= MAX_HISTORY || !this->history[in_history] )
-		{
-			int i = 0;
-			for ( i = 0; i < MAX_HISTORY; i++ )
-			{
-				if ( this->history[i] )
-				{
-					in_history = i;
-					history_found = 1;
-					break;
-				}
-			}
-		}
-		else
-		{
-			if ( this->history[in_history] )
-			{
-				history_found = 1;
-			}
-		}
-	}
-	if ( history_found && this->history[in_history] )
-	{
-		// Show history item
-		clear_line ( cmd, length, cursor );
-		memset ( cmd, 0, 4096 );
-		strncpy ( cmd, this->history[in_history], 4095 );
-		length = cursor = strlen ( cmd );
-		client << cmd << commit;
-	}
-}
+	return prompt;
+} // cli::make_prompt ()
+//////////////////////////////////////////////////////////////////////
 
-void
-CLI::cursor_left
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief The main loop of the cli
+ * 
+ * @return libcli::OK Always
+ */
+RESULT
+cli::loop
 ()
 {
-	if ( cursor == 0 )
-	{
-		return;
-	}
-	if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-	{
-		client.put_char ('\b');
-	}
-	cursor--;
-}
+	build_shortest ( m_commands );
+	sort ( m_commands.begin (), m_commands.end (),
+		[]( const command& lhs, const command& rhs ) { return lhs.m_name < rhs.m_name; }
+	);
 
-void
-CLI::cursor_right
-()
-{
-	if ( cursor >= length )
+	if ( m_banner != "" )
 	{
-		return;
+		m_client << m_banner << crlf;
 	}
-	if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-	{
-		client.put_char (cmd[cursor]);
-	}
-	cursor++;
-}
-
-void
-CLI::jump_start_of_line
-()
-{
-	if ( cursor )
-	{
-		if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-		{
-			client.put_char ('\r');
-			show_prompt ();
-		}
-		cursor = 0;
-	}
-}
-
-void
-CLI::jump_end_of_line
-()
-{
-	if ( cursor < length )
-	{
-		if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
-		{
-			client << (cmd + cursor) << commit;
-		}
-		cursor = length;
-	}
-}
-
-bool
-CLI::append
-(
-	const unsigned char& c
-)
-{
-	cmd[cursor] = c;
-	if ( length < 4095 )
-	{
-		length++;
-		cursor++;
-		cmd[cursor] = 0;
-		return true;
-	}
-	client.put_char ('\a');
-	return false;
-}
-
-void
-CLI::insert
-(
-	const unsigned char& c
-)
-{
-	int  insertmode = 1;	// what keypress could change this?
-	// Middle of text
-	if ( insertmode )
-	{
-		int i;
-		// Move everything one character to the right
-		if ( length >= 4094 )
-		{
-			length--;
-		}
-		for ( i = length; i >= cursor; i-- )
-		{
-			cmd[i + 1] = cmd[i];
-		}
-		// Write what we've just added
-		cmd[cursor] = c;
-		client << (cmd + cursor) << commit;
-		for ( i = 0; i < ( length - cursor + 1 ); i++ )
-		{
-			client.put_char ('\b');
-		}
-		length++;
-		cmd[length] = 0;
-	}
-	else
-	{
-		cmd[cursor] = c;
-	}
-	cursor++;
-}
-
-int
-CLI::loop
-()
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	unsigned char c;
-	bool remember_command;
-
-	this->state = STATE_LOGIN;
-	free_history ();
-	if ( ( cmd = ( char* ) malloc ( 4096 ) ) == NULL )
-	{
-		return LIBCLI::ERROR_ANY;
-	}
-	if ( banner != "" )
-	{
-		client << banner << CRLF;
+	m_state = STATE::LOGIN;
+	if ( m_users.empty () && ( m_auth_callback.member == nullptr ) )
+	{	// no auth required?
+		m_state = STATE::NORMAL;
 	}
 	/* start off in unprivileged mode */
-	set_privilege ( LIBCLI::UNPRIVILEGED );
-	set_configmode ( LIBCLI::MODE_EXEC, "" );
-	/* no auth required? */
-	if ( users.empty() && !this->auth_callback && !this->cpp_auth_callback )
+	set_privilege ( PRIVLEVEL::UNPRIVILEGED );
+	set_mode ( MODE::STANDARD, "" );
+	bool finished { false };
+	std::string input;
+	int curr_key { 0 };
+	int last_key;
+	while ( !finished )
 	{
-		this->state = STATE_NORMAL;
-	}
-	showprompt = true;
-	cmd[0] = 0; // clear command buffer
-	while ( 1 )
-	{
-		remember_command = false;
-		if (showprompt == true)
+		m_client.lines_out = 0;
+		m_edit.set_prompt ( make_prompt () );
+		last_key = curr_key;	// detect double TAB
+		curr_key = m_edit.get_line ( input );
+		if ( m_state == STATE::LOGIN )
 		{
-			prompt_user ();
-		}
-		if (get_input (c) == SOCKET_ERROR)
-		{
-			length = -1;
-			break;
-		}
-		switch (c)
-		{
-		case 255:
-			handle_telnet_option();
+			m_username = input;
+			input.clear ();
+			m_state = STATE::PASSWORD;
+			m_edit.password_mode ( true );
 			continue;
-		case 27:		// handle ANSI arrows
-			c = map_esc ();
-			switch (c)
-			{
-			case CTRL ( 'B' ):	// cursor left
-				cursor_left ();
-				continue;
-			case CTRL ( 'F' ):	// cursor right
-				cursor_right ();
-				continue;
-			case CTRL ( 'P' ):	// Cursor Up
-			case CTRL ( 'N' ):	// Cursor Down
-				do_history (c);
-				continue;
-			}
+		}
+		else if ( m_state == STATE::PASSWORD )
+		{
+			check_user_auth ( m_username, input );
+			m_edit.password_mode ( false );
+			input.clear ();
 			continue;
+		}
+		if ( m_state == STATE::ENABLE_PASSWORD )
+		{
+			check_enable ( input );
+			m_edit.password_mode ( false );
+			input.clear ();
+			continue;
+		}
+		switch ( curr_key )
+		{
 		case '\n':
 		case '\r':
-			showprompt = true;
-			if ( state != STATE_PASSWORD && state != STATE_ENABLE_PASSWORD )
-				client << CRLF;
+			//if ( m_state != STATE::PASSWORD && m_state != STATE::ENABLE_PASSWORD )
+			//	m_client << crlf;
 			break;
-		case 0:
-			continue;
-		case CTRL ( 'C' ):
-			client.put_char ('\a');
-			continue;
-		case CTRL ( 'W' ):	// back word
-		case CTRL ( 'H' ):	// backspace
-		case 0x7f:		// delete
-			delete_backwards (c);
-			continue;
-		case CTRL ( 'L' ):	// redraw
-			redraw_line ();
-			continue;
-		case CTRL ( 'U' ):	// clear line
-			clear_line ();
-			continue;
-		case CTRL ( 'K' ):
-			clear_to_eol ();
-			continue;
-		case CTRL ( 'D' ):	// EOT
-			if (try_logout () == true)
-				break;
-			continue;
-		case CTRL ( 'Z' ):	// leave config mode
-			leave_config_mode ();
+		case CTRL ( 'Z' ):	// leave the current mode, FIXME CTRL-Z does not work
+			leave_mode ();
 			continue;
 		case CTRL ( 'I' ):	// TAB completion
-			list_completions ();
-			continue;
-		case CTRL ( 'A' ):	// start of line
-			jump_start_of_line ();
-			continue;
-		case CTRL ( 'E' ):	// end of line
-			jump_end_of_line ();
-			continue;
-		default:		// normal character typed
-			if ( cursor == length )
+		{
+			if ( last_key == curr_key )	// double TAB
 			{
-				if (! append (c))
+				m_client << unfiltered << crlf;
+				// input += '?';	// ask for help
+				// curr_key = '?';
+				// break;
+			}
+			tokens words;
+			size_t pos = input.rfind ( '|' );
+			if ( pos != std::string::npos )
+			{	// find completion for a filter
+				pos = input.find_first_not_of ( WHITESPACE, pos + 1 );
+				if ( pos == std::string::npos )
+				{	// found '|' but nothing else
+					m_client << unfiltered << crlf << "incomplete command!" << crlf;
+				}
+				else
 				{
-					continue;
+					std::string f = input.substr ( pos );
+					split_line ( f, words );
+					std::string replace = get_completions ( m_filters, words );
+					input.replace ( pos, f.length (), replace );
 				}
 			}
 			else
-			{	// Middle of text
-				insert (c);
-			}
-			if ( this->state != STATE_PASSWORD && this->state != STATE_ENABLE_PASSWORD )
 			{
-				if ( (c == '?') && (cursor == length) )
-				{
-					client << CRLF;
-					remember_command = true;
-					showprompt = true;
-					break;
-				}
-				client.put_char (c);
+				split_line ( input, words );
+				input = get_completions ( m_commands, words );
+				clear_active_filters ();
 			}
 			continue;
+		}
+		case CTRL ( 'D' ):
+			m_client << "quit" << crlf;
+			internal_quit ( "quit", tokens {} );
+			finished = true;
+			break;
+		case CTRL ( 'P' ):	// m_cursor Up
+		case CTRL ( 'N' ):	// m_cursor Down
+			if ( ( m_state > STATE::ENABLE_PASSWORD ) )
+			{
+				// delete the current input line
+				for ( size_t i = 0; i < input.length (); ++i )
+				{
+					m_client.put_char ( '\b' );
+					m_client.put_char ( ' ' );
+					m_client.put_char ( '\b' );
+				}
+				m_client.put_char ( '\r' );
+				input = do_history ( curr_key );
+				continue;
+			}
+			break;
+		default:		// normal character typed
+			if ( m_state < STATE::NORMAL )
+				continue;
+			break;
 		} // switch
-		if ( !strcasecmp ( cmd, "quit" ) )
+		if ( input == "" )
+		{
+			continue;
+		}
+		RESULT r = run_command ( input );
+		clear_active_filters ();
+		if ( r == libcli::QUIT )
 		{
 			break;
 		}
-		if ( this->state == STATE_LOGIN )
+		if ( curr_key == '?' )
 		{
-			if ( length == 0 )
-			{
-				continue;
-			}
-			/* require login */
-			username = cmd;
-			this->state = STATE_PASSWORD;
-			showprompt = true;
-		}
-		else if ( this->state == STATE_PASSWORD )
-		{
-			check_user_auth (username, cmd);
-		}
-		else if ( this->state == LIBCLI::STATE_ENABLE_PASSWORD )
-		{
-			check_enable (cmd);
+			// delete the trailing '?' and re-edit the line
+			input.erase ( input.length () - 1 );
 		}
 		else
 		{
-			if ( length == 0 )
+			auto t { input.find_first_not_of ( " \t" ) };
+			if ( ( t != std::string::npos ) && ( input[t] != '!' ) )
 			{
-				continue;
+				add_history ( input );
 			}
-			if ( cmd[length - 1] != '?' && strcasecmp ( cmd, "history" ) != 0 )
-			{
-				add_history ( cmd );
-			}
-			if ( run_command ( cmd ) == LIBCLI::QUIT )
-			{
-				break;
-			}
-			if ( (c == '?') && (cursor == length) )
-			{
-				cursor = length -1;
-				length = cursor;
-				cmd[length] = 0;
-			}
-			showprompt = true;
+			input.clear ();
 		}
-		if (remember_command == false)
-		{
-			memset ( cmd, 0, 4096 );
-			length = 0;
-			cursor = 0;
-		}
+		m_in_history = NOT_IN_HISTORY;
 	}
-	free_z ( cmd );
-	return LIBCLI::OK;
-}
+	return libcli::OK;
+} // cli::loop ()
+//////////////////////////////////////////////////////////////////////
 
-int
-CLI::file
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Read commands from a file
+ * 
+ * @param filename  The file to read from
+ * @param privilege The privilege level to use while reading the file
+ * @param mode      The mode to use while reading the file
+ *
+ * @return libcli::OK Everything went fine
+ * @return libcli::ERROR_ARG Found no matching filter
+ * @return libcli::OTHER User wanted and got help
+ * @return libcli::ERROR_ANY The filter was found, bit it has no callback
+ * @return libcli::MISSING_QUOTE Missing ' or "
+ */
+RESULT
+cli::read_file
 (
-        FILE* fh,
-        int privilege,
-        int mode
+	const std::string& filename,
+	int privilege,
+	int mode
 )
 {
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
 	int oldpriv = set_privilege ( privilege );
-	int oldmode = set_configmode ( mode, "" );
-	char buf[4096];
-	while ( 1 )
+	int oldmode = set_mode ( mode, "" );
+	std::ifstream in_file ( filename );
+	if ( !in_file.is_open () )
 	{
-		char* p;
-		char* cmd;
-		char* end;
-		if ( fgets ( buf, sizeof ( buf ), fh ) == NULL )
+		m_client << unfiltered << "unable to open '" << filename << "' for reading." << crlf;
+	}
+	std::string line;
+	while ( getline ( in_file, line ) )
+	{
+		if ( run_command ( line ) == libcli::QUIT )
 		{
-			break;        /* end of file */
-		}
-		if ( ( p = strpbrk ( buf, "#\r\n" ) ) )
-		{
-			*p = 0;
-		}
-		cmd = buf;
-		while ( isspace ( *cmd ) )
-		{
-			cmd++;
-		}
-		if ( !*cmd )
-		{
-			continue;
-		}
-		for ( p = end = cmd; *p; p++ )
-		{
-			if ( !isspace ( *p ) )
-			{
-				end = p;
-			}
-		}
-		*++end = 0;
-		if ( strcasecmp ( cmd, "quit" ) == 0 )
-		{
+			clear_active_filters ();
 			break;
 		}
-		if ( run_command ( cmd ) == LIBCLI::QUIT )
-		{
-			break;
-		}
+		clear_active_filters ();
 	}
 	set_privilege ( oldpriv );
-	set_configmode ( oldmode, "" /* didn't save desc */ );
-	return LIBCLI::OK;
-}
+	set_mode ( oldmode, "" /* didn't save desc */ );
+	return libcli::OK;
+} // cli::file ()
+//////////////////////////////////////////////////////////////////////
 
-int
-CLI::pager
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Present a more-prompt to the user
+ * 
+ * @return false The user just pressed a key, continue with output
+ * @return true  The user pressed 'q', stop the output
+ */
+bool
+cli::pager
 ()
 {
 	unsigned char c;
 	bool done = false;
-	client << UNFILTERED << "--- more ---" << commit;
+	const std::string more_prompt { "--- more ---" };
+	m_client << unfiltered << more_prompt << commit;
 	c = ' ';
 	while ( done == false )
 	{
-		client.read_char (c);
-		if (c == 'q')
-		{
-			client.lines_out = 0;
-			client.put_char ('\r');
-			return 1;
+		m_client.get_input ( c );
+		if ( c == 0x00 )
+		{	// timeout
+			continue;
 		}
-		if (c == ' ')
+		if ( c == 'q' )
 		{
-			client.lines_out = 0;
+			m_client.lines_out = 0;
+			m_client.put_char ( '\r' );
+			for ( size_t i = 0; i < more_prompt.length (); ++i )
+				m_client.put_char ( ' ' );
+			m_client.put_char ( '\r' );
+			return true;
+		}
+		if ( c == ' ' )
+		{
+			m_client.lines_out = 0;
 			done = true;
 		}
-		if ((c == '\r') || (c == '\n'))
+		if ( ( c == '\r' ) || ( c == '\n' ) )
 		{	// show next line and reprompt for more
-			client.lines_out--;
+			m_client.lines_out--;
 			done = true;
+			m_client.put_char ( '\r' );
+			for ( size_t i = 0; i < more_prompt.length (); ++i )
+				m_client.put_char ( ' ' );
 		}
 	}
-	#if 0
-	client.put_char ('\r');
-	client << UNFILTERED << "            " << commit;
-	#endif
-	client.put_char ('\r');
-	return 0;
-}
+	m_client.put_char ( '\r' );
+	for ( size_t i = 0; i < more_prompt.length (); ++i )
+		m_client.put_char ( ' ' );
+	m_client.put_char ( '\r' );
+	return false;
+} // cli::pager ()
+//////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+/**
+ * @brief Check if we need to present the more prompt
+ * 
+ * @return true  The user pressed 'q', stop output
+ * @return false Continue with output
+ */
 bool
-CLI::check_pager
+cli::check_pager
 ()
 {
-	if (client.max_screen_lines == 0)
-		return 0;
-	// ask for a key after 20 lines of output
-	// FIXME: make this configurable
-	if (client.lines_out > client.max_screen_lines)
+	if ( m_client.max_screen_lines == 0 )
+		return false;
+	if ( m_client.lines_out > m_client.max_screen_lines )
 	{
-		if (pager ())
+		if ( pager () )
 		{
-			return 1;
+			return true;
 		}
 	}
-	return 0;
-}
+	return false;
+} // cli::check_pager ()
+//////////////////////////////////////////////////////////////////////
 
-int
-CLI::print
-(
-        const char* format,
-        ...
-)
-{
-	DEBUG d ( __FUNCTION__,__FILE__,__LINE__ );
-	if (! format)
-	{
-		return 0;
-	}
-	va_list ap;
-	va_start ( ap, format );
-	char buf[5000];
-	vsprintf (buf, format, ap);
-	va_end ( ap );
-	client << buf << CRLF;
-	return check_pager();
-}
-
-}; // namespace LIBCLI
+}; // namespace libcli
 

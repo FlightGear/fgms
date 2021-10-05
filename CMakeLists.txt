@@ -92,7 +92,7 @@ if(WIN32)
     configure_file( "${CMAKE_SOURCE_DIR}/config.h.msvc" "${CMAKE_BINARY_DIR}/config.h" COPYONLY)
     file(WRITE "${CMAKE_BINARY_DIR}/unistd.h" "/* dummy unistd.h for windows */") 
 else(WIN32)
-    set ( EXTRA_FLAGS "-std=c++11" )
+	#   set ( EXTRA_FLAGS "-std=c++11" )
     if(ENABLE_DEBUG_SYMBOLS)
         list(APPEND EXTRA_FLAGS "-g")
     endif(ENABLE_DEBUG_SYMBOLS)
@@ -175,19 +175,39 @@ list(APPEND add_LIBS Plib)
 
 #### add_subdirectory( src/libcli )
 # Project [libcli] [Static Library] [noinst_LIBRARIES], with 1 sources. 1 hdrs.
+
+#set( libcli_SRCS
+#    src/libcli/debug.cxx
+#    src/libcli/filter.cxx
+#    src/libcli/cli_client.cxx
+#    src/libcli/editor.cxx
+#    src/libcli/libcli.cxx
+#    )
+#set( libcli_HDRS
+#    src/libcli/common.hxx
+#    src/libcli/command.hxx
+#    src/libcli/debug.hxx
+#    src/libcli/filter.hxx
+#    src/libcli/cli_client.hxx
+#    src/libcli/editor.hxx
+#    src/libcli/libcli.hxx
+#    )
+
 set( libcli_SRCS
-    src/libcli/debug.cxx
-    src/libcli/filter.cxx
+    src/libcli/cli_client.hxx
     src/libcli/cli_client.cxx
-    src/libcli/libcli.cxx
-    )
-set( libcli_HDRS
     src/libcli/common.hxx
     src/libcli/command.hxx
+    src/libcli/command.cxx
     src/libcli/debug.hxx
+    src/libcli/debug.cxx
+    src/libcli/editor.hxx
+    src/libcli/editor.cxx
     src/libcli/filter.hxx
-    src/libcli/cli_client.hxx
     src/libcli/libcli.hxx
+    src/libcli/filter.cxx
+    src/libcli/libcli.hxx
+    src/libcli/libcli.cxx
     )
 if (WIN32)
     list(APPEND libcli_SRCS src/libcli/crypt-win.c)

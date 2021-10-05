@@ -24,8 +24,6 @@
 #include <string>
 #include "debug.hxx"
 
-using namespace std;
-
 //  #define DEBUG_TRACE
 
 std::string space ( int n )
