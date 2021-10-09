@@ -42,8 +42,6 @@
 #include "daemon.hxx"
 #include "fg_util.hxx"
 
-using namespace std;
-
 /** @brief The running  ::FG_SERVER server process */
 FG_SERVER       Servant;
 
@@ -722,7 +720,7 @@ main ( int argc, char* argv[] )
 		SG_LOG ( SG_SYSTEMS, SG_ALERT,
 		  "No configuration file '" << DEF_CONF_FILE << "' found!"
 		);
-		exit ( 1 );
+		// exit ( 1 ); don't exit, run with defaults
 	}
 #ifndef _MSC_VER
 	if ( RunAsDaemon )

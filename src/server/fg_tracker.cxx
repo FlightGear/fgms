@@ -152,7 +152,7 @@ void
 FG_TRACKER::ReadQueue ()
 {	
 	/*Any message in msg_sent_queue must be pushed back to msg_queue before calling this function*/
-	ifstream queue_file;
+	std::ifstream queue_file;
 	queue_file.open ( "queue_file" );
 	if ( ! queue_file )
 	{
@@ -193,14 +193,14 @@ void
 FG_TRACKER::WriteQueue ()
 {
 	VI CurrentMessage;
-	ofstream queue_file;
+	std::ofstream queue_file;
 	pthread_mutex_lock ( &msg_mutex ); // set the lock
 	if ( msg_queue.size() == 0 )
 	{
 		pthread_mutex_unlock ( &msg_mutex ); // give up the lock
 		return;
 	}
-	queue_file.open ( "queue_file", ios::out|ios::app );
+	queue_file.open ( "queue_file", std::ios::out|std::ios::app );
 	if ( ! queue_file )
 	{
 		SG_LOG ( SG_FGTRACKER, SG_ALERT, "# FG_TRACKER::WriteQueue: "
@@ -396,7 +396,7 @@ FG_TRACKER::TrackerWrite ( const string& str )
 		msg_sent_queue.push_back( str );
 		pthread_mutex_unlock ( &msg_sent_mutex );
 	}
-	stringstream debug;
+	std::stringstream debug;
 	debug <<"DEBUG last_msg.size=" << l <<", msg_queue.size = " << msg_queue.size() << ", msg_sent_queue.size = "  << msg_sent_queue.size();
 	l= debug.str().size() + 1;
 	m_TrackerSocket->write_str ( debug.str().c_str(), l );

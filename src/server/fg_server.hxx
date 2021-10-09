@@ -45,8 +45,6 @@
 #include "fg_list.hxx"
 #include "fg_tracker.hxx"
 
-using namespace std;
-
 //////////////////////////////////////////////////////////////////////
 /**
  * @class FG_SERVER
@@ -150,7 +148,7 @@ protected:
 	string		m_AdminUser;
 	string		m_AdminPass;
 	string		m_AdminEnable;
-	ofstream	m_LogFile;
+	std::ofstream	m_LogFile;
 	string		m_LogFileName;
 	string		m_BindAddress;
 	string		m_FQDN;

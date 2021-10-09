@@ -65,7 +65,6 @@
 #ifdef _MSC_VER
 #include <libmsc/msc_unistd.hxx>
 #endif
-using namespace std;
 
 netAddress::netAddress ( const char* host, int port )
 {
@@ -123,10 +122,10 @@ void netAddress::setPort ( int port )
  *        This is always a string of the form 'dd.dd.dd.dd' (with variable
  *        size numbers). 
  */
-const string netAddress::getHost () const
+const std::string netAddress::getHost () const
 {
 	long x = ntohl(sin_addr);
-	string result = NumToStr ((x>>24) & 0xff, 0) + ".";
+	std::string result = NumToStr ((x>>24) & 0xff, 0) + ".";
 	result += NumToStr ((x>>16) & 0xff, 0) + ".";
 	result += NumToStr ((x>> 8) & 0xff, 0) + ".";
 	result += NumToStr ((x>> 0) & 0xff, 0);
@@ -364,7 +363,7 @@ int netSocket::write_str ( const char* str, int len )
 	return len;
 }
 
-int netSocket::write_str ( const string&  str )
+int netSocket::write_str ( const std::string&  str )
 {
 	return write_str (str.c_str(), str.length());
 }
@@ -391,7 +390,7 @@ int netSocket::sendto ( const void * buffer, int size,
 
 int netSocket::read_char ( unsigned char& c )
 {
-	int n;
+	int n {0};
 	while (1)
 	{
 		n = ::recv (handle, (char *)&c, 1, MSG_NOSIGNAL );

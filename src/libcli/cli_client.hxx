@@ -10,8 +10,7 @@
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U$
+// along with this program; if not, see http://www.gnu.org/licenses/
 //
 // Copyright (C) 2011  Oliver Schroeder
 //
@@ -22,83 +21,71 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <memory>
 #include <plib/netSocket.h>
 #ifndef _MSC_VER
-	#include <termios.h>
+#include <termios.h>
 #endif
 #include "common.hxx"
 #include "filter.hxx"
 
-namespace LIBCLI
+namespace libcli
 {
 
-class CLI;
+class cli;
 
-class match_filter_state                                                                                                     
-{       
-public: 
-	int flags;
-	char* str;
-};      
+enum class PRINT_MODE
+{
+	PLAIN = 0x00,
+	FILTERED = 0x01
+};
 
-class range_filter_state
-{       
-public: 
-	int matched;
-	char* from;
-	char* to;
-};      
-
-class Client
+class client
 {
 public:
-	friend class CLI;
-	Client ( int fd );
-	~Client ();
-	int wait_for_input ( int seconds );	// select()
-	int read_char ( unsigned char& c );
-	void put_char ( const char& c );
+	using filter_list = std::vector <  filter* >;
+	//using filter_list = std::vector < std::shared_ptr < filter > >;
+	friend class cli;
+	client ( int fd );
+	~client ();
+	int		wait_for_input ( int seconds );	// select()
+	int		read_char ( unsigned char& c );
+	void	put_char ( const char& c );
+	int		get_input ( unsigned char& c );
 
-	template <class T> Client& operator << ( T v );
-	Client& operator << ( Client& (*f) (Client&) );
+	template <class T> client& operator << ( T v );
+	client& operator << ( client& ( *f ) ( client& ) );
 
-	friend Client& commit ( Client& );
-	friend Client& CRLF ( Client& );
-	friend Client& UNFILTERED ( Client& );
-	size_t  lines_out;
-	size_t  max_screen_lines;
-	filter_t*   filters;
+	friend client& commit ( client& );
+	friend client& crlf ( client& );
+	friend client& unfiltered ( client& );
+	size_t  	lines_out;
+	size_t  	max_screen_lines;
 protected:
-	char*	join_words ( int argc, char** argv );
-	int     match_filter_init ( int argc, char** argv, filter_t* filt );
-	int     range_filter_init ( int argc, char** argv, filter_t* filt );
-	int     count_filter_init ( int argc, char** argv, filter_t* filt );                                                 
-	int     match_filter ( char* cmd, void* data );
-	int     range_filter ( char* cmd, void* data );
-	int     count_filter ( char* cmd, void* data );
-	PRINT_MODE		m_print_mode;
-	netSocket*		m_socket;
+	PRINT_MODE	m_print_mode;
+	netSocket* m_socket;
 	std::ostringstream	m_output;
-	#ifndef _MSC_VER
+	filter_list			m_active_filters;	///< list of active filters
+#ifndef _MSC_VER
 	struct termios OldModes;
-	#endif
+#endif
 };
 
 //////////////////////////////////////////////////////////////////////
 //
 //////////////////////////////////////////////////////////////////////
 template <class T>
-Client& Client::operator << ( T v )
+client& client::operator << ( T v )
 {
 	m_output << v;
 	return *this;
 } // operator << ( class T );
 //////////////////////////////////////////////////////////////////////
 
-Client& commit ( Client& );
-Client& CRLF ( Client& out );
-Client& UNFILTERED ( Client& out );
+client& commit ( client& );
+client& crlf ( client& out );
+client& unfiltered ( client& out );
 
-}; // namespace LIBCLI
+}; // namespace libcli
 
 #endif

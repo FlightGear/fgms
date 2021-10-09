@@ -143,7 +143,7 @@ public:
   int   accept      ( netAddress* addr ) ;
   int   connect     ( const char* host, int port ) ;
   int   write_str   ( const char* str, int len );
-  int   write_str   ( const string&  str );
+  int   write_str   ( const std::string&  str );
   int   write_char  ( const char&  c );
   int   send        ( const void * buffer, int size, int flags = 0 ) ;
   int   sendto      ( const void * buffer, int size, int flags, const netAddress* to ) ;

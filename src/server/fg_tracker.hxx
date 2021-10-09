@@ -30,8 +30,6 @@
 #if !defined FG_TRACKER_HPP
 // #define FG_TRACKER_HPP
 
-using namespace std;
-
 // #define ADD_TRACKER_LOG
 
 #include <iostream>
@@ -70,10 +68,10 @@ public:
 	int	m_TrackerPort;
 	int	m_PingInterval;
 	int	m_TimeoutStage;
-	string	m_TrackerServer;
-	string	m_FgmsName;
-	string	m_domain;
-	string	m_ProtocolVersion;
+	std::string	m_TrackerServer;
+	std::string	m_FgmsName;
+	std::string	m_domain;
+	std::string	m_ProtocolVersion;
 	bool	m_identified;			/* If fgtracker identified this fgms */
 	netSocket* m_TrackerSocket;
 
@@ -101,7 +99,7 @@ public:
 	//  constructors
 	//
 	//////////////////////////////////////////////////
-	FG_TRACKER (int port, string server, string m_ServerName, string m_domain);
+	FG_TRACKER (int port, std::string server, std::string m_ServerName, std::string m_domain);
 	~FG_TRACKER ();
 
 	//////////////////////////////////////////////////
@@ -110,13 +108,13 @@ public:
 	//
 	//////////////////////////////////////////////////
 	int	Loop ();
-	void	AddMessage ( const string & message );
+	void	AddMessage ( const std::string & message );
 	
 	/** 
 	 * @brief Return the server of the tracker
 	 * @retval string Return tracker server as string 
 	 */
-	string	GetTrackerServer () { return m_TrackerServer; };
+	std::string	GetTrackerServer () { return m_TrackerServer; };
 	
 	/** 
 	 * @brief Return the port no of the tracker 
@@ -137,7 +135,7 @@ public:
 	void 	ReQueueSentMsg ();
 	void 	buffsock_free(buffsock_t* bs);
 	void	CheckTimeout();
-	int		TrackerWrite (const string& str);
+	int		TrackerWrite (const std::string& str);
 	void 	TrackerRead (buffsock_t* bs);
 	void 	ReplyFromServer ();
 	

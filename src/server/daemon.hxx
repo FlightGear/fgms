@@ -26,7 +26,6 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-
 #ifndef CDAEMON_HDR
 #define CDAEMON_HDR
 
@@ -37,8 +36,6 @@
 #include <list>
 #include <fcntl.h>
 
-using namespace std;
-
 /** @brief Implement everything necessary to become a daemon */
 class cDaemon
 {
@@ -46,7 +43,7 @@ class cDaemon
 	static pid_t PidOfDaemon;     
 	
 	/** @brief keep track of our children */
-	static list <pid_t> Children; 
+	static std::list <pid_t> Children; 
 
 public:
 	cDaemon();

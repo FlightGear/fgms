@@ -18,7 +18,6 @@
 #endif
 
 using namespace LIBCLI;
-using namespace std;
 
 class my_cli : public CLI
 {
@@ -104,21 +103,21 @@ int my_cli::test (char *command, char *argv[], int argc)
 
 int main( int argc, char** argv )
 {
-        DEBUG d (__FUNCTION__,__FILE__,__LINE__);
-        my_cli*    cli;
-        int s, x;
-        struct sockaddr_in addr;
+	DEBUG d (__FUNCTION__,__FILE__,__LINE__);
+	my_cli*    cli;
+	int s, x;
+	struct sockaddr_in addr;
 	int on = 1;
 #ifndef _MSC_VER
 	struct termios  OldModes;
 #endif
 
-        signal(SIGCHLD, SIG_IGN);
+	signal(SIGCHLD, SIG_IGN);
 
-        cli = new my_cli();
-        cli->setup();
-        cli->set_banner("libcli test environment");
-        cli->set_hostname("router");
+	cli = new my_cli();
+	cli->setup();
+	cli->set_banner("libcli test environment");
+	cli->set_hostname("router");
 
 	if (argc > 1)
 	{	// read from stdin
@@ -159,33 +158,33 @@ int main( int argc, char** argv )
 	}
 	printf("Listening on stdin\n");
 	printf("Login with fred/fred, enable with 'fred'\n");
-        while ((x = accept(s, NULL, 0)))
-        {
-                int pid = fork();
-                if (pid < 0)
-                {
-                        perror("fork");
-                        return 1;
-                }
+	while ((x = accept(s, NULL, 0)))
+	{
+			int pid = fork();
+			if (pid < 0)
+			{
+				perror("fork");
+				return 1;
+			}
 
-                /* parent */
-                if (pid > 0)
-                {
-                        socklen_t len = sizeof(addr);
-                        if (getpeername(x, (struct sockaddr *) &addr, &len) >= 0)
-                        printf(" * accepted connection from %s\n", inet_ntoa(addr.sin_addr));
-                        close(x);
-                        if (argc == 1)
-                        {
-                            return 0;
-                        }
-                        continue;
-                }
+			/* parent */
+			if (pid > 0)
+			{
+					socklen_t len = sizeof(addr);
+					if (getpeername(x, (struct sockaddr *) &addr, &len) >= 0)
+					printf(" * accepted connection from %s\n", inet_ntoa(addr.sin_addr));
+					close(x);
+					if (argc == 1)
+					{
+						return 0;
+					}
+					continue;
+			}
 
-                /* child */
-                close(s);
-                cli->loop(x);
-                exit(0);
-        }
+			/* child */
+			close(s);
+			cli->loop(x);
+			exit(0);
+	}
         return 0;
 }

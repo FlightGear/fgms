@@ -16,12 +16,13 @@
 // Copyright (C) 2011  Oliver Schroeder
 //
 
+// #define CLI_DEBUG_H
 #if !defined CLI_DEBUG_H
 #define CLI_DEBUG_H
 
 #define CLI_TRACE __FUNCTION__,__FILE__,__LINE__
 
-//  #define DEBUG_OUTPUT
+// #define DEBUG_OUTPUT
 #ifdef DEBUG_OUTPUT
 	define DEBUG_OUT(X) printf(X)
 #else
