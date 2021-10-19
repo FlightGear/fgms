@@ -25,7 +25,7 @@
 #ifndef _MSC_VER
 #include <termios.h>
 #endif
-#include "cli_client.hxx"
+#include "connection.hxx"
 #include "common.hxx"
 
 namespace libcli
@@ -38,7 +38,7 @@ class editor
 public:
 	editor ( int fd );
 	~editor ();
-	int		get_line ( std::string& line );
+	int	get_line ( std::string& line );
 	void	set_prompt ( const std::string& prompt );
 	void	password_mode ( bool pw_mode );
 	void	set_regular_callback ( std::function <int ()> callback );
@@ -63,10 +63,10 @@ protected:
 	unsigned char	map_esc ();
 	// Variables
 	bool		m_showprompt;	///< present the prompt?
-	std::string	m_prompt;		///< the prompt string
+	std::string	m_prompt;	///< the prompt string
 	bool		m_password_mode;///< don't do some action when typing a password
-	client		m_client;		///< the client connection
-	size_t		m_cursor;		///< cursor position within input line
+	connection	m_connection;	///< the client connection
+	size_t		m_cursor;	///< cursor position within input line
 	std::string	m_input_line;	///< content of current input line
 	struct regular_callback_t
 	{

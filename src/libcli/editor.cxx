@@ -24,27 +24,23 @@
 #if defined(_MSC_VER) || defined(__CYGWIN__)
 // some windows quick fixes
 #ifndef __CYGWIN__	
-#define CTRL(a)  ( a & 037 )
+	#define CTRL(a)  ( a & 037 )
 #endif	
 #ifdef __cplusplus
-extern "C" {
-#endif
-	extern char* crypt ( const char* key, const char* salt );
-#ifdef __cplusplus
-}
-#endif
+	extern "C" {
+	#endif
+		extern char* crypt ( const char* key, const char* salt );
+	#ifdef __cplusplus
+	}
+	#endif
 #endif
 
-namespace
-{
-namespace ASCII
-{
-const char BELL = 0x07;
-const char BACKSPACE = 0x08;
-const char LF = 0x0a;
-const char CR = 0x0d;
-}
-}
+namespace { namespace ASCII {
+	const char BELL = 0x07;
+	const char BACKSPACE = 0x08;
+	const char LF = 0x0a;
+	const char CR = 0x0d;
+}}
 
 namespace libcli
 {
@@ -55,7 +51,7 @@ editor::editor
 	int fd
 )
 	: m_password_mode { false }
-	, m_client { fd }
+	, m_connection { fd }
 	, m_cursor { 0 }
 {} // editor::editor ()
 //////////////////////////////////////////////////////////////////////
@@ -125,16 +121,16 @@ editor::clear_line
 	}
 	while ( m_cursor > 0 )
 	{
-		m_client.put_char ( ASCII::BACKSPACE );
+		m_connection.put_char ( ASCII::BACKSPACE );
 		--m_cursor;
 	}
 	for ( size_t i = 0; i < m_input_line.length (); ++i )
 	{
-		m_client.put_char ( ' ' );
+		m_connection.put_char ( ' ' );
 	}
 	for ( size_t i = 0; i < m_input_line.length (); ++i )
 	{
-		m_client.put_char ( ASCII::BACKSPACE );
+		m_connection.put_char ( ASCII::BACKSPACE );
 	}
 	m_input_line.clear ();
 
@@ -147,8 +143,8 @@ editor::map_esc
 ()
 {
 	unsigned char c;
-	m_client.read_char ( c );
-	m_client.read_char ( c );
+	m_connection.read_char ( c );
+	m_connection.read_char ( c );
 	/* remap to readline control codes */
 	switch ( c )
 	{
@@ -176,14 +172,14 @@ void
 editor::handle_telnet_option ()
 {
 	unsigned char c;
-	m_client.read_char ( c );
+	m_connection.read_char ( c );
 	switch ( c )
 	{
 	case 0xfb:	// WILL
 	case 0xfc:	// WON'T
 	case 0xfd:	// DO
 	case 0xfe:	// DON'T
-		m_client.read_char ( c );
+		m_connection.read_char ( c );
 		break;
 	}
 } // editor::handle_telnet_options ()
@@ -198,7 +194,7 @@ editor::delete_backwards
 {
 	if ( ( m_input_line.empty () ) || ( m_cursor == 0 ) )
 	{
-		m_client.put_char ( ASCII::BELL );
+		m_connection.put_char ( ASCII::BELL );
 		return;
 	}
 	if ( m_password_mode )
@@ -212,14 +208,14 @@ editor::delete_backwards
 		while ( ( nc >= 0 ) && ( m_input_line[nc] == ' ' ) )
 		{
 			m_input_line.erase ( nc, 1 );
-			//m_client << ASCII::BACKSPACE << " " << ASCII::BACKSPACE << commit;
+			//m_connection << ASCII::BACKSPACE << " " << ASCII::BACKSPACE << commit;
 			--m_cursor;
 			--nc;
 		}
 		while ( ( nc >= 0 ) && ( m_input_line[nc] != ' ' ) )
 		{
 			m_input_line.erase ( nc, 1 );
-			//m_client << ASCII::BACKSPACE << " " << ASCII::BACKSPACE << commit;
+			//m_connection << ASCII::BACKSPACE << " " << ASCII::BACKSPACE << commit;
 			--m_cursor;
 			--nc;
 		}
@@ -227,7 +223,7 @@ editor::delete_backwards
 	else /* char */
 	{
 		m_input_line.erase ( m_cursor - 1, 1 );
-		//m_client << ASCII::BACKSPACE << " " << ASCII::BACKSPACE << commit;
+		//m_connection << ASCII::BACKSPACE << " " << ASCII::BACKSPACE << commit;
 		--m_cursor;
 	}
 	size_t cur { m_cursor };
@@ -238,18 +234,18 @@ editor::delete_backwards
 	size_t n;
 	for ( n = m_cursor; n < len; ++n )
 	{
-		m_client.put_char ( ' ' );
+		m_connection.put_char ( ' ' );
 	}
 	for ( n = m_cursor; n < len; ++n )
 	{
-		m_client.put_char ( ASCII::BACKSPACE );
+		m_connection.put_char ( ASCII::BACKSPACE );
 	}
 	//
 	// go to current cusor position
 	//
 	for ( n = m_input_line.length(); n > cur; --n )
 	{
-		m_client.put_char ( ASCII::BACKSPACE );
+		m_connection.put_char ( ASCII::BACKSPACE );
 	}
 } // editor::delete_backwards ()
 //////////////////////////////////////////////////////////////////////
@@ -259,7 +255,7 @@ void
 editor::show_prompt
 ()
 {
-	m_client << m_prompt << commit;
+	m_connection << m_prompt << commit;
 } // CLI::show_prompt ()
 //////////////////////////////////////////////////////////////////////
 
@@ -268,13 +264,13 @@ void
 editor::prompt_user ()
 {
 	show_prompt ();
-	m_client << m_input_line << commit;
+	m_connection << m_input_line << commit;
 	if ( m_cursor < m_input_line.length () )
 	{
 		int n = m_input_line.length () - m_cursor;
 		while ( n-- )
 		{
-			m_client.put_char ( '\b' );
+			m_connection.put_char ( '\b' );
 		}
 	}
 	m_showprompt = false;
@@ -307,14 +303,14 @@ editor::redraw_line
 	}
 	if ( new_line )
 	{
-		m_client << crlf;
+		m_connection << crlf;
 	}
 	else
 	{
-		m_client.put_char ( ASCII::CR );
+		m_connection.put_char ( ASCII::CR );
 	}
 	show_prompt ();
-	m_client << m_input_line << commit;
+	m_connection << m_input_line << commit;
 	m_cursor = m_input_line.length ();
 } // editor::redraw_line ()
 //////////////////////////////////////////////////////////////////////
@@ -333,11 +329,11 @@ editor::clear_to_eol
 		size_t c;
 		for ( c = m_cursor; c < m_input_line.length (); ++c )
 		{
-			m_client.put_char ( ' ' );
+			m_connection.put_char ( ' ' );
 		}
 		for ( c = m_cursor; c < m_input_line.length (); ++c )
 		{
-			m_client.put_char ( ASCII::BACKSPACE );
+			m_connection.put_char ( ASCII::BACKSPACE );
 		}
 	}
 	m_input_line.erase ( m_input_line.begin () + m_cursor, m_input_line.end () );
@@ -355,7 +351,7 @@ editor::cursor_left
 	}
 	if ( !m_password_mode )
 	{
-		m_client.put_char ( ASCII::BACKSPACE );
+		m_connection.put_char ( ASCII::BACKSPACE );
 	}
 	m_cursor--;
 } // editor::m_cursor_left ()
@@ -372,7 +368,7 @@ editor::cursor_right
 	}
 	if ( !m_password_mode )
 	{
-		m_client.put_char ( m_input_line[m_cursor] );
+		m_connection.put_char ( m_input_line[m_cursor] );
 	}
 	++m_cursor;
 } // editor::m_cursor_right ()
@@ -387,7 +383,7 @@ editor::jump_start_of_line
 	{
 		if ( !m_password_mode )
 		{
-			m_client.put_char ( ASCII::CR );
+			m_connection.put_char ( ASCII::CR );
 			show_prompt ();
 		}
 		m_cursor = 0;
@@ -405,7 +401,7 @@ editor::jump_end_of_line
 		if ( !m_password_mode )
 		{
 			std::string t { m_input_line.begin () + m_cursor, m_input_line.end () };
-			m_client << t << commit;
+			m_connection << t << commit;
 		}
 		m_cursor = m_input_line.length ();
 	}
@@ -433,10 +429,10 @@ editor::insert
 {
 	m_input_line.insert ( m_input_line.begin () + m_cursor, c );
 	std::string t { m_input_line.begin () + m_cursor, m_input_line.end () };
-	m_client << t << commit;
+	m_connection << t << commit;
 	for ( size_t i = 0; i < ( m_input_line.length () - m_cursor + 1 ); ++i )
 	{
-		m_client.put_char ( ASCII::BACKSPACE );
+		m_connection.put_char ( ASCII::BACKSPACE );
 	}
 	++m_cursor;
 } // editor::insert ()
@@ -454,7 +450,7 @@ editor::get_line
 	unsigned char c;
 	m_showprompt = true;
 	bool finished { false };
-	m_client.put_char ( '\r' );	// go to start of line
+	m_connection.put_char ( '\r' );	// go to start of line
 	while ( !finished )
 	{
 		c = 0;
@@ -462,7 +458,7 @@ editor::get_line
 		{
 			prompt_user ();
 		}
-		if ( m_client.get_input ( c ) == SOCKET_ERROR )
+		if ( m_connection.get_input ( c ) == SOCKET_ERROR )
 		{
 			break;
 		}
@@ -491,7 +487,7 @@ editor::get_line
 		case ASCII::CR:
 			if ( !m_password_mode )
 			{
-				m_client << crlf;
+				m_connection << crlf;
 			}
 			m_showprompt = true;
 			finished = true;
@@ -501,7 +497,7 @@ editor::get_line
 				m_regular_callback.c_func ();
 			continue;
 		case CTRL ( 'C' ):
-			m_client.put_char ( ASCII::BELL );
+			m_connection.put_char ( ASCII::BELL );
 			continue;
 		case CTRL ( 'W' ):	// back word
 		case CTRL ( 'H' ):	// backspace
@@ -542,7 +538,7 @@ editor::get_line
 				append ( c );
 				if ( c == '?' )
 				{
-					m_client << crlf;
+					m_connection << crlf;
 					finished = true;
 					break;
 				}
@@ -553,7 +549,7 @@ editor::get_line
 			}
 			if ( !m_password_mode )
 			{
-				m_client.put_char ( c );
+				m_connection.put_char ( c );
 			}
 			continue;
 		} // switch

@@ -25,7 +25,7 @@ create a separate directory, say build-fgms, change
 into that directory, and run -
 
 $ cmake /path/to/source/fgms
-$ cmake --build . [--config Release|Debug]
+$ cmake --build . [-DCMAKE_BUILD_TYPE=Release|Debug]
 
 If the generator chosen is 'make', then that second 
 steps can be replaced with the classic

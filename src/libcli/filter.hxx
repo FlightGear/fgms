@@ -24,7 +24,7 @@
 namespace libcli
 {
 
-class client;
+class connection;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -39,7 +39,7 @@ public:
 	virtual bool exec ( const std::string& line ) = 0;
 	virtual ~filter () {};
 	/// 'final' is called after the command completes.
-	virtual void final ( client& ) {};
+	virtual void final ( connection& ) {};
 }; // filter
 //////////////////////////////////////////////////////////////////////
 
@@ -91,7 +91,7 @@ class count_filter : public filter
 public:
 	count_filter ();
 	bool exec ( const std::string& line ) override;
-	virtual void final ( client& out ) override;
+	virtual void final ( connection& out ) override;
 }; // count_filter
 //////////////////////////////////////////////////////////////////////
 
@@ -115,7 +115,7 @@ class last_filter : public filter
 public:
 	last_filter ( size_t limit );
 	bool exec ( const std::string& line ) override;
-	virtual void final ( client& out ) override;
+	virtual void final ( connection& out ) override;
 }; // last_filter
 //////////////////////////////////////////////////////////////////////
 
@@ -124,9 +124,9 @@ class nomore_filter : public filter
 {
 	size_t m_max_screen_lines;
 public:
-	nomore_filter ( client& out );
+	nomore_filter ( connection& out );
 	bool exec ( const std::string& line ) override;
-	virtual void final ( client& out ) override;
+	virtual void final ( connection& out ) override;
 }; // nomore_filter
 //////////////////////////////////////////////////////////////////////
 

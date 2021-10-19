@@ -40,32 +40,32 @@ enum class PRINT_MODE
 	FILTERED = 0x01
 };
 
-class client
+class connection
 {
 public:
 	using filter_list = std::vector <  filter* >;
 	//using filter_list = std::vector < std::shared_ptr < filter > >;
 	friend class cli;
-	client ( int fd );
-	~client ();
-	int		wait_for_input ( int seconds );	// select()
-	int		read_char ( unsigned char& c );
+	connection ( int fd );
+	~connection ();
+	int	wait_for_input ( int seconds );	// select()
+	int	read_char ( unsigned char& c );
 	void	put_char ( const char& c );
-	int		get_input ( unsigned char& c );
+	int	get_input ( unsigned char& c );
 
-	template <class T> client& operator << ( T v );
-	client& operator << ( client& ( *f ) ( client& ) );
+	template <class T> connection& operator << ( T v );
+	connection& operator << ( connection& ( *f ) ( connection& ) );
 
-	friend client& commit ( client& );
-	friend client& crlf ( client& );
-	friend client& unfiltered ( client& );
-	size_t  	lines_out;
-	size_t  	max_screen_lines;
+	friend connection& commit ( connection& );
+	friend connection& crlf ( connection& );
+	friend connection& unfiltered ( connection& );
+	size_t lines_out;
+	size_t max_screen_lines;
 protected:
-	PRINT_MODE	m_print_mode;
-	netSocket* m_socket;
+	PRINT_MODE		m_print_mode;
+	netSocket*		m_socket;
 	std::ostringstream	m_output;
-	filter_list			m_active_filters;	///< list of active filters
+	filter_list		m_active_filters;	///< list of active filters
 #ifndef _MSC_VER
 	struct termios OldModes;
 #endif
@@ -75,16 +75,16 @@ protected:
 //
 //////////////////////////////////////////////////////////////////////
 template <class T>
-client& client::operator << ( T v )
+connection& connection::operator << ( T v )
 {
 	m_output << v;
 	return *this;
 } // operator << ( class T );
 //////////////////////////////////////////////////////////////////////
 
-client& commit ( client& );
-client& crlf ( client& out );
-client& unfiltered ( client& out );
+connection& commit ( connection& );
+connection& crlf ( connection& out );
+connection& unfiltered ( connection& out );
 
 }; // namespace libcli
 
