@@ -68,7 +68,7 @@ cli::cli
 	int fd
 )
 	: m_connection { fd }
-	, m_edit { fd }
+	, m_edit { &m_connection }
 	, m_max_history { 256 }
 	, m_in_history { NOT_IN_HISTORY }
 {

@@ -36,7 +36,7 @@ class cli;
 class editor
 {
 public:
-	editor ( int fd );
+	editor ( connection* conn );
 	~editor ();
 	int	get_line ( std::string& line );
 	void	set_prompt ( const std::string& prompt );
@@ -65,7 +65,7 @@ protected:
 	bool		m_showprompt;	///< present the prompt?
 	std::string	m_prompt;	///< the prompt string
 	bool		m_password_mode;///< don't do some action when typing a password
-	connection	m_connection;	///< the client connection
+	connection*	m_connection;	///< the client connection
 	size_t		m_cursor;	///< cursor position within input line
 	std::string	m_input_line;	///< content of current input line
 	struct regular_callback_t
