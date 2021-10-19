@@ -35,7 +35,7 @@ FG_CLI::FG_CLI
 (
 	FG_SERVER* fgms,
 	int fd
-) : cli ( fd )
+) : cli { fd }
 {
 	this->fgms = fgms;
 	this->setup ();
