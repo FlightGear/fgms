@@ -230,12 +230,12 @@ FG_SERVER::FG_SERVER
 	m_LocalClients		= 0;
 	m_RemoteClients		= 0;
 
-    // Be able to enable/disable file interface
-    // On start-up if the file already exists, disable
-    struct stat buf;
-    m_useExitFile       = ( stat ( exit_file,&buf ) ) ? true : false;
-    m_useResetFile      = ( stat ( reset_file,&buf ) ) ? true : false; // caution: this has failed in the past
-    m_useStatFile       = ( stat ( stat_file,&buf ) ) ? true : false;
+	// Be able to enable/disable file interface
+	// On start-up if the file already exists, disable
+	struct stat buf;
+	m_useExitFile		= ( stat ( exit_file,&buf ) ) ? true : false;
+	m_useResetFile		= ( stat ( reset_file,&buf ) ) ? true : false; // caution: this has failed in the past
+	m_useStatFile		= ( stat ( stat_file,&buf ) ) ? true : false;
 
 	m_Uptime		= time(0);
 	m_WantExit		= false;
@@ -309,9 +309,9 @@ FG_SERVER::Init()
 	}
 	else
 	{
-			SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
-				<< "Failed to open log file "
-				<< m_LogFileName );
+		SG_CONSOLE ( SG_FGMS, SG_ALERT, "FG_SERVER::Init() - "
+			<< "Failed to open log file "
+			<< m_LogFileName );
         }
 	}
 	if ( m_Initialized == false )
@@ -501,10 +501,10 @@ FG_SERVER::Init()
 	}
 	SG_CONSOLE ( SG_FGMS, SG_ALERT, "# I have " << m_BlackList.Size() << " blacklisted IPs" );
 
-    if (m_useExitFile && m_useStatFile) // only show this IFF both are enabled
-    {
-        SG_CONSOLE ( SG_FGMS, SG_ALERT, "# Files: exit=[" << exit_file << "] stat=[" << stat_file << "]" );
-    }
+	if (m_useExitFile && m_useStatFile) // only show this IFF both are enabled
+	{
+		SG_CONSOLE ( SG_FGMS, SG_ALERT, "# Files: exit=[" << exit_file << "] stat=[" << stat_file << "]" );
+	}
 
 	m_Listening = true;
 	return ( SUCCESS );
@@ -545,17 +545,15 @@ FG_SERVER::PrepareInit()
  * @param Fd -- docs todo --
  */
 void*
-FG_SERVER::HandleAdmin( int Fd )
+FG_SERVER::HandleAdmin ( int fd )
 {
-	FG_CLI*	MyCLI;
 	errno = 0;
-	MyCLI = new FG_CLI ( this, Fd );
-	MyCLI->loop ();
-	if (Fd == 0)
+	FG_CLI MyCLI { this, fd };
+	MyCLI.loop ();
+	if (fd == 0)
 	{	// reading from stdin
 		WantExit();
 	}
-	delete MyCLI;
 	return ( 0 );
 }
 
@@ -718,12 +716,12 @@ FG_SERVER::AddBadClient
 	else
 		m_RemoteClients++;
 	NewPlayer.Name      = "* Bad Client *";
-	NewPlayer.ModelName     = "* unknown *";
-	NewPlayer.Origin        = Sender.getHost ();
-	NewPlayer.Address       = Sender;
-	NewPlayer.IsLocal       = IsLocal;
-	NewPlayer.HasErrors     = true;
-	NewPlayer.Error         = ErrorMsg;
+	NewPlayer.ModelName = "* unknown *";
+	NewPlayer.Origin    = Sender.getHost ();
+	NewPlayer.Address   = Sender;
+	NewPlayer.IsLocal   = IsLocal;
+	NewPlayer.HasErrors = true;
+	NewPlayer.Error     = ErrorMsg;
 	NewPlayer.UpdateRcvd (Bytes);
 	SG_LOG ( SG_FGMS, SG_WARN, "FG_SERVER::AddBadClient() - " << ErrorMsg );
 	m_PlayerList.Add (NewPlayer, m_PlayerExpires);

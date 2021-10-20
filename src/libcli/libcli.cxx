@@ -67,8 +67,8 @@ cli::cli
 (
 	int fd
 )
-	: m_client { fd }
-	, m_edit { fd }
+	: m_connection { fd }
+	, m_edit { &m_connection }
 	, m_max_history { 256 }
 	, m_in_history { NOT_IN_HISTORY }
 {
@@ -322,8 +322,8 @@ cli::have_unwanted_args
 		case 0:
 			if ( a == "?" )
 			{
-				m_client << "<cr>" << crlf;
-				m_client << "|" << crlf;
+				m_connection << "<cr>" << crlf;
+				m_connection << "|" << crlf;
 				return libcli::ERROR_ANY;
 			}
 		default:
@@ -477,7 +477,7 @@ cli::allow_user
 	auto u = m_users.find ( username );
 	if ( u != m_users.end () )
 	{
-		m_client << unfiltered
+		m_connection << unfiltered
 			<< "user '" << username << "' already exists!" << crlf;
 		return;
 	}
@@ -725,14 +725,14 @@ cli::register_command
 {
 	if ( cmd.m_name == "" )
 	{
-		m_client << "can not add empty command" << crlf;
+		m_connection << "can not add empty command" << crlf;
 		return;
 	}
 	for ( auto c : parent.m_children )
 	{
 		if ( ( cmd.m_name == c.m_name ) && ( cmd.m_mode == c.m_mode ) )
 		{
-			m_client << "command '" << cmd.m_name << "' already known!" << crlf;
+			m_connection << "command '" << cmd.m_name << "' already known!" << crlf;
 			return;
 		}
 	}
@@ -755,14 +755,14 @@ cli::register_command
 {
 	if ( cmd.m_name == "" )
 	{
-		m_client << "can not add empty command" << crlf;
+		m_connection << "can not add empty command" << crlf;
 		return;
 	}
 	for ( auto c : m_commands )
 	{	// check if we already have a command with this name
 		if ( ( cmd.m_name == c.m_name ) && ( cmd.m_mode == c.m_mode ) )
 		{
-			m_client << "command '" << cmd.m_name << "' already known!" << crlf;
+			m_connection << "command '" << cmd.m_name << "' already known!" << crlf;
 			return;
 		}
 	}
@@ -790,7 +790,7 @@ cli::unregister_command
 			return;
 		}
 	}
-	m_client << "could not unregister '" << name << "'" << crlf;
+	m_connection << "could not unregister '" << name << "'" << crlf;
 	return;
 } // cli::unregsiter_command ()
 //////////////////////////////////////////////////////////////////////
@@ -809,14 +809,14 @@ cli::register_filter
 {
 	if ( filter_cmd.m_name == "" )
 	{
-		m_client << "can not add empty filter command" << crlf;
+		m_connection << "can not add empty filter command" << crlf;
 		return;
 	}
 	for ( auto c : m_filters )
 	{	// check if we already have a command with this name
 		if ( filter_cmd.m_name == c.m_name )
 		{
-			m_client << "filter '" << filter_cmd.m_name << "' already known!" << crlf;
+			m_connection << "filter '" << filter_cmd.m_name << "' already known!" << crlf;
 			return;
 		}
 	}
@@ -990,8 +990,8 @@ cli::internal_help
 	{
 		return r;
 	}
-	m_client << crlf;
-	m_client <<
+	m_connection << crlf;
+	m_connection <<
 		"Help may be requested at any point in a command by entering\r\n"
 		"a question mark '?'.  If nothing matches, the help list will\r\n"
 		"be empty and you must backup until entering a '?' shows the\r\n"
@@ -1033,7 +1033,7 @@ cli::internal_whoami
 	{
 		return r;
 	}
-	m_client << "You are '" << m_username << "'" << crlf;
+	m_connection << "You are '" << m_username << "'" << crlf;
 	return libcli::OK;
 } // cli::internal_whoami ()
 //////////////////////////////////////////////////////////////////////
@@ -1063,11 +1063,11 @@ cli::internal_history
 	{
 		return r;
 	}
-	m_client << "Command history:" << crlf;
+	m_connection << "Command history:" << crlf;
 	size_t i = 0;
 	for ( auto a : m_history )
 	{
-		m_client << std::setfill ( ' ' ) << std::setw ( 3 ) << i << ": " << a << crlf;
+		m_connection << std::setfill ( ' ' ) << std::setw ( 3 ) << i << ": " << a << crlf;
 		++i;
 	}
 	return libcli::OK;
@@ -1103,9 +1103,9 @@ cli::internal_set_history
 		case 0: // argument 'number of lines'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<NUM>" << "Number of lines to hold in the history" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "show current number of lines" << crlf;
 				return ( libcli::OK );
 			}
@@ -1124,7 +1124,7 @@ cli::internal_set_history
 	{
 		set_history_size ( lines );
 	}
-	m_client << "history size is " << m_max_history << " lines." << crlf;
+	m_connection << "history size is " << m_max_history << " lines." << crlf;
 	return libcli::OK;
 } // cli::internal_set_history ()
 //////////////////////////////////////////////////////////////////////
@@ -1157,9 +1157,9 @@ cli::internal_invoke_history
 		case 0: // argument 'number of history entry'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<NUM>" << "Number of history entry to invoke" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<CR>" << "repeat last command" << crlf;
 				return ( libcli::OK );
 			}
@@ -1181,7 +1181,7 @@ cli::internal_invoke_history
 	}
 	if ( m_history.size () == 0 )
 	{
-		m_client << unfiltered << "% no history yet!" << crlf;
+		m_connection << unfiltered << "% no history yet!" << crlf;
 		return libcli::OK;
 	}
 	if ( h == NOT_IN_HISTORY )
@@ -1190,7 +1190,7 @@ cli::internal_invoke_history
 	}
 	if ( h > m_history.size () - 1 )
 	{
-		m_client << unfiltered << "% number out f range!" << crlf;
+		m_connection << unfiltered << "% number out f range!" << crlf;
 		return libcli::ERROR_ARG;
 	}
 	auto hist = m_history.begin () + h;
@@ -1245,7 +1245,7 @@ cli::internal_quit
 	};
 	srandom ( time ( 0 ) );
 	long i = random () % quit_message.size ();
-	m_client << unfiltered << quit_message[i] << crlf;
+	m_connection << unfiltered << quit_message[i] << crlf;
 	return libcli::QUIT;
 } // cli::internal_quit ()
 //////////////////////////////////////////////////////////////////////
@@ -1318,9 +1318,9 @@ cli::internal_pager
 		case 0: // argument 'number of lines'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<0-512>" << "Number of lines on screen (0 for no pausing)" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "show current number of lines" << crlf;
 				return ( libcli::OK );
 			}
@@ -1336,11 +1336,11 @@ cli::internal_pager
 		++i;
 	}
 	if ( lines > 0 )
-		m_client.max_screen_lines = lines;
+		m_connection.max_screen_lines = lines;
 	if ( lines == 0 )
-		m_client << "disabled pausing" << crlf;
+		m_connection << "disabled pausing" << crlf;
 	else
-		m_client << "show " << m_client.max_screen_lines << " lines without pausing" << crlf;
+		m_connection << "show " << m_connection.max_screen_lines << " lines without pausing" << crlf;
 	return libcli::OK;
 } // cli::internal_pager ()
 //////////////////////////////////////////////////////////////////////
@@ -1361,9 +1361,9 @@ cli::internal_hostname
 		case 0: // argument 'number of lines'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<string>" << "a hostname" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "show current hostname" << crlf;
 				return ( libcli::OK );
 			}
@@ -1374,7 +1374,7 @@ cli::internal_hostname
 		}
 		++i;
 	}
-	m_client << "hostname is '" << m_hostname << "'" << crlf;
+	m_connection << "hostname is '" << m_hostname << "'" << crlf;
 	return libcli::OK;
 } // cli::internal_hostname ()
 //////////////////////////////////////////////////////////////////////
@@ -1417,7 +1417,7 @@ cli::filter_grab
 		case 0:
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<WORD>" << "only display lines that match <WORD>" << crlf;
 				return ( libcli::OTHER );
 			}
@@ -1435,10 +1435,10 @@ cli::filter_grab
 	}
 	if ( match_me.length () == 0 )
 	{
-		m_client << unfiltered << "% missing argument!" << crlf;
+		m_connection << unfiltered << "% missing argument!" << crlf;
 		return libcli::ERROR_ARG;
 	}
-	m_client.m_active_filters.push_back (
+	m_connection.m_active_filters.push_back (
 		new match_filter {
 			match_filter::MATCH_MODE::NORM,
 			match_me
@@ -1481,7 +1481,7 @@ cli::filter_exclude
 		case 0:
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<WORD>" << "only display lines that do not match <WORD>" << crlf;
 				return ( libcli::OTHER );
 			}
@@ -1499,10 +1499,10 @@ cli::filter_exclude
 	}
 	if ( match_me.length () == 0 )
 	{
-		m_client << unfiltered << "% missing argument!" << crlf;
+		m_connection << unfiltered << "% missing argument!" << crlf;
 		return libcli::ERROR_ARG;
 	}
-	m_client.m_active_filters.push_back (
+	m_connection.m_active_filters.push_back (
 		new match_filter {
 			match_filter::MATCH_MODE::INVERT,
 			match_me
@@ -1545,7 +1545,7 @@ cli::filter_begin
 		case 0:
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<WORD>" << "start printing lines when <WORD> matches" << crlf;
 				return ( libcli::OTHER );
 			}
@@ -1562,10 +1562,10 @@ cli::filter_begin
 	}
 	if ( match_me.length () == 0 )
 	{
-		m_client << unfiltered << "% missing argument!" << crlf;
+		m_connection << unfiltered << "% missing argument!" << crlf;
 		return libcli::ERROR_ARG;
 	}
-	m_client.m_active_filters.push_back (
+	m_connection.m_active_filters.push_back (
 		new begin_filter { match_me }
 	);
 	return libcli::OK;
@@ -1607,7 +1607,7 @@ cli::filter_between
 		case 0:
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<WORD>" << "start printing lines when <WORD> matches" << crlf;
 				return ( libcli::OTHER );
 			}
@@ -1616,7 +1616,7 @@ cli::filter_between
 		case 1:
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<WORD>" << "stop printing lines when <WORD> matches" << crlf;
 				return ( libcli::OTHER );
 			}
@@ -1633,15 +1633,15 @@ cli::filter_between
 	}
 	if ( start_with.length () == 0 )
 	{
-		m_client << unfiltered << "% missing argument!" << crlf;
+		m_connection << unfiltered << "% missing argument!" << crlf;
 		return libcli::ERROR_ARG;
 	}
 	if ( end_with.length () == 0 )
 	{
-		m_client << unfiltered << "% missing argument!" << crlf;
+		m_connection << unfiltered << "% missing argument!" << crlf;
 		return libcli::ERROR_ARG;
 	}
-	m_client.m_active_filters.push_back (
+	m_connection.m_active_filters.push_back (
 		new between_filter { start_with, end_with }
 	);
 	return libcli::OK;
@@ -1677,7 +1677,7 @@ cli::filter_count
 	{
 		return r;
 	}
-	m_client.m_active_filters.push_back (
+	m_connection.m_active_filters.push_back (
 		new count_filter {}
 	);
 	return libcli::OK;
@@ -1718,7 +1718,7 @@ cli::filter_limit
 		case 0:
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<NUM>" << "print only <NUM> lines of output" << crlf;
 				return ( libcli::OTHER );
 			}
@@ -1738,7 +1738,7 @@ cli::filter_limit
 		}
 		++i;
 	}
-	m_client.m_active_filters.push_back (
+	m_connection.m_active_filters.push_back (
 		new limit_filter { limit }
 	);
 	return libcli::OK;
@@ -1773,8 +1773,8 @@ cli::filter_nomore
 	{
 		return r;
 	}
-	m_client.m_active_filters.push_back (
-		new nomore_filter { m_client }
+	m_connection.m_active_filters.push_back (
+		new nomore_filter { m_connection }
 	);
 	return libcli::OK;
 } // cli::filter_nomore ()
@@ -1815,7 +1815,7 @@ cli::filter_last
 		case 0:
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<NUM>" << "print the last <NUM> lines of output" << crlf;
 				return ( libcli::OTHER );
 			}
@@ -1835,7 +1835,7 @@ cli::filter_last
 		}
 		++i;
 	}
-	m_client.m_active_filters.push_back (
+	m_connection.m_active_filters.push_back (
 		new last_filter { limit }
 	);
 	return libcli::OK;
@@ -1885,7 +1885,7 @@ cli::split_line
 			pos_end = s.find_first_of ( in_quotes, pos_start );
 			if ( pos_end == std::string::npos )
 			{
-				m_client << unfiltered << "missing closing quote" << crlf;
+				m_connection << unfiltered << "missing closing quote" << crlf;
 				return libcli::MISSING_QUOTE;
 			}
 		}
@@ -1920,29 +1920,29 @@ cli::result_msg
 	switch ( result )
 	{
 	case libcli::TOO_MANY_ARGS:
-		m_client << "% too many arguments" << crlf;
+		m_connection << "% too many arguments" << crlf;
 		return;
 	case libcli::END_OF_ARGS:
-		m_client << "<cr>" << crlf;
-		m_client << "|" << crlf;
+		m_connection << "<cr>" << crlf;
+		m_connection << "|" << crlf;
 		return;
 	case libcli::MISSING_ARG:
-		m_client << "% missing argument" << crlf;
+		m_connection << "% missing argument" << crlf;
 		return;
 	case ERROR_ARG:
-		m_client << "% errornous argument" << crlf;
+		m_connection << "% errornous argument" << crlf;
 		return;
 	case MISSING_QUOTE:
-		m_client << "% missing quote" << crlf;
+		m_connection << "% missing quote" << crlf;
 		return;
 	case UNKNOWN_COMMAND:
-		m_client << "% unknown command" << crlf;
+		m_connection << "% unknown command" << crlf;
 		return;
 	case UNKNOWN_FILTER:
-		m_client << "% unknown filter" << crlf;
+		m_connection << "% unknown filter" << crlf;
 		return;
 	case INVALID_ARG:
-		m_client << "% invalid argument" << crlf;
+		m_connection << "% invalid argument" << crlf;
 		return;
 	case OK:
 	case ERROR_ANY:
@@ -1960,7 +1960,7 @@ cli::result_msg
  * @brief Find and execute a filter
  *
  * Executing a filter means to instantiate the corresponding filter
- * and adding that to @ref client::m_active_filters.
+ * and adding that to @ref connection::m_active_filters.
  *
  * @param filters A @ref cmd_list of all defined filters
  * @param words   A list of words. The first word is the name of the
@@ -2006,7 +2006,7 @@ cli::find_filter
 				&& ( ( nullptr != c.m_callback.member ) || ( !c.m_children.empty () ) )
 				)
 			{	// and print help
-				m_client << "  "
+				m_connection << "  "
 					<< std::left << std::setfill ( ' ' ) << std::setw ( 20 )
 					<< c.m_name
 					<< c.m_help
@@ -2016,7 +2016,7 @@ cli::find_filter
 		}
 		if ( !have_help )
 		{
-			m_client << "'" << word << "' not found!" << crlf;
+			m_connection << "'" << word << "' not found!" << crlf;
 			return libcli::ERROR_ARG;
 		}
 		return libcli::OTHER;	// user just wanted help
@@ -2034,20 +2034,20 @@ cli::find_filter
 		}
 		if ( word.length () < f.m_unique_len )
 		{
-			m_client << unfiltered
+			m_connection << unfiltered
 				<< "Ambiguous filter!" << crlf;
 			continue;
 		}
 		// found the filter
 		if ( nullptr == f.m_callback.member )
 		{
-			m_client << unfiltered
+			m_connection << unfiltered
 				<< "% filter with no callback!" << crlf;
 			return libcli::ERROR_ANY;
 		}
 		if ( want_help )
 		{
-			m_client << "  "
+			m_connection << "  "
 				<< std::left << std::setfill ( ' ' ) << std::setw ( 20 )
 				<< f.m_name
 				<< f.m_help
@@ -2162,7 +2162,7 @@ cli::find_command
 				&& ( ( c.m_mode == m_mode ) || ( c.m_mode == MODE::ANY ) )
 				)
 			{	// and print help
-				m_client << "  "
+				m_connection << "  "
 					<< std::left << std::setfill ( ' ' ) << std::setw ( 20 )
 					<< c.m_name
 					<< c.m_help
@@ -2172,7 +2172,7 @@ cli::find_command
 		}
 		if ( !have_help )
 		{
-			m_client << "'" << word << "' not found!" << crlf;
+			m_connection << "'" << word << "' not found!" << crlf;
 			return libcli::ERROR_ARG;
 		}
 		return libcli::OTHER;	// user just wanted help
@@ -2198,7 +2198,7 @@ cli::find_command
 		}
 		if ( word.length () < c.m_unique_len )
 		{
-			m_client << unfiltered
+			m_connection << unfiltered
 				<< "Ambiguous command!" << crlf;
 			return libcli::ERROR_ANY;
 		}
@@ -2218,17 +2218,17 @@ cli::find_command
 		// found the command
 		if ( c.m_callback.member == nullptr )
 		{
-			m_client << unfiltered
+			m_connection << unfiltered
 				<< "% incomplete command!" << crlf;
 			return libcli::ERROR_ANY;
 		}
 		RESULT i = c ( c.m_name, words );
 		// call 'final' of all filters
-		if ( m_client.m_active_filters.size () > 0 )
+		if ( m_connection.m_active_filters.size () > 0 )
 		{
-			for ( auto& f : m_client.m_active_filters )
+			for ( auto& f : m_connection.m_active_filters )
 			{
-				f->final ( m_client );
+				f->final ( m_connection );
 			}
 		}
 		return i;
@@ -2245,11 +2245,11 @@ void
 cli::clear_active_filters
 ()
 {
-	while ( m_client.m_active_filters.size () > 0 )
+	while ( m_connection.m_active_filters.size () > 0 )
 	{
-		auto f = m_client.m_active_filters.back ();
+		auto f = m_connection.m_active_filters.back ();
 		delete f;
-		m_client.m_active_filters.pop_back ();
+		m_connection.m_active_filters.pop_back ();
 	}
 } // cli::clear_active_filters ()
 //////////////////////////////////////////////////////////////////////
@@ -2355,10 +2355,10 @@ cli::get_completions
 		{
 			if ( !is_ambiguous )	// first command, not yet ambiguous
 			{
-				m_client << unfiltered << crlf;
+				m_connection << unfiltered << crlf;
 			}
 			// ambiguous command. print help for all possible completions
-			m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 20 )
+			m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 20 )
 				<< c.m_name
 				<< c.m_help
 				<< crlf;
@@ -2381,7 +2381,7 @@ cli::get_completions
 		return new_line;
 	}
 	// command not found, return the original command line provided
-	m_client << unfiltered << crlf;
+	m_connection << unfiltered << crlf;
 	std::string new_line { word };
 	for ( auto w : words )
 	{
@@ -2466,13 +2466,13 @@ cli::check_enable
 	}
 	if ( allowed )
 	{
-		m_client << "-ok-" << crlf;
+		m_connection << "-ok-" << crlf;
 		m_state = STATE::ENABLE;
 		set_privilege ( PRIVLEVEL::PRIVILEGED );
 	}
 	else
 	{
-		m_client << crlf << crlf << "Access denied" << crlf;
+		m_connection << crlf << crlf << "Access denied" << crlf;
 		m_state = STATE::NORMAL;
 	}
 } // cli::check_enable ()
@@ -2517,13 +2517,13 @@ cli::check_user_auth
 	}
 	if ( allowed )
 	{
-		m_client << "-ok-" << crlf;
-		m_client << "type '?' or 'help' for help." << crlf << crlf;
+		m_connection << "-ok-" << crlf;
+		m_connection << "type '?' or 'help' for help." << crlf << crlf;
 		m_state = STATE::NORMAL;
 	}
 	else
 	{
-		m_client << crlf << crlf << "Access denied" << crlf;
+		m_connection << crlf << crlf << "Access denied" << crlf;
 		m_state = STATE::LOGIN;
 	}
 } // cli::check_user_auth ()
@@ -2539,7 +2539,7 @@ cli::leave_mode
 {
 	if ( m_mode != MODE::STANDARD )
 	{
-		// m_client << crlf;
+		// m_connection << crlf;
 		set_mode ( MODE::STANDARD, "" );
 	}
 } // cli::leave_mode ()
@@ -2692,7 +2692,7 @@ cli::loop
 
 	if ( m_banner != "" )
 	{
-		m_client << m_banner << crlf;
+		m_connection << m_banner << crlf;
 	}
 	m_state = STATE::LOGIN;
 	if ( m_users.empty () && ( m_auth_callback.member == nullptr ) )
@@ -2708,12 +2708,19 @@ cli::loop
 	int last_key;
 	while ( !finished )
 	{
-		m_client.lines_out = 0;
+		m_connection.lines_out = 0;
 		m_edit.set_prompt ( make_prompt () );
 		last_key = curr_key;	// detect double TAB
 		curr_key = m_edit.get_line ( input );
 		if ( m_state == STATE::LOGIN )
 		{
+			if ( curr_key == CTRL ( 'D' ) )
+			{
+				m_connection << "quit" << crlf;
+				internal_quit ( "quit", tokens {} );
+				finished = true;
+				break;
+			}
 			m_username = input;
 			input.clear ();
 			m_state = STATE::PASSWORD;
@@ -2739,7 +2746,7 @@ cli::loop
 		case '\n':
 		case '\r':
 			//if ( m_state != STATE::PASSWORD && m_state != STATE::ENABLE_PASSWORD )
-			//	m_client << crlf;
+			//	m_connection << crlf;
 			break;
 		case CTRL ( 'Z' ):	// leave the current mode, FIXME CTRL-Z does not work
 			leave_mode ();
@@ -2748,7 +2755,7 @@ cli::loop
 		{
 			if ( last_key == curr_key )	// double TAB
 			{
-				m_client << unfiltered << crlf;
+				m_connection << unfiltered << crlf;
 				// input += '?';	// ask for help
 				// curr_key = '?';
 				// break;
@@ -2760,7 +2767,7 @@ cli::loop
 				pos = input.find_first_not_of ( WHITESPACE, pos + 1 );
 				if ( pos == std::string::npos )
 				{	// found '|' but nothing else
-					m_client << unfiltered << crlf << "incomplete command!" << crlf;
+					m_connection << unfiltered << crlf << "incomplete command!" << crlf;
 				}
 				else
 				{
@@ -2779,7 +2786,7 @@ cli::loop
 			continue;
 		}
 		case CTRL ( 'D' ):
-			m_client << "quit" << crlf;
+			m_connection << "quit" << crlf;
 			internal_quit ( "quit", tokens {} );
 			finished = true;
 			break;
@@ -2790,11 +2797,11 @@ cli::loop
 				// delete the current input line
 				for ( size_t i = 0; i < input.length (); ++i )
 				{
-					m_client.put_char ( '\b' );
-					m_client.put_char ( ' ' );
-					m_client.put_char ( '\b' );
+					m_connection.put_char ( '\b' );
+					m_connection.put_char ( ' ' );
+					m_connection.put_char ( '\b' );
 				}
-				m_client.put_char ( '\r' );
+				m_connection.put_char ( '\r' );
 				input = do_history ( curr_key );
 				continue;
 			}
@@ -2861,7 +2868,7 @@ cli::read_file
 	std::ifstream in_file ( filename );
 	if ( !in_file.is_open () )
 	{
-		m_client << unfiltered << "unable to open '" << filename << "' for reading." << crlf;
+		m_connection << unfiltered << "unable to open '" << filename << "' for reading." << crlf;
 	}
 	std::string line;
 	while ( getline ( in_file, line ) )
@@ -2893,42 +2900,42 @@ cli::pager
 	unsigned char c;
 	bool done = false;
 	const std::string more_prompt { "--- more ---" };
-	m_client << unfiltered << more_prompt << commit;
+	m_connection << unfiltered << more_prompt << commit;
 	c = ' ';
 	while ( done == false )
 	{
-		m_client.get_input ( c );
+		m_connection.get_input ( c );
 		if ( c == 0x00 )
 		{	// timeout
 			continue;
 		}
 		if ( c == 'q' )
 		{
-			m_client.lines_out = 0;
-			m_client.put_char ( '\r' );
+			m_connection.lines_out = 0;
+			m_connection.put_char ( '\r' );
 			for ( size_t i = 0; i < more_prompt.length (); ++i )
-				m_client.put_char ( ' ' );
-			m_client.put_char ( '\r' );
+				m_connection.put_char ( ' ' );
+			m_connection.put_char ( '\r' );
 			return true;
 		}
 		if ( c == ' ' )
 		{
-			m_client.lines_out = 0;
+			m_connection.lines_out = 0;
 			done = true;
 		}
 		if ( ( c == '\r' ) || ( c == '\n' ) )
 		{	// show next line and reprompt for more
-			m_client.lines_out--;
+			m_connection.lines_out--;
 			done = true;
-			m_client.put_char ( '\r' );
+			m_connection.put_char ( '\r' );
 			for ( size_t i = 0; i < more_prompt.length (); ++i )
-				m_client.put_char ( ' ' );
+				m_connection.put_char ( ' ' );
 		}
 	}
-	m_client.put_char ( '\r' );
+	m_connection.put_char ( '\r' );
 	for ( size_t i = 0; i < more_prompt.length (); ++i )
-		m_client.put_char ( ' ' );
-	m_client.put_char ( '\r' );
+		m_connection.put_char ( ' ' );
+	m_connection.put_char ( '\r' );
 	return false;
 } // cli::pager ()
 //////////////////////////////////////////////////////////////////////
@@ -2944,9 +2951,9 @@ bool
 cli::check_pager
 ()
 {
-	if ( m_client.max_screen_lines == 0 )
+	if ( m_connection.max_screen_lines == 0 )
 		return false;
-	if ( m_client.lines_out > m_client.max_screen_lines )
+	if ( m_connection.lines_out > m_connection.max_screen_lines )
 	{
 		if ( pager () )
 		{

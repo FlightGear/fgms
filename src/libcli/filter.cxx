@@ -21,7 +21,7 @@
 
 #include "common.hxx"
 #include "filter.hxx"
-#include "cli_client.hxx"
+#include "connection.hxx"
 
 namespace libcli
 {
@@ -204,12 +204,12 @@ count_filter::exec
 /**
  * @brief Print a summary line with the counter.
  *
- * @param out A reference to a @ref client
+ * @param out A reference to a @ref connection
  */
 void
 count_filter::final
 (
-	client& out
+	connection& out
 	)
 {
 	out << unfiltered << "count: " << m_count << " lines" << crlf;
@@ -309,12 +309,12 @@ last_filter::exec
 /**
  * @brief Print all lines of putput from out internal list.
  *
- * @param out A reference to a @ref client, used for the output.
+ * @param out A reference to a @ref connection, used for the output.
  */
 void
 last_filter::final
 (
-	client& out
+	connection& out
 	)
 {
 	for ( auto a : m_lines )
@@ -331,11 +331,11 @@ last_filter::final
  * 
  * Disable the pager.
  * 
- * @param out A reference to a @ref client, used for the output.
+ * @param out A reference to a @ref connection, used for the output.
  */
 nomore_filter::nomore_filter
 (
-	client& out
+	connection& out
 )
 {
 	m_max_screen_lines = out.max_screen_lines;
@@ -365,12 +365,12 @@ nomore_filter::exec
 /**
  * @brief Re-nable the pager when all output was done.
  * 
- * @param out A reference to a @ref client, used for the output.
+ * @param out A reference to a @ref connection, used for the output.
  */
 void
 nomore_filter::final
 (
-	client& out
+	connection& out
 	)
 {
 	out.max_screen_lines = m_max_screen_lines;

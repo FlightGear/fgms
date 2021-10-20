@@ -27,7 +27,7 @@
 #ifndef _MSC_VER
 #include <termios.h>
 #endif
-#include "cli_client.hxx"
+#include "connection.hxx"
 #include "common.hxx"
 #include "command.hxx"
 #include "editor.hxx"
@@ -46,11 +46,11 @@ public:
 	 */
 	enum class STATE
 	{
-		LOGIN,				///< ask for a username
-		PASSWORD,			///< ask for user password
+		LOGIN,			///< ask for a username
+		PASSWORD,		///< ask for user password
 		ENABLE_PASSWORD,	///< ask for the enable password
-		NORMAL,				///< normal operation state
-		ENABLE				///< user is in enable mode, FIXME: needed?
+		NORMAL,			///< normal operation state
+		ENABLE			///< user is in enable mode, FIXME: needed?
 	};
 	using user_map = std::map<std::string, std::string>;
 	using cmd_list = command::cmd_list;
@@ -78,8 +78,8 @@ public:
 	void	set_banner ( const std::string& banner );
 	void	set_hostname ( const std::string& hostname );
 	void	set_modestring ( const std::string& modestring );
-	int		set_privilege ( int privilege );
-	int		set_mode ( int mode, const std::string& desc );
+	int	set_privilege ( int privilege );
+	int	set_mode ( int mode, const std::string& desc );
 	bool	arg_wants_help ( const std::string& arg );
 	bool	wants_help_last_arg ( const std::string& arg );
 	RESULT	have_unwanted_args ( const tokens& args );
@@ -98,7 +98,7 @@ protected:
 	std::string	get_completions ( const cmd_list& commands, tokens& words );
 	bool		pass_matches ( const std::string& pass, const std::string& tried_pass );
 	std::string	make_prompt ();
-	int			_print ( int print_mode, const char* format, va_list ap );
+	int		_print ( int print_mode, const char* format, va_list ap );
 	RESULT		internal_enable ( const std::string& name, const tokens& args );
 	RESULT		internal_disable ( const std::string& name, const tokens& args );
 	RESULT		internal_configure ( const std::string& name, const tokens& args );
@@ -124,22 +124,22 @@ protected:
 	void		check_user_auth ( const std::string& username, const std::string& password );
 	void		leave_mode ();
 	bool		check_pager ();
-	std::string		m_banner;
-	std::string		m_enable_password;
-	std::string		m_hostname;
-	std::string		m_modestring;
-	int				m_privilege;
-	int				m_mode;
-	STATE			m_state;
-	client			m_client;
-	user_map		m_users;
-	cmd_list		m_commands;			///< list of commands
-	cmd_list		m_filters;			///< list of available filters
-	editor			m_edit;
-	std::string		m_username;			///< login name of user
-	size_t			m_max_history;		///< maximmum size of the history
-	size_t			m_in_history;		///< 
-	hist_list		m_history;			///< the history
+	std::string	m_banner;
+	std::string	m_enable_password;
+	std::string	m_hostname;
+	std::string	m_modestring;
+	int		m_privilege;
+	int		m_mode;
+	STATE		m_state;
+	connection	m_connection;
+	user_map	m_users;
+	cmd_list	m_commands;		///< list of commands
+	cmd_list	m_filters;		///< list of available filters
+	editor		m_edit;
+	std::string	m_username;		///< login name of user
+	size_t		m_max_history;		///< maximmum size of the history
+	size_t		m_in_history;		///< 
+	hist_list	m_history;		///< the history
 	/**
 	 * @brief a callback function taking no arguments and returning an int
 	 *
@@ -154,7 +154,7 @@ protected:
 		union
 		{
 			std::function <int ( cli&, const std::string&, const std::string& )>	member;	// pointer to a class member
-			std::function <int ( const std::string&, const std::string& )>			c_func;	// pointer to c- or staic function
+			std::function <int ( const std::string&, const std::string& )>		c_func;	// pointer to c- or staic function
 		};
 		auth_func_t () : member { nullptr } {};
 		~auth_func_t () {};
@@ -164,7 +164,7 @@ protected:
 		union
 		{
 			std::function <int ( cli&, const std::string& )>	member;	// pointer to a class member
-			std::function <int ( const std::string& )>			c_func;	// pointer to c- or staic function
+			std::function <int ( const std::string& )>		c_func;	// pointer to c- or staic function
 		};
 		enable_func_t () : member { nullptr } {};
 		~enable_func_t () {};

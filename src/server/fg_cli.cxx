@@ -35,7 +35,7 @@ FG_CLI::FG_CLI
 (
 	FG_SERVER* fgms,
 	int fd
-) : cli ( fd )
+) : cli { fd }
 {
 	this->fgms = fgms;
 	this->setup ();
@@ -313,36 +313,36 @@ FG_CLI::cmd_show_stats
 	now = time ( 0 );
 	difftime = now - fgms->m_Uptime;
 	cmd_show_version ( command, args );
-	m_client << crlf;
-	m_client << "I have " << fgms->m_BlackList.Size ()
+	m_connection << crlf;
+	m_connection << "I have " << fgms->m_BlackList.Size ()
 		<< " entries in my blacklist"
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "I have " << fgms->m_CrossfeedList.Size () << " crossfeeds"
+	m_connection << "I have " << fgms->m_CrossfeedList.Size () << " crossfeeds"
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "I have " << fgms->m_RelayList.Size () << " relays"
+	m_connection << "I have " << fgms->m_RelayList.Size () << " relays"
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "I have " << fgms->m_PlayerList.Size () << " users ("
+	m_connection << "I have " << fgms->m_PlayerList.Size () << " users ("
 		<< fgms->m_LocalClients << " local, "
 		<< fgms->m_RemoteClients << " remote, "
 		<< fgms->m_NumMaxClients << " max)"
 		<< crlf; if ( check_pager () ) return libcli::OK;
 
-	m_client << "Sent counters:" << crlf; if ( check_pager () ) return OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "Sent counters:" << crlf; if ( check_pager () ) return OK;
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "to crossfeeds:"
 		<< fgms->m_CrossfeedList.PktsSent << " packets"
 		<< " (" << fgms->m_CrossfeedList.PktsSent / difftime << "/s)"
 		<< " / " << byte_counter ( fgms->m_CrossfeedList.BytesSent )
 		<< " (" << byte_counter ( ( double ) fgms->m_CrossfeedList.BytesSent / difftime ) << "/s)"
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "to relays:"
 		<< fgms->m_RelayList.PktsSent << " packets"
 		<< " (" << fgms->m_RelayList.PktsSent / difftime << "/s)"
 		<< " / " << byte_counter ( fgms->m_RelayList.BytesSent )
 		<< " (" << byte_counter ( ( double ) fgms->m_RelayList.BytesSent / difftime ) << "/s)"
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "to users:"
 		<< fgms->m_PlayerList.PktsSent << " packets"
 		<< " (" << fgms->m_PlayerList.PktsSent / difftime << "/s)"
@@ -350,32 +350,32 @@ FG_CLI::cmd_show_stats
 		<< " (" << byte_counter ( ( double ) fgms->m_PlayerList.BytesSent / difftime ) << "/s)"
 		<< crlf; if ( check_pager () ) return libcli::OK;
 
-	m_client << "Receive counters:" << crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "Receive counters:" << crlf; if ( check_pager () ) return libcli::OK;
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "total:" << fgms->m_PacketsReceived
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "pings:" << fgms->m_PingReceived
 		<< " (" << fgms->m_PongReceived << " pongs)"
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "errors:"
 		<< "invalid packets:" << fgms->m_PacketsInvalid
 		<< " rejected:" << fgms->m_BlackRejected
 		<< " unknown relay:" << fgms->m_UnknownRelay
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "valid data:"
 		<< "pos data:" << fgms->m_PositionData
 		<< " other:" << fgms->m_UnkownMsgID
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "tracker:"
 		<< "connects:" << fgms->m_TrackerConnect
 		<< " disconnects:" << fgms->m_TrackerDisconnect
 		<< " positions:" << fgms->m_TrackerPosition
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "admin connections:" << fgms->m_AdminReceived
 		<< crlf; if ( check_pager () ) return libcli::OK;
 	float telnet_per_second;
@@ -383,26 +383,26 @@ FG_CLI::cmd_show_stats
 		telnet_per_second = ( float ) fgms->m_TelnetReceived / ( time ( 0 ) - fgms->m_Uptime );
 	else
 		telnet_per_second = 0;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "telnet connections: "
 		<< fgms->m_TelnetReceived
 		<< " (" << std::setprecision ( 2 ) << telnet_per_second << " t/s)"
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "blacklist:"
 		<< fgms->m_BlackList.PktsRcvd << " packets"
 		<< " (" << fgms->m_BlackList.PktsRcvd / difftime << "/s)"
 		<< " / " << byte_counter ( fgms->m_BlackList.BytesRcvd )
 		<< " (" << byte_counter ( ( double ) fgms->m_BlackList.BytesRcvd / difftime ) << "/s)"
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "relays:"
 		<< fgms->m_RelayList.PktsRcvd << " packets"
 		<< " (" << fgms->m_RelayList.PktsRcvd / difftime << "/s)"
 		<< " / " << byte_counter ( fgms->m_RelayList.BytesRcvd )
 		<< " (" << byte_counter ( ( double ) fgms->m_RelayList.BytesRcvd / difftime ) << "/s)"
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "users:"
 		<< fgms->m_PlayerList.PktsRcvd << " packets"
 		<< " (" << fgms->m_PlayerList.PktsRcvd / difftime << "/s)"
@@ -421,15 +421,15 @@ FG_CLI::cmd_show_stats
 	accumulated_rcvd_pkts += fgms->m_RelayList.PktsRcvd;
 	accumulated_rcvd += fgms->m_PlayerList.BytesRcvd;
 	accumulated_rcvd_pkts += fgms->m_PlayerList.PktsRcvd;
-	m_client << "Totals:" << crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "Totals:" << crlf; if ( check_pager () ) return libcli::OK;
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "sent:"
 		<< accumulated_sent_pkts << " packets"
 		<< " (" << accumulated_sent_pkts / difftime << "/s)"
 		<< " / " << byte_counter ( accumulated_sent )
 		<< " (" << byte_counter ( ( double ) accumulated_sent / difftime ) << "/s)"
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "received:"
 		<< accumulated_rcvd_pkts << " packets"
 		<< " (" << accumulated_rcvd_pkts / difftime << "/s)"
@@ -462,33 +462,33 @@ FG_CLI::cmd_show_settings
 	else
 		bind_addr = fgms->m_BindAddress;
 	cmd_show_version ( command, args );
-	m_client << crlf;
-	m_client << "current settings:" << crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << crlf;
+	m_connection << "current settings:" << crlf; if ( check_pager () ) return libcli::OK;
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "listen port:" << fgms->m_ListenPort
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "telnet port:" << fgms->m_TelnetPort
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "admin port:" << fgms->m_AdminPort
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "player expires:" << fgms->m_PlayerExpires
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "out of reach:" << fgms->m_PlayerIsOutOfReach
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "radar range:" << fgms->m_MaxRadarRange
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "logfile:" << fgms->m_LogFileName
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "bind address:" << bind_addr
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+	m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 		<< "FQDN:" << fgms->m_FQDN
 		<< crlf; if ( check_pager () ) return libcli::OK;
 
@@ -533,7 +533,7 @@ FG_CLI::cmd_show_uptime
 	{
 		return r;
 	}
-	m_client << "UP since " << timestamp_to_datestr ( fgms->m_Uptime )
+	m_connection << "UP since " << timestamp_to_datestr ( fgms->m_Uptime )
 		<< "(" << timestamp_to_days ( fgms->m_Uptime ) << ")" << crlf;
 	return libcli::OK;
 } // FG_CLI::cmd_show_uptime
@@ -559,14 +559,14 @@ FG_CLI::cmd_show_version
 		s = "HUB";
 	else
 		s = "LEAVE";
-	m_client << "This is " << fgms->m_ServerName << " (" << fgms->m_FQDN << ")" << crlf;
-	m_client << "FlightGear Multiplayer " << s << " Server version " << VERSION << crlf;
-	m_client << "using protocol version v"
+	m_connection << "This is " << fgms->m_ServerName << " (" << fgms->m_FQDN << ")" << crlf;
+	m_connection << "FlightGear Multiplayer " << s << " Server version " << VERSION << crlf;
+	m_connection << "using protocol version v"
 		<< fgms->m_ProtoMajorVersion << "." << fgms->m_ProtoMinorVersion << crlf;
 	if ( fgms->m_IsTracked )
-		m_client << "This server is tracked: " << fgms->m_Tracker->GetTrackerServer () << crlf;
+		m_connection << "This server is tracked: " << fgms->m_Tracker->GetTrackerServer () << crlf;
 	else
-		m_client << "This server is NOT tracked" << crlf;
+		m_connection << "This server is NOT tracked" << crlf;
 	cmd_show_uptime ( command, args );
 	return libcli::OK;
 } // FG_CLI::cmd_show_version
@@ -600,13 +600,13 @@ FG_CLI::cmd_whitelist_show
 		case 0: // ID or IP or 'brief' or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "ID" << "show entry with ID" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "IP" << "show entry with IP-Address" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "show long listing" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "|" << "output modifier" << crlf;
 				return libcli::OK;
 			}
@@ -627,9 +627,9 @@ FG_CLI::cmd_whitelist_show
 		case 1: // '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "show long listing" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "|" << "output modifier" << crlf;
 				return libcli::OK;
 			}
@@ -640,12 +640,12 @@ FG_CLI::cmd_whitelist_show
 	}
 	int Count = fgms->m_WhiteList.Size ();
 	FG_ListElement Entry ( "" );
-	m_client << crlf;
+	m_connection << crlf;
 	time_t  difftime;
 	time_t  now;
 	now = time ( 0 );
-	m_client << fgms->m_WhiteList.Name << ":" << crlf;
-	m_client << crlf;
+	m_connection << fgms->m_WhiteList.Name << ":" << crlf;
+	m_connection << crlf;
 	for ( int i = 0; i < Count; i++ )
 	{
 		Entry = fgms->m_WhiteList[i];
@@ -661,28 +661,28 @@ FG_CLI::cmd_whitelist_show
 		}
 		EntriesFound++;
 		difftime = now - Entry.JoinTime;
-		m_client << "ID " << Entry.ID << ": "
+		m_connection << "ID " << Entry.ID << ": "
 			<< Entry.Address.getHost () << " : " << Entry.Name
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "  entered      : " << timestamp_to_datestr ( Entry.JoinTime )
+		m_connection << "  entered      : " << timestamp_to_datestr ( Entry.JoinTime )
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "  last seen    : " << timestamp_to_days ( Entry.LastSeen )
+		m_connection << "  last seen    : " << timestamp_to_days ( Entry.LastSeen )
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "  rcvd packets : " << Entry.PktsRcvd
+		m_connection << "  rcvd packets : " << Entry.PktsRcvd
 			<< " (" << Entry.PktsRcvd / difftime << "/s)"
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "  rcvd bytes   : " << byte_counter ( Entry.BytesRcvd )
+		m_connection << "  rcvd bytes   : " << byte_counter ( Entry.BytesRcvd )
 			<< " (" << Entry.BytesRcvd / difftime << "/s)"
 			<< crlf; if ( check_pager () ) return libcli::OK;
 	}
 	if ( EntriesFound )
-		m_client << crlf;
+		m_connection << crlf;
 	if ( check_pager () ) return libcli::OK;
-	m_client << EntriesFound << " entries found" << crlf; if ( check_pager () ) return libcli::OK;
+	m_connection << EntriesFound << " entries found" << crlf; if ( check_pager () ) return libcli::OK;
 	if ( EntriesFound )
 	{
 		difftime = now - fgms->m_Uptime;
-		m_client << "Total rcvd: "
+		m_connection << "Total rcvd: "
 			<< fgms->m_WhiteList.PktsRcvd << " packets"
 			<< " (" << fgms->m_WhiteList.PktsRcvd / difftime << "/s)"
 			<< " / " << byte_counter ( fgms->m_WhiteList.BytesRcvd )
@@ -724,9 +724,9 @@ FG_CLI::cmd_whitelist_delete
 		case 0: // ID or IP or 'brief' or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "ID" << "delete entry with ID" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "IP" << "delete entry with IP address" << crlf;
 				return libcli::OK;
 			}
@@ -747,7 +747,7 @@ FG_CLI::cmd_whitelist_delete
 		case 1: // only '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "delete entry" << crlf;
 				return libcli::OK;
 			}
@@ -758,7 +758,7 @@ FG_CLI::cmd_whitelist_delete
 	}
 	if ( ( ID == 0 ) && ( Address.getIP () == 0 ) )
 	{
-		m_client << "% missing argument" << crlf;
+		m_connection << "% missing argument" << crlf;
 		return libcli::MISSING_ARG;
 	}
 	if ( ( ID == 0 ) && ( Address.getIP () != 0 ) )
@@ -770,7 +770,7 @@ FG_CLI::cmd_whitelist_delete
 		}
 		else
 		{
-			m_client << "no entry found!" << crlf;
+			m_connection << "no entry found!" << crlf;
 			return libcli::OK;
 		}
 		return libcli::OK;
@@ -782,10 +782,10 @@ FG_CLI::cmd_whitelist_delete
 	}
 	else
 	{
-		m_client << "no entry found!" << crlf;
+		m_connection << "no entry found!" << crlf;
 		return libcli::OK;
 	}
-	m_client << "deleted!" << crlf;
+	m_connection << "deleted!" << crlf;
 	return libcli::OK;
 } // FG_CLI::cmd_whitelist_delete
 
@@ -820,21 +820,21 @@ FG_CLI::cmd_whitelist_add
 		case 0: // must be TTL or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "TTL" << "Timeout of the new entry in seconds" << crlf;
 				return libcli::OK;
 			}
 			TTL = StrToNum<size_t> ( a, I );
 			if ( I )
 			{
-				m_client << "% '" << a << "' invalid TTL" << crlf;
+				m_connection << "% '" << a << "' invalid TTL" << crlf;
 				return libcli::ERROR_ARG;
 			}
 			break;
 		case 1: // IP or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "IP" << "IP address which should be whitelisted" << crlf;
 				return libcli::OK;
 			}
@@ -849,12 +849,12 @@ FG_CLI::cmd_whitelist_add
 			{
 				if ( Reason == "" )
 				{
-					m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 						<< "STRING" << "a reason for whitelisting this IP" << crlf;
 				}
 				else
 				{
-					m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 						<< "<cr>" << "add this IP" << crlf;
 				}
 				return libcli::OK;
@@ -876,10 +876,10 @@ FG_CLI::cmd_whitelist_add
 	}
 	else
 	{
-		m_client << "% entry already exists (ID " << CurrentEntry->ID << ")!" << crlf;
+		m_connection << "% entry already exists (ID " << CurrentEntry->ID << ")!" << crlf;
 		return libcli::ERROR_ARG;
 	}
-	m_client << "added with ID " << NewID << crlf;
+	m_connection << "added with ID " << NewID << crlf;
 	return libcli::OK;
 } // FG_CLI::cmd_whitelist_add
 
@@ -915,15 +915,15 @@ FG_CLI::cmd_blacklist_show
 		case 0: // ID or IP or 'brief' or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "brief" << "show brief listing" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "ID" << "show entry with ID" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "IP" << "show entry with IP-Address" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "show long listing" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "|" << "output modifier" << crlf;
 				return libcli::OK;
 			}
@@ -950,12 +950,12 @@ FG_CLI::cmd_blacklist_show
 			{
 				if ( !Brief )
 				{
-					m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 						<< "brief" << "show brief listing" << crlf;
 				}
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "show long listing" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "|" << "output modifier" << crlf;
 				return libcli::OK;
 			}
@@ -972,12 +972,12 @@ FG_CLI::cmd_blacklist_show
 	}
 	int Count = fgms->m_BlackList.Size ();
 	FG_ListElement Entry ( "" );
-	m_client << crlf;
+	m_connection << crlf;
 	time_t  difftime;
 	time_t  now;
 	now = time ( 0 );
-	m_client << fgms->m_BlackList.Name << ":" << crlf;
-	m_client << crlf;
+	m_connection << fgms->m_BlackList.Name << ":" << crlf;
+	m_connection << crlf;
 	for ( int i = 0; i < Count; i++ )
 	{
 		Entry = fgms->m_BlackList[i];
@@ -992,7 +992,7 @@ FG_CLI::cmd_blacklist_show
 				continue;
 		}
 		EntriesFound++;
-		m_client << "ID " << Entry.ID << ": "
+		m_connection << "ID " << Entry.ID << ": "
 			<< Entry.Address.getHost () << " : " << Entry.Name
 			<< crlf; if ( check_pager () ) return libcli::OK;
 		if ( Brief == true )
@@ -1005,28 +1005,28 @@ FG_CLI::cmd_blacklist_show
 		{
 			expire = NumToStr ( Entry.Timeout, 0 ) + " seconds";
 		}
-		m_client << "  entered      : " << timestamp_to_datestr ( Entry.JoinTime )
+		m_connection << "  entered      : " << timestamp_to_datestr ( Entry.JoinTime )
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "  last seen    : " << timestamp_to_days ( Entry.LastSeen )
+		m_connection << "  last seen    : " << timestamp_to_days ( Entry.LastSeen )
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "  rcvd packets : " << Entry.PktsRcvd
+		m_connection << "  rcvd packets : " << Entry.PktsRcvd
 			<< " (" << Entry.PktsRcvd / difftime << "/s)"
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "  rcvd bytes   : " << byte_counter ( Entry.BytesRcvd )
+		m_connection << "  rcvd bytes   : " << byte_counter ( Entry.BytesRcvd )
 			<< " (" << Entry.BytesRcvd / difftime << "/s)"
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "  expire in    : " << expire
+		m_connection << "  expire in    : " << expire
 			<< crlf; if ( check_pager () ) return libcli::OK;
 	}
 	if ( EntriesFound )
 	{
-		m_client << crlf; if ( check_pager () ) return libcli::OK;
+		m_connection << crlf; if ( check_pager () ) return libcli::OK;
 	}
-	m_client << EntriesFound << " entries found" << crlf; if ( check_pager () ) return libcli::OK;
+	m_connection << EntriesFound << " entries found" << crlf; if ( check_pager () ) return libcli::OK;
 	if ( EntriesFound )
 	{
 		difftime = now - fgms->m_Uptime;
-		m_client << "Total rcvd: "
+		m_connection << "Total rcvd: "
 			<< fgms->m_BlackList.PktsRcvd << " packets"
 			<< " (" << fgms->m_BlackList.PktsRcvd / difftime << "/s)"
 			<< " / " << byte_counter ( fgms->m_BlackList.BytesRcvd )
@@ -1067,9 +1067,9 @@ FG_CLI::cmd_blacklist_delete
 		case 0: // ID or IP or 'brief' or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "ID" << "delete entry with ID" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "IP" << "delete entry with IP address" << crlf;
 				return libcli::OK;
 			}
@@ -1090,7 +1090,7 @@ FG_CLI::cmd_blacklist_delete
 		case 1: // only '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "delete entry" << crlf;
 				return libcli::OK;
 			}
@@ -1101,7 +1101,7 @@ FG_CLI::cmd_blacklist_delete
 	}
 	if ( ( ID == 0 ) && ( Address.getIP () == 0 ) )
 	{
-		m_client << "% missing argument" << crlf;
+		m_connection << "% missing argument" << crlf;
 		return libcli::MISSING_ARG;
 	}
 	if ( ( ID == 0 ) && ( Address.getIP () != 0 ) )
@@ -1113,7 +1113,7 @@ FG_CLI::cmd_blacklist_delete
 		}
 		else
 		{
-			m_client << "no entry found!" << crlf;
+			m_connection << "no entry found!" << crlf;
 			return libcli::OK;
 		}
 		return libcli::OK;
@@ -1125,10 +1125,10 @@ FG_CLI::cmd_blacklist_delete
 	}
 	else
 	{
-		m_client << "no entry found!" << crlf;
+		m_connection << "no entry found!" << crlf;
 		return libcli::OK;
 	}
-	m_client << "deleted!" << crlf;
+	m_connection << "deleted!" << crlf;
 	return libcli::OK;
 } // FG_CLI::cmd_blacklist_delete
 
@@ -1163,21 +1163,21 @@ FG_CLI::cmd_blacklist_add
 		case 0: // must be TTL or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "TTL" << "Timeout of the new entry in seconds" << crlf;
 				return libcli::OK;
 			}
 			TTL = StrToNum<size_t> ( a, I );
 			if ( I )
 			{
-				m_client << "% invalid TTL" << crlf;
+				m_connection << "% invalid TTL" << crlf;
 				return libcli::ERROR_ARG;
 			}
 			break;
 		case 1: // IP or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "IP" << "IP address which should be blacklisted" << crlf;
 				return libcli::OK;
 			}
@@ -1192,12 +1192,12 @@ FG_CLI::cmd_blacklist_add
 			{
 				if ( Reason == "" )
 				{
-					m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 						<< "STRING" << "a reason for blacklisting this IP" << crlf;
 				}
 				else
 				{
-					m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 						<< "<cr>" << "add this IP" << crlf;
 				}
 				return libcli::OK;
@@ -1219,10 +1219,10 @@ FG_CLI::cmd_blacklist_add
 	}
 	else
 	{
-		m_client << "% entry already exists (ID " << CurrentEntry->ID << ")!" << crlf;
+		m_connection << "% entry already exists (ID " << CurrentEntry->ID << ")!" << crlf;
 		return libcli::ERROR_ARG;
 	}
-	m_client << "added with ID " << NewID << crlf;
+	m_connection << "added with ID " << NewID << crlf;
 	return libcli::OK;
 } // FG_CLI::cmd_blacklist_add
 
@@ -1257,9 +1257,9 @@ FG_CLI::cmd_crossfeed_delete
 		case 0: // ID or IP or 'brief' or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "ID" << "delete entry with ID" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "IP" << "delete entry with IP address" << crlf;
 				return libcli::OK;
 			}
@@ -1280,7 +1280,7 @@ FG_CLI::cmd_crossfeed_delete
 		case 1: // only '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "delete this crossfeed" << crlf;
 				return libcli::OK;
 			}
@@ -1302,7 +1302,7 @@ FG_CLI::cmd_crossfeed_delete
 		}
 		else
 		{
-			m_client << "no entry found" << crlf;
+			m_connection << "no entry found" << crlf;
 			return libcli::OK;
 		}
 		return libcli::OK;
@@ -1314,10 +1314,10 @@ FG_CLI::cmd_crossfeed_delete
 	}
 	else
 	{
-		m_client << "no entry found" << crlf;
+		m_connection << "no entry found" << crlf;
 		return libcli::OK;
 	}
-	m_client << "deleted" << crlf;
+	m_connection << "deleted" << crlf;
 	return libcli::OK;
 } // FG_CLI::cmd_crossfeed_delete
 
@@ -1352,7 +1352,7 @@ FG_CLI::cmd_crossfeed_add
 		case 0: // IP or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "IP" << "IP address of the crossfeed" << crlf;
 				return libcli::OK;
 			}
@@ -1365,7 +1365,7 @@ FG_CLI::cmd_crossfeed_add
 		case 1: // Port or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "Port" << "Port of the relay" << crlf;
 				return libcli::OK;
 			}
@@ -1380,12 +1380,12 @@ FG_CLI::cmd_crossfeed_add
 			{
 				if ( Name == "" )
 				{
-					m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 						<< "NAME" << "The name of this crossfeed" << crlf;
 				}
 				else
 				{
-					m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 						<< "<cr>" << "add this crossfeed" << crlf;
 				}
 				return libcli::OK;
@@ -1408,10 +1408,10 @@ FG_CLI::cmd_crossfeed_add
 	}
 	else
 	{
-		m_client << "entry already exists (ID " << CurrentEntry->ID << ")" << crlf;
+		m_connection << "entry already exists (ID " << CurrentEntry->ID << ")" << crlf;
 		return libcli::ERROR_ARG;
 	}
-	m_client << "added with ID " << NewID << crlf;
+	m_connection << "added with ID " << NewID << crlf;
 	return libcli::OK;
 } // FG_CLI::cmd_crossfeed_add
 
@@ -1446,15 +1446,15 @@ FG_CLI::cmd_crossfeed_show
 		case 0: // ID or IP or 'brief' or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "brief" << "show brief listing" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "ID" << "show entry with ID" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "IP" << "show entry with IP-Address" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "show long listing" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "|" << "output modifier" << crlf;
 				return libcli::OK;
 			}
@@ -1481,12 +1481,12 @@ FG_CLI::cmd_crossfeed_show
 			{
 				if ( !Brief )
 				{
-					m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 						<< "brief" << "show brief listing" << crlf;
 				}
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "show long listing" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "|" << "output modifier" << crlf;
 				return libcli::OK;
 			}
@@ -1502,8 +1502,8 @@ FG_CLI::cmd_crossfeed_show
 	}
 	int Count = fgms->m_CrossfeedList.Size ();
 	FG_ListElement Entry ( "" );
-	m_client << fgms->m_CrossfeedList.Name << ":" << crlf;
-	m_client << crlf;
+	m_connection << fgms->m_CrossfeedList.Name << ":" << crlf;
+	m_connection << crlf;
 	time_t  difftime;
 	time_t  now;
 	now = time ( 0 );
@@ -1522,7 +1522,7 @@ FG_CLI::cmd_crossfeed_show
 		}
 		EntriesFound++;
 		difftime = now - Entry.JoinTime;
-		m_client << "ID " << Entry.ID << ": "
+		m_connection << "ID " << Entry.ID << ": "
 			<< Entry.Address.getHost () << ":" << Entry.Address.getPort ()
 			<< " : " << Entry.Name
 			<< crlf; if ( check_pager () ) return libcli::OK;
@@ -1530,26 +1530,26 @@ FG_CLI::cmd_crossfeed_show
 		{
 			continue;
 		}
-		m_client << "  entered      : " << timestamp_to_datestr ( Entry.JoinTime )
+		m_connection << "  entered      : " << timestamp_to_datestr ( Entry.JoinTime )
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "  last sent    : " << timestamp_to_days ( Entry.LastSent )
+		m_connection << "  last sent    : " << timestamp_to_days ( Entry.LastSent )
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "  sent packets : " << Entry.PktsSent
+		m_connection << "  sent packets : " << Entry.PktsSent
 			<< "(" << ( double ) ( Entry.PktsSent / difftime ) << " packets/s)"
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "  sent bytes   : " << byte_counter ( Entry.BytesSent )
+		m_connection << "  sent bytes   : " << byte_counter ( Entry.BytesSent )
 			<< "(" << byte_counter ( ( double ) Entry.BytesSent / difftime ) << "/s)"
 			<< crlf; if ( check_pager () ) return libcli::OK;
 	}
 	if ( EntriesFound )
 	{
-		m_client << crlf; if ( check_pager () ) return libcli::OK;
+		m_connection << crlf; if ( check_pager () ) return libcli::OK;
 	}
-	m_client << EntriesFound << " entries found" << crlf; if ( check_pager () ) return libcli::OK;
+	m_connection << EntriesFound << " entries found" << crlf; if ( check_pager () ) return libcli::OK;
 	if ( EntriesFound )
 	{
 		difftime = now - fgms->m_Uptime;
-		m_client << "Total sent: "
+		m_connection << "Total sent: "
 			<< fgms->m_CrossfeedList.PktsSent << " packets"
 			<< "(" << fgms->m_CrossfeedList.PktsSent / difftime << "/s)"
 			<< " / " << byte_counter ( fgms->m_CrossfeedList.BytesSent )
@@ -1592,17 +1592,17 @@ FG_CLI::cmd_relay_show
 		case 0: // ID or IP or 'brief' or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "brief" << "show brief listing" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "ID" << "show entry with ID" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "IP" << "show entry with IP-address" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "NAME" << "show user with NAME" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "show log listing" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "|" << "output modifier" << crlf;
 				return libcli::OK;
 			}
@@ -1629,12 +1629,12 @@ FG_CLI::cmd_relay_show
 			{
 				if ( !Brief )
 				{
-					m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 						<< "brief" << "show brief listing" << crlf;
 				}
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "show log listing" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "|" << "output modifier" << crlf;
 				return libcli::OK;
 			}
@@ -1650,8 +1650,8 @@ FG_CLI::cmd_relay_show
 	}
 	int Count = fgms->m_RelayList.Size ();
 	FG_ListElement Entry ( "" );
-	m_client << fgms->m_RelayList.Name << ":" << crlf;
-	m_client << crlf;
+	m_connection << fgms->m_RelayList.Name << ":" << crlf;
+	m_connection << crlf;
 	time_t  difftime;
 	time_t  now;
 	now = time ( 0 );
@@ -1675,7 +1675,7 @@ FG_CLI::cmd_relay_show
 		}
 		EntriesFound++;
 		difftime = now - Entry.JoinTime;
-		m_client << "ID " << Entry.ID << ": "
+		m_connection << "ID " << Entry.ID << ": "
 			<< Entry.Address.getHost () << ":" << Entry.Address.getPort ()
 			<< " : " << Entry.Name
 			<< crlf; if ( check_pager () ) return libcli::OK;
@@ -1683,39 +1683,39 @@ FG_CLI::cmd_relay_show
 		{
 			continue;
 		}
-		m_client << "  entered   : " << timestamp_to_datestr ( Entry.JoinTime )
+		m_connection << "  entered   : " << timestamp_to_datestr ( Entry.JoinTime )
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "  last seen : " << timestamp_to_datestr ( Entry.LastSeen )
+		m_connection << "  last seen : " << timestamp_to_datestr ( Entry.LastSeen )
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "  sent      : "
+		m_connection << "  sent      : "
 			<< Entry.PktsSent << " packets"
 			<< " (" << Entry.PktsSent / difftime << "/s)"
 			<< " / " << byte_counter ( Entry.BytesSent )
 			<< " (" << byte_counter ( ( double ) Entry.BytesSent / difftime ) << "/s)"
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "  rcvd      : "
+		m_connection << "  rcvd      : "
 			<< Entry.PktsRcvd << " packets"
 			<< " (" << Entry.PktsRcvd / difftime << "/s)"
 			<< " / " << byte_counter ( Entry.BytesRcvd )
 			<< " (" << byte_counter ( ( double ) Entry.BytesRcvd / difftime ) << "/s)"
 			<< crlf; if ( check_pager () ) return libcli::OK;
 	}
-	m_client << crlf;
-	m_client << EntriesFound << " entries found"
+	m_connection << crlf;
+	m_connection << EntriesFound << " entries found"
 		<< crlf; if ( check_pager () ) return libcli::OK;
 	if ( Brief )
 	{
 		return libcli::OK;
 	}
 	difftime = now - fgms->m_Uptime;
-	m_client << "Totals:" << crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  sent      : "
+	m_connection << "Totals:" << crlf; if ( check_pager () ) return libcli::OK;
+	m_connection << "  sent      : "
 		<< fgms->m_RelayList.PktsSent << " packets"
 		<< " (" << fgms->m_RelayList.PktsSent / difftime << "/s)"
 		<< " / " << byte_counter ( fgms->m_RelayList.BytesSent )
 		<< " (" << byte_counter ( ( double ) fgms->m_RelayList.BytesSent / difftime ) << "/s)"
 		<< crlf; if ( check_pager () ) return libcli::OK;
-	m_client << "  received  : "
+	m_connection << "  received  : "
 		<< fgms->m_RelayList.PktsRcvd << " packets"
 		<< " (" << fgms->m_RelayList.PktsRcvd / difftime << "/s)"
 		<< " / " << byte_counter ( fgms->m_RelayList.BytesRcvd )
@@ -1747,9 +1747,9 @@ FG_CLI::cmd_tracker_show
 		case 0: // '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "show long listing" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "|" << "output modifier" << crlf;
 				return libcli::OK;
 			}
@@ -1759,35 +1759,35 @@ FG_CLI::cmd_tracker_show
 			}
 		default:
 			//return invalid_arg (a);
-			m_client << "% invalid argument" << crlf;
+			m_connection << "% invalid argument" << crlf;
 			return libcli::INVALID_ARG;
 		}
 		++i;
 	}
 	if ( !fgms->m_IsTracked )
 	{
-		m_client << "This server is NOT tracked" << crlf;
-		m_client << crlf;
+		m_connection << "This server is NOT tracked" << crlf;
+		m_connection << crlf;
 		return libcli::OK;
 	}
 	time_t  difftime;
 	time_t  now;
 	now = time ( 0 );
 	difftime = now - fgms->m_Uptime;
-	m_client << "This server is tracked: "
+	m_connection << "This server is tracked: "
 		<< fgms->m_Tracker->GetTrackerServer () << ":"
 		<< fgms->m_Tracker->GetTrackerPort ()
 		<< crlf;
 	if ( fgms->m_Tracker->m_connected )
 	{
-		m_client << "state: connected since "
+		m_connection << "state: connected since "
 			<< timestamp_to_datestr ( fgms->m_Tracker->LastConnected )
 			<< " (" << timestamp_to_days ( fgms->m_Tracker->LastConnected ) << " ago)"
 			<< crlf;
 	}
 	else
 	{
-		m_client << "state: NOT connected!" << crlf;
+		m_connection << "state: NOT connected!" << crlf;
 	}
 	string A = "NEVER";
 	if ( fgms->m_Tracker->LastSeen != 0 )
@@ -1801,21 +1801,21 @@ FG_CLI::cmd_tracker_show
 		B = timestamp_to_days ( fgms->m_Tracker->LastSent );
 		B += " ago";
 	}
-	m_client << "last seen " << A << ", last sent " << B << crlf;
-	m_client << "I had " << fgms->m_Tracker->LostConnections << " lost connections" << crlf;
-	m_client << crlf;
-	m_client << "Counters:" << crlf;
-	m_client << "  sent    : " << fgms->m_Tracker->PktsSent << " packets";
-	m_client << " (" << fgms->m_Tracker->PktsSent / difftime << "/s)";
-	m_client << " / " << byte_counter ( fgms->m_Tracker->BytesSent );
-	m_client << " (" << byte_counter ( ( double ) fgms->m_Tracker->BytesSent / difftime ) << "/s)";
-	m_client << crlf;
-	m_client << "  received: " << fgms->m_Tracker->PktsRcvd << " packets";
-	m_client << " (" << fgms->m_Tracker->PktsRcvd / difftime << "/s)";
-	m_client << " / " << byte_counter ( fgms->m_Tracker->BytesRcvd );
-	m_client << " (" << byte_counter ( ( double ) fgms->m_Tracker->BytesRcvd / difftime ) << "/s)";
-	m_client << crlf;
-	m_client << "  queue size: " << fgms->m_Tracker->msg_queue.size () << " messages" << crlf;
+	m_connection << "last seen " << A << ", last sent " << B << crlf;
+	m_connection << "I had " << fgms->m_Tracker->LostConnections << " lost connections" << crlf;
+	m_connection << crlf;
+	m_connection << "Counters:" << crlf;
+	m_connection << "  sent    : " << fgms->m_Tracker->PktsSent << " packets";
+	m_connection << " (" << fgms->m_Tracker->PktsSent / difftime << "/s)";
+	m_connection << " / " << byte_counter ( fgms->m_Tracker->BytesSent );
+	m_connection << " (" << byte_counter ( ( double ) fgms->m_Tracker->BytesSent / difftime ) << "/s)";
+	m_connection << crlf;
+	m_connection << "  received: " << fgms->m_Tracker->PktsRcvd << " packets";
+	m_connection << " (" << fgms->m_Tracker->PktsRcvd / difftime << "/s)";
+	m_connection << " / " << byte_counter ( fgms->m_Tracker->BytesRcvd );
+	m_connection << " (" << byte_counter ( ( double ) fgms->m_Tracker->BytesRcvd / difftime ) << "/s)";
+	m_connection << crlf;
+	m_connection << "  queue size: " << fgms->m_Tracker->msg_queue.size () << " messages" << crlf;
 	return libcli::OK;
 } // FG_CLI::cmd_tracker_show
 
@@ -1850,9 +1850,9 @@ FG_CLI::cmd_relay_delete
 		case 0: // ID or IP or 'brief' or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "ID" << "delete entry with ID" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "IP" << "delete entry with IP address" << crlf;
 				return libcli::OK;
 			}
@@ -1873,7 +1873,7 @@ FG_CLI::cmd_relay_delete
 		case 1: // only '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "delete entry" << crlf;
 				return libcli::OK;
 			}
@@ -1884,7 +1884,7 @@ FG_CLI::cmd_relay_delete
 	}
 	if ( ( ID == 0 ) && ( Address.getIP () == 0 ) )
 	{
-		m_client << "% missing argument" << crlf;
+		m_connection << "% missing argument" << crlf;
 		return libcli::MISSING_ARG;
 	}
 	if ( ( ID == 0 ) && ( Address.getIP () != 0 ) )
@@ -1896,7 +1896,7 @@ FG_CLI::cmd_relay_delete
 		}
 		else
 		{
-			m_client << "no entry found" << crlf;
+			m_connection << "no entry found" << crlf;
 			return libcli::OK;
 		}
 		return libcli::OK;
@@ -1908,10 +1908,10 @@ FG_CLI::cmd_relay_delete
 	}
 	else
 	{
-		m_client << "no entry found" << crlf;
+		m_connection << "no entry found" << crlf;
 		return libcli::OK;
 	}
-	m_client << "deleted" << crlf;
+	m_connection << "deleted" << crlf;
 	return libcli::OK;
 } // FG_CLI::cmd_relay_delete
 
@@ -1946,7 +1946,7 @@ FG_CLI::cmd_relay_add
 		case 0: // IP or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "IP" << "IP address of the relay" << crlf;
 				return libcli::OK;
 			}
@@ -1959,7 +1959,7 @@ FG_CLI::cmd_relay_add
 		case 1: // Port or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "Port" << "Port of the relay" << crlf;
 				return libcli::OK;
 			}
@@ -1973,10 +1973,10 @@ FG_CLI::cmd_relay_add
 			if ( arg_wants_help ( a ) )
 			{
 				if ( Name == "" )
-					m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "NAME" << "the name of this relay" << crlf;
 				else
-					m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "add this relay" << crlf;
 				return libcli::OK;
 			}
@@ -1998,10 +1998,10 @@ FG_CLI::cmd_relay_add
 	}
 	else
 	{
-		m_client << "entry already exists (ID " << CurrentEntry->ID << ")" << crlf;
+		m_connection << "entry already exists (ID " << CurrentEntry->ID << ")" << crlf;
 		return libcli::ERROR_ARG;
 	}
-	m_client << "added with ID " << NewID << crlf;
+	m_connection << "added with ID " << NewID << crlf;
 	return libcli::OK;
 } // FG_CLI::cmd_relay_add
 
@@ -2044,21 +2044,21 @@ FG_CLI::cmd_user_show
 		case 0: // ID or IP or 'brief' or '?'
 			if ( arg_wants_help ( a ) )
 			{
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "brief" << "show brief listing" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "ID" << "show user with ID" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "IP" << "show user with IP-Address" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "NAME" << "show user with NAME" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "local" << "show only local users" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "remote" << "show only local users" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "show long listing" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "|" << "output modifier" << crlf;
 				return libcli::OK;
 			}
@@ -2085,12 +2085,12 @@ FG_CLI::cmd_user_show
 			{
 				if ( !Brief )
 				{
-					m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+					m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 						<< "brief" << "show brief listing" << crlf;
 				}
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "<cr>" << "show long listing" << crlf;
-				m_client << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
+				m_connection << "  " << std::left << std::setfill ( ' ' ) << std::setw ( 22 )
 					<< "|" << "output modifier" << crlf;
 				return libcli::OK;
 			}
@@ -2109,8 +2109,8 @@ FG_CLI::cmd_user_show
 	Point3D		PlayerPosGeod;
 	string		Origin;
 	string		FullName;
-	m_client << fgms->m_PlayerList.Name << ":" << crlf;
-	m_client << crlf;
+	m_connection << fgms->m_PlayerList.Name << ":" << crlf;
+	m_connection << crlf;
 	if ( Name == "local" )
 	{
 		OnlyLocal = true;
@@ -2180,7 +2180,7 @@ FG_CLI::cmd_user_show
 		case FG_Player::ATC_DE:		ATC = ", a departure ATC"; break;
 		case FG_Player::ATC_CT:		ATC = ", a center ATC"; break;
 		}
-		m_client << "ID " << Player.ID << ": "
+		m_connection << "ID " << Player.ID << ": "
 			<< FullName << ATC
 			<< crlf; if ( check_pager () ) return libcli::OK;
 		EntriesFound++;
@@ -2190,36 +2190,36 @@ FG_CLI::cmd_user_show
 		}
 		if ( Player.HasErrors == true )
 		{
-			m_client << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
+			m_connection << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
 				<< "ERROR" << Player.Error
 				<< crlf; if ( check_pager () ) return libcli::OK;
 		}
 		difftime = now - Player.JoinTime;
-		m_client << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
+		m_connection << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
 			<< "protocoll" << Player.ProtoMajor << "." << Player.ProtoMinor
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
+		m_connection << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
 			<< "radar range" << Player.RadarRange
 			<< crlf; if ( check_pager () ) return libcli::OK;
 		int expires = Player.Timeout - ( now - Player.LastSeen );
-		m_client << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
+		m_connection << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
 			<< "entered" << timestamp_to_days ( Player.JoinTime ) << " ago"
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
+		m_connection << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
 			<< "joined" << timestamp_to_datestr ( Player.JoinTime )
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
+		m_connection << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
 			<< "last seen" << timestamp_to_datestr ( Player.LastSeen )
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
+		m_connection << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
 			<< "using model" << Player.ModelName
 			<< crlf; if ( check_pager () ) return libcli::OK;
 		if ( Player.IsLocal )
 		{
-			m_client << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
+			m_connection << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
 				<< "real origin" << Player.Origin
 				<< crlf; if ( check_pager () ) return libcli::OK;
-			m_client << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
+			m_connection << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
 				<< "sent" << Player.PktsSent << " packets "
 				<< "(" << Player.PktsSent / difftime << "/s)"
 				<< " / " << byte_counter ( Player.BytesSent )
@@ -2227,31 +2227,31 @@ FG_CLI::cmd_user_show
 				<< crlf; if ( check_pager () ) return libcli::OK;
 		}
 
-		m_client << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
+		m_connection << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
 			<< "rcvd" << Player.PktsRcvd << " packets "
 			<< "(" << Player.PktsRcvd / difftime << "/s)"
 			<< " / " << byte_counter ( Player.BytesRcvd )
 			<< " (" << byte_counter ( ( double ) Player.BytesRcvd / difftime ) << "/s)"
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
+		m_connection << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
 			<< "expires in" << expires
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
+		m_connection << "         " << std::left << std::setfill ( ' ' ) << std::setw ( 15 )
 			<< "inactive" << now - Player.LastRelayedToInactive
 			<< crlf; if ( check_pager () ) return libcli::OK;
 	}
 	difftime = now - fgms->m_Uptime;
-	m_client << crlf;
-	m_client << EntriesFound << " entries found" << crlf;
+	m_connection << crlf;
+	m_connection << EntriesFound << " entries found" << crlf;
 	if ( !Brief )
 	{
-		m_client << "Totals:" << crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "          sent    : " << fgms->m_PlayerList.PktsSent << " packets"
+		m_connection << "Totals:" << crlf; if ( check_pager () ) return libcli::OK;
+		m_connection << "          sent    : " << fgms->m_PlayerList.PktsSent << " packets"
 			<< " (" << fgms->m_PlayerList.PktsSent / difftime << "/s)"
 			<< " / " << byte_counter ( fgms->m_PlayerList.BytesSent )
 			<< " (" << byte_counter ( ( double ) fgms->m_PlayerList.BytesSent / difftime ) << "/s)"
 			<< crlf; if ( check_pager () ) return libcli::OK;
-		m_client << "          received: " << fgms->m_PlayerList.PktsRcvd << " packets"
+		m_connection << "          received: " << fgms->m_PlayerList.PktsRcvd << " packets"
 			<< " (" << fgms->m_PlayerList.PktsRcvd / difftime << "/s)"
 			<< " / " << byte_counter ( fgms->m_PlayerList.BytesRcvd )
 			<< " (" << byte_counter ( ( double ) fgms->m_PlayerList.BytesRcvd / difftime ) << "/s)"
@@ -2267,10 +2267,10 @@ FG_CLI::cmd_NOT_IMPLEMENTED
 	const libcli::tokens& args
 )
 {
-	m_client << "Command '" << command << "' NOT IMPLEMENTED YET" << crlf;
-	m_client << "  args:" << crlf;
+	m_connection << "Command '" << command << "' NOT IMPLEMENTED YET" << crlf;
+	m_connection << "  args:" << crlf;
 	for ( auto a : args )
-		m_client << "  '" << a << "'" << crlf;
+		m_connection << "  '" << a << "'" << crlf;
 	return libcli::OK;
 }
 
