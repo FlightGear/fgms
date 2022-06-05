@@ -1,0 +1,13 @@
+[Unit]
+Description=mpserver01 FlightGear Multiplayer Server
+
+[Service]
+User=fgms
+Type=forking
+WorkingDirectory=/home/fgms/fgms
+ExecStart=/home/fgms/fgms/fgms -c /home/fgms/fgms/fgms.conf -l /home/fgms/fgms.log
+Restart=Always
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
