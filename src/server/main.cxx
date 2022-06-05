@@ -206,7 +206,7 @@ ProcessConfig ( const string& ConfigName )
 	Val = Config.Get ( "server.port" );
 	if ( Val != "" )
 	{
-		Servant.SetDataPort ( StrToNum<int> ( Val.c_str (), E ) );
+		Servant.SetDataPort ( StrToInt<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
 			SG_LOG ( SG_SYSTEMS, SG_ALERT,
@@ -218,7 +218,7 @@ ProcessConfig ( const string& ConfigName )
 	Val = Config.Get ( "server.telnet_port" );
 	if ( Val != "" )
 	{
-		Servant.SetTelnetPort ( StrToNum<int> ( Val.c_str (), E ) );
+		Servant.SetTelnetPort ( StrToInt<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
 			SG_LOG ( SG_SYSTEMS, SG_ALERT,
@@ -249,7 +249,7 @@ ProcessConfig ( const string& ConfigName )
 	Val = Config.Get ( "server.admin_port" );
 	if ( Val != "" )
 	{
-		Servant.SetAdminPort ( StrToNum<int> ( Val.c_str (), E ) );
+		Servant.SetAdminPort ( StrToInt<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
 			SG_LOG ( SG_SYSTEMS, SG_ALERT,
@@ -276,7 +276,7 @@ ProcessConfig ( const string& ConfigName )
 	Val = Config.Get ( "server.out_of_reach" );
 	if ( Val != "" )
 	{
-		Servant.SetOutOfReach ( StrToNum<int> ( Val.c_str (), E ) );
+		Servant.SetOutOfReach ( StrToInt<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
 			SG_LOG ( SG_SYSTEMS, SG_ALERT,
@@ -288,7 +288,7 @@ ProcessConfig ( const string& ConfigName )
 	Val = Config.Get ( "server.max_radar_range" );
 	if ( Val != "" )
 	{
-		Servant.SetMaxRadarRange ( StrToNum<int> ( Val.c_str (), E ) );
+		Servant.SetMaxRadarRange ( StrToInt<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
 			SG_LOG ( SG_SYSTEMS, SG_ALERT,
@@ -302,7 +302,7 @@ ProcessConfig ( const string& ConfigName )
 	Val = Config.Get ( "server.playerexpires" );
 	if ( Val != "" )
 	{
-		Servant.SetPlayerExpires ( StrToNum<int> ( Val.c_str (), E ) );
+		Servant.SetPlayerExpires ( StrToInt<int> ( Val.c_str (), E ) );
 		if ( E )
 		{
 			SG_LOG ( SG_SYSTEMS, SG_ALERT,
@@ -347,7 +347,7 @@ ProcessConfig ( const string& ConfigName )
 			tracked = true;
 			Server = Config.Get ( "server.tracking_server" );
 			Val = Config.Get ( "server.tracking_port" );
-			Port = StrToNum<int> ( Val.c_str (), E );
+			Port = StrToInt<int> ( Val.c_str (), E );
 			if ( E )
 			{
 				SG_LOG ( SG_SYSTEMS, SG_ALERT,
@@ -397,7 +397,7 @@ ProcessConfig ( const string& ConfigName )
 		}
 		if ( Var == "relay.port" )
 		{
-			Port = StrToNum<int> ( Val.c_str(), E );
+			Port = StrToInt<int> ( Val.c_str(), E );
 			if ( E )
 			{
 				SG_LOG ( SG_SYSTEMS, SG_ALERT,
@@ -440,7 +440,7 @@ ProcessConfig ( const string& ConfigName )
 		}
 		if ( Var == "crossfeed.port" )
 		{
-			Port = StrToNum<int> ( Val.c_str(), E );
+			Port = StrToInt<int> ( Val.c_str(), E );
 			if ( E )
 			{
 				SG_LOG ( SG_SYSTEMS, SG_ALERT,
@@ -542,7 +542,7 @@ ParseParams ( int argcount, char* argvars[] )
 			PrintHelp ();
 			break; // never reached
 		case 'a':
-			Servant.SetTelnetPort ( StrToNum<int> ( optarg, E ) );
+			Servant.SetTelnetPort ( StrToInt<int> ( optarg, E ) );
 			if ( E )
 			{
 				cerr << "invalid value for TelnetPort: '" << optarg << "'" << endl;
@@ -550,7 +550,7 @@ ParseParams ( int argcount, char* argvars[] )
 			}
 			break;
 		case 'b':
-			Servant.SetAdminPort ( StrToNum<int> ( optarg, E ) );
+			Servant.SetAdminPort ( StrToInt<int> ( optarg, E ) );
 			if ( E )
 			{
 				cerr << "invalid value for AdminPort: '" << optarg << "'" << endl;
@@ -561,7 +561,7 @@ ParseParams ( int argcount, char* argvars[] )
 			ProcessConfig ( optarg );
 			break;
 		case 'p':
-			Servant.SetDataPort ( StrToNum<int>  ( optarg, E ) );
+			Servant.SetDataPort ( StrToInt<int>  ( optarg, E ) );
 			if ( E )
 			{
 				cerr << "invalid value for DataPort: '"
@@ -570,7 +570,7 @@ ParseParams ( int argcount, char* argvars[] )
 			}
 			break;
 		case 'o':
-			Servant.SetOutOfReach ( StrToNum<int>  ( optarg, E ) );
+			Servant.SetOutOfReach ( StrToInt<int>  ( optarg, E ) );
 			if ( E )
 			{
 				cerr << "invalid value for OutOfReach: '"
@@ -579,7 +579,7 @@ ParseParams ( int argcount, char* argvars[] )
 			}
 			break;
 		case 'v':
-            curr_priority = (sgDebugPriority) StrToNum<int>  ( optarg, E );
+            curr_priority = (sgDebugPriority) StrToInt<int>  ( optarg, E );
 			Servant.SetLog ( curr_class, curr_priority );
 			if ( E )
 			{
@@ -589,7 +589,7 @@ ParseParams ( int argcount, char* argvars[] )
 			}
 			break;
 		case 't':
-			Servant.SetPlayerExpires ( StrToNum<int>  ( optarg, E ) );
+			Servant.SetPlayerExpires ( StrToInt<int>  ( optarg, E ) );
 			if ( E )
 			{
 				cerr << "invalid value for expire: '"

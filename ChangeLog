@@ -1,3 +1,7 @@
+0.13.8
+	[FIX]	fixed bug 16 + 10
+	|FIX]	Password input in 'enable' cli command did not hide password
+
 0.13.7
 	[ FIX ] fixed bugs 12 + 13
 	[ FIX ] complete rewrite of the cli interface. The old code was
