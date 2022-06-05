@@ -902,6 +902,7 @@ cli::internal_enable
 	{
 		/* require password entry */
 		m_state = STATE::ENABLE_PASSWORD;
+		m_edit.password_mode ( true );
 	}
 	return libcli::OK;
 } // cli::internal_enable ()
@@ -1109,7 +1110,7 @@ cli::internal_set_history
 					<< "<cr>" << "show current number of lines" << crlf;
 				return ( libcli::OK );
 			}
-			lines = StrToNum<size_t> ( a, invalid );
+			lines = StrToInt<size_t> ( a, invalid );
 			if ( invalid )
 			{
 				return libcli::INVALID_ARG;
@@ -1164,7 +1165,7 @@ cli::internal_invoke_history
 				return ( libcli::OK );
 			}
 			int invalid;
-			h = StrToNum<size_t> ( a, invalid );
+			h = StrToInt<size_t> ( a, invalid );
 			if ( invalid )
 			{
 				return libcli::INVALID_ARG;
@@ -1324,7 +1325,7 @@ cli::internal_pager
 					<< "<cr>" << "show current number of lines" << crlf;
 				return ( libcli::OK );
 			}
-			lines = StrToNum<size_t> ( a, invalid );
+			lines = StrToInt<size_t> ( a, invalid );
 			if ( invalid )
 			{
 				return libcli::INVALID_ARG;
@@ -1723,7 +1724,7 @@ cli::filter_limit
 				return ( libcli::OTHER );
 			}
 			int invalid;
-			limit = StrToNum<size_t> ( a, invalid );
+			limit = StrToInt<size_t> ( a, invalid );
 			if ( invalid )
 			{
 				return libcli::INVALID_ARG;
@@ -1820,7 +1821,7 @@ cli::filter_last
 				return ( libcli::OTHER );
 			}
 			int invalid;
-			limit = StrToNum<size_t> ( a, invalid );
+			limit = StrToInt<size_t> ( a, invalid );
 			if ( invalid )
 			{
 				return libcli::INVALID_ARG;
