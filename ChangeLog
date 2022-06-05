@@ -1,6 +1,7 @@
 0.13.8
 	[FIX]	fixed bug 16 + 10
 	|FIX]	Password input in 'enable' cli command did not hide password
+	|NEW]	Added example config for systemd
 
 0.13.7
 	[ FIX ] fixed bugs 12 + 13
