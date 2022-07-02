@@ -36,10 +36,11 @@
 #endif
 
 namespace { namespace ASCII {
-	const char BELL = 0x07;
-	const char BACKSPACE = 0x08;
-	const char LF = 0x0a;
-	const char CR = 0x0d;
+	const char BELL		= 0x07;
+	const char BACKSPACE	= 0x08;
+	const char LF		= 0x0a;
+	const char CR		= 0x0d;
+	const char SPACE	= 0x20;
 }}
 
 namespace libcli
@@ -116,25 +117,19 @@ editor::clear_line
 ()
 {
 	m_cursor = 0;
+	size_t l = m_input_line.size ();
+	m_input_line.clear ();
 	if ( m_password_mode )
-	{	// no characters are written on screen
+	{
 		return;
 	}
-	while ( m_cursor > 0 )
+	redraw_line ( false );
+	while ( l > m_cursor )
 	{
-		m_connection->put_char ( ASCII::BACKSPACE );
-		--m_cursor;
+		m_connection->put_char ( ASCII::SPACE );
+		--l;
 	}
-	for ( size_t i = 0; i < m_input_line.length (); ++i )
-	{
-		m_connection->put_char ( ' ' );
-	}
-	for ( size_t i = 0; i < m_input_line.length (); ++i )
-	{
-		m_connection->put_char ( ASCII::BACKSPACE );
-	}
-	m_input_line.clear ();
-
+	redraw_line ( false );
 } // editor::clear_line ()
 //////////////////////////////////////////////////////////////////////
 
@@ -209,14 +204,12 @@ editor::delete_backwards
 		while ( ( nc >= 0 ) && ( m_input_line[nc] == ' ' ) )
 		{
 			m_input_line.erase ( nc, 1 );
-			//*m_connection << ASCII::BACKSPACE << " " << ASCII::BACKSPACE << commit;
 			--m_cursor;
 			--nc;
 		}
 		while ( ( nc >= 0 ) && ( m_input_line[nc] != ' ' ) )
 		{
 			m_input_line.erase ( nc, 1 );
-			//*m_connection << ASCII::BACKSPACE << " " << ASCII::BACKSPACE << commit;
 			--m_cursor;
 			--nc;
 		}
@@ -224,7 +217,6 @@ editor::delete_backwards
 	else /* char */
 	{
 		m_input_line.erase ( m_cursor - 1, 1 );
-		//*m_connection << ASCII::BACKSPACE << " " << ASCII::BACKSPACE << commit;
 		--m_cursor;
 	}
 	size_t cur { m_cursor };
@@ -235,7 +227,7 @@ editor::delete_backwards
 	size_t n;
 	for ( n = m_cursor; n < len; ++n )
 	{
-		m_connection->put_char ( ' ' );
+		m_connection->put_char ( ASCII::SPACE );
 	}
 	for ( n = m_cursor; n < len; ++n )
 	{
@@ -271,7 +263,7 @@ editor::prompt_user ()
 		int n = m_input_line.length () - m_cursor;
 		while ( n-- )
 		{
-			m_connection->put_char ( '\b' );
+			m_connection->put_char ( ASCII::BACKSPACE );
 		}
 	}
 	m_showprompt = false;
@@ -330,7 +322,7 @@ editor::clear_to_eol
 		size_t c;
 		for ( c = m_cursor; c < m_input_line.length (); ++c )
 		{
-			m_connection->put_char ( ' ' );
+			m_connection->put_char ( ASCII::SPACE );
 		}
 		for ( c = m_cursor; c < m_input_line.length (); ++c )
 		{
@@ -429,13 +421,14 @@ editor::insert
 )
 {
 	m_input_line.insert ( m_input_line.begin () + m_cursor, c );
-	std::string t { m_input_line.begin () + m_cursor, m_input_line.end () };
-	*m_connection << t << commit;
+	size_t tmp_cursor { m_cursor };
+	redraw_line ( false );
+	m_cursor = tmp_cursor + 1;
 	for ( size_t i = 0; i < ( m_input_line.length () - m_cursor + 1 ); ++i )
 	{
 		m_connection->put_char ( ASCII::BACKSPACE );
 	}
-	++m_cursor;
+//	++m_cursor;
 } // editor::insert ()
 //////////////////////////////////////////////////////////////////////
 
@@ -451,7 +444,7 @@ editor::get_line
 	unsigned char c;
 	m_showprompt = true;
 	bool finished { false };
-	m_connection->put_char ( '\r' );	// go to start of line
+	m_connection->put_char ( ASCII::CR );	// go to start of line
 	while ( !finished )
 	{
 		c = 0;
@@ -484,7 +477,7 @@ editor::get_line
 				break;
 			}
 			continue;
-		case '\n':
+		case ASCII::LF:
 		case ASCII::CR:
 			if ( !m_password_mode )
 			{

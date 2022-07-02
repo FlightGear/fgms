@@ -1,3 +1,9 @@
+0.13.9
+	[FIX]	libcli: inserting a character in the input string misplaced
+			the cursor
+	[FIX]	libcli: pressing TAB on filters sometimes gave 'ambigous filter'
+			although it was not
+
 0.13.8
 	[FIX]	fixed bug 16 + 10
 	|FIX]	Password input in 'enable' cli command did not hide password

@@ -1192,7 +1192,7 @@ cli::internal_invoke_history
 	if ( h > m_history.size () - 1 )
 	{
 		m_connection << unfiltered << "% number out f range!" << crlf;
-		return libcli::ERROR_ARG;
+		return libcli::ERROR_ANY;
 	}
 	auto hist = m_history.begin () + h;
 	std::string line = *hist;
@@ -1437,7 +1437,7 @@ cli::filter_grab
 	if ( match_me.length () == 0 )
 	{
 		m_connection << unfiltered << "% missing argument!" << crlf;
-		return libcli::ERROR_ARG;
+		return libcli::ERROR_ANY;
 	}
 	m_connection.m_active_filters.push_back (
 		new match_filter {
@@ -1501,7 +1501,7 @@ cli::filter_exclude
 	if ( match_me.length () == 0 )
 	{
 		m_connection << unfiltered << "% missing argument!" << crlf;
-		return libcli::ERROR_ARG;
+		return libcli::ERROR_ANY;
 	}
 	m_connection.m_active_filters.push_back (
 		new match_filter {
@@ -1564,7 +1564,7 @@ cli::filter_begin
 	if ( match_me.length () == 0 )
 	{
 		m_connection << unfiltered << "% missing argument!" << crlf;
-		return libcli::ERROR_ARG;
+		return libcli::ERROR_ANY;
 	}
 	m_connection.m_active_filters.push_back (
 		new begin_filter { match_me }
@@ -1635,12 +1635,12 @@ cli::filter_between
 	if ( start_with.length () == 0 )
 	{
 		m_connection << unfiltered << "% missing argument!" << crlf;
-		return libcli::ERROR_ARG;
+		return libcli::ERROR_ANY;
 	}
 	if ( end_with.length () == 0 )
 	{
 		m_connection << unfiltered << "% missing argument!" << crlf;
-		return libcli::ERROR_ARG;
+		return libcli::ERROR_ANY;
 	}
 	m_connection.m_active_filters.push_back (
 		new between_filter { start_with, end_with }
@@ -2018,7 +2018,7 @@ cli::find_filter
 		if ( !have_help )
 		{
 			m_connection << "'" << word << "' not found!" << crlf;
-			return libcli::ERROR_ARG;
+			return libcli::ERROR_ANY;
 		}
 		return libcli::OTHER;	// user just wanted help
 	}
@@ -2037,7 +2037,8 @@ cli::find_filter
 		{
 			m_connection << unfiltered
 				<< "Ambiguous filter!" << crlf;
-			continue;
+			return libcli::ERROR_ANY;
+			//continue;
 		}
 		// found the filter
 		if ( nullptr == f.m_callback.member )
@@ -2174,7 +2175,7 @@ cli::find_command
 		if ( !have_help )
 		{
 			m_connection << "'" << word << "' not found!" << crlf;
-			return libcli::ERROR_ARG;
+			return libcli::ERROR_ANY;
 		}
 		return libcli::OTHER;	// user just wanted help
 	}
