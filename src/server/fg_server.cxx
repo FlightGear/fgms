@@ -59,6 +59,9 @@
 bool    RunAsDaemon = false;
 bool    AddCLI = true;
 
+// how long should malicious IPs be blocked?
+const int DEFAULT_BLOCK_TIME = 172800; // 2 days
+
 #ifndef DEF_SERVER_LOG
         #define DEF_SERVER_LOG "fg_server.log"
 #endif
@@ -1023,7 +1026,7 @@ FG_SERVER::IsKnownRelay( const netAddress& SenderAddress, size_t Bytes)
         string ErrorMsg;
         ErrorMsg  = SenderAddress.getHost();
         ErrorMsg += " is not a valid relay!";
-        AddBlacklist ( SenderAddress.getHost(), "not a valid relay", 0);
+        AddBlacklist ( SenderAddress.getHost(), "not a valid relay", DEFAULT_BLOCK_TIME);
         SG_LOG ( SG_FGMS, SG_ALERT, "UNKNOWN RELAY: " << ErrorMsg );
         return ( false );
 } // FG_SERVER::IsKnownRelay ()
